@@ -12,6 +12,7 @@
  * @bug No known bugs except for NYI items
  *
  * @details This is targeting Tizen 5.5 M2.
+ * @Do-not-merge: THIS CHANGE TO TEST CI SERVER.
  */
 
 #ifndef __TIZEN_MACHINELEARNING_NNSTREAMER_SINGLE_H__
