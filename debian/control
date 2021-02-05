@@ -1,0 +1,33 @@
+Source: ml-api
+Section: libs
+Priority: optional
+Maintainer: MyungJoo Ham <myungjoo.ham@samsung.com>
+Build-Depends: gcc-9 | gcc-8 | gcc-7 | gcc-6 | gcc-5 (>=5.4),
+ ninja-build, meson (>=0.50), debhelper (>=9),
+ libgstreamer1.0-dev, libgstreamer-plugins-base1.0-dev, gstreamer1.0-plugins-base,
+ nnstreamer, nnstreamer-dev, nnstreamer-dev-internal,
+ libglib2.0-dev,libgtest-dev, ssat
+Standards-Version: 3.9.6
+Homepage: https://github.com/nnstreamer/api
+
+Package: ml-api-common-dev
+Architecture: any
+Multi-Arch: same
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Machine Learning API common
+ Provides headers commonly used across API, such as error definitions.
+ This is a development package for ML API.
+
+Package: ml-inference-api
+Architecture: any
+Multi-Arch: same
+Depends: nnstreamer, ${shlibs:Depends}, ${misc:Depends}
+Description: Machine Learning Inference API
+ This package provides native API set to easily construct a data stream pipeline with neural networks.
+
+Package: ml-inference-api-dev
+Architecture: any
+Multi-Arch: same
+Depends: ml-inference-api, ml-api-common-dev, ${shlibs:Depends}, ${misc:Depends}
+Description: Development package for Machine Learning Inference API
+ This is a development package for Machine Learning Inference API.

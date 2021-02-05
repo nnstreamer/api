@@ -1,0 +1,6 @@
+option('enable-test', type: 'boolean', value: true)
+option('install-test', type: 'boolean', value: false)
+option('enable-tizen', type: 'boolean', value: false)
+option('tizen-version-major', type: 'integer', min : 4, max : 9999, value: 9999) # 9999 means "not Tizen"
+option('enable-tizen-feature-check', type: 'boolean', value: false)
+option('enable-tizen-privilege-check', type: 'boolean', value: false)
