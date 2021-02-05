@@ -1,8 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /**
  * Copyright (c) 2019 Samsung Electronics Co., Ltd. All Rights Reserved.
- */
-/**
+ *
  * @file tizen_error.h
  * @date 24 October 2019
  * @brief C-API internal header emulating tizen_error.h for Non-Tizen platforms

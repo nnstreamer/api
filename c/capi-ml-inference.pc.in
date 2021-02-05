@@ -1,0 +1,13 @@
+# Package information for pkg-config
+
+prefix=@PREFIX@
+exec_prefix=@PREFIX@
+libdir=@LIB_INSTALL_DIR@
+includedir=@INCLUDE_INSTALL_DIR@
+
+Name: tizen-api-ml-inference
+Description: ML inference API for Tizen
+Version: @VERSION@
+Requires: capi-ml-common
+Libs: -L${libdir} -lcapi-nnstreamer
+Cflags: -I${includedir}/nnstreamer

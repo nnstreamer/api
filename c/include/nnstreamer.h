@@ -1,8 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
-/*
- * Copyright (c) 2019 Samsung Electronics Co., Ltd. All Rights Reserved.
- */
 /**
+ * Copyright (c) 2019 Samsung Electronics Co., Ltd. All Rights Reserved.
+ *
  * @file nnstreamer.h
  * @date 07 March 2019
  * @brief NNStreamer/Pipeline(main) C-API Header.
@@ -117,12 +116,18 @@ typedef void *ml_pipeline_element_h;
 typedef void *ml_custom_easy_filter_h;
 
 /**
+ * @brief A handle of a "if node" of an NNStreamer pipeline.
+ * @since_tizen 6.5
+ */
+typedef void *ml_pipeline_if_h;
+
+/**
  * @brief Types of NNFWs.
  * @details To check if a nnfw-type is supported in a system, an application may call the API, ml_check_nnfw_availability().
  * @since_tizen 5.5
  */
 typedef enum {
-  ML_NNFW_TYPE_ANY = 0,               /**< NNHW is not specified (Try to determine the NNFW with file extension). */
+  ML_NNFW_TYPE_ANY = 0,               /**< NNFW is not specified (Try to determine the NNFW with file extension). */
   ML_NNFW_TYPE_CUSTOM_FILTER = 1,     /**< Custom filter (Independent shared object). */
   ML_NNFW_TYPE_TENSORFLOW_LITE = 2,   /**< Tensorflow-lite (.tflite). */
   ML_NNFW_TYPE_TENSORFLOW = 3,        /**< Tensorflow (.pb). */
@@ -133,6 +138,8 @@ typedef enum {
   ML_NNFW_TYPE_EDGE_TPU = 8,          /**< Google Coral Edge TPU (USB). (Since 6.0) */
   ML_NNFW_TYPE_ARMNN = 9,             /**< Arm Neural Network framework (support for caffe and tensorflow-lite). (Since 6.0) */
   ML_NNFW_TYPE_SNPE = 10,             /**< Qualcomm SNPE (Snapdgragon Neural Processing Engine (.dlc). (Since 6.0) */
+  ML_NNFW_TYPE_PYTORCH = 11,          /**< PyTorch (.pt). (Since 6.5) */
+  ML_NNFW_TYPE_NNTR_INF = 12,         /**< Inference supported from NNTrainer, SR On-device Training Framework (Since 6.5) */
   ML_NNFW_TYPE_SNAP = 0x2001,         /**< SNAP (Samsung Neural Acceleration Platform), only for Android. (Since 6.0) */
 } ml_nnfw_type_e;
 
@@ -214,9 +221,9 @@ typedef enum {
  * @since_tizen 5.5
  * @remarks The @a data can be used only in the callback. To use outside, make a copy.
  * @remarks The @a info can be used only in the callback. To use outside, make a copy.
- * @param[out] data The handle of the tensor output (a single frame. tensor/tensors). Number of tensors is determined by ml_tensors_info_get_count() with the handle 'info'. Note that the maximum number of tensors is 16 (#ML_TENSOR_SIZE_LIMIT).
- * @param[out] info The handle of tensors information (cardinality, dimension, and type of given tensor/tensors).
- * @param[out] user_data User application's private data.
+ * @param[in] data The handle of the tensor output of the pipeline (a single frame. tensor/tensors). Number of tensors is determined by ml_tensors_info_get_count() with the handle 'info'. Note that the maximum number of tensors is 16 (#ML_TENSOR_SIZE_LIMIT).
+ * @param[in] info The handle of tensors information (cardinality, dimension, and type of given tensor/tensors).
+ * @param[in,out] user_data User application's private data.
  */
 typedef void (*ml_pipeline_sink_cb) (const ml_tensors_data_h data, const ml_tensors_info_h info, void *user_data);
 
@@ -224,19 +231,35 @@ typedef void (*ml_pipeline_sink_cb) (const ml_tensors_data_h data, const ml_tens
  * @brief Callback for the change of pipeline state.
  * @details If an application wants to get the change of pipeline state, use this callback. This callback can be registered when constructing the pipeline using ml_pipeline_construct(). Do not spend too much time in the callback.
  * @since_tizen 5.5
- * @param[out] state The new state of the pipeline.
+ * @param[in] state The new state of the pipeline.
  * @param[out] user_data User application's private data.
  */
 typedef void (*ml_pipeline_state_cb) (ml_pipeline_state_e state, void *user_data);
 
 /**
+ * @brief Callback for custom condition of tensor_if.
+ * @since_tizen 6.5
+ * @remarks The @a data can be used only in the callback. To use outside, make a copy.
+ * @remarks The @a info can be used only in the callback. To use outside, make a copy.
+ * @remarks The @a result can be used only in the callback and should not be released.
+ * @param[in] data The handle of the tensor output of the pipeline (a single frame. tensor/tensors). Number of tensors is determined by ml_tensors_info_get_count() with the handle 'info'. Note that the maximum number of tensors is 16 (#ML_TENSOR_SIZE_LIMIT).
+ * @param[in] info The handle of tensors information (cardinality, dimension, and type of given tensor/tensors).
+ * @param[out] result Result of the user-defined condition. 0 refers to FALSE and a non-zero value refers to TRUE. The application should set the result value for given data.
+ * @param[in,out] user_data User application's private data.
+ * @return @c 0 on success. Otherwise a negative error value.
+ */
+typedef int (*ml_pipeline_if_custom_cb) (const ml_tensors_data_h data, const ml_tensors_info_h info, int *result, void *user_data);
+
+/**
  * @brief Callback to execute the custom-easy filter in NNStreamer pipelines.
+ * @details Note that if ml_custom_easy_invoke_cb() returns negative error values, the constructed pipeline does not work properly anymore.
+ *          So developers should release the pipeline handle and recreate it again.
  * @since_tizen 6.0
  * @remarks The @a in can be used only in the callback. To use outside, make a copy.
  * @remarks The @a out can be used only in the callback. To use outside, make a copy.
- * @param[out] in The handle of the tensor input (a single frame. tensor/tensors).
+ * @param[in] in The handle of the tensor input (a single frame. tensor/tensors).
  * @param[out] out The handle of the tensor output to be filled (a single frame. tensor/tensors).
- * @param[out] user_data User application's private data.
+ * @param[in,out] user_data User application's private data.
  * @return @c 0 on success. @c 1 to ignore the input data. Otherwise a negative error value.
  */
 typedef int (*ml_custom_easy_invoke_cb) (const ml_tensors_data_h in, ml_tensors_data_h out, void *user_data);
@@ -877,6 +900,86 @@ int ml_pipeline_element_get_property_double (ml_pipeline_element_h elem_h, const
 int ml_pipeline_element_get_property_enum (ml_pipeline_element_h elem_h, const char *property_name, uint32_t *value);
 
 /****************************************************
+ ** NNStreamer Pipeline tensor_if Control          **
+ ****************************************************/
+/**
+ * @brief Registers a tensor_if custom callback.
+ * @details If the if-condition is complex and cannot be expressed with tensor_if expressions, you can define custom condition.
+ * @since_tizen 6.5
+ * @remarks If the function succeeds, @a if_custom handle must be released using ml_pipeline_tensor_if_custom_unregister().
+ * @param[in] name The name of custom condition
+ * @param[in] cb The function to be called when the pipeline runs.
+ * @param[in] user_data Private data for the callback. This value is passed to the callback when it's invoked.
+ * @param[out] if_custom The tensor_if handler.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER The parameter is invalid.
+ * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory to register the custom callback.
+ * @retval #ML_ERROR_STREAMS_PIPE Failed to register the custom callback.
+ * @warning A custom condition of the tensor_if is registered to the process globally.
+ *          If the custom condition "X" is registered, this "X" may be referred in any pipelines of the current process.
+ *          So, be careful not to use the same condition name when using multiple pipelines.
+ *
+ * Here is an example of the usage:
+ * @code
+ * // Define callback for tensor_if custom condition.
+ * static int tensor_if_custom_cb (const ml_tensors_data_h data, const ml_tensors_info_h info, int *result, void *user_data)
+ * {
+ *   // Describe the conditions and pass the result.
+ *   // Result 0 refers to FALSE and a non-zero value refers to TRUE.
+ *   *result = 1;
+ *   // Return 0 if there is no error.
+ *   return 0;
+ * }
+ *
+ * // The pipeline description (input data with dimension 2:1:1:1 and type int8 will be passed to tensor_if custom condition. Depending on the result, proceed to true or false paths.)
+ * const char pipeline[] = "appsrc ! other/tensor,dimension=(string)2:1:1:1,type=(string)int8,framerate=(fraction)0/1 ! tensor_if name=tif compared-value=CUSTOM compared-value-option=tif_custom_cb_name then=PASSTHROUGH else=PASSTHROUGH tif.src_0 ! tensor_sink name=true_condition async=false tif.src_1 ! tensor_sink name=false_condition async=false"
+ * int status;
+ * ml_pipeline_h pipe;
+ * ml_pipeline_if_h custom;
+ *
+ * // Register tensor_if custom with name 'tif_custom_cb_name'.
+ * status = ml_pipeline_tensor_if_custom_register ("tif_custom_cb_name", tensor_if_custom_cb, NULL, &custom);
+ * if (status != ML_ERROR_NONE) {
+ *   // Handle error case.
+ *   goto error;
+ * }
+ *
+ * // Construct the pipeline.
+ * status = ml_pipeline_construct (pipeline, NULL, NULL, &pipe);
+ * if (status != ML_ERROR_NONE) {
+ *   // Handle error case.
+ *   goto error;
+ * }
+ *
+ * // Start the pipeline and execute the tensor.
+ * ml_pipeline_start (pipe);
+ *
+ * error:
+ * // Destroy the pipeline and unregister tensor_if custom.
+ * ml_pipeline_stop (pipe);
+ * ml_pipeline_destroy (pipe);
+ * ml_pipeline_tensor_if_custom_unregister (custom);
+ *
+ * @endcode
+ */
+int ml_pipeline_tensor_if_custom_register (const char *name, ml_pipeline_if_custom_cb cb, void *user_data, ml_pipeline_if_h *if_custom);
+
+/**
+ * @brief Unregisters the tensor_if custom callback.
+ * @details Use this function to release and unregister the tensor_if custom callback.
+ * @since_tizen 6.5
+ * @param[in] if_custom The tensor_if handle to be unregistered.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER The parameter is invalid.
+ * @retval #ML_ERROR_STREAMS_PIPE Failed to unregister the custom callback.
+ */
+int ml_pipeline_tensor_if_custom_unregister (ml_pipeline_if_h if_custom);
+
+/****************************************************
  ** NNStreamer Utilities                           **
  ****************************************************/
 /**
@@ -1060,6 +1163,9 @@ int ml_tensors_data_create (const ml_tensors_info_h info, ml_tensors_data_h *dat
 
 /**
  * @brief Frees the given tensors' data handle.
+ * @details Note that the opened handle should be closed before calling this function in the case of a single API.
+ *          If not, the inference engine might try to access the data that is already freed.
+ *          And it causes the segmentation fault.
  * @since_tizen 5.5
  * @param[in] data The handle of tensors data.
  * @return @c 0 on success. Otherwise a negative error value.
@@ -1115,10 +1221,25 @@ int ml_tensors_data_set_tensor_data (ml_tensors_data_h data, unsigned int index,
 int ml_check_nnfw_availability (ml_nnfw_type_e nnfw, ml_nnfw_hw_e hw, bool *available);
 
 /**
+ * @brief Checks if the element is registered and available on the pipeline.
+ * @details If the function returns an error, @a available may not be changed.
+ * @since_tizen 6.5
+ * @param[in] element_name The name of element.
+ * @param[out] available @c true if it's available, @c false if it's not available.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful and the environments are available.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
+ */
+int ml_check_element_availability (const char *element_name, bool *available);
+
+/**
  * @brief Registers a custom filter.
  * @details NNStreamer provides an interface for processing the tensors with 'custom-easy' framework which can execute without independent shared object.
  *          Using this function, the application can easily register and execute the processing code.
  *          If a custom filter with same name exists, this will be failed and return the error code #ML_ERROR_INVALID_PARAMETER.
+ *          Note that if ml_custom_easy_invoke_cb() returns negative error values, the constructed pipeline does not work properly anymore.
+ *          So developers should release the pipeline handle and recreate it again.
  * @since_tizen 6.0
  * @remarks If the function succeeds, @a custom handle must be released using ml_pipeline_custom_easy_filter_unregister().
  * @param[in] name The name of custom filter.
