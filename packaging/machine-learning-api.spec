@@ -36,7 +36,6 @@ Release:	0
 Group:		Machine Learning/ML Framework
 Packager:	MyungJoo Ham <myungjoo.ham@samsung.com>
 License:	Apache-2.0
-Provides:	capi-nnstreamer = %{version}-%{release}
 Source0:	machine-learning-api-%{version}.tar.gz
 Source1001:	capi-machine-learning-inference.manifest
 
@@ -80,7 +79,6 @@ You can construct a data stream pipeline with neural networks easily.
 %package devel
 Summary:	Tizen Native API Devel Kit for NNStreamer
 Group:		Machine Learning/ML Framework
-Provides:	capi-nnstreamer-devel = %{version}-%{release}
 Requires:	capi-machine-learning-inference = %{version}-%{release}
 Requires:	capi-machine-learning-common-devel
 %description devel
@@ -96,7 +94,6 @@ Static library of capi-machine-learning-inference-devel package.
 %package -n capi-machine-learning-common-devel
 Summary:	Common headers for Tizen Machine Learning API
 Group:		Machine Learning/ML Framework
-Provides:	capi-ml-common-devel = %{version}-%{release}
 %description -n capi-machine-learning-common-devel
 Common headers for Tizen Machine Learning API.
 
