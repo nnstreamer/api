@@ -85,6 +85,40 @@ if get_option('enable-tizen')
   endif
 endif
 
+# Check neural network framework
+# TODO: add frameworks required to build and run test
+# tendorflow
+tf_dep = dependency('tensorflow', required: false)
+if tf_dep.found()
+  add_project_arguments('-DENABLE_TENSORFLOW=1', language: ['c', 'cpp'])
+endif
+
+# tendorflow-lite
+tf1lite_dep = dependency('tensorflow-lite', required: false)
+if tf1lite_dep.found()
+  add_project_arguments('-DENABLE_TENSORFLOW_LITE=1', language: ['c', 'cpp'])
+endif
+
+tf2lite_dep = dependency('tensorflow2-lite', required: false)
+if tf2lite_dep.found()
+  add_project_arguments('-DENABLE_TENSORFLOW2_LITE=1', language: ['c', 'cpp'])
+endif
+
+# NNFW (ONE)
+nnfw_dep = dependency('nnfw', required: false)
+if not nnfw_dep.found()
+  nnfw_dep = cc.find_library('nnfw-dev', required: false)
+endif
+if nnfw_dep.found()
+  add_project_arguments('-DENABLE_NNFW_RUNTIME=1', language: ['c', 'cpp'])
+endif
+
+# ArmNN
+armnn_dep = dependency('armnn', required: false)
+if armnn_dep.found()
+  add_project_arguments('-DENABLE_ARMNN=1', language: ['c', 'cpp'])
+endif
+
 # Set install path
 api_install_prefix = get_option('prefix')
 api_install_libdir = join_paths(api_install_prefix, get_option('libdir'))
@@ -102,3 +136,8 @@ api_conf.set('INCLUDE_INSTALL_DIR', api_install_includedir)
 
 # Build C-API
 subdir('c')
+
+# Run unittest
+if get_option('enable-test')
+  subdir('tests')
+endif
