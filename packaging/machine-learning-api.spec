@@ -5,8 +5,29 @@
 %define		enable_tizen_privilege 1
 %define		enable_tizen_feature 1
 
+%define		tensorflow_support 0
+%define		tensorflow_lite_support	1
+%define		tensorflow2_lite_support 1
+%define		tensorflow2_gpu_delegate_support 1
+%define		nnfw_support 1
+%define		armnn_support 0
+
+%define		release_test 0
+%define		test_script $(pwd)/packaging/run_unittests.sh
 ###########################################################################
 # Conditional features for Tizen releases
+%if (0%{?tizen_version_major} == 6 && 0%{?tizen_version_minor} < 5) || (0%{?tizen_version_major} < 6)
+%define		tensorflow2_lite_support 0
+%define		tensorflow2_gpu_delegate_support 0
+%endif
+
+%ifnarch %arm aarch64 x86_64 i586 i686 %ix86
+%define		nnfw_support 0
+%endif
+
+%ifnarch %arm aarch64
+%define		armnn_support 0
+%endif
 
 # Disable a few features for TV releases
 %if "%{?profile}" == "tv"
@@ -22,7 +43,6 @@
 %global debug_package %{nil}
 %global __debug_install_post %{nil}
 %endif
-
 ###########################################################################
 # Package / sub-package definitions
 Name:		capi-machine-learning-inference
@@ -70,7 +90,42 @@ BuildRequires:	lcov
 
 %if 0%{?unit_test}
 BuildRequires:	gtest-devel
+
+%if 0%{?tensorflow_support}
+BuildRequires:	tensorflow
+BuildRequires:	tensorflow-devel
+BuildRequires:	nnstreamer-tensorflow
 %endif
+
+%if 0%{?tensorflow_lite_support}
+BuildRequires:	tensorflow-lite-devel
+BuildRequires:	nnstreamer-tensorflow-lite
+%endif
+
+%if 0%{?tensorflow2_lite_support}
+BuildRequires:	tensorflow2-lite-devel
+BuildRequires:	nnstreamer-tensorflow2-lite
+%if 0%{?tensorflow2_gpu_delegate_support}
+BuildRequires:	pkgconfig(gles20)
+%endif
+%endif
+
+%if 0%{?nnfw_support}
+BuildRequires:	nnfw-devel
+BuildRequires:	nnstreamer-nnfw
+%ifarch %arm aarch64
+BuildRequires:	libarmcl
+BuildConflicts:	libarmcl-release
+%endif
+%endif
+
+%if 0%{?armnn_support}
+BuildRequires:	armnn-devel
+BuildRequires:	nnstreamer-armnn
+BuildRequires:	libarmcl
+BuildConflicts:	libarmcl-release
+%endif
+%endif # unit_test
 
 %description
 Tizen ML(Machine Learning) native API for NNStreamer.
@@ -104,6 +159,14 @@ Requires:	capi-machine-learning-inference-devel = %{version}-%{release}
 %description -n capi-machine-learning-tizen-internal-devel
 Tizen internal headers for Tizen Machine Learning API.
 
+%if 0%{?release_test}
+%package -n capi-machine-learning-unittests
+Summary:	Unittests for Tizen Machine Learning API
+Group:		Machine Learning/ML Framework
+Requires:	capi-machine-learning-inference = %{version}-%{release}
+%description -n capi-machine-learning-unittests
+Unittests for Tizen Machine Learning API.
+%endif
 ###########################################################################
 # Define build options
 %define enable_tizen -Denable-tizen=false
@@ -122,6 +185,12 @@ Tizen internal headers for Tizen Machine Learning API.
 %endif
 %endif # tizen
 
+%if 0%{?release_test}
+%define install_test -Dinstall-test=true
+%else
+%define install_test -Dinstall-test=false
+%endif
+
 %prep
 %setup -q
 cp %{SOURCE1001} .
@@ -133,11 +202,20 @@ CXXFLAGS=`echo $CXXFLAGS | sed -e "s|-std=gnu++11||"`
 mkdir -p build
 
 meson --buildtype=plain --prefix=%{_prefix} --sysconfdir=%{_sysconfdir} --libdir=%{_libdir} \
-	--bindir=%{nnstbindir} --includedir=%{_includedir} \
+	--bindir=%{_bindir} --includedir=%{_includedir} %{install_test} \
 	%{enable_tizen} %{enable_tizen_privilege_check} %{enable_tizen_feature_check} \
 	build
 
 ninja -C build %{?_smp_mflags}
+
+# Run test
+%if 0%{?unit_test}
+bash %{test_script} ./tests/capi/unittest_capi_inference
+
+%if 0%{?nnfw_support}
+bash %{test_script} ./tests/capi/unittest_capi_inference_nnfw_runtime
+%endif
+%endif # unit_test
 
 %install
 DESTDIR=%{buildroot} ninja -C build %{?_smp_mflags} install
@@ -166,6 +244,12 @@ DESTDIR=%{buildroot} ninja -C build %{?_smp_mflags} install
 
 %files -n capi-machine-learning-tizen-internal-devel
 %{_includedir}/nnstreamer/nnstreamer-tizen-internal.h
+
+%if 0%{?release_test}
+%files -n capi-machine-learning-unittests
+%manifest capi-machine-learning-inference.manifest
+%{_bindir}/unittest-ml
+%endif
 
 %changelog
 * Fri Feb 05 2021 MyungJoo Ham <myungjoo.ham@samsung.com>
