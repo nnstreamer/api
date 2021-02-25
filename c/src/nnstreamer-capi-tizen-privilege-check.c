@@ -28,6 +28,9 @@
 #include "nnstreamer.h"
 #include "nnstreamer_plugin_api.h"
 
+#if TIZENMMCONF
+/* We can use "MMCAM_VIDEOSRC_ELEMENT_NAME and MMCAM_AUDIOSRC_ELEMENT_NAME */
+#else /* TIZENMMCONF */
 /* Tizen multimedia framework */
 /* Defined in mm_camcorder_configure.h */
 
@@ -98,6 +101,7 @@ _mmcamcorder_conf_get_element (MMHandleType handle,
 extern int
 _mmcamcorder_conf_get_value_element_name (type_element * element,
     const char **value);
+#endif /* TIZENMMCONF */
 
 /**
  * @brief Internal structure for tizen mm framework.
@@ -630,6 +634,7 @@ rm_error:
   return status;
 }
 
+#if !TIZENMMCONF
 /**
  * @brief Gets element name from mm conf and replaces element.
  */
@@ -658,6 +663,7 @@ ml_tizen_mm_replace_element (MMHandleType * handle, camera_conf * conf,
 
   return ML_ERROR_NONE;
 }
+#endif
 
 /**
  * @brief Converts predefined mmfw element.
@@ -669,7 +675,9 @@ ml_tizen_mm_convert_element (ml_pipeline_h pipe, gchar ** result,
   gchar *video_src, *audio_src;
   MMHandleType hcam = NULL;
   MMCamPreset cam_info;
+#if !TIZENMMCONF                /* < 6.5 */
   camera_conf *cam_conf = NULL;
+#endif
   int status = ML_ERROR_STREAMS_PIPE;
   int err;
 
@@ -708,12 +716,57 @@ ml_tizen_mm_convert_element (ml_pipeline_h pipe, gchar ** result,
       ml_loge ("Fail to call mm_camcorder_create = %x\n", err);
       goto mm_error;
     }
+#if TIZENMMCONF                 /* 6.5 or higher */
+    if (video_src) {
+      char *src_name = NULL;    /* Do not free this! */
+      int size = 0;
+      guint changed = 0;
+      err = mm_camcorder_get_attributes (hcam, NULL,
+          MMCAM_VIDEOSRC_ELEMENT_NAME, &src_name, &size, NULL);
+
+      if (err != MM_ERROR_NONE || !src_name || size < 1) {
+        ml_loge ("Failed to get attributes of MMCAM_VIDEOSRC_ELEMENT_NAME.");
+        status = ML_ERROR_NOT_SUPPORTED;
+        goto mm_error;
+      }
+      *result = replace_string (*result, ML_TIZEN_CAM_VIDEO_SRC, src_name,
+          " !", &changed);
+      if (changed > 1) {
+        /* Allow one src only in a pipeline */
+        ml_loge ("Cannot parse duplicated Tizen video src nodes.");
+        status = ML_ERROR_INVALID_PARAMETER;
+        goto mm_error;
+      }
+    }
+    if (audio_src) {
+      char *src_name = NULL;    /* Do not free this! */
+      int size = 0;
+      guint changed = 0;
+      err = mm_camcorder_get_attributes (hcam, NULL,
+          MMCAM_AUDIOSRC_ELEMENT_NAME, &src_name, &size, NULL);
+
+      if (err != MM_ERROR_NONE || !src_name || size < 1) {
+        ml_loge ("Failed to get attributes of MMCAM_AUDIOSRC_ELEMENT_NAME.");
+        status = ML_ERROR_NOT_SUPPORTED;
+        goto mm_error;
+      }
+      *result = replace_string (*result, ML_TIZEN_CAM_AUDIO_SRC, src_name,
+          " !", &changed);
+      if (changed > 1) {
+        /* Allow one src only in a pipeline */
+        ml_loge ("Cannot parse duplicated Tizen audio src nodes.");
+        status = ML_ERROR_INVALID_PARAMETER;
+        goto mm_error;
+      }
+    }
+#else
 
     /* read ini, type CONFIGURE_TYPE_MAIN */
     err =
         _mmcamcorder_conf_get_info (hcam, 0, MMFW_CONFIG_MAIN_FILE, &cam_conf);
     if (err != MM_ERROR_NONE || !cam_conf) {
       ml_loge ("Failed to load conf %s.", MMFW_CONFIG_MAIN_FILE);
+      status = ML_ERROR_NOT_SUPPORTED;
       goto mm_error;
     }
 
@@ -734,6 +787,7 @@ ml_tizen_mm_convert_element (ml_pipeline_h pipe, gchar ** result,
       if (status != ML_ERROR_NONE)
         goto mm_error;
     }
+#endif
 
     /* initialize rm handle */
     status =
@@ -753,9 +807,10 @@ ml_tizen_mm_convert_element (ml_pipeline_h pipe, gchar ** result,
   status = ML_ERROR_NONE;
 
 mm_error:
+#if !TIZENMMCONF
   if (cam_conf)
     _mmcamcorder_conf_release_info (hcam, &cam_conf);
-
+#endif
   if (hcam)
     mm_camcorder_destroy (hcam);
 
