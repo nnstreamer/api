@@ -56,12 +56,15 @@ typedef enum
 #define release_tizen_resource(...) ml_tizen_release_resource(__VA_ARGS__)
 #define TIZEN5PLUS 1
 
+#if ((TIZENVERSION > 6) || (TIZENVERSION == 6 && TIZENVERSIONMINOR >= 5))
+#define TIZENMMCONF 1
+#endif
+
 #elif (TIZENVERSION < 5)
 #define get_tizen_resource(...) (0)
 #define release_tizen_resource(...) do { } while (0)
 typedef void * mm_resource_manager_h;
 typedef enum { MM_RESOURCE_MANAGER_RES_TYPE_MAX } mm_resource_manager_res_type_e;
-#define TIZEN5PLUS 0
 
 #else
 #error Tizen version is not defined.
@@ -72,7 +75,6 @@ typedef enum { MM_RESOURCE_MANAGER_RES_TYPE_MAX } mm_resource_manager_res_type_e
 #define convert_tizen_element(...) ML_ERROR_NONE
 #define get_tizen_resource(...) ML_ERROR_NONE
 #define release_tizen_resource(...)
-#define TIZEN5PLUS 0
 
 #endif  /* __PRIVILEGE_CHECK_SUPPORT__ */
 
@@ -82,8 +84,14 @@ typedef enum { MM_RESOURCE_MANAGER_RES_TYPE_MAX } mm_resource_manager_res_type_e
 #define convert_tizen_element(...) ML_ERROR_NONE
 #define get_tizen_resource(...) ML_ERROR_NONE
 #define release_tizen_resource(...)
-#define TIZEN5PLUS 0
 #endif  /* __TIZEN__ */
+
+#ifndef TIZEN5PLUS
+#define TIZEN5PLUS 0
+#endif /* TIZEN5PLUS */
+#ifndef TIZENMMCONF
+#define TIZENMMCONF 0
+#endif /* TIZENMMCONF */
 
 #define EOS_MESSAGE_TIME_LIMIT 100
 #define WAIT_PAUSED_TIME_LIMIT 100

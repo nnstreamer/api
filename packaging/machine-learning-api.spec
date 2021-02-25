@@ -185,7 +185,7 @@ Unittests for Tizen Machine Learning API.
 %define enable_tizen_feature_check -Denable-tizen-feature-check=false
 
 %if %{with tizen}
-%define enable_tizen -Denable-tizen=true -Dtizen-version-major=0%{tizen_version_major}
+%define enable_tizen -Denable-tizen=true -Dtizen-version-major=0%{?tizen_version_major} -Dtizen-version-minor=0%{?tizen_version_minor}
 
 %if 0%{?enable_tizen_privilege}
 %define enable_tizen_privilege_check -Denable-tizen-privilege-check=true

@@ -333,7 +333,9 @@ invoke_thread (void *arg)
   }
 
 exit:
-  single_h->state = IDLE;
+  /* Do not set IDLE if JOIN_REQUESTED */
+  if (single_h->state == RUNNING)
+    single_h->state = IDLE;
   g_mutex_unlock (&single_h->mutex);
   return NULL;
 }
