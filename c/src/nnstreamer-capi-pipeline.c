@@ -57,6 +57,154 @@ unlock_return: \
   return ret;
 
 /**
+ * @brief The enumeration for custom data type.
+ */
+typedef enum
+{
+  PIPE_CUSTOM_TYPE_NONE,
+  PIPE_CUSTOM_TYPE_IF,
+  PIPE_CUSTOM_TYPE_FILTER,
+
+  PIPE_CUSTOM_TYPE_MAX
+} pipe_custom_type_e;
+
+/**
+ * @brief The struct for custom data.
+ */
+typedef struct
+{
+  pipe_custom_type_e type;
+  gchar *name;
+  gpointer handle;
+} pipe_custom_data_s;
+
+static void ml_pipeline_custom_filter_ref (ml_custom_easy_filter_h custom);
+static void ml_pipeline_custom_filter_unref (ml_custom_easy_filter_h custom);
+static void ml_pipeline_if_custom_ref (ml_pipeline_if_h custom);
+static void ml_pipeline_if_custom_unref (ml_pipeline_if_h custom);
+
+/**
+ * @brief Global lock for pipeline functions.
+ */
+G_LOCK_DEFINE_STATIC (g_ml_pipe_lock);
+
+/**
+ * @brief The list of custom data. This should be managed with lock.
+ */
+static GList *g_ml_custom_data = NULL;
+
+/**
+ * @brief Finds a position of custom data in the list.
+ * @note This function should be called with lock.
+ */
+static GList *
+pipe_custom_find_link (const pipe_custom_type_e type, const gchar * name)
+{
+  pipe_custom_data_s *data;
+  GList *link;
+
+  g_return_val_if_fail (name != NULL, NULL);
+
+  link = g_ml_custom_data;
+  while (link) {
+    data = (pipe_custom_data_s *) link->data;
+
+    if (data->type == type && g_str_equal (data->name, name))
+      break;
+
+    link = link->next;
+  }
+
+  return link;
+}
+
+/**
+ * @brief Finds custom data matched with data type and name.
+ */
+static pipe_custom_data_s *
+pipe_custom_find_data (const pipe_custom_type_e type, const gchar * name)
+{
+  pipe_custom_data_s *data;
+  GList *link;
+
+  G_LOCK (g_ml_pipe_lock);
+
+  link = pipe_custom_find_link (type, name);
+  data = (link != NULL) ? (pipe_custom_data_s *) link->data : NULL;
+
+  G_UNLOCK (g_ml_pipe_lock);
+  return data;
+}
+
+/**
+ * @brief Adds new custom data into the list.
+ */
+static void
+pipe_custom_add_data (const pipe_custom_type_e type, const gchar * name,
+    gpointer handle)
+{
+  pipe_custom_data_s *data;
+
+  data = g_new0 (pipe_custom_data_s, 1);
+  data->type = type;
+  data->name = g_strdup (name);
+  data->handle = handle;
+
+  G_LOCK (g_ml_pipe_lock);
+  g_ml_custom_data = g_list_prepend (g_ml_custom_data, data);
+  G_UNLOCK (g_ml_pipe_lock);
+}
+
+/**
+ * @brief Removes custom data from the list.
+ */
+static void
+pipe_custom_remove_data (const pipe_custom_type_e type, const gchar * name)
+{
+  pipe_custom_data_s *data;
+  GList *link;
+
+  G_LOCK (g_ml_pipe_lock);
+
+  link = pipe_custom_find_link (type, name);
+  if (link) {
+    data = (pipe_custom_data_s *) link->data;
+
+    g_ml_custom_data = g_list_delete_link (g_ml_custom_data, link);
+
+    g_free (data->name);
+    g_free (data);
+  }
+
+  G_UNLOCK (g_ml_pipe_lock);
+}
+
+/**
+ * @brief The callback function called when the element node with custom data is released.
+ */
+static int
+pipe_custom_destroy_cb (void *handle, void *user_data)
+{
+  pipe_custom_data_s *custom_data;
+
+  custom_data = (pipe_custom_data_s *) handle;
+  g_return_val_if_fail (custom_data != NULL, ML_ERROR_INVALID_PARAMETER);
+
+  switch (custom_data->type) {
+    case PIPE_CUSTOM_TYPE_IF:
+      ml_pipeline_if_custom_unref (custom_data->handle);
+      break;
+    case PIPE_CUSTOM_TYPE_FILTER:
+      ml_pipeline_custom_filter_unref (custom_data->handle);
+      break;
+    default:
+      break;
+  }
+
+  return ML_ERROR_NONE;
+}
+
+/**
  * @brief Internal function to create a referable element in a pipeline
  */
 static ml_pipeline_element *
@@ -354,6 +502,10 @@ cleanup_node (gpointer data)
     }
   }
 
+  if (e->custom_destroy) {
+    e->custom_destroy (e->custom_data, e);
+  }
+
   g_free (e->name);
   if (e->src)
     gst_object_unref (e->src);
@@ -427,6 +579,60 @@ convert_element (ml_pipeline_h pipe, const gchar * description, gchar ** result,
 }
 
 /**
+ * @brief Handle tensor-filter options.
+ */
+static void
+process_tensor_filter_option (ml_pipeline_element * e)
+{
+  gchar *fw = NULL;
+  gchar *model = NULL;
+  pipe_custom_data_s *custom_data;
+
+  g_object_get (G_OBJECT (e->element), "framework", &fw, "model", &model, NULL);
+
+  if (fw && g_ascii_strcasecmp (fw, "custom-easy") == 0) {
+    /* ref to tensor-filter custom-easy handle. */
+    custom_data = pipe_custom_find_data (PIPE_CUSTOM_TYPE_FILTER, model);
+    if (custom_data) {
+      ml_pipeline_custom_filter_ref (custom_data->handle);
+
+      e->custom_destroy = pipe_custom_destroy_cb;
+      e->custom_data = custom_data;
+    }
+  }
+
+  g_free (fw);
+  g_free (model);
+}
+
+/**
+ * @brief Handle tensor-if options.
+ */
+static void
+process_tensor_if_option (ml_pipeline_element * e)
+{
+  gint cv = 0;
+  gchar *cv_option = NULL;
+  pipe_custom_data_s *custom_data;
+
+  g_object_get (G_OBJECT (e->element), "compared-value", &cv,
+      "compared-value-option", &cv_option, NULL);
+
+  if (cv == 5) {
+    /* cv is TIFCV_CUSTOM, ref to tensor-if custom handle. */
+    custom_data = pipe_custom_find_data (PIPE_CUSTOM_TYPE_IF, cv_option);
+    if (custom_data) {
+      ml_pipeline_if_custom_ref (custom_data->handle);
+
+      e->custom_destroy = pipe_custom_destroy_cb;
+      e->custom_data = custom_data;
+    }
+  }
+
+  g_free (cv_option);
+}
+
+/**
  * @brief Iterate elements and prepare element handle.
  */
 static int
@@ -485,6 +691,9 @@ iterate_element (ml_pipeline * pipe_h, GstElement * pipeline,
                 element_type = ML_PIPELINE_ELEMENT_SWITCH_INPUT;
               } else if (g_str_equal (element_name, "output-selector")) {
                 element_type = ML_PIPELINE_ELEMENT_SWITCH_OUTPUT;
+              } else if (g_str_equal (element_name, "tensor_if") ||
+                  g_str_equal (element_name, "tensor_filter")) {
+                element_type = ML_PIPELINE_ELEMENT_COMMON;
               } else {
                 /** @todo CRITICAL HANDLE THIS! */
               }
@@ -506,6 +715,11 @@ iterate_element (ml_pipeline * pipe_h, GstElement * pipeline,
 
                 e = construct_element (elem, pipe_h, name, element_type);
                 if (e != NULL) {
+                  if (g_str_equal (element_name, "tensor_if"))
+                    process_tensor_if_option (e);
+                  else if (g_str_equal (element_name, "tensor_filter"))
+                    process_tensor_filter_option (e);
+
                   g_hash_table_insert (pipe_h->namednodes, g_strdup (name), e);
                 } else {
                   /* allocation failure */
@@ -2041,15 +2255,51 @@ ml_pipeline_get_gst_element (ml_pipeline_h pipe)
 }
 
 /**
+ * @brief Increases ref count of custom-easy filter.
+ */
+static void
+ml_pipeline_custom_filter_ref (ml_custom_easy_filter_h custom)
+{
+  ml_custom_filter_s *c = (ml_custom_filter_s *) custom;
+
+  if (c) {
+    g_mutex_lock (&c->lock);
+    c->ref_count++;
+    g_mutex_unlock (&c->lock);
+  }
+}
+
+/**
+ * @brief Decreases ref count of custom-easy filter.
+ */
+static void
+ml_pipeline_custom_filter_unref (ml_custom_easy_filter_h custom)
+{
+  ml_custom_filter_s *c = (ml_custom_filter_s *) custom;
+
+  if (c) {
+    g_mutex_lock (&c->lock);
+    if (c->ref_count > 0)
+      c->ref_count--;
+    g_mutex_unlock (&c->lock);
+  }
+}
+
+/**
  * @brief Releases custom filter handle.
  */
 static void
 ml_pipeline_custom_free_handle (ml_custom_filter_s * custom)
 {
   if (custom) {
+    g_mutex_lock (&custom->lock);
+
     g_free (custom->name);
     ml_tensors_info_destroy (custom->in_info);
     ml_tensors_info_destroy (custom->out_info);
+
+    g_mutex_unlock (&custom->lock);
+    g_mutex_clear (&custom->lock);
 
     g_free (custom);
   }
@@ -2131,7 +2381,11 @@ ml_pipeline_custom_easy_filter_register (const char *name,
   if ((c = g_new0 (ml_custom_filter_s, 1)) == NULL)
     return ML_ERROR_OUT_OF_MEMORY;
 
+  g_mutex_init (&c->lock);
+
+  g_mutex_lock (&c->lock);
   c->name = g_strdup (name);
+  c->ref_count = 0;
   c->cb = cb;
   c->pdata = user_data;
   ml_tensors_info_create (&c->in_info);
@@ -2149,8 +2403,10 @@ ml_pipeline_custom_easy_filter_register (const char *name,
     nns_loge ("Failed to register custom filter %s.", name);
     status = ML_ERROR_INVALID_PARAMETER;
   }
+  g_mutex_unlock (&c->lock);
 
   if (status == ML_ERROR_NONE) {
+    pipe_custom_add_data (PIPE_CUSTOM_TYPE_FILTER, name, c);
     *custom = c;
   } else {
     ml_pipeline_custom_free_handle (c);
@@ -2166,6 +2422,7 @@ int
 ml_pipeline_custom_easy_filter_unregister (ml_custom_easy_filter_h custom)
 {
   ml_custom_filter_s *c;
+  int status = ML_ERROR_NONE;
 
   check_feature_state ();
 
@@ -2173,14 +2430,62 @@ ml_pipeline_custom_easy_filter_unregister (ml_custom_easy_filter_h custom)
     return ML_ERROR_INVALID_PARAMETER;
 
   c = (ml_custom_filter_s *) custom;
+  g_mutex_lock (&c->lock);
+
+  if (c->ref_count > 0) {
+    ml_loge
+        ("Failed to unregister custom filter %s, it is used in the pipeline.",
+        c->name);
+    status = ML_ERROR_INVALID_PARAMETER;
+    goto done;
+  }
 
   if (NNS_custom_easy_unregister (c->name) != 0) {
     ml_loge ("Failed to unregister custom filter %s.", c->name);
-    return ML_ERROR_INVALID_PARAMETER;
+    status = ML_ERROR_INVALID_PARAMETER;
+    goto done;
   }
 
-  ml_pipeline_custom_free_handle (c);
-  return ML_ERROR_NONE;
+done:
+  g_mutex_unlock (&c->lock);
+
+  if (status == ML_ERROR_NONE) {
+    pipe_custom_remove_data (PIPE_CUSTOM_TYPE_FILTER, c->name);
+    ml_pipeline_custom_free_handle (c);
+  }
+
+  return status;
+}
+
+/**
+ * @brief Increases ref count of tensor_if custom condition.
+ */
+static void
+ml_pipeline_if_custom_ref (ml_pipeline_if_h custom)
+{
+  ml_if_custom_s *c = (ml_if_custom_s *) custom;
+
+  if (c) {
+    g_mutex_lock (&c->lock);
+    c->ref_count++;
+    g_mutex_unlock (&c->lock);
+  }
+}
+
+/**
+ * @brief Decreases ref count of tensor_if custom condition.
+ */
+static void
+ml_pipeline_if_custom_unref (ml_pipeline_if_h custom)
+{
+  ml_if_custom_s *c = (ml_if_custom_s *) custom;
+
+  if (c) {
+    g_mutex_lock (&c->lock);
+    if (c->ref_count > 0)
+      c->ref_count--;
+    g_mutex_unlock (&c->lock);
+  }
 }
 
 /**
@@ -2216,7 +2521,10 @@ ml_pipeline_if_custom (const GstTensorsInfo * info,
     _data->tensors[i].tensor = input[i].data;
 
   /* call invoke callback */
+  g_mutex_lock (&c->lock);
   status = c->cb (in_data, ml_info, result, c->pdata);
+  g_mutex_unlock (&c->lock);
+
   if (status == 0)
     ret = TRUE;
 
@@ -2233,8 +2541,16 @@ done:
 static void
 ml_pipeline_if_custom_free (ml_if_custom_s * custom)
 {
-  g_free (custom->name);
-  g_free (custom);
+  if (custom) {
+    g_mutex_lock (&custom->lock);
+
+    g_free (custom->name);
+
+    g_mutex_unlock (&custom->lock);
+    g_mutex_clear (&custom->lock);
+
+    g_free (custom);
+  }
 }
 
 /**
@@ -2259,7 +2575,11 @@ ml_pipeline_tensor_if_custom_register (const char *name,
   if ((c = g_try_new0 (ml_if_custom_s, 1)) == NULL)
     return ML_ERROR_OUT_OF_MEMORY;
 
+  g_mutex_init (&c->lock);
+
+  g_mutex_lock (&c->lock);
   c->name = g_strdup (name);
+  c->ref_count = 0;
   c->cb = cb;
   c->pdata = user_data;
 
@@ -2267,8 +2587,10 @@ ml_pipeline_tensor_if_custom_register (const char *name,
     nns_loge ("Failed to register tensor_if custom condition %s.", name);
     status = ML_ERROR_STREAMS_PIPE;
   }
+  g_mutex_unlock (&c->lock);
 
   if (status == ML_ERROR_NONE) {
+    pipe_custom_add_data (PIPE_CUSTOM_TYPE_IF, name, c);
     *if_custom = c;
   } else {
     ml_pipeline_if_custom_free (c);
@@ -2284,6 +2606,7 @@ int
 ml_pipeline_tensor_if_custom_unregister (ml_pipeline_if_h if_custom)
 {
   ml_if_custom_s *c;
+  int status = ML_ERROR_NONE;
 
   check_feature_state ();
 
@@ -2291,13 +2614,29 @@ ml_pipeline_tensor_if_custom_unregister (ml_pipeline_if_h if_custom)
     return ML_ERROR_INVALID_PARAMETER;
 
   c = (ml_if_custom_s *) if_custom;
+  g_mutex_lock (&c->lock);
+
+  if (c->ref_count > 0) {
+    ml_loge
+        ("Failed to unregister custom condition %s, it is used in the pipeline.",
+        c->name);
+    status = ML_ERROR_INVALID_PARAMETER;
+    goto done;
+  }
 
   if (nnstreamer_if_custom_unregister (c->name) != 0) {
     ml_loge ("Failed to unregister tensor_if custom condition %s.", c->name);
-    return ML_ERROR_STREAMS_PIPE;
+    status = ML_ERROR_STREAMS_PIPE;
+    goto done;
   }
 
-  ml_pipeline_if_custom_free (c);
+done:
+  g_mutex_unlock (&c->lock);
 
-  return ML_ERROR_NONE;
+  if (status == ML_ERROR_NONE) {
+    pipe_custom_remove_data (PIPE_CUSTOM_TYPE_IF, c->name);
+    ml_pipeline_if_custom_free (c);
+  }
+
+  return status;
 }

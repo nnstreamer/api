@@ -10117,6 +10117,63 @@ TEST (nnstreamer_capi_custom, register_filter_10_n)
 }
 
 /**
+ * @brief Test for custom-easy unregistration.
+ * @detail Failed if pipeline is constructed.
+ */
+TEST (nnstreamer_capi_custom, register_filter_11_n)
+{
+  ml_pipeline_h pipe1, pipe2;
+  ml_custom_easy_filter_h custom;
+  ml_tensors_info_h in_info, out_info;
+  ml_tensor_dimension dim = { 2, 1, 1, 1 };
+  int status;
+  gchar *pipeline = g_strdup_printf (
+      "appsrc name=srcx ! other/tensor,dimension=(string)2:1:1:1,type=(string)int8,framerate=(fraction)0/1 ! "
+      "tensor_filter framework=custom-easy model=tfilter_unreg_test ! tensor_sink name=sinkx");
+
+  ml_tensors_info_create (&in_info);
+  ml_tensors_info_set_count (in_info, 1);
+  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_INT8);
+  ml_tensors_info_set_tensor_dimension (in_info, 0, dim);
+
+  ml_tensors_info_create (&out_info);
+  ml_tensors_info_set_count (out_info, 1);
+  ml_tensors_info_set_tensor_type (out_info, 0, ML_TENSOR_TYPE_FLOAT32);
+  ml_tensors_info_set_tensor_dimension (out_info, 0, dim);
+
+  status = ml_pipeline_custom_easy_filter_register ("tfilter_unreg_test",
+      in_info, out_info, test_custom_easy_cb, NULL, &custom);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_construct (pipeline, NULL, NULL, &pipe1);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_construct (pipeline, NULL, NULL, &pipe2);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  /* failed to unregister custom-easy filter if pipeline is constructed */
+  status = ml_pipeline_custom_easy_filter_unregister (custom);
+  EXPECT_NE (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_destroy (pipe1);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_custom_easy_filter_unregister (custom);
+  EXPECT_NE (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_destroy (pipe2);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  /* succesfully done if all pipelines with custom-easy filter are destroyed */
+  status = ml_pipeline_custom_easy_filter_unregister (custom);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  ml_tensors_info_destroy (in_info);
+  ml_tensors_info_destroy (out_info);
+  g_free (pipeline);
+}
+
+/**
  * @brief Callback for tensor_if custom condition.
  */
 static int
@@ -10350,23 +10407,47 @@ TEST (nnstreamer_capi_if, unregister_01_n)
 
 /**
  * @brief Test for tensor_if custom unregistration.
- * @detail Invalid params.
+ * @detail Failed if pipeline is constructed.
  */
 TEST (nnstreamer_capi_if, unregister_02_n)
 {
+  ml_pipeline_h pipe1, pipe2;
   ml_pipeline_if_h custom;
   int status;
+  gchar *pipeline = g_strdup_printf (
+      "appsrc name=appsrc ! other/tensor,dimension=(string)4:1:1:1, type=(string)uint8,framerate=(fraction)0/1 ! "
+      "tensor_if name=tif compared-value=CUSTOM compared-value-option=tif_unreg_test then=PASSTHROUGH else=PASSTHROUGH "
+      "tif.src_0 ! queue ! tensor_sink name=sink_true sync=false async=false "
+      "tif.src_1 ! queue ! tensor_sink name=sink_false sync=false async=false");
 
-  status = ml_pipeline_tensor_if_custom_register ("tif_custom_cb_name",
+  status = ml_pipeline_tensor_if_custom_register ("tif_unreg_test",
       test_if_custom_cb, NULL, &custom);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
+  status = ml_pipeline_construct (pipeline, NULL, NULL, &pipe1);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_construct (pipeline, NULL, NULL, &pipe2);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  /* failed to unregister tensor_if custom if pipeline is constructed */
+  status = ml_pipeline_tensor_if_custom_unregister (custom);
+  EXPECT_NE (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_destroy (pipe1);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_tensor_if_custom_unregister (custom);
+  EXPECT_NE (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_destroy (pipe2);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  /* succesfully done if all pipelines with custom condition are destroyed */
   status = ml_pipeline_tensor_if_custom_unregister (custom);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  /* test to unregister tensor_if custom twice */
-  status = ml_pipeline_tensor_if_custom_unregister (custom);
-  EXPECT_NE (status, ML_ERROR_NONE);
+  g_free (pipeline);
 }
 
 /**
