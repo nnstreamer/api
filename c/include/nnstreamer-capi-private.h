@@ -97,6 +97,8 @@ extern "C" {
  */
 typedef struct {
   char *name;
+  unsigned int ref_count;
+  GMutex lock;
   ml_tensors_info_h in_info;
   ml_tensors_info_h out_info;
   ml_custom_easy_invoke_cb cb;
@@ -159,6 +161,8 @@ typedef struct {
  */
 typedef struct {
   char *name;
+  unsigned int ref_count;
+  GMutex lock;
   ml_pipeline_if_custom_cb cb;
   void *pdata;
 } ml_if_custom_s;
@@ -201,6 +205,9 @@ typedef struct _ml_pipeline_element {
 
   GMutex lock; /**< Lock for internal values */
   gboolean is_media_stream;
+
+  ml_handle_destroy_cb custom_destroy;
+  gpointer custom_data;
 } ml_pipeline_element;
 
 /**
