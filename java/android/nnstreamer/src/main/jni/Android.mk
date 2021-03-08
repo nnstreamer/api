@@ -8,6 +8,10 @@ ifndef NNSTREAMER_ROOT
 $(error NNSTREAMER_ROOT is not defined!)
 endif
 
+ifndef ML_API_ROOT
+$(error ML_API_ROOT is not defined!)
+endif
+
 ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
 GSTREAMER_ROOT        := $(GSTREAMER_ROOT_ANDROID)/armv7
 else ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
@@ -19,6 +23,12 @@ GSTREAMER_ROOT        := $(GSTREAMER_ROOT_ANDROID)/x86_64
 else
 $(error Target arch ABI not supported: $(TARGET_ARCH_ABI))
 endif
+
+# Set ML API Version
+ML_API_VERSION  := 1.7.2
+ML_API_VERSION_MAJOR := $(word 1,$(subst ., ,${ML_API_VERSION}))
+ML_API_VERSION_MINOR := $(word 2,$(subst ., ,${ML_API_VERSION}))
+ML_API_VERSION_MICRO := $(word 3,$(subst ., ,${ML_API_VERSION}))
 
 #------------------------------------------------------
 # API build option
@@ -51,18 +61,17 @@ $(error DO NOT enable SNAP and SNPE both. The app would fail to use DSP or NPU r
 endif
 endif
 
-# Common options
-NNS_API_INCLUDES := \
-    $(NNSTREAMER_INCLUDES) \
-    $(NNSTREAMER_CAPI_INCLUDES) \
-    $(GST_HEADERS_COMMON)
-
-NNS_API_FLAGS := -DVERSION=\"$(NNSTREAMER_VERSION)\"
+NNS_API_FLAGS := -DVERSION=\"$(ML_API_VERSION)\"
 NNS_SUBPLUGINS :=
 
 ifeq ($(NNSTREAMER_API_OPTION),single)
 NNS_API_FLAGS += -DNNS_SINGLE_ONLY=1
 endif
+
+#------------------------------------------------------
+# nnstreamer + ML API build
+#------------------------------------------------------
+include $(LOCAL_PATH)/Android-nnstreamer.mk
 
 #------------------------------------------------------
 # external libs and sub-plugins
@@ -108,11 +117,6 @@ NNS_API_FLAGS += -DENABLE_DEC_FLATBUF=1
 NNS_SUBPLUGINS += flatbuffers-subplugin
 endif
 
-#------------------------------------------------------
-# nnstreamer
-#------------------------------------------------------
-include $(LOCAL_PATH)/Android-nnstreamer.mk
-
 # Remove any duplicates.
 NNS_SUBPLUGINS := $(sort $(NNS_SUBPLUGINS))
 
@@ -133,7 +137,7 @@ LOCAL_SRC_FILES += \
     nnstreamer-native-pipeline.c
 endif
 
-LOCAL_C_INCLUDES := $(NNS_API_INCLUDES)
+LOCAL_C_INCLUDES := $(NNSTREAMER_INCLUDES) $(GST_HEADERS_COMMON)
 LOCAL_CFLAGS := -O3 -fPIC $(NNS_API_FLAGS)
 LOCAL_STATIC_LIBRARIES := nnstreamer $(NNS_SUBPLUGINS)
 LOCAL_SHARED_LIBRARIES := gstreamer_android
