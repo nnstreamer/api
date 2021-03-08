@@ -1,5 +1,5 @@
 #------------------------------------------------------
-# nnstreamer
+# nnstreamer + ML API
 #------------------------------------------------------
 LOCAL_PATH := $(call my-dir)
 
@@ -7,19 +7,26 @@ ifndef NNSTREAMER_ROOT
 $(error NNSTREAMER_ROOT is not defined!)
 endif
 
-include $(NNSTREAMER_ROOT)/jni/nnstreamer.mk
+ifndef ML_API_ROOT
+$(error ML_API_ROOT is not defined!)
+endif
 
+# nnstreamer c-api
+NNSTREAMER_CAPI_INCLUDES := \
+    $(NNSTREAMER_ROOT)/gst/nnstreamer/tensor_filter \
+    $(ML_API_ROOT)/c/include/platform \
+    $(ML_API_ROOT)/c/include
+
+# nnstreamer and single-shot api
 NNSTREAMER_SRC_FILES := \
-    $(NNSTREAMER_COMMON_SRCS)
+    $(NNSTREAMER_COMMON_SRCS) \
+    $(ML_API_ROOT)/c/src/nnstreamer-capi-util.c \
+    $(ML_API_ROOT)/c/src/nnstreamer-capi-single.c
 
-ifeq ($(NNSTREAMER_API_OPTION),single)
-# single-shot only
+# pipeline api and nnstreamer plugins
+ifneq ($(NNSTREAMER_API_OPTION),single)
 NNSTREAMER_SRC_FILES += \
-    $(NNSTREAMER_SINGLE_SRCS)
-else
-# capi and nnstreamer plugins
-NNSTREAMER_SRC_FILES += \
-    $(NNSTREAMER_CAPI_SRCS) \
+    $(ML_API_ROOT)/c/src/nnstreamer-capi-pipeline.c \
     $(NNSTREAMER_PLUGINS_SRCS) \
     $(NNSTREAMER_SOURCE_AMC_SRCS) \
     $(NNSTREAMER_DECODER_BB_SRCS) \
@@ -34,7 +41,8 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE := nnstreamer
 LOCAL_SRC_FILES := $(sort $(NNSTREAMER_SRC_FILES))
-LOCAL_C_INCLUDES := $(NNS_API_INCLUDES)
+LOCAL_C_INCLUDES := $(NNSTREAMER_INCLUDES) $(GST_HEADERS_COMMON) $(NNSTREAMER_CAPI_INCLUDES)
+LOCAL_EXPORT_C_INCLUDES := $(NNSTREAMER_CAPI_INCLUDES)
 LOCAL_CFLAGS := -O3 -fPIC $(NNS_API_FLAGS)
 LOCAL_CXXFLAGS := -std=c++11 -O3 -fPIC -frtti -fexceptions $(NNS_API_FLAGS)
 
