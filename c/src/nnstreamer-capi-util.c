@@ -35,6 +35,7 @@ static const char *ml_nnfw_subplugin_name[] = {
   [ML_NNFW_TYPE_ARMNN] = "armnn",
   [ML_NNFW_TYPE_SNPE] = "snpe",
   [ML_NNFW_TYPE_PYTORCH] = "pytorch",
+  [ML_NNFW_TYPE_NNTR_INF] = "nntrainer",
   NULL
 };
 
