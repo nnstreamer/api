@@ -52,10 +52,11 @@
 # Package / sub-package definitions
 Name:		capi-machine-learning-inference
 Summary:	Tizen native API for NNStreamer
-# Synchronize the version information with NNStreamer.
-# 1. Ubuntu : ./debian/changelog
-# 2. Tizen  : ./packaging/machine-learning-api.spec
-# 3. Meson  : ./meson.build
+# Synchronize the version information for ML API.
+# 1. Ubuntu  : ./debian/changelog
+# 2. Tizen   : ./packaging/machine-learning-api.spec
+# 3. Meson   : ./meson.build
+# 4. Android : ./java/android/nnstreamer/src/main/jni/Android.mk
 Version:	1.7.2
 Release:	0
 Group:		Machine Learning/ML Framework
