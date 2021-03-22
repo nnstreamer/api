@@ -144,8 +144,8 @@ You can construct a data stream pipeline with neural networks easily.
 %package devel
 Summary:	Tizen Native API Devel Kit for NNStreamer
 Group:		Machine Learning/ML Framework
-Requires:	capi-machine-learning-inference = %{version}-%{release}
-Requires:	capi-machine-learning-common-devel
+Requires:	nnstreamer-devel
+Requires:	capi-machine-learning-common-devel = %{version}-%{release}
 %description devel
 Developmental kit for Tizen Native NNStreamer API.
 
