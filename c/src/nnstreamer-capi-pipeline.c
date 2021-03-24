@@ -808,8 +808,9 @@ construct_pipeline_internal (const char *pipeline_description,
   g_free (description);
 
   if (pipeline == NULL || err) {
-    ml_loge ("Cannot parse and launch the given pipeline = [%s], %s",
-        pipeline_description, (err) ? err->message : "unknown reason");
+    ml_loge ("Cannot parse and launch the given pipeline = [%s]",
+        pipeline_description);
+    ml_loge ("  - Error Message: %s", (err) ? err->message : "unknown reason");
     g_clear_error (&err);
 
     if (pipeline)
