@@ -50,12 +50,18 @@ LOCAL_SRC_FILES := $(FLATBUF_LIB_PATH)/libflatbuffers.a
 include $(PREBUILT_STATIC_LIBRARY)
 
 #------------------------------------------------------
-# tensor-decoder sub-plugin for flatbuffers
+# converter/decoder sub-plugins for flatbuffers
 #------------------------------------------------------
+FLATBUF_SRC_FILES := \
+    $(NNSTREAMER_CONVERTER_FLATBUF_SRCS) \
+    $(NNSTREAMER_CONVERTER_FLEXBUF_SRCS) \
+    $(NNSTREAMER_DECODER_FLATBUF_SRCS) \
+    $(NNSTREAMER_DECODER_FLEXBUF_SRCS)
+
 include $(CLEAR_VARS)
 
 LOCAL_MODULE := flatbuffers-subplugin
-LOCAL_SRC_FILES := $(NNSTREAMER_DECODER_FLATBUF_SRCS)
+LOCAL_SRC_FILES := $(sort $(FLATBUF_SRC_FILES))
 LOCAL_C_INCLUDES := $(LOCAL_PATH) $(FLATBUF_INCLUDES) $(NNSTREAMER_INCLUDES) $(GST_HEADERS_COMMON)
 LOCAL_STATIC_LIBRARIES := flatbuffers-lib
 
