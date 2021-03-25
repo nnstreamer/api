@@ -52,8 +52,8 @@ ENABLE_SNPE := false
 # PyTorch
 ENABLE_PYTORCH := false
 
-# Decoder sub-plugin for flatbuffers support
-ENABLE_DECODER_FLATBUF := false
+# Converter/decoder sub-plugin for flatbuffers support
+ENABLE_FLATBUF := false
 
 ifeq ($(ENABLE_SNAP),true)
 ifeq ($(ENABLE_SNPE),true)
@@ -111,10 +111,12 @@ NNS_SUBPLUGINS += pytorch-subplugin
 include $(LOCAL_PATH)/Android-pytorch.mk
 endif
 
-ifeq ($(ENABLE_DECODER_FLATBUF),true)
-include $(LOCAL_PATH)/Android-dec-flatbuf.mk
-NNS_API_FLAGS += -DENABLE_DEC_FLATBUF=1
+ifneq ($(NNSTREAMER_API_OPTION),single)
+ifeq ($(ENABLE_FLATBUF),true)
+include $(LOCAL_PATH)/Android-flatbuf.mk
+NNS_API_FLAGS += -DENABLE_FLATBUF=1
 NNS_SUBPLUGINS += flatbuffers-subplugin
+endif
 endif
 
 # Remove any duplicates.

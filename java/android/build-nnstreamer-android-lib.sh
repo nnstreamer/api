@@ -56,10 +56,10 @@
 ##@@                    by appending ':version' [1.13.1 is the default].
 ##@@       'no'       : build without the sub-plugin for tensorflow-lite
 ##@@ 
-##@@ options for tensor decoder sub-plugins:
-##@@   --enable_decoder_flatbuf=(yes|no)
+##@@ options for tensor converter/decoder sub-plugins:
+##@@   --enable_flatbuf=(yes|no)
 ##@@       'yes'      : [default]
-##@@       'no'       : build without the sub-plugin for FlatBuffers
+##@@       'no'       : build without the sub-plugin for FlatBuffers and FlexBuffers
 ##@@ 
 ##@@ For example, to build library with core plugins for arm64-v8a
 ##@@  ./build-nnstreamer-android-lib.sh --api_option=lite --target_abi=arm64-v8a
@@ -104,9 +104,9 @@ pytorch_vers_support="1.8.0"
 # Enable tensorflow-lite
 enable_tflite="yes"
 
-# Enable the flatbuffer decoder by default
-enable_decoder_flatbuf="yes"
-decoder_flatbuf_ver="1.12.0"
+# Enable the flatbuffer converter/decoder by default
+enable_flatbuf="yes"
+flatbuf_ver="1.12.0"
 
 # Set tensorflow-lite version (available: 1.9.0 / 1.13.1 / 1.15.2 / 2.3.0)
 tf_lite_ver="1.13.1"
@@ -223,8 +223,8 @@ for arg in "$@"; do
                 fi
             fi
             ;;
-        --enable_decoder_flatbuf=*)
-            enable_decoder_flatbuf=${arg#*=}
+        --enable_flatbuf=*)
+            enable_flatbuf=${arg#*=}
             ;;
     esac
 done
@@ -289,8 +289,8 @@ if [[ $release_bintray == "yes" ]]; then
     echo "Release version: $release_version user: $bintray_user_name"
 fi
 
-if [[ $enable_decoder_flatbuf == "yes" ]]; then
-    echo "Build with flatbuffers v$decoder_flatbuf_ver for the decoder sub-plugin"
+if [[ $enable_flatbuf == "yes" ]]; then
+    echo "Build with flatbuffers v$flatbuf_ver for the converter/decoder sub-plugin"
 fi
 
 # Set library name
@@ -388,8 +388,8 @@ if [[ $enable_pytorch == "yes" ]]; then
     wget --directory-prefix=./$build_dir/external https://raw.githubusercontent.com/nnstreamer/nnstreamer-android-resource/master/external/pytorch-$pytorch_ver.tar.xz
 fi
 
-if [[ $enable_decoder_flatbuf == "yes" ]]; then
-    wget --directory-prefix=./$build_dir/external https://raw.githubusercontent.com/nnstreamer/nnstreamer-android-resource/master/external/flatbuffers-${decoder_flatbuf_ver}.tar.xz
+if [[ $enable_flatbuf == "yes" ]]; then
+    wget --directory-prefix=./$build_dir/external https://raw.githubusercontent.com/nnstreamer/nnstreamer-android-resource/master/external/flatbuffers-${flatbuf_ver}.tar.xz
 fi
 
 pushd ./$build_dir
@@ -479,11 +479,10 @@ if [[ $enable_tflite == "yes" ]]; then
     tar -xJf ./external/tensorflow-lite-$tf_lite_ver.tar.xz -C ./nnstreamer/src/main/jni
 fi
 
-
-if [[ $enable_decoder_flatbuf == "yes" ]]; then
-    sed -i "s|ENABLE_DECODER_FLATBUF := false|ENABLE_DECODER_FLATBUF := true|" nnstreamer/src/main/jni/Android.mk
-    sed -i "s|FLATBUF_VER := @FLATBUF_VER@|FLATBUF_VER := ${decoder_flatbuf_ver}|" nnstreamer/src/main/jni/Android-dec-flatbuf.mk
-    tar -xJf ./external/flatbuffers-${decoder_flatbuf_ver}.tar.xz -C ./nnstreamer/src/main/jni
+if [[ $enable_flatbuf == "yes" ]]; then
+    sed -i "s|ENABLE_FLATBUF := false|ENABLE_FLATBUF := true|" nnstreamer/src/main/jni/Android.mk
+    sed -i "s|FLATBUF_VER := @FLATBUF_VER@|FLATBUF_VER := ${flatbuf_ver}|" nnstreamer/src/main/jni/Android-flatbuf.mk
+    tar -xJf ./external/flatbuffers-${flatbuf_ver}.tar.xz -C ./nnstreamer/src/main/jni
 fi
 
 # Add dependency for release
