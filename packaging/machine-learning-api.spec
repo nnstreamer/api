@@ -62,7 +62,7 @@ Release:	0
 Group:		Machine Learning/ML Framework
 Packager:	MyungJoo Ham <myungjoo.ham@samsung.com>
 License:	Apache-2.0
-Source0:	machine-learning-api-%{version}.tar.gz
+Source0:	machine-learning-api-%{version}.tar
 Source1001:	capi-machine-learning-inference.manifest
 
 ## Define build requirements ##
