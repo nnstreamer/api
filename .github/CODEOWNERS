@@ -1,14 +1,14 @@
 # C-API
-/c/* @jaeyun-jung @again4you @myungjoo
+/c/* @jaeyun-jung @again4you @myungjoo @helloahn @anyj0527 @gichan-jang
 
 # C++-API (SNAP & nntrainer, nnstreamer-pipeline)
 /cpp/* @nnstreamer/snap @jijoongmoon @kparichay @myungjoo @again4you
 
 # Java-API
-/java/* @jaeyun-jung @again4you @myungjoo
+/java/* @jaeyun-jung @again4you @myungjoo @helloahn @anyj0527 @gichan-jang
 
 # .NET-API
-/dotnet/* @again4you @jaeyun-jung @myungjoo
+/dotnet/* @again4you @jaeyun-jung @myungjoo @gichan-jang
 
 # Others (integration, infra/tool files)
-* @myungjoo
+* @myungjoo @jijoongmoon @again4you @jaeyun-jung
