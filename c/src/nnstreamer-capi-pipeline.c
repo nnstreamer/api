@@ -1076,6 +1076,40 @@ ml_pipeline_stop (ml_pipeline_h pipe)
   return ML_ERROR_NONE;
 }
 
+/**
+ * @brief Clears all data and resets the running-time of the pipeline (more info in nnstreamer.h)
+ */
+int
+ml_pipeline_flush (ml_pipeline_h pipe, bool start)
+{
+  ml_pipeline *p = pipe;
+  int status;
+
+  check_feature_state ();
+
+  if (p == NULL)
+    return ML_ERROR_INVALID_PARAMETER;
+
+  status = ml_pipeline_stop (pipe);
+  if (status != ML_ERROR_NONE)
+    return status;
+
+  ml_logi ("The pipeline is stopped, clear all data from the pipeline.");
+
+  /* send flush event to pipeline */
+  g_mutex_lock (&p->lock);
+  if (!gst_element_send_event (p->element, gst_event_new_flush_start ()) ||
+      !gst_element_send_event (p->element, gst_event_new_flush_stop (TRUE))) {
+    ml_logw ("Error occurs while sending flush event.");
+  }
+  g_mutex_unlock (&p->lock);
+
+  if (start && status == ML_ERROR_NONE)
+    status = ml_pipeline_start (pipe);
+
+  return status;
+}
+
 /****************************************************
  ** NNStreamer Pipeline Sink/Src Control           **
  ****************************************************/
