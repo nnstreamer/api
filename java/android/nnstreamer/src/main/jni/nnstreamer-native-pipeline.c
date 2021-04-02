@@ -554,6 +554,28 @@ nns_native_pipe_stop (JNIEnv * env, jobject thiz, jlong handle)
 /**
  * @brief Native method for pipeline API.
  */
+static jboolean
+nns_native_pipe_flush (JNIEnv * env, jobject thiz, jlong handle, jboolean start)
+{
+  pipeline_info_s *pipe_info = NULL;
+  ml_pipeline_h pipe;
+  int status;
+
+  pipe_info = CAST_TO_TYPE (handle, pipeline_info_s *);
+  pipe = pipe_info->pipeline_handle;
+
+  status = ml_pipeline_flush (pipe, (start == JNI_TRUE));
+  if (status != ML_ERROR_NONE) {
+    nns_loge ("Failed to flush the pipeline.");
+    return JNI_FALSE;
+  }
+
+  return JNI_TRUE;
+}
+
+/**
+ * @brief Native method for pipeline API.
+ */
 static jint
 nns_native_pipe_get_state (JNIEnv * env, jobject thiz, jlong handle)
 {
@@ -913,6 +935,7 @@ static JNINativeMethod native_methods_pipeline[] = {
   {"nativeDestroy", "(J)V", (void *) nns_native_pipe_destroy},
   {"nativeStart", "(J)Z", (void *) nns_native_pipe_start},
   {"nativeStop", "(J)Z", (void *) nns_native_pipe_stop},
+  {"nativeFlush", "(JZ)Z", (void *) nns_native_pipe_flush},
   {"nativeGetState", "(J)I", (void *) nns_native_pipe_get_state},
   {"nativeInputData", "(JLjava/lang/String;L" NNS_CLS_TDATA ";)Z",
       (void *) nns_native_pipe_input_data},

@@ -34,6 +34,7 @@ public final class Pipeline implements AutoCloseable {
     private native void nativeDestroy(long handle);
     private native boolean nativeStart(long handle);
     private native boolean nativeStop(long handle);
+    private native boolean nativeFlush(long handle, boolean start);
     private native int nativeGetState(long handle);
     private native boolean nativeInputData(long handle, String name, TensorsData data);
     private native String[] nativeGetSwitchPads(long handle, String name);
@@ -199,6 +200,23 @@ public final class Pipeline implements AutoCloseable {
 
         if (!nativeStop(mHandle)) {
             throw new IllegalStateException("Failed to stop the pipeline");
+        }
+    }
+
+    /**
+     * Clears all data and resets the pipeline.
+     * During the flush operation, the pipeline is stopped and after the operation is done,
+     * the pipeline is resumed and ready to start the data flow.
+     *
+     * @param start The flag to start the pipeline after the flush operation is done
+     *
+     * @throws IllegalStateException if failed to flush the pipeline
+     */
+    public void flush(boolean start) {
+        checkPipelineHandle();
+
+        if (!nativeFlush(mHandle, start)) {
+            throw new IllegalStateException("Failed to flush the pipeline");
         }
     }
 
