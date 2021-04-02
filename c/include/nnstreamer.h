@@ -362,6 +362,20 @@ int ml_pipeline_start (ml_pipeline_h pipe);
  */
 int ml_pipeline_stop (ml_pipeline_h pipe);
 
+/**
+ * @brief Clears all data and resets the pipeline.
+ * @details During the flush operation, the pipeline is stopped and after the operation is done, the pipeline is resumed and ready to start the data flow.
+ * @since_tizen 6.5
+ * @param[in] pipe The pipeline to be flushed.
+ * @param[in] start @c true to start the pipeline after the flush operation is done.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
+ * @retval #ML_ERROR_STREAMS_PIPE Failed to flush the pipeline.
+ */
+int ml_pipeline_flush (ml_pipeline_h pipe, bool start);
+
 /****************************************************
  ** NNStreamer Pipeline Sink/Src Control           **
  ****************************************************/
