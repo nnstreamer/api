@@ -37,6 +37,7 @@ static const char *ml_nnfw_subplugin_name[] = {
   [ML_NNFW_TYPE_PYTORCH] = "pytorch",
   [ML_NNFW_TYPE_NNTR_INF] = "nntrainer",
   [ML_NNFW_TYPE_VD_AIFW] = "vd_aifw",
+  [ML_NNFW_TYPE_SRNPU] = "srnpu",
   NULL
 };
 
