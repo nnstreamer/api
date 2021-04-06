@@ -658,7 +658,7 @@ TEST (nnstreamer_nnfw_mlapi, multimodal_01_p)
   pipeline = g_strdup_printf (
       "appsrc name=appsrc_0 ! other/tensor,dimension=(string)3:112:224:1,type=(string)uint8,framerate=(fraction)0/1 ! mux.sink_0 "
       "appsrc name=appsrc_1 ! other/tensor,dimension=(string)3:112:224:1,type=(string)uint8,framerate=(fraction)0/1 ! mux.sink_1 "
-      "tensor_merge mode=linear option=1 sync_mode=nosync name=mux ! "
+      "tensor_merge mode=linear option=1 sync-mode=nosync name=mux ! "
       "tensor_filter framework=nnfw input=3:224:224:1 inputtype=uint8 model=%s ! tensor_sink name=tensor_sink",
       model_file);
 
