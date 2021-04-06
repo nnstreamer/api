@@ -1,0 +1,28 @@
+version: 2
+test:
+  - name: JAVA_NNSTREAMER_API
+    testCaseLanguage: JAVA
+    testFW: JUNIT
+    testCaseFolder:
+      - ./java/android/nnstreamer/src/androidTest/java/org/nnsuite/nnstreamer
+
+    testFile:
+      - extension: java
+        starts:
+          - APITest
+ 
+    testCase:
+      - condition:
+        - annotation:
+            match:
+              - '@Test'
+
+    negativeTestCase:
+      - condition:
+        - testName:
+            ends:
+              - _n
+
+    positiveTestCase:
+      - condition:
+        - inverse: negativeTestCase

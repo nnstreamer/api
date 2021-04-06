@@ -1,0 +1,28 @@
+version: 2
+test:
+  - name: TIZEN_NNSTREAMER_API
+    testCaseLanguage: CPP
+    testFW: GTEST
+    testCaseFolder:
+      - ./tests/
+  
+    testFile:
+      - extension: cc
+        starts:
+          - unittest
+ 
+    testCase:
+      - condition:
+        - functionName:
+            starts:
+              - 'TEST'
+ 
+    negativeTestCase:
+      - condition:
+        - testName:
+            ends:
+              - _n
+
+    positiveTestCase:
+      - condition:
+        - inverse: negativeTestCase
