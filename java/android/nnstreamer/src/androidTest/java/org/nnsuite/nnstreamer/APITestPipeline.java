@@ -2069,6 +2069,68 @@ public class APITestPipeline {
         } catch (Exception e) {
             fail();
         }
+    }
 
+    @Test
+    public void testFlushPipeline() {
+        String desc = "appsrc name=srcx ! " +
+                "other/tensor,dimension=(string)10:1:1:1,type=(string)int32,framerate=(fraction)0/1 ! " +
+                "tensor_aggregator frames-in=10 frames-out=3 frames-flush=3 frames-dim=0 ! " +
+                "tensor_sink name=sinkx";
+
+        try (Pipeline pipe = new Pipeline(desc)) {
+            TensorsInfo info = new TensorsInfo();
+            info.addTensorInfo(NNStreamer.TensorType.INT32, new int[]{10,1,1,1});
+
+            TensorsData input = info.allocate();
+            ByteBuffer buffer = input.getTensorData(0);
+
+            for (int i = 0; i < 10; i++) {
+                buffer.putInt(i * 4, i + 1);
+            }
+
+            input.setTensorData(0, buffer);
+
+            /* register sink callback */
+            pipe.registerSinkCallback("sinkx", new Pipeline.NewDataCallback() {
+                @Override
+                public void onNewDataReceived(TensorsData data) {
+                    mReceived++;
+
+                    if (mReceived == 1) {
+                        ByteBuffer buffer = data.getTensorData(0);
+
+                        if (buffer.getInt(0) != 1 ||
+                            buffer.getInt(4) != 2 ||
+                            buffer.getInt(8) != 3) {
+                            mInvalidState = true;
+                        }
+                    }
+                }
+            });
+
+            /* start pipeline */
+            pipe.start();
+
+            /* push input buffer and check received data */
+            pipe.inputData("srcx", input);
+            Thread.sleep(200);
+            assertFalse(mInvalidState);
+            assertTrue(mReceived > 0);
+
+            /* flush the pipeline and push again */
+            pipe.flush(true);
+            mReceived = 0;
+
+            pipe.inputData("srcx", input);
+            Thread.sleep(200);
+            assertFalse(mInvalidState);
+            assertTrue(mReceived > 0);
+
+            /* stop pipeline */
+            pipe.stop();
+        } catch (Exception e) {
+            fail();
+        }
     }
 }

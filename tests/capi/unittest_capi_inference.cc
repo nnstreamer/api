@@ -10451,6 +10451,119 @@ TEST (nnstreamer_capi_if, unregister_02_n)
 }
 
 /**
+ * @brief A tensor-sink callback for sink handle in a pipeline
+ */
+static void
+test_sink_callback_flush (const ml_tensors_data_h data,
+    const ml_tensors_info_h info, void *user_data)
+{
+  guint *count = (guint *) user_data;
+
+  G_LOCK (callback_lock);
+  *count = *count + 1;
+
+  /* check first data */
+  if (*count == 1) {
+    gint *received;
+    size_t data_size;
+
+    ml_tensors_data_get_tensor_data (data, 0, (void **) &received, &data_size);
+    EXPECT_EQ (data_size, 3 * sizeof (gint));
+    EXPECT_EQ (received[0], 1);
+    EXPECT_EQ (received[1], 2);
+    EXPECT_EQ (received[2], 3);
+  }
+  G_UNLOCK (callback_lock);
+}
+
+/**
+ * @brief Test NNStreamer pipeline flush.
+ */
+TEST (nnstreamer_capi_flush, success_01_p)
+{
+  ml_pipeline_h handle;
+  ml_pipeline_src_h srchandle;
+  ml_pipeline_sink_h sinkhandle;
+  ml_tensors_info_h in_info;
+  ml_tensors_data_h in_data;
+  ml_tensor_dimension dim = { 10, 1, 1, 1 };
+  int status;
+  gchar pipeline[] = "appsrc name=srcx ! "
+      "other/tensor,dimension=(string)10:1:1:1,type=(string)int32,framerate=(fraction)0/1 ! "
+      "tensor_aggregator frames-in=10 frames-out=3 frames-flush=3 frames-dim=0 ! "
+      "tensor_sink name=sinkx";
+  gint test_data[10] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+  guint *count_sink = (guint *) g_malloc0 (sizeof (guint));
+  ASSERT_TRUE (count_sink != NULL);
+
+  /* prepare input data */
+  ml_tensors_info_create (&in_info);
+  ml_tensors_info_set_count (in_info, 1);
+  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_INT32);
+  ml_tensors_info_set_tensor_dimension (in_info, 0, dim);
+
+  ml_tensors_data_create (in_info, &in_data);
+  ml_tensors_data_set_tensor_data (in_data, 0, test_data, 10 * sizeof (gint));
+
+  /* start pipeline */
+  status = ml_pipeline_construct (pipeline, NULL, NULL, &handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_src_get_handle (handle, "srcx", &srchandle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_sink_register (handle, "sinkx",
+      test_sink_callback_flush, count_sink, &sinkhandle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_start (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  /* push input data */
+  *count_sink = 0;
+  status = ml_pipeline_src_input_data (srchandle, in_data,
+        ML_PIPELINE_BUF_POLICY_DO_NOT_FREE);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  wait_pipeline_process_buffers (*count_sink, 3);
+  g_usleep (300000);
+  EXPECT_EQ (*count_sink, 3U);
+
+  /* flush pipeline */
+  status = ml_pipeline_flush (handle, true);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  /* push input data again */
+  *count_sink = 0;
+  status = ml_pipeline_src_input_data (srchandle, in_data,
+        ML_PIPELINE_BUF_POLICY_DO_NOT_FREE);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  wait_pipeline_process_buffers (*count_sink, 3);
+  g_usleep (300000);
+  EXPECT_EQ (*count_sink, 3U);
+
+  status = ml_pipeline_destroy (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  ml_tensors_info_destroy (in_info);
+  ml_tensors_data_destroy (in_data);
+  g_free (count_sink);
+}
+
+/**
+ * @brief Test NNStreamer pipeline flush.
+ * @detail Failure case when the pipeline handle is invalid.
+ */
+TEST (nnstreamer_capi_flush, failure_02_n)
+{
+  int status;
+
+  status = ml_pipeline_flush (NULL, true);
+  EXPECT_NE (status, ML_ERROR_NONE);
+}
+
+/**
  * @brief Main gtest
  */
 int
