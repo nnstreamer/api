@@ -5,13 +5,14 @@
 %define		enable_tizen_privilege 1
 %define		enable_tizen_feature 1
 
+# Below features are used for unittest.
+# Do not add neural network dependency in API source.
 %define		tensorflow_support 0
 %define		tensorflow_lite_support	1
 %define		tensorflow2_lite_support 1
 %define		tensorflow2_gpu_delegate_support 1
 %define		nnfw_support 1
 %define		armnn_support 0
-%define		tizen_sensor_support 0
 
 %define		release_test 0
 %define		test_script $(pwd)/packaging/run_unittests.sh
@@ -33,10 +34,6 @@
 # Disable a few features for TV releases
 %if "%{?profile}" == "tv"
 %define		enable_tizen_privilege 0
-%endif
-
-%if 0%{tizen_version_major} >= 6
-%define		tizen_sensor_support 1
 %endif
 
 # If it is tizen, we can export Tizen API packages.
@@ -132,11 +129,6 @@ BuildRequires:	libarmcl
 BuildConflicts:	libarmcl-release
 %endif
 %endif # unit_test
-
-Requires:	nnstreamer-misc
-%if 0%{?tizen_sensor_support}
-Requires:	nnstreamer-tizen-sensor
-%endif
 
 %description
 Tizen ML(Machine Learning) native API for NNStreamer.
