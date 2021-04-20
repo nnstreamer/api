@@ -183,7 +183,7 @@ ml_tensor_info_compare (const ml_tensor_info_s * i1,
  * @brief Validates the given tensors info is valid.
  */
 int
-ml_tensors_info_validate (const ml_tensors_info_h info, bool * valid)
+ml_tensors_info_validate (const ml_tensors_info_h info, bool *valid)
 {
   ml_tensors_info_s *tensors_info;
   guint i;
@@ -217,7 +217,7 @@ done:
  */
 int
 ml_tensors_info_compare (const ml_tensors_info_h info1,
-    const ml_tensors_info_h info2, bool * equal)
+    const ml_tensors_info_h info2, bool *equal)
 {
   ml_tensors_info_s *i1, *i2;
   guint i;
@@ -492,7 +492,7 @@ ml_tensor_info_get_size (const ml_tensor_info_s * info)
  */
 int
 ml_tensors_info_get_tensor_size (ml_tensors_info_h info,
-    int index, size_t * data_size)
+    int index, size_t *data_size)
 {
   ml_tensors_info_s *tensors_info;
 
@@ -700,7 +700,7 @@ failed:
  */
 int
 ml_tensors_data_get_tensor_data (ml_tensors_data_h data, unsigned int index,
-    void **raw_data, size_t * data_size)
+    void **raw_data, size_t *data_size)
 {
   ml_tensors_data_s *_data;
 
@@ -1194,7 +1194,7 @@ ml_get_nnfw_type_by_subplugin_name (const char *name)
  */
 int
 ml_check_nnfw_availability (ml_nnfw_type_e nnfw, ml_nnfw_hw_e hw,
-    bool * available)
+    bool *available)
 {
   const char *fw_name = NULL;
 
@@ -1233,7 +1233,7 @@ ml_check_nnfw_availability (ml_nnfw_type_e nnfw, ml_nnfw_hw_e hw,
  * @brief Checks the element is registered and available on the pipeline.
  */
 int
-ml_check_element_availability (const char *element_name, bool * available)
+ml_check_element_availability (const char *element_name, bool *available)
 {
   GstElementFactory *factory;
   int status;
