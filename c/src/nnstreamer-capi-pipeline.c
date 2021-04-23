@@ -1508,6 +1508,16 @@ destroy_data:
 }
 
 /**
+ * @brief Register callbacks for src events (more info in nnstreamer.h)
+ */
+int
+ml_pipeline_src_input_callback (ml_pipeline_src_h src_handle,
+    ml_pipeline_src_callbacks cb, void *user_data)
+{
+  return ML_ERROR_NOT_SUPPORTED; /** @todo NYI */
+}
+
+/**
  * @brief Gets a handle for the tensors metadata of given src node.
  */
 int
