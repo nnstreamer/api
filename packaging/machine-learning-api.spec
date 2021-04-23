@@ -274,12 +274,11 @@ cp -r result %{buildroot}%{_datadir}/ml-api/unittest/
 %manifest capi-machine-learning-inference.manifest
 %defattr(-,root,root,-)
 %license LICENSE
-%{_libdir}/libcapi-nnstreamer.so.*
+%{_libdir}/libcapi-nnstreamer.so*
 
 %files devel
 %{_includedir}/nnstreamer/nnstreamer.h
 %{_includedir}/nnstreamer/nnstreamer-single.h
-%{_libdir}/libcapi-nnstreamer.so
 %{_libdir}/pkgconfig/capi-ml-inference.pc
 
 %files devel-static
