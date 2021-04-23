@@ -256,6 +256,7 @@ typedef struct _ml_pipeline_element {
 
   GMutex lock; /**< Lock for internal values */
   gboolean is_media_stream;
+  gboolean is_flexible_tensor;
 
   ml_handle_destroy_cb custom_destroy;
   gpointer custom_data;

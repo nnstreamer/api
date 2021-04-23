@@ -230,6 +230,7 @@ construct_element (GstElement * e, ml_pipeline * p, const char *name,
   ret->maxid = 0;
   ret->handle_id = 0;
   ret->is_media_stream = FALSE;
+  ret->is_flexible_tensor = FALSE;
   g_mutex_init (&ret->lock);
   return ret;
 }
@@ -238,7 +239,8 @@ construct_element (GstElement * e, ml_pipeline * p, const char *name,
  * @brief Internal function to get the tensors info from the element caps.
  */
 static gboolean
-get_tensors_info_from_caps (GstCaps * caps, ml_tensors_info_s * info)
+get_tensors_info_from_caps (GstCaps * caps, ml_tensors_info_s * info,
+    gboolean * is_flexible)
 {
   GstStructure *s;
   GstTensorsConfig config;
@@ -254,6 +256,7 @@ get_tensors_info_from_caps (GstCaps * caps, ml_tensors_info_s * info)
 
     if (found) {
       ml_tensors_info_copy_from_gst (info, &config.info);
+      *is_flexible = gst_tensors_info_is_flexible (&config.info);
       break;
     }
   }
@@ -277,6 +280,7 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
   GList *l;
   ml_tensors_data_s *_data = NULL;
   ml_tensors_info_s *_info;
+  ml_tensors_info_s info_flex_tensor;
   size_t total_size = 0;
   int status;
 
@@ -324,13 +328,19 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
       GstCaps *caps = gst_pad_get_current_caps (elem->sink);
 
       if (caps) {
-        gboolean found;
+        gboolean flexible = FALSE;
+        gboolean found = get_tensors_info_from_caps (caps, _info, &flexible);
 
-        found = get_tensors_info_from_caps (caps, _info);
         gst_caps_unref (caps);
 
         if (found) {
           elem->size = 0;
+
+          /* cannot get exact info from caps */
+          if (flexible) {
+            elem->is_flexible_tensor = TRUE;
+            goto send_cb;
+          }
 
           if (_info->num_tensors != num_mems) {
             ml_loge
@@ -378,6 +388,31 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
         ("The buffersize mismatches. All the three values must be the same: %zu, %zu, %zu",
         total_size, elem->size, gst_buffer_get_size (b));
     goto error;
+  }
+
+send_cb:
+  /* set info for flexible stream */
+  if (elem->is_flexible_tensor) {
+    GstTensorMetaInfo meta;
+    GstTensorsInfo gst_info;
+    gsize hsize;
+
+    gst_tensors_info_init (&gst_info);
+    gst_info.num_tensors = num_mems;
+    _info = &info_flex_tensor;
+
+    /* handle header for flex tensor */
+    for (i = 0; i < num_mems; i++) {
+      gst_tensor_meta_info_parse_header (&meta, map[i].data);
+      hsize = gst_tensor_meta_info_get_header_size (&meta);
+
+      gst_tensor_meta_info_convert (&meta, &gst_info.info[i]);
+
+      _data->tensors[i].tensor = map[i].data + hsize;
+      _data->tensors[i].size = map[i].size - hsize;
+    }
+
+    ml_tensors_info_copy_from_gst (_info, &gst_info);
   }
 
   /* Iterate e->handles, pass the data to them */
@@ -1278,35 +1313,33 @@ ml_pipeline_src_parse_tensors_info (ml_pipeline_element * elem)
     } else {
       GstCaps *caps = gst_pad_get_allowed_caps (elem->src);
       guint i;
-      gboolean found = FALSE;
+      gboolean found, flexible;
       size_t sz;
 
+      found = flexible = FALSE;
       if (caps) {
-        found = get_tensors_info_from_caps (caps, _info);
+        found = get_tensors_info_from_caps (caps, _info, &flexible);
 
         if (!found && gst_caps_is_fixed (caps)) {
-          GstStructure *caps_s;
-          const gchar *mimetype;
+          GstStructure *st = gst_caps_get_structure (caps, 0);
 
-          caps_s = gst_caps_get_structure (caps, 0);
-          mimetype = gst_structure_get_name (caps_s);
-
-          if (!g_str_equal (mimetype, "other/tensor") &&
-              !g_str_equal (mimetype, "other/tensors")) {
+          if (!gst_structure_is_tensor_stream (st))
             elem->is_media_stream = TRUE;
-          }
+        } else if (found && flexible) {
+          /* flexible tensor, cannot get exact info from caps. */
+          elem->is_flexible_tensor = TRUE;
         }
 
         gst_caps_unref (caps);
       }
 
-      if (found) {
+      if (found && !flexible) {
         for (i = 0; i < _info->num_tensors; i++) {
           sz = ml_tensor_info_get_size (&_info->info[i]);
           elem->size += sz;
         }
       } else {
-        if (!elem->is_media_stream) {
+        if (!elem->is_media_stream && !elem->is_flexible_tensor) {
           ml_logw
               ("Cannot find caps. The pipeline is not yet negotiated for src element [%s].",
               elem->name);
@@ -1417,10 +1450,11 @@ ml_pipeline_src_input_data (ml_pipeline_src_h h, ml_tensors_data_h data,
     ml_pipeline_buf_policy_e policy)
 {
   GstBuffer *buffer;
-  GstMemory *mem;
+  GstMemory *mem, *tmp;
   gpointer mem_data;
   gsize mem_size;
   GstFlowReturn gret;
+  GstTensorsInfo gst_info;
   ml_tensors_data_s *_data;
   unsigned int i;
 
@@ -1449,7 +1483,7 @@ ml_pipeline_src_input_data (ml_pipeline_src_h h, ml_tensors_data_h data,
     goto dont_destroy_data;
   }
 
-  if (!elem->is_media_stream) {
+  if (!elem->is_media_stream && !elem->is_flexible_tensor) {
     if (elem->tensors_info.num_tensors != _data->num_tensors) {
       ml_loge
           ("The src push of [%s] cannot be handled because the number of tensors in a frame mismatches. %u != %u",
@@ -1475,17 +1509,31 @@ ml_pipeline_src_input_data (ml_pipeline_src_h h, ml_tensors_data_h data,
 
   /* Create buffer to be pushed from buf[] */
   buffer = gst_buffer_new ();
+  ml_tensors_info_copy_from_ml (&gst_info, _data->info);
+
   for (i = 0; i < _data->num_tensors; i++) {
     mem_data = _data->tensors[i].tensor;
     mem_size = _data->tensors[i].size;
 
-    mem = gst_memory_new_wrapped (GST_MEMORY_FLAG_READONLY,
+    mem = tmp = gst_memory_new_wrapped (GST_MEMORY_FLAG_READONLY,
         mem_data, mem_size, 0, mem_size, mem_data,
         (policy == ML_PIPELINE_BUF_POLICY_AUTO_FREE) ? g_free : NULL);
+
+    /* flex tensor, append header. */
+    if (elem->is_flexible_tensor) {
+      GstTensorMetaInfo meta;
+
+      gst_tensor_info_convert_to_meta (&gst_info.info[i], &meta);
+
+      mem = gst_tensor_meta_info_append_header (&meta, tmp);
+      gst_memory_unref (tmp);
+    }
 
     gst_buffer_append_memory (buffer, mem);
     /** @todo Verify that gst_buffer_append lists tensors/gstmem in the correct order */
   }
+
+  gst_tensors_info_free (&gst_info);
 
   /* Unlock if it's not auto-free. We do not know when it'll be freed. */
   if (policy != ML_PIPELINE_BUF_POLICY_AUTO_FREE)

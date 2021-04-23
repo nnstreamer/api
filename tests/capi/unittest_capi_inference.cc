@@ -10564,6 +10564,189 @@ TEST (nnstreamer_capi_flush, failure_02_n)
 }
 
 /**
+ * @brief A tensor-sink callback for sink handle in a pipeline
+ */
+static void
+test_sink_callback_flex (const ml_tensors_data_h data,
+    const ml_tensors_info_h info, void *user_data)
+{
+  guint *count = (guint *) user_data;
+  gint status;
+  gint *received;
+  guint total = 0;
+  size_t data_size;
+
+  G_LOCK (callback_lock);
+  *count = *count + 1;
+
+  status = ml_tensors_info_get_count (info, &total);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  EXPECT_EQ (total, 3U);
+
+  status = ml_tensors_data_get_tensor_data (data, 0, (void **) &received, &data_size);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  EXPECT_EQ (data_size, 4 * sizeof (gint));
+  EXPECT_EQ (received[0], 1);
+  EXPECT_EQ (received[1], 2);
+  EXPECT_EQ (received[2], 3);
+  EXPECT_EQ (received[3], 4);
+
+  status = ml_tensors_data_get_tensor_data (data, 1, (void **) &received, &data_size);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  EXPECT_EQ (data_size, 2 * sizeof (gint));
+  EXPECT_EQ (received[0], 5);
+  EXPECT_EQ (received[1], 6);
+
+  status = ml_tensors_data_get_tensor_data (data, 2, (void **) &received, &data_size);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  EXPECT_EQ (data_size, 4 * sizeof (gint));
+  EXPECT_EQ (received[0], 7);
+  EXPECT_EQ (received[1], 8);
+  EXPECT_EQ (received[2], 9);
+  EXPECT_EQ (received[3], 10);
+
+  G_UNLOCK (callback_lock);
+}
+
+/**
+ * @brief Test NNStreamer pipeline for flexible tensors.
+ */
+TEST (nnstreamer_capi_flex, sink_multi)
+{
+  gchar pipeline[] = "appsrc name=srcx caps=application/octet-stream,framerate=(fraction)10/1 ! "
+      "tensor_converter input-dim=4,2,4 input-type=int32,int32,int32 ! "
+      "other/tensors-flexible ! tensor_sink name=sinkx sync=false";
+  guint test_data[10] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+  ml_pipeline_h handle;
+  ml_pipeline_src_h srchandle;
+  ml_pipeline_sink_h sinkhandle;
+  ml_tensors_info_h in_info;
+  ml_tensors_data_h in_data;
+  ml_tensor_dimension dim = { 10, 1, 1, 1 };
+  gint i, status;
+  guint *count_sink;
+
+  count_sink = (guint *) g_malloc0 (sizeof (guint));
+  ASSERT_TRUE (count_sink != NULL);
+
+  /* prepare input data */
+  ml_tensors_info_create (&in_info);
+  ml_tensors_info_set_count (in_info, 1);
+  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_INT32);
+  ml_tensors_info_set_tensor_dimension (in_info, 0, dim);
+
+  ml_tensors_data_create (in_info, &in_data);
+  ml_tensors_data_set_tensor_data (in_data, 0, test_data, 10 * sizeof (gint));
+
+  /* start pipeline */
+  status = ml_pipeline_construct (pipeline, NULL, NULL, &handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_src_get_handle (handle, "srcx", &srchandle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_sink_register (handle, "sinkx",
+      test_sink_callback_flex, count_sink, &sinkhandle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_start (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  /* push input data */
+  *count_sink = 0;
+  for (i = 0; i < 3; i++) {
+    g_usleep (50000);
+    status = ml_pipeline_src_input_data (srchandle, in_data,
+          ML_PIPELINE_BUF_POLICY_DO_NOT_FREE);
+    EXPECT_EQ (status, ML_ERROR_NONE);
+  }
+
+  wait_pipeline_process_buffers (*count_sink, 3);
+  g_usleep (300000);
+  EXPECT_EQ (*count_sink, 3U);
+
+  status = ml_pipeline_destroy (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  ml_tensors_info_destroy (in_info);
+  ml_tensors_data_destroy (in_data);
+  g_free (count_sink);
+}
+
+/**
+ * @brief Test NNStreamer pipeline for flexible tensors.
+ */
+TEST (nnstreamer_capi_flex, src_multi)
+{
+  gchar pipeline[] = "appsrc name=srcx caps=other/tensors-flexible,framerate=(fraction)10/1 ! "
+      "tensor_converter input-dim=4,2,4 input-type=int32,int32,int32 ! "
+      "tensor_sink name=sinkx sync=false";
+  guint test_data[10] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+  ml_pipeline_h handle;
+  ml_pipeline_src_h srchandle;
+  ml_pipeline_sink_h sinkhandle;
+  ml_tensors_info_h in_info;
+  ml_tensors_data_h in_data;
+  ml_tensor_dimension dim1 = { 4, 1, 1, 1 };
+  ml_tensor_dimension dim2 = { 2, 1, 1, 1 };
+  ml_tensor_dimension dim3 = { 4, 1, 1, 1 };
+  gint i, status;
+  guint *count_sink;
+
+  count_sink = (guint *) g_malloc0 (sizeof (guint));
+  ASSERT_TRUE (count_sink != NULL);
+
+  /* prepare input data */
+  ml_tensors_info_create (&in_info);
+  ml_tensors_info_set_count (in_info, 3);
+  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_INT32);
+  ml_tensors_info_set_tensor_dimension (in_info, 0, dim1);
+  ml_tensors_info_set_tensor_type (in_info, 1, ML_TENSOR_TYPE_INT32);
+  ml_tensors_info_set_tensor_dimension (in_info, 1, dim2);
+  ml_tensors_info_set_tensor_type (in_info, 2, ML_TENSOR_TYPE_INT32);
+  ml_tensors_info_set_tensor_dimension (in_info, 2, dim3);
+
+  ml_tensors_data_create (in_info, &in_data);
+  ml_tensors_data_set_tensor_data (in_data, 0, &test_data[0], 4 * sizeof (gint));
+  ml_tensors_data_set_tensor_data (in_data, 1, &test_data[4], 2 * sizeof (gint));
+  ml_tensors_data_set_tensor_data (in_data, 2, &test_data[6], 4 * sizeof (gint));
+
+  /* start pipeline */
+  status = ml_pipeline_construct (pipeline, NULL, NULL, &handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_src_get_handle (handle, "srcx", &srchandle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_sink_register (handle, "sinkx",
+      test_sink_callback_flex, count_sink, &sinkhandle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_start (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  /* push input data */
+  *count_sink = 0;
+  for (i = 0; i < 3; i++) {
+    g_usleep (50000);
+    status = ml_pipeline_src_input_data (srchandle, in_data,
+          ML_PIPELINE_BUF_POLICY_DO_NOT_FREE);
+    EXPECT_EQ (status, ML_ERROR_NONE);
+  }
+
+  wait_pipeline_process_buffers (*count_sink, 3);
+  g_usleep (300000);
+  EXPECT_EQ (*count_sink, 3U);
+
+  status = ml_pipeline_destroy (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  ml_tensors_info_destroy (in_info);
+  ml_tensors_data_destroy (in_data);
+  g_free (count_sink);
+}
+
+/**
  * @brief Main gtest
  */
 int
