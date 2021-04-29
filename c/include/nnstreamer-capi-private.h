@@ -130,7 +130,32 @@ typedef struct {
 typedef struct {
   unsigned int num_tensors; /**< The number of tensors. */
   ml_tensor_info_s info[ML_TENSOR_SIZE_LIMIT];  /**< The list of tensor info. */
+  GMutex lock; /**< Lock for thread safety */
+  int nolock; /**< Set non-zero to avoid using m (giving up thread safety) */
 } ml_tensors_info_s;
+
+/**
+ * @brief Macro to control private lock with nolock condition (lock)
+ * @param sname The name of struct (ml_tensors_info_s or ml_tensors_data_s)
+ */
+#define G_LOCK_UNLESS_NOLOCK(sname) \
+  do { \
+    GMutex *l = (GMutex *) &(sname).lock; \
+    if (!(sname).nolock) \
+      g_mutex_lock (l); \
+  } while (0)
+
+/**
+ * @brief Macro to control private lock with nolock condition (unlock)
+ * @param sname The name of struct (ml_tensors_info_s or ml_tensors_data_s)
+ */
+#define G_UNLOCK_UNLESS_NOLOCK(sname) \
+  do { \
+    GMutex *l = (GMutex *) &(sname).lock; \
+    if (!(sname).nolock) \
+      g_mutex_unlock (l); \
+  } while (0)
+
 
 /**
  * @brief The function to be called when destroying the allocated handle.
@@ -310,6 +335,7 @@ int ml_single_open_custom (ml_single_h *single, ml_single_preset *info);
 
 /**
  * @brief Gets the byte size of the given tensor info.
+ * @note This is not thread safe.
  */
 size_t ml_tensor_info_get_size (const ml_tensor_info_s *info);
 

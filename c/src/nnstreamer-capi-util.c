@@ -57,6 +57,7 @@ ml_tensors_info_create (ml_tensors_info_h * info)
     ml_loge ("Failed to allocate the tensors info handle.");
     return ML_ERROR_OUT_OF_MEMORY;
   }
+  g_mutex_init (&tensors_info->lock);
 
   /* init tensors info struct */
   return ml_tensors_info_initialize (tensors_info);
@@ -81,6 +82,7 @@ ml_tensors_info_create_from_gst (ml_tensors_info_h * ml_info,
     ml_loge ("Failed to allocate the tensors info handle.");
     return ML_ERROR_OUT_OF_MEMORY;
   }
+  g_mutex_init (&tensors_info->lock);
 
   /* init and copy tensors info from gst struct */
   ml_tensors_info_initialize (tensors_info);
@@ -103,7 +105,11 @@ ml_tensors_info_destroy (ml_tensors_info_h info)
   if (!tensors_info)
     return ML_ERROR_INVALID_PARAMETER;
 
+  G_LOCK_UNLESS_NOLOCK (*tensors_info);
+
   ml_tensors_info_free (tensors_info);
+  G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
+  g_mutex_clear (&tensors_info->lock);
   g_free (tensors_info);
 
   return ML_ERROR_NONE;
@@ -136,6 +142,7 @@ ml_tensors_info_initialize (ml_tensors_info_s * info)
 
 /**
  * @brief Validates the given tensor info is valid.
+ * @note info should be locked by caller if nolock == 0.
  */
 static gboolean
 ml_tensor_info_validate (const ml_tensor_info_s * info)
@@ -187,6 +194,7 @@ ml_tensors_info_validate (const ml_tensors_info_h info, bool *valid)
 {
   ml_tensors_info_s *tensors_info;
   guint i;
+  int ret = ML_ERROR_NONE;
 
   check_feature_state ();
 
@@ -195,11 +203,17 @@ ml_tensors_info_validate (const ml_tensors_info_h info, bool *valid)
 
   tensors_info = (ml_tensors_info_s *) info;
 
-  if (!tensors_info || tensors_info->num_tensors < 1)
+  if (!tensors_info)
     return ML_ERROR_INVALID_PARAMETER;
 
+  G_LOCK_UNLESS_NOLOCK (*tensors_info);
   /* init false */
   *valid = false;
+
+  if (tensors_info->num_tensors < 1) {
+    ret = ML_ERROR_INVALID_PARAMETER;
+    goto done;
+  }
 
   for (i = 0; i < tensors_info->num_tensors; i++) {
     if (!ml_tensor_info_validate (&tensors_info->info[i]))
@@ -209,7 +223,8 @@ ml_tensors_info_validate (const ml_tensors_info_h info, bool *valid)
   *valid = true;
 
 done:
-  return ML_ERROR_NONE;
+  G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
+  return ret;
 }
 
 /**
@@ -228,7 +243,9 @@ ml_tensors_info_compare (const ml_tensors_info_h info1,
     return ML_ERROR_INVALID_PARAMETER;
 
   i1 = (ml_tensors_info_s *) info1;
+  G_LOCK_UNLESS_NOLOCK (*i1);
   i2 = (ml_tensors_info_s *) info2;
+  G_LOCK_UNLESS_NOLOCK (*i2);
 
   /* init false */
   *equal = false;
@@ -244,6 +261,8 @@ ml_tensors_info_compare (const ml_tensors_info_h info1,
   *equal = true;
 
 done:
+  G_UNLOCK_UNLESS_NOLOCK (*i2);
+  G_UNLOCK_UNLESS_NOLOCK (*i1);
   return ML_ERROR_NONE;
 }
 
@@ -261,6 +280,8 @@ ml_tensors_info_set_count (ml_tensors_info_h info, unsigned int count)
     return ML_ERROR_INVALID_PARAMETER;
 
   tensors_info = (ml_tensors_info_s *) info;
+
+  /* This is atomic. No need for locks */
   tensors_info->num_tensors = count;
 
   return ML_ERROR_NONE;
@@ -280,6 +301,7 @@ ml_tensors_info_get_count (ml_tensors_info_h info, unsigned int *count)
     return ML_ERROR_INVALID_PARAMETER;
 
   tensors_info = (ml_tensors_info_s *) info;
+  /* This is atomic. No need for locks */
   *count = tensors_info->num_tensors;
 
   return ML_ERROR_NONE;
@@ -300,9 +322,12 @@ ml_tensors_info_set_tensor_name (ml_tensors_info_h info,
     return ML_ERROR_INVALID_PARAMETER;
 
   tensors_info = (ml_tensors_info_s *) info;
+  G_LOCK_UNLESS_NOLOCK (*tensors_info);
 
-  if (tensors_info->num_tensors <= index)
+  if (tensors_info->num_tensors <= index) {
+    G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
     return ML_ERROR_INVALID_PARAMETER;
+  }
 
   if (tensors_info->info[index].name) {
     g_free (tensors_info->info[index].name);
@@ -312,6 +337,7 @@ ml_tensors_info_set_tensor_name (ml_tensors_info_h info,
   if (name)
     tensors_info->info[index].name = g_strdup (name);
 
+  G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
   return ML_ERROR_NONE;
 }
 
@@ -330,12 +356,16 @@ ml_tensors_info_get_tensor_name (ml_tensors_info_h info,
     return ML_ERROR_INVALID_PARAMETER;
 
   tensors_info = (ml_tensors_info_s *) info;
+  G_LOCK_UNLESS_NOLOCK (*tensors_info);
 
-  if (tensors_info->num_tensors <= index)
+  if (tensors_info->num_tensors <= index) {
+    G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
     return ML_ERROR_INVALID_PARAMETER;
+  }
 
   *name = g_strdup (tensors_info->info[index].name);
 
+  G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
   return ML_ERROR_NONE;
 }
 
@@ -357,12 +387,16 @@ ml_tensors_info_set_tensor_type (ml_tensors_info_h info,
     return ML_ERROR_INVALID_PARAMETER;
 
   tensors_info = (ml_tensors_info_s *) info;
+  G_LOCK_UNLESS_NOLOCK (*tensors_info);
 
-  if (tensors_info->num_tensors <= index)
+  if (tensors_info->num_tensors <= index) {
+    G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
     return ML_ERROR_INVALID_PARAMETER;
+  }
 
   tensors_info->info[index].type = type;
 
+  G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
   return ML_ERROR_NONE;
 }
 
@@ -381,12 +415,16 @@ ml_tensors_info_get_tensor_type (ml_tensors_info_h info,
     return ML_ERROR_INVALID_PARAMETER;
 
   tensors_info = (ml_tensors_info_s *) info;
+  G_LOCK_UNLESS_NOLOCK (*tensors_info);
 
-  if (tensors_info->num_tensors <= index)
+  if (tensors_info->num_tensors <= index) {
+    G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
     return ML_ERROR_INVALID_PARAMETER;
+  }
 
   *type = tensors_info->info[index].type;
 
+  G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
   return ML_ERROR_NONE;
 }
 
@@ -406,14 +444,18 @@ ml_tensors_info_set_tensor_dimension (ml_tensors_info_h info,
     return ML_ERROR_INVALID_PARAMETER;
 
   tensors_info = (ml_tensors_info_s *) info;
+  G_LOCK_UNLESS_NOLOCK (*tensors_info);
 
-  if (tensors_info->num_tensors <= index)
+  if (tensors_info->num_tensors <= index) {
+    G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
     return ML_ERROR_INVALID_PARAMETER;
+  }
 
   for (i = 0; i < ML_TENSOR_RANK_LIMIT; i++) {
     tensors_info->info[index].dimension[i] = dimension[i];
   }
 
+  G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
   return ML_ERROR_NONE;
 }
 
@@ -433,14 +475,18 @@ ml_tensors_info_get_tensor_dimension (ml_tensors_info_h info,
     return ML_ERROR_INVALID_PARAMETER;
 
   tensors_info = (ml_tensors_info_s *) info;
+  G_LOCK_UNLESS_NOLOCK (*tensors_info);
 
-  if (tensors_info->num_tensors <= index)
+  if (tensors_info->num_tensors <= index) {
+    G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
     return ML_ERROR_INVALID_PARAMETER;
+  }
 
   for (i = 0; i < ML_TENSOR_RANK_LIMIT; i++) {
     dimension[i] = tensors_info->info[index].dimension[i];
   }
 
+  G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
   return ML_ERROR_NONE;
 }
 
@@ -502,6 +548,7 @@ ml_tensors_info_get_tensor_size (ml_tensors_info_h info,
     return ML_ERROR_INVALID_PARAMETER;
 
   tensors_info = (ml_tensors_info_s *) info;
+  G_LOCK_UNLESS_NOLOCK (*tensors_info);
 
   /* init 0 */
   *data_size = 0;
@@ -514,17 +561,21 @@ ml_tensors_info_get_tensor_size (ml_tensors_info_h info,
       *data_size += ml_tensor_info_get_size (&tensors_info->info[i]);
     }
   } else {
-    if (tensors_info->num_tensors <= index)
+    if (tensors_info->num_tensors <= index) {
+      G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
       return ML_ERROR_INVALID_PARAMETER;
+    }
 
     *data_size = ml_tensor_info_get_size (&tensors_info->info[index]);
   }
 
+  G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
   return ML_ERROR_NONE;
 }
 
 /**
  * @brief Frees the tensors info pointer.
+ * @note This does not touch the lock
  */
 void
 ml_tensors_info_free (ml_tensors_info_s * info)
@@ -542,10 +593,12 @@ ml_tensors_info_free (ml_tensors_info_s * info)
   }
 
   ml_tensors_info_initialize (info);
+
 }
 
 /**
  * @brief Frees the tensors data pointer.
+ * @note This does not touch the lock
  */
 int
 ml_tensors_data_destroy (ml_tensors_data_h data)
@@ -604,11 +657,13 @@ ml_tensors_data_create_no_alloc (const ml_tensors_info_h info,
 
   _info = (ml_tensors_info_s *) info;
   if (_info != NULL) {
+    G_LOCK_UNLESS_NOLOCK (*_info);
     _data->num_tensors = _info->num_tensors;
     for (i = 0; i < _data->num_tensors; i++) {
       _data->tensors[i].size = ml_tensor_info_get_size (&_info->info[i]);
       _data->tensors[i].tensor = NULL;
     }
+    G_UNLOCK_UNLESS_NOLOCK (*_info);
   }
 
   *data = _data;
@@ -764,6 +819,9 @@ ml_tensors_info_clone (ml_tensors_info_h dest, const ml_tensors_info_h src)
   if (!dest_info || !src_info)
     return ML_ERROR_INVALID_PARAMETER;
 
+  G_LOCK_UNLESS_NOLOCK (*dest_info);
+  G_LOCK_UNLESS_NOLOCK (*src_info);
+
   ml_tensors_info_initialize (dest_info);
 
   dest_info->num_tensors = src_info->num_tensors;
@@ -776,6 +834,9 @@ ml_tensors_info_clone (ml_tensors_info_h dest, const ml_tensors_info_h src)
     for (j = 0; j < ML_TENSOR_RANK_LIMIT; j++)
       dest_info->info[i].dimension[j] = src_info->info[i].dimension[j];
   }
+
+  G_UNLOCK_UNLESS_NOLOCK (*src_info);
+  G_UNLOCK_UNLESS_NOLOCK (*dest_info);
 
   return ML_ERROR_NONE;
 }
@@ -865,6 +926,8 @@ ml_tensors_info_copy_from_ml (GstTensorsInfo * gst_info,
   if (!gst_info || !ml_info)
     return;
 
+  G_LOCK_UNLESS_NOLOCK (*ml_info);
+
   gst_tensors_info_init (gst_info);
   max_dim = MIN (ML_TENSOR_RANK_LIMIT, NNS_TENSOR_RANK_LIMIT);
 
@@ -922,6 +985,7 @@ ml_tensors_info_copy_from_ml (GstTensorsInfo * gst_info,
       gst_info->info[i].dimension[j] = 1;
     }
   }
+  G_UNLOCK_UNLESS_NOLOCK (*ml_info);
 }
 
 /**
