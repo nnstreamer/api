@@ -2433,8 +2433,8 @@ ml_pipeline_custom_easy_filter_register (const char *name,
   ml_tensors_info_clone (c->out_info, out);
 
   /* register custom filter */
-  ml_tensors_info_copy_from_ml (&in_info, in);
-  ml_tensors_info_copy_from_ml (&out_info, out);
+  ml_tensors_info_copy_from_ml (&in_info, c->in_info);
+  ml_tensors_info_copy_from_ml (&out_info, c->out_info);
 
   if (NNS_custom_easy_register (name, ml_pipeline_custom_invoke, c,
           &in_info, &out_info) != 0) {
