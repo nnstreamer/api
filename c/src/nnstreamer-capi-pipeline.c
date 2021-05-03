@@ -1098,9 +1098,12 @@ ml_pipeline_flush (ml_pipeline_h pipe, bool start)
 
   /* send flush event to pipeline */
   g_mutex_lock (&p->lock);
-  if (!gst_element_send_event (p->element, gst_event_new_flush_start ()) ||
-      !gst_element_send_event (p->element, gst_event_new_flush_stop (TRUE))) {
-    ml_logw ("Error occurs while sending flush event.");
+  if (!gst_element_send_event (p->element, gst_event_new_flush_start ())) {
+    ml_logw ("Error occurs while sending flush_start event.");
+  }
+
+  if (!gst_element_send_event (p->element, gst_event_new_flush_stop (TRUE))) {
+    ml_logw ("Error occurs while sending flush_stop event.");
   }
   g_mutex_unlock (&p->lock);
 
