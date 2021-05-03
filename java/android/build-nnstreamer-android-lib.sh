@@ -35,6 +35,12 @@
 ##@@   --ml_api_dir=(the_source_root_of_ml_api)
 ##@@       This option overrides the ML_API_ROOT variable
 ##@@ 
+##@@ options for GStreamer build:
+##@@   --enable_tracing=(yes|no)
+##@@       'yes'      : build with GStreamer Tracing feature
+##@@                    TODO: Integrate GstShark
+##@@       'no'       : [default]
+##@@ 
 ##@@ options for tensor filter sub-plugins:
 ##@@   --enable_snap=(yes|no)
 ##@@       'yes'      : build with sub-plugin for SNAP
@@ -84,6 +90,9 @@ run_test="no"
 
 # Variables to release library (GROUP:ARTIFACT:VERSION)
 release_bintray="no"
+
+# Enable GStreamer Tracing
+enable_tracing="no"
 
 # Enable SNAP
 enable_snap="no"
@@ -168,6 +177,9 @@ for arg in "$@"; do
             ;;
         --android_ndk_dir=*)
             android_ndk_dir=${arg#*=}
+            ;;
+        --enable_tracing=*)
+            enable_tracing=${arg#*=}
             ;;
         --enable_snap=*)
             enable_snap=${arg#*=}
@@ -345,6 +357,17 @@ if [[ -z "$ml_api_dir" ]]; then
 fi
 
 echo "ML API root directory: $ml_api_dir"
+
+# Enable GStreamer Tracing feature
+if [[ $enable_tracing == "yes" ]]; then
+    echo "Patching GStreamer build script to enable tracing feature"
+    pushd $gstreamer_dir/arm64/share/gst-android/ndk-build/
+    patch < $ml_api_dir/java/android/gstreamer_android-1.0.c.in.patch
+    popd
+    pushd $gstreamer_dir/armv7/share/gst-android/ndk-build/
+    patch < $ml_api_dir/java/android/gstreamer_android-1.0.c.in.patch
+    popd
+fi
 
 # Build result directory
 if [[ -z "$result_dir" ]]; then
@@ -605,6 +628,17 @@ else
 fi
 
 popd
+
+# Restore GStreamer build script
+if [[ $enable_tracing == "yes" ]]; then
+    echo "Restoring GStreamer build script"
+    pushd $gstreamer_dir/arm64/share/gst-android/ndk-build/
+    patch -R < $ml_api_dir/java/android/gstreamer_android-1.0.c.in.patch
+    popd
+    pushd $gstreamer_dir/armv7/share/gst-android/ndk-build/
+    patch -R < $ml_api_dir/java/android/gstreamer_android-1.0.c.in.patch
+    popd
+fi
 
 # Remove build directory
 rm -rf $build_dir
