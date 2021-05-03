@@ -1,0 +1,41 @@
+--- gstreamer_android-1.0.c.in	2021-05-03 17:14:48.421251773 +0900
++++ gstreamer_android-1.0.c.in	2021-05-03 17:18:55.309247942 +0900
+@@ -4,6 +4,8 @@
+ #include <android/log.h>
+ #include <string.h>
+ 
++extern void _priv_gst_tracing_init ();
++
+ /* XXX: Workaround for Android <21 making signal() an inline function
+  * around bsd_signal(), and Android >= 21 not having any bsd_signal()
+  * symbol but only signal().
+@@ -267,7 +269,7 @@
+       android_log_level = ANDROID_LOG_DEBUG;
+       break;
+     default:
+-      android_log_level = ANDROID_LOG_VERBOSE;
++      android_log_level = ANDROID_LOG_INFO;
+       break;
+   }
+ 
+@@ -537,6 +539,10 @@
+   g_free (cache_dir);
+   g_free (files_dir);
+ 
++  /* set env for tracer */
++  g_setenv ("GST_DEBUG", "GST_TRACER:7,default:5,GST_PLUGIN_LOADING:5,GST_INIT:5,GST_REGISTRY:5", TRUE);
++  g_setenv ("GST_TRACERS", "latency(flags=pipeline+element)", TRUE);
++
+   /* Set GLib print handlers */
+   g_set_print_handler (glib_print_handler);
+   g_set_printerr_handler (glib_printerr_handler);
+@@ -563,6 +569,9 @@
+   }
+   gst_android_register_static_plugins ();
+   gst_android_load_gio_modules ();
++
++  _priv_gst_tracing_init ();
++
+   __android_log_print (ANDROID_LOG_INFO, "GStreamer",
+       "GStreamer initialization complete");
+ }
