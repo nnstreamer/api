@@ -2133,4 +2133,59 @@ public class APITestPipeline {
             fail();
         }
     }
+
+    @Test
+    public void testFlatbuf() {
+        /* This test assume that the NNStreamer library is built with Flatbuf (default option) */
+        String desc = "appsrc name=srcx ! " +
+                "other/tensor,dimension=(string)3:224:224:1,type=(string)uint8,framerate=(fraction)0/1 ! " +
+                "tensor_decoder mode=flatbuf ! other/flatbuf-tensor,framerate=(fraction)0/1 ! " +
+                "tensor_converter ! tensor_sink name=sinkx";
+
+        try (Pipeline pipe = new Pipeline(desc)) {
+            TensorsInfo info = new TensorsInfo();
+            info.addTensorInfo(NNStreamer.TensorType.UINT8, new int[]{3, 224, 224, 1});
+
+            /* register sink callback */
+            pipe.registerSinkCallback("sinkx", new Pipeline.NewDataCallback() {
+                @Override
+                public void onNewDataReceived(TensorsData data) {
+                    if (data == null || data.getTensorsCount() != 1) {
+                        mInvalidState = true;
+                        return;
+                    }
+                    ByteBuffer buffer = data.getTensorData(0);
+                    ByteBuffer bufferOri = APITestCommon.readRawImageData().getTensorData(0);
+                    bufferOri.rewind();
+
+                    /* check with original input data */
+                    if (!buffer.equals(bufferOri)) {
+                        mInvalidState = true;
+                    }
+
+                    mReceived++;
+                }
+            });
+
+            /* start pipeline */
+            pipe.start();
+
+            /* push input buffer */
+            TensorsData in = APITestCommon.readRawImageData();
+            pipe.inputData("srcx", in);
+
+            /* sleep 100 to invoke */
+            Thread.sleep(100);
+
+            /* stop pipeline */
+            pipe.stop();
+
+            /* check received data from sink */
+            assertFalse(mInvalidState);
+            assertEquals(1, mReceived);
+        } catch (Exception e) {
+            fail();
+        }
+    }
+
 }
