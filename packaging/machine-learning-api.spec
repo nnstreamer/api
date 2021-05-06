@@ -64,6 +64,7 @@ Source1001:	capi-machine-learning-inference.manifest
 
 ## Define build requirements ##
 Requires:	nnstreamer
+Provides:	libcapi-nnstreamer.so
 BuildRequires:	nnstreamer-devel
 BuildRequires:	nnstreamer-devel-internal
 BuildRequires:	glib2-devel
