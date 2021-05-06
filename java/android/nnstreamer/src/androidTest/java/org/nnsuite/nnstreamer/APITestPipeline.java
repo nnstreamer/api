@@ -681,9 +681,6 @@ public class APITestPipeline {
                 "tensor_sink name=sinkx";
 
         try (Pipeline pipe = new Pipeline(desc)) {
-            TensorsInfo info = new TensorsInfo();
-            info.addTensorInfo(NNStreamer.TensorType.UINT8, new int[]{3,224,224,1});
-
             /* register sink callback */
             pipe.registerSinkCallback("sinkx", new Pipeline.NewDataCallback() {
                 @Override
@@ -1493,10 +1490,8 @@ public class APITestPipeline {
                     "custom=" + option + " ! " +
                 "tensor_sink name=sinkx";
 
-        try (
-            Pipeline pipe = new Pipeline(desc);
-            TensorsInfo info = new TensorsInfo()
-        ) {
+        try (Pipeline pipe = new Pipeline(desc)) {
+            TensorsInfo info = new TensorsInfo();
             info.addTensorInfo(NNStreamer.TensorType.FLOAT32, new int[]{3,224,224,1});
 
             /* register sink callback */
@@ -1583,10 +1578,8 @@ public class APITestPipeline {
                     "custom=" + option + " ! " +
                 "tensor_sink name=sinkx";
 
-        try (
-            Pipeline pipe = new Pipeline(desc);
-            TensorsInfo info = new TensorsInfo()
-        ) {
+        try (Pipeline pipe = new Pipeline(desc)) {
+            TensorsInfo info = new TensorsInfo();
             info.addTensorInfo(NNStreamer.TensorType.FLOAT32, new int[]{3,224,224,1});
 
             /* register sink callback */
@@ -1762,10 +1755,8 @@ public class APITestPipeline {
                 "tensor_filter framework=snpe " + "model=" + model.getAbsolutePath() + " ! " +
                 "tensor_sink name=sinkx";
 
-        try (
-            Pipeline pipe = new Pipeline(desc);
-            TensorsInfo info = new TensorsInfo()
-        ) {
+        try (Pipeline pipe = new Pipeline(desc)) {
+            TensorsInfo info = new TensorsInfo();
             info.addTensorInfo(NNStreamer.TensorType.FLOAT32, new int[]{3,299,299,1});
 
             /* register sink callback */
@@ -1818,10 +1809,8 @@ public class APITestPipeline {
     }
 
     private void runSNPEMultipleOutput(String desc) {
-        try (
-                Pipeline pipe = new Pipeline(desc);
-                TensorsInfo info = new TensorsInfo()
-        ) {
+        try (Pipeline pipe = new Pipeline(desc)) {
+            TensorsInfo info = new TensorsInfo();
             info.addTensorInfo(NNStreamer.TensorType.FLOAT32, new int[]{3,300,300,1});
 
             /* register sink callback */
@@ -1925,9 +1914,8 @@ public class APITestPipeline {
 
         /* expected label is measuring_cup (648) */
         final int expected_label = 648;
-        try (
-            Pipeline pipe = new Pipeline(desc)
-        ) {
+
+        try (Pipeline pipe = new Pipeline(desc)) {
             /* register sink callback */
             pipe.registerSinkCallback("sinkx", new Pipeline.NewDataCallback() {
                 @Override
@@ -2143,9 +2131,6 @@ public class APITestPipeline {
                 "tensor_converter ! tensor_sink name=sinkx";
 
         try (Pipeline pipe = new Pipeline(desc)) {
-            TensorsInfo info = new TensorsInfo();
-            info.addTensorInfo(NNStreamer.TensorType.UINT8, new int[]{3, 224, 224, 1});
-
             /* register sink callback */
             pipe.registerSinkCallback("sinkx", new Pipeline.NewDataCallback() {
                 @Override
@@ -2187,5 +2172,4 @@ public class APITestPipeline {
             fail();
         }
     }
-
 }
