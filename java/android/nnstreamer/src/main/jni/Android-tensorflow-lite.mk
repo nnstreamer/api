@@ -15,7 +15,7 @@ endif
 
 include $(NNSTREAMER_ROOT)/jni/nnstreamer.mk
 
-TFLITE_VERSION := 1.13.1
+TFLITE_VERSION := 2.3.0
 
 _TFLITE_VERSIONS = $(subst ., , $(TFLITE_VERSION))
 TFLITE_VERSION_MAJOR := $(word 1, $(_TFLITE_VERSIONS))
