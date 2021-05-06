@@ -90,7 +90,7 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE := pytorch-subplugin
 LOCAL_SRC_FILES := $(NNSTREAMER_FILTER_PYTORCH_SRCS)
-LOCAL_CXXFLAGS := -std=c++14 -O3 -fPIC -frtti -fexceptions $(NNS_API_FLAGS) $(PYTORCH_FLAGS)
+LOCAL_CXXFLAGS := -O3 -fPIC -frtti -fexceptions $(NNS_API_FLAGS) $(PYTORCH_FLAGS)
 LOCAL_C_INCLUDES := $(PYTORCH_INCLUDES) $(NNSTREAMER_INCLUDES) $(GST_HEADERS_COMMON)
 LOCAL_WHOLE_STATIC_LIBRARIES := pytorch-libeigen_blas pytorch-libnnpack pytorch-libpytorch_qnnpack pytorch-libXNNPACK pytorch-libtorch_cpu pytorch-libtorch pytorch-libc10 pytorch-libcpuinfo pytorch-libpthreadpool pytorch-libclog
 include $(BUILD_STATIC_LIBRARY)
