@@ -140,6 +140,7 @@ typedef enum {
   ML_NNFW_TYPE_SNPE = 10,             /**< Qualcomm SNPE (Snapdgragon Neural Processing Engine (.dlc). (Since 6.0) */
   ML_NNFW_TYPE_PYTORCH = 11,          /**< PyTorch (.pt). (Since 6.5) */
   ML_NNFW_TYPE_NNTR_INF = 12,         /**< Inference supported from NNTrainer, SR On-device Training Framework (Since 6.5) */
+  ML_NNFW_TYPE_VD_AIFW = 13,          /**< Inference framework for Samsung Tizen TV (Since 6.5) */
   ML_NNFW_TYPE_SNAP = 0x2001,         /**< SNAP (Samsung Neural Acceleration Platform), only for Android. (Since 6.0) */
 } ml_nnfw_type_e;
 
@@ -158,6 +159,7 @@ typedef enum {
   ML_NNFW_HW_NPU_MOVIDIUS = 0x3001, /**< 0x3001: Intel Movidius Stick. (Since 6.0) */
   ML_NNFW_HW_NPU_EDGE_TPU = 0x3002, /**< 0x3002: Google Coral Edge TPU (USB). (Since 6.0) */
   ML_NNFW_HW_NPU_VIVANTE  = 0x3003, /**< 0x3003: VeriSilicon's Vivante. (Since 6.0) */
+  ML_NNFW_HW_NPU_SLSI     = 0x3004, /**< 0x3004: Samsung S.LSI. (Since 6.5) */
   ML_NNFW_HW_NPU_SR       = 0x13000, /**< 0x13000: any SR (Samsung Research) made NPU. (Since 6.0) */
 } ml_nnfw_hw_e;
 
