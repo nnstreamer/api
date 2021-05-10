@@ -36,6 +36,7 @@ static const char *ml_nnfw_subplugin_name[] = {
   [ML_NNFW_TYPE_SNPE] = "snpe",
   [ML_NNFW_TYPE_PYTORCH] = "pytorch",
   [ML_NNFW_TYPE_NNTR_INF] = "nntrainer",
+  [ML_NNFW_TYPE_VD_AIFW] = "vd_aifw",
   NULL
 };
 
@@ -1124,6 +1125,13 @@ ml_validate_model_file (const char *const *model,
       /** @todo Need to check method to validate model */
       ml_loge ("Given NNFW is not supported yet.");
       status = ML_ERROR_NOT_SUPPORTED;
+      break;
+    case ML_NNFW_TYPE_VD_AIFW:
+      if (!g_str_equal (file_ext[0], ".nb") &&
+          !g_str_equal (file_ext[0], ".ncp") &&
+          !g_str_equal (file_ext[0], ".bin")) {
+        status = ML_ERROR_INVALID_PARAMETER;
+      }
       break;
     case ML_NNFW_TYPE_SNAP:
 #if !defined (__ANDROID__)
