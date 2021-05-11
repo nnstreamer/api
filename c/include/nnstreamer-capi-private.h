@@ -186,6 +186,8 @@ typedef struct {
   /* private */
   void *user_data; /**< The user data to pass to the callback function */
   ml_handle_destroy_cb destroy; /**< The function to be called to release the allocated buffer */
+  GMutex lock; /**< Lock for thread safety */
+  int nolock; /**< Set non-zero to avoid using m (giving up thread safety) */
 } ml_tensors_data_s;
 
 /**

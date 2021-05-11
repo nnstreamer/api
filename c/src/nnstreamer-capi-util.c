@@ -615,6 +615,7 @@ ml_tensors_data_destroy (ml_tensors_data_h data)
     return ML_ERROR_INVALID_PARAMETER;
 
   _data = (ml_tensors_data_s *) data;
+  G_LOCK_UNLESS_NOLOCK (*_data);
 
   if (_data->destroy) {
     status = _data->destroy (_data, _data->user_data);
@@ -627,6 +628,8 @@ ml_tensors_data_destroy (ml_tensors_data_h data)
     }
   }
 
+  G_UNLOCK_UNLESS_NOLOCK (*_data);
+  g_mutex_clear (&_data->lock);
   g_free (_data);
   return status;
 }
@@ -656,6 +659,7 @@ ml_tensors_data_create_no_alloc (const ml_tensors_info_h info,
     ml_loge ("Failed to allocate the tensors data handle.");
     return ML_ERROR_OUT_OF_MEMORY;
   }
+  g_mutex_init (&_data->lock);
 
   _info = (ml_tensors_info_s *) info;
   if (_info != NULL) {
@@ -695,12 +699,15 @@ ml_tensors_data_clone_no_alloc (const ml_tensors_data_s * data_src,
     ml_loge ("Failed to allocate the tensors data handle.");
     return ML_ERROR_OUT_OF_MEMORY;
   }
+  g_mutex_init (&_data->lock);
+  G_LOCK_UNLESS_NOLOCK (*_data);
 
   _data->num_tensors = data_src->num_tensors;
   memcpy (_data->tensors, data_src->tensors,
       sizeof (ml_tensor_data_s) * data_src->num_tensors);
 
   *data = _data;
+  G_UNLOCK_UNLESS_NOLOCK (*_data);
   return ML_ERROR_NONE;
 }
 
@@ -760,6 +767,7 @@ ml_tensors_data_get_tensor_data (ml_tensors_data_h data, unsigned int index,
     void **raw_data, size_t *data_size)
 {
   ml_tensors_data_s *_data;
+  int status = ML_ERROR_NONE;
 
   check_feature_state ();
 
@@ -767,14 +775,19 @@ ml_tensors_data_get_tensor_data (ml_tensors_data_h data, unsigned int index,
     return ML_ERROR_INVALID_PARAMETER;
 
   _data = (ml_tensors_data_s *) data;
+  G_LOCK_UNLESS_NOLOCK (*_data);
 
-  if (_data->num_tensors <= index)
-    return ML_ERROR_INVALID_PARAMETER;
+  if (_data->num_tensors <= index) {
+    status = ML_ERROR_INVALID_PARAMETER;
+    goto report;
+  }
 
   *raw_data = _data->tensors[index].tensor;
   *data_size = _data->tensors[index].size;
 
-  return ML_ERROR_NONE;
+report:
+  G_UNLOCK_UNLESS_NOLOCK (*_data);
+  return status;
 }
 
 /**
@@ -785,6 +798,8 @@ ml_tensors_data_set_tensor_data (ml_tensors_data_h data, unsigned int index,
     const void *raw_data, const size_t data_size)
 {
   ml_tensors_data_s *_data;
+  int status = ML_ERROR_NONE;
+
 
   check_feature_state ();
 
@@ -792,16 +807,24 @@ ml_tensors_data_set_tensor_data (ml_tensors_data_h data, unsigned int index,
     return ML_ERROR_INVALID_PARAMETER;
 
   _data = (ml_tensors_data_s *) data;
+  G_LOCK_UNLESS_NOLOCK (*_data);
 
-  if (_data->num_tensors <= index)
-    return ML_ERROR_INVALID_PARAMETER;
+  if (_data->num_tensors <= index) {
+    status = ML_ERROR_INVALID_PARAMETER;
+    goto report;
+  }
 
-  if (data_size <= 0 || _data->tensors[index].size < data_size)
-    return ML_ERROR_INVALID_PARAMETER;
+  if (data_size <= 0 || _data->tensors[index].size < data_size) {
+    status = ML_ERROR_INVALID_PARAMETER;
+    goto report;
+  }
 
   if (_data->tensors[index].tensor != raw_data)
     memcpy (_data->tensors[index].tensor, raw_data, data_size);
-  return ML_ERROR_NONE;
+
+report:
+  G_UNLOCK_UNLESS_NOLOCK (*_data);
+  return status;
 }
 
 /**
@@ -845,6 +868,7 @@ ml_tensors_info_clone (ml_tensors_info_h dest, const ml_tensors_info_h src)
 
 /**
  * @brief Copies tensor meta info from gst tensors info.
+ * @bug Thread safety required. Check its internal users first!
  */
 void
 ml_tensors_info_copy_from_gst (ml_tensors_info_s * ml_info,
@@ -917,6 +941,7 @@ ml_tensors_info_copy_from_gst (ml_tensors_info_s * ml_info,
 
 /**
  * @brief Copies tensor meta info from gst tensors info.
+ * @bug Thread safety required. Check its internal users first!
  */
 void
 ml_tensors_info_copy_from_ml (GstTensorsInfo * gst_info,
