@@ -8,7 +8,7 @@
  *        This allows to construct and control NNStreamer pipelines.
  * @see	https://github.com/nnstreamer/nnstreamer
  * @author MyungJoo Ham <myungjoo.ham@samsung.com>
- * @bug No known bugs except for NYI items
+ * @bug Thread safety for ml_tensors_data should be addressed.
  */
 
 #include <string.h>
@@ -293,6 +293,7 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
     ml_loge ("Failed to allocate memory for tensors data in sink callback.");
     return;
   }
+  g_mutex_init (&data->lock);
 
   data->num_tensors = num_mems;
   for (i = 0; i < num_mems; i++) {
@@ -399,6 +400,7 @@ error:
   }
 
   if (data) {
+    g_mutex_clear (&data->lock);
     g_free (data);
     data = NULL;
   }
@@ -1426,12 +1428,13 @@ ml_pipeline_src_input_data (ml_pipeline_src_h h, ml_tensors_data_h data,
     ret = ML_ERROR_INVALID_PARAMETER;
     goto unlock_return;
   }
+  G_LOCK_UNLESS_NOLOCK (*_data);
 
   if (_data->num_tensors < 1 || _data->num_tensors > ML_TENSOR_SIZE_LIMIT) {
     ml_loge ("The tensor size is invalid. It should be 1 ~ %u; where it is %u",
         ML_TENSOR_SIZE_LIMIT, _data->num_tensors);
     ret = ML_ERROR_INVALID_PARAMETER;
-    goto destroy_data;
+    goto dont_destroy_data;
   }
 
   ret = ml_pipeline_src_parse_tensors_info (elem);
@@ -1439,7 +1442,7 @@ ml_pipeline_src_input_data (ml_pipeline_src_h h, ml_tensors_data_h data,
   if (ret != ML_ERROR_NONE) {
     ml_logw
         ("The pipeline is not ready to accept inputs. The input is ignored.");
-    goto destroy_data;
+    goto dont_destroy_data;
   }
 
   if (!elem->is_media_stream) {
@@ -1449,7 +1452,7 @@ ml_pipeline_src_input_data (ml_pipeline_src_h h, ml_tensors_data_h data,
           elem->name, elem->tensors_info.num_tensors, _data->num_tensors);
 
       ret = ML_ERROR_INVALID_PARAMETER;
-      goto destroy_data;
+      goto dont_destroy_data;
     }
 
     for (i = 0; i < elem->tensors_info.num_tensors; i++) {
@@ -1461,7 +1464,7 @@ ml_pipeline_src_input_data (ml_pipeline_src_h h, ml_tensors_data_h data,
             i, _data->tensors[i].size, sz);
 
         ret = ML_ERROR_INVALID_PARAMETER;
-        goto destroy_data;
+        goto dont_destroy_data;
       }
     }
   }
@@ -1480,11 +1483,17 @@ ml_pipeline_src_input_data (ml_pipeline_src_h h, ml_tensors_data_h data,
     /** @todo Verify that gst_buffer_append lists tensors/gstmem in the correct order */
   }
 
+  /* Unlock if it's not auto-free. We do not know when it'll be freed. */
+  if (policy == ML_PIPELINE_BUF_POLICY_DO_NOT_FREE)
+    G_UNLOCK_UNLESS_NOLOCK (*_data);
+
   /* Push the data! */
   gret = gst_app_src_push_buffer (GST_APP_SRC (elem->element), buffer);
 
   /* Free data ptr if buffer policy is auto-free */
   if (policy == ML_PIPELINE_BUF_POLICY_AUTO_FREE) {
+    G_UNLOCK_UNLESS_NOLOCK (*_data);
+    g_mutex_clear (&_data->lock);
     g_free (_data);
     _data = NULL;
   }
@@ -1498,11 +1507,15 @@ ml_pipeline_src_input_data (ml_pipeline_src_h h, ml_tensors_data_h data,
     ret = ML_ERROR_STREAMS_PIPE;
   }
 
-destroy_data:
   if (_data != NULL && policy == ML_PIPELINE_BUF_POLICY_AUTO_FREE) {
     /* Free data handle */
+    G_UNLOCK_UNLESS_NOLOCK (*_data);
     ml_tensors_data_destroy (data);
   }
+  goto unlock_return;
+
+dont_destroy_data:
+  G_UNLOCK_UNLESS_NOLOCK (*_data);
 
   handle_exit (h);
 }
@@ -2366,12 +2379,14 @@ ml_pipeline_custom_invoke (void *data, const GstTensorFilterProperties * prop,
   ml_tensors_data_s *_data;
   guint i;
 
-  c = (ml_custom_filter_s *) data;
   in_data = out_data = NULL;
+  c = (ml_custom_filter_s *) data;
 
   /* internal error? */
   if (!c || !c->cb)
     return -1;
+
+  g_mutex_lock (&c->lock);
 
   /* prepare invoke */
   status = ml_tensors_data_create_no_alloc (c->in_info, &in_data);
@@ -2391,9 +2406,11 @@ ml_pipeline_custom_invoke (void *data, const GstTensorFilterProperties * prop,
     _data->tensors[i].tensor = out[i].data;
 
   /* call invoke callback */
+
   status = c->cb (in_data, out_data, c->pdata);
 
 done:
+  g_mutex_unlock (&c->lock);
   /* NOTE: DO NOT free tensor data */
   g_free (in_data);
   g_free (out_data);
