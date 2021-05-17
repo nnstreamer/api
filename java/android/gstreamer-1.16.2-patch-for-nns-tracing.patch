@@ -1,0 +1,59 @@
+diff -ruN gstreamer_android-1.0.c.in gstreamer_android-1.0.c.in
+--- gstreamer_android-1.0.c.in	2021-05-17 14:11:27.568460502 +0900
++++ gstreamer_android-1.0.c.in	2021-05-17 14:41:41.028432362 +0900
+@@ -4,6 +4,8 @@
+ #include <android/log.h>
+ #include <string.h>
+ 
++extern void _priv_gst_tracing_init ();
++
+ /* XXX: Workaround for Android <21 making signal() an inline function
+  * around bsd_signal(), and Android >= 21 not having any bsd_signal()
+  * symbol but only signal().
+@@ -267,7 +269,7 @@
+       android_log_level = ANDROID_LOG_DEBUG;
+       break;
+     default:
+-      android_log_level = ANDROID_LOG_VERBOSE;
++      android_log_level = ANDROID_LOG_INFO;
+       break;
+   }
+ 
+@@ -532,11 +534,18 @@
+ 
+     certs = g_build_filename (files_dir, "ssl", "certs", "ca-certificates.crt", NULL);
+     g_setenv ("CA_CERTIFICATES", certs, TRUE);
++
++    g_setenv ("GST_SHARK_LOCATION", files_dir, TRUE);
++
+     g_free (certs);
+   }
+   g_free (cache_dir);
+   g_free (files_dir);
+ 
++  /* set env for tracer */
++  g_setenv ("GST_DEBUG", "GST_TRACER:7", TRUE);
++  g_setenv ("GST_TRACERS", "interlatency;proctime", TRUE);
++
+   /* Set GLib print handlers */
+   g_set_print_handler (glib_print_handler);
+   g_set_printerr_handler (glib_printerr_handler);
+@@ -563,6 +572,9 @@
+   }
+   gst_android_register_static_plugins ();
+   gst_android_load_gio_modules ();
++
++  _priv_gst_tracing_init ();
++
+   __android_log_print (ANDROID_LOG_INFO, "GStreamer",
+       "GStreamer initialization complete");
+ }
+diff -ruN plugins.mk plugins.mk
+--- plugins.mk	2021-05-17 13:52:05.344478537 +0900
++++ plugins.mk	2021-05-17 14:42:25.268431675 +0900
+@@ -1,4 +1,4 @@
+-GSTREAMER_PLUGINS_CORE := coreelements coretracers adder app audioconvert audiomixer audiorate audioresample audiotestsrc compositor gio overlaycomposition pango rawparse typefindfunctions videoconvert videorate videoscale videotestsrc volume autodetect videofilter
++GSTREAMER_PLUGINS_CORE := coreelements coretracers adder app audioconvert audiomixer audiorate audioresample audiotestsrc compositor gio overlaycomposition pango rawparse typefindfunctions videoconvert videorate videoscale videotestsrc volume autodetect videofilter sharktracers
+ GSTREAMER_PLUGINS_CODECS := subparse ogg theora vorbis opus ivorbisdec alaw apetag audioparsers auparse avi dv flac flv flxdec icydemux id3demux isomp4 jpeg lame matroska mpg123 mulaw multipart png speex taglib vpx wavenc wavpack wavparse y4menc adpcmdec adpcmenc bz2 dashdemux dvbsuboverlay dvdspu hls id3tag kate midi mxf openh264 opusparse pcapparse pnm rfbsrc siren smoothstreaming subenc videoparsersbad y4mdec jpegformat gdp rsvg openjpeg spandsp sbc androidmedia
+ GSTREAMER_PLUGINS_ENCODING := encoding
+ GSTREAMER_PLUGINS_NET := tcp rtsp rtp rtpmanager soup udp dtls netsim sctp sdpelem srtp srt webrtc nice rtspclientsink

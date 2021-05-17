@@ -70,8 +70,6 @@
 ##@@ For example, to build library with core plugins for arm64-v8a
 ##@@  ./build-nnstreamer-android-lib.sh --api_option=lite --target_abi=arm64-v8a
 
-set -e
-
 # API build option
 # 'all' : default
 # 'lite' : with GStreamer core plugins
@@ -261,6 +259,10 @@ elif [[ $build_type != "all" ]]; then
     echo "Failed, unknown build type $build_type." && exit 1
 fi
 
+if [[ $enable_tracing == "yes" ]]; then
+    [ $target_abi != "arm64-v8a" ] && echo "Set target ABI arm64-v8a to build with tracing." && exit 1
+fi
+
 if [[ $enable_snap == "yes" ]]; then
     [ -z "$SNAP_DIRECTORY" ] && echo "Need to set SNAP_DIRECTORY, to build sub-plugin for SNAP." && exit 1
     [ $target_abi != "arm64-v8a" ] && echo "Set target ABI arm64-v8a to build sub-plugin for SNAP." && exit 1
@@ -358,14 +360,20 @@ fi
 
 echo "ML API root directory: $ml_api_dir"
 
-# Enable GStreamer Tracing feature
+# Patch GStreamer build script
+echo "Patching Gstreamer build script for NNStreamer"
+pushd $gstreamer_dir/arm64/share/gst-android/ndk-build/
+patch -N < $ml_api_dir/java/android/gstreamer-1.16.2-patch-for-nns.patch
+popd
+pushd $gstreamer_dir/armv7/share/gst-android/ndk-build/
+patch -N < $ml_api_dir/java/android/gstreamer-1.16.2-patch-for-nns.patch
+popd
+
+# Enable GStreamer Tracing feature and GstShark
 if [[ $enable_tracing == "yes" ]]; then
-    echo "Patching GStreamer build script to enable tracing feature"
+    echo "Patching GStreamer build script to enable tracing feature and GstShark"
     pushd $gstreamer_dir/arm64/share/gst-android/ndk-build/
-    patch < $ml_api_dir/java/android/gstreamer_android-1.0.c.in.patch
-    popd
-    pushd $gstreamer_dir/armv7/share/gst-android/ndk-build/
-    patch < $ml_api_dir/java/android/gstreamer_android-1.0.c.in.patch
+    patch -N < $ml_api_dir/java/android/gstreamer-1.16.2-patch-for-nns-tracing.patch
     popd
 fi
 
@@ -393,6 +401,12 @@ mkdir -p $build_dir/external
 svn --force export https://github.com/nnstreamer/nnstreamer-android-resource/trunk/android_api ./$build_dir
 
 rm -f ./$build_dir/external/*.tar.gz ./$build_dir/external/*.tar.xz
+if [[ $enable_tracing == "yes" ]]; then
+    echo "Get Gst-Shark library"
+    wget --directory-prefix=./$build_dir/external https://raw.githubusercontent.com/nnstreamer/nnstreamer-android-resource/master/external/gst-shark.tar.xz
+    tar -xJf ./$build_dir/external/gst-shark.tar.xz -C $gstreamer_dir
+fi
+
 if [[ $enable_tflite == "yes" ]]; then
     wget --directory-prefix=./$build_dir/external https://raw.githubusercontent.com/nnstreamer/nnstreamer-android-resource/master/external/tensorflow-lite-$tf_lite_ver.tar.xz
 fi
@@ -630,15 +644,19 @@ fi
 popd
 
 # Restore GStreamer build script
+echo "Restoring GStreamer build script"
 if [[ $enable_tracing == "yes" ]]; then
-    echo "Restoring GStreamer build script"
     pushd $gstreamer_dir/arm64/share/gst-android/ndk-build/
-    patch -R < $ml_api_dir/java/android/gstreamer_android-1.0.c.in.patch
-    popd
-    pushd $gstreamer_dir/armv7/share/gst-android/ndk-build/
-    patch -R < $ml_api_dir/java/android/gstreamer_android-1.0.c.in.patch
+    patch -R < $ml_api_dir/java/android/gstreamer-1.16.2-patch-for-nns-tracing.patch
     popd
 fi
+
+pushd $gstreamer_dir/arm64/share/gst-android/ndk-build/
+patch -R < $ml_api_dir/java/android/gstreamer-1.16.2-patch-for-nns.patch
+popd
+pushd $gstreamer_dir/armv7/share/gst-android/ndk-build/
+patch -R < $ml_api_dir/java/android/gstreamer-1.16.2-patch-for-nns.patch
+popd
 
 # Remove build directory
 rm -rf $build_dir

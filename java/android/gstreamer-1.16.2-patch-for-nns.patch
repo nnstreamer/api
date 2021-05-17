@@ -1,0 +1,43 @@
+diff -ruN gstreamer-1.0.mk gstreamer-1.0.mk
+--- gstreamer-1.0.mk	2019-12-05 23:21:28.000000000 +0900
++++ gstreamer-1.0.mk	2021-05-17 13:39:42.076490000 +0900
+@@ -127,12 +127,12 @@
+ GSTREAMER_PLUGINS_CLASSES    := $(strip \
+ 			$(subst $(GSTREAMER_NDK_BUILD_PATH),, \
+ 			$(foreach plugin,$(GSTREAMER_PLUGINS), \
+-			$(wildcard $(GSTREAMER_NDK_BUILD_PATH)$(plugin)/*.java))))
++			$(wildcard $(GSTREAMER_NDK_BUILD_PATH)/$(plugin)/*.java))))
+ 
+ GSTREAMER_PLUGINS_WITH_CLASSES := $(strip \
+ 			$(subst $(GSTREAMER_NDK_BUILD_PATH),, \
+ 			$(foreach plugin, $(GSTREAMER_PLUGINS), \
+-			$(wildcard $(GSTREAMER_NDK_BUILD_PATH)$(plugin)))))
++			$(wildcard $(GSTREAMER_NDK_BUILD_PATH)/$(plugin)))))
+ 
+ # Generate the plugins' declaration strings
+ GSTREAMER_PLUGINS_DECLARE    := $(foreach plugin, $(GSTREAMER_PLUGINS), \
+@@ -259,7 +259,7 @@
+ 	$(hide)$(foreach plugin,$(GSTREAMER_PLUGINS_WITH_CLASSES), \
+ 		$(call host-mkdir,$(GSTREAMER_JAVA_SRC_DIR)/org/freedesktop/gstreamer/$(plugin)) && ) echo Done mkdir
+ 	$(hide)$(foreach file,$(GSTREAMER_PLUGINS_CLASSES), \
+-		$(call host-cp,$(GSTREAMER_NDK_BUILD_PATH)$(file),$(GSTREAMER_JAVA_SRC_DIR)/org/freedesktop/gstreamer/$(file)) && ) echo Done cp
++		$(call host-cp,$(GSTREAMER_NDK_BUILD_PATH)/$(file),$(GSTREAMER_JAVA_SRC_DIR)/org/freedesktop/gstreamer/$(file)) && ) echo Done cp
+ 	$(hide)$(SED_LOCAL) "s;@INCLUDE_FONTS@;$(GSTREAMER_INCLUDE_FONTS_SUBST);g" $(GSTREAMER_NDK_BUILD_PATH)/GStreamer.java | $(SED_LOCAL) "s;@INCLUDE_CA_CERTIFICATES@;$(GSTREAMER_INCLUDE_CA_CERTIFICATES_SUBST);g" | $(SED_LOCAL) "s;@INCLUDE_COPY_FILE@;$(GSTREAMER_COPY_FILE_SUBST);g" > $(GSTREAMER_JAVA_SRC_DIR)/org/freedesktop/gstreamer/GStreamer.java
+ 
+ ifndef GSTREAMER_ASSETS_DIR
+diff -ruN gstreamer_android-1.0.c.in gstreamer_android-1.0.c.in
+--- gstreamer_android-1.0.c.in	2019-12-05 23:21:28.000000000 +0900
++++ gstreamer_android-1.0.c.in	2021-05-17 14:11:27.568460502 +0900
+@@ -592,9 +592,9 @@
+   if (!klass) {
+     __android_log_print (ANDROID_LOG_ERROR, "GStreamer",
+         "Could not retrieve class org.freedesktop.gstreamer.GStreamer");
+-    return 0;
+-  }
+-  if ((*env)->RegisterNatives (env, klass, native_methods,
++    if ((*env)->ExceptionCheck (env))
++      (*env)->ExceptionClear (env);
++  } else if ((*env)->RegisterNatives (env, klass, native_methods,
+           G_N_ELEMENTS (native_methods))) {
+     __android_log_print (ANDROID_LOG_ERROR, "GStreamer",
+         "Could not register native methods for org.freedesktop.gstreamer.GStreamer");
