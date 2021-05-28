@@ -366,7 +366,7 @@ int ml_tensors_info_initialize (ml_tensors_info_s *info);
 int ml_tensors_info_compare (const ml_tensors_info_h info1, const ml_tensors_info_h info2, bool *equal);
 
 /**
- * @brief Frees the tensors info pointer.
+ * @brief Frees and initialize the data in tensors info.
  * @since_tizen 5.5
  * @param[in] info The tensors info pointer to be freed.
  */
@@ -386,6 +386,14 @@ void ml_tensors_info_copy_from_gst (ml_tensors_info_s *ml_info, const GstTensors
  * @brief Copies tensor metadata from ml tensors info.
  */
 void ml_tensors_info_copy_from_ml (GstTensorsInfo *gst_info, const ml_tensors_info_s *ml_info);
+
+/**
+ * @brief Frees the tensors data handle and its data.
+ * @param[in] data The handle of tensors data.
+ * @param[in] free_data The flag to free the buffers in handle.
+ * @return @c 0 on success. Otherwise a negative error value.
+ */
+int ml_tensors_data_destroy_internal (ml_tensors_data_h data, gboolean free_data);
 
 /**
  * @brief Creates a tensor data frame without buffer with the given tensors information.
