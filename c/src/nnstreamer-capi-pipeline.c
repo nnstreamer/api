@@ -10,7 +10,7 @@
  * @author MyungJoo Ham <myungjoo.ham@samsung.com>
  * @bug No known bugs except for NYI items
  */
-
+/** CI test */
 #include <string.h>
 #include <glib.h>
 #include <gst/gstbuffer.h>
