@@ -72,23 +72,16 @@ int
 ml_tensors_info_create_from_gst (ml_tensors_info_h * ml_info,
     GstTensorsInfo * gst_info)
 {
-  ml_tensors_info_s *tensors_info;
-
-  check_feature_state ();
+  int status;
 
   if (!ml_info || !gst_info)
     return ML_ERROR_INVALID_PARAMETER;
 
-  *ml_info = tensors_info = g_new0 (ml_tensors_info_s, 1);
-  if (tensors_info == NULL) {
-    ml_loge ("Failed to allocate the tensors info handle.");
-    return ML_ERROR_OUT_OF_MEMORY;
-  }
-  g_mutex_init (&tensors_info->lock);
+  status = ml_tensors_info_create (ml_info);
+  if (status != ML_ERROR_NONE)
+    return status;
 
-  /* init and copy tensors info from gst struct */
-  ml_tensors_info_initialize (tensors_info);
-  ml_tensors_info_copy_from_gst (tensors_info, gst_info);
+  ml_tensors_info_copy_from_gst (*ml_info, gst_info);
   return ML_ERROR_NONE;
 }
 
@@ -592,7 +585,7 @@ ml_tensors_info_get_tensor_size (ml_tensors_info_h info,
 }
 
 /**
- * @brief Frees the tensors info pointer.
+ * @brief Frees and initialize the data in tensors info.
  * @note This does not touch the lock
  */
 void
@@ -611,7 +604,44 @@ ml_tensors_info_free (ml_tensors_info_s * info)
   }
 
   ml_tensors_info_initialize (info);
+}
 
+/**
+ * @brief Frees the tensors data handle and its data.
+ * @param[in] data The handle of tensors data.
+ * @param[in] free_data The flag to free the buffers in handle.
+ * @return @c 0 on success. Otherwise a negative error value.
+ */
+int
+ml_tensors_data_destroy_internal (ml_tensors_data_h data, gboolean free_data)
+{
+  int status = ML_ERROR_NONE;
+  ml_tensors_data_s *_data;
+  guint i;
+
+  if (!data)
+    return ML_ERROR_INVALID_PARAMETER;
+
+  _data = (ml_tensors_data_s *) data;
+  G_LOCK_UNLESS_NOLOCK (*_data);
+
+  if (free_data) {
+    if (_data->destroy) {
+      status = _data->destroy (_data, _data->user_data);
+    } else {
+      for (i = 0; i < ML_TENSOR_SIZE_LIMIT; i++) {
+        if (_data->tensors[i].tensor) {
+          g_free (_data->tensors[i].tensor);
+          _data->tensors[i].tensor = NULL;
+        }
+      }
+    }
+  }
+
+  G_UNLOCK_UNLESS_NOLOCK (*_data);
+  g_mutex_clear (&_data->lock);
+  g_free (_data);
+  return status;
 }
 
 /**
@@ -621,33 +651,8 @@ ml_tensors_info_free (ml_tensors_info_s * info)
 int
 ml_tensors_data_destroy (ml_tensors_data_h data)
 {
-  gint status = ML_ERROR_NONE;
-  ml_tensors_data_s *_data;
-  guint i;
-
   check_feature_state ();
-
-  if (!data)
-    return ML_ERROR_INVALID_PARAMETER;
-
-  _data = (ml_tensors_data_s *) data;
-  G_LOCK_UNLESS_NOLOCK (*_data);
-
-  if (_data->destroy) {
-    status = _data->destroy (_data, _data->user_data);
-  } else {
-    for (i = 0; i < ML_TENSOR_SIZE_LIMIT; i++) {
-      if (_data->tensors[i].tensor) {
-        g_free (_data->tensors[i].tensor);
-        _data->tensors[i].tensor = NULL;
-      }
-    }
-  }
-
-  G_UNLOCK_UNLESS_NOLOCK (*_data);
-  g_mutex_clear (&_data->lock);
-  g_free (_data);
-  return status;
+  return ml_tensors_data_destroy_internal (data, TRUE);
 }
 
 /**
@@ -700,6 +705,7 @@ int
 ml_tensors_data_clone_no_alloc (const ml_tensors_data_s * data_src,
     ml_tensors_data_h * data)
 {
+  int status;
   ml_tensors_data_s *_data;
 
   check_feature_state ();
@@ -707,15 +713,11 @@ ml_tensors_data_clone_no_alloc (const ml_tensors_data_s * data_src,
   if (data == NULL || data_src == NULL)
     return ML_ERROR_INVALID_PARAMETER;
 
-  /* init null */
-  *data = NULL;
+  status = ml_tensors_data_create_no_alloc (NULL,
+      (ml_tensors_data_h *) & _data);
+  if (status != ML_ERROR_NONE)
+    return status;
 
-  _data = g_try_new0 (ml_tensors_data_s, 1);
-  if (!_data) {
-    ml_loge ("Failed to allocate the tensors data handle.");
-    return ML_ERROR_OUT_OF_MEMORY;
-  }
-  g_mutex_init (&_data->lock);
   G_LOCK_UNLESS_NOLOCK (*_data);
 
   _data->num_tensors = data_src->num_tensors;
@@ -815,7 +817,6 @@ ml_tensors_data_set_tensor_data (ml_tensors_data_h data, unsigned int index,
 {
   ml_tensors_data_s *_data;
   int status = ML_ERROR_NONE;
-
 
   check_feature_state ();
 

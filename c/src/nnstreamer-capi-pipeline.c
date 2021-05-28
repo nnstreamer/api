@@ -270,15 +270,17 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
   ml_pipeline_element *elem = user_data;
 
   /** @todo CRITICAL if the pipeline is being killed, don't proceed! */
-
   GstMemory *mem[ML_TENSOR_SIZE_LIMIT];
-  GstMapInfo info[ML_TENSOR_SIZE_LIMIT];
+  GstMapInfo map[ML_TENSOR_SIZE_LIMIT];
   guint i;
   guint num_mems;
   GList *l;
-  ml_tensors_data_s *data = NULL;
+  ml_tensors_data_s *_data = NULL;
+  ml_tensors_info_s *_info;
   size_t total_size = 0;
+  int status;
 
+  _info = &elem->tensors_info;
   num_mems = gst_buffer_n_memory (b);
 
   if (num_mems > ML_TENSOR_SIZE_LIMIT) {
@@ -288,26 +290,26 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
   }
 
   /* set tensor data */
-  data = g_new0 (ml_tensors_data_s, 1);
-  if (data == NULL) {
+  status =
+      ml_tensors_data_create_no_alloc (NULL, (ml_tensors_data_h *) & _data);
+  if (status != ML_ERROR_NONE) {
     ml_loge ("Failed to allocate memory for tensors data in sink callback.");
     return;
   }
-  g_mutex_init (&data->lock);
 
-  data->num_tensors = num_mems;
+  _data->num_tensors = num_mems;
   for (i = 0; i < num_mems; i++) {
     mem[i] = gst_buffer_peek_memory (b, i);
-    if (!gst_memory_map (mem[i], &info[i], GST_MAP_READ)) {
+    if (!gst_memory_map (mem[i], &map[i], GST_MAP_READ)) {
       nns_loge ("Failed to map the output in sink '%s' callback", elem->name);
       num_mems = i;
       goto error;
     }
 
-    data->tensors[i].tensor = info[i].data;
-    data->tensors[i].size = info[i].size;
+    _data->tensors[i].tensor = map[i].data;
+    _data->tensors[i].size = map[i].size;
 
-    total_size += info[i].size;
+    total_size += map[i].size;
   }
 
   g_mutex_lock (&elem->lock);
@@ -324,13 +326,13 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
       if (caps) {
         gboolean found;
 
-        found = get_tensors_info_from_caps (caps, &elem->tensors_info);
+        found = get_tensors_info_from_caps (caps, _info);
         gst_caps_unref (caps);
 
         if (found) {
           elem->size = 0;
 
-          if (elem->tensors_info.num_tensors != num_mems) {
+          if (_info->num_tensors != num_mems) {
             ml_loge
                 ("The sink event of [%s] cannot be handled because the number of tensors mismatches.",
                 elem->name);
@@ -340,14 +342,14 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
             goto error;
           }
 
-          for (i = 0; i < elem->tensors_info.num_tensors; i++) {
-            size_t sz = ml_tensor_info_get_size (&elem->tensors_info.info[i]);
+          for (i = 0; i < _info->num_tensors; i++) {
+            size_t sz = ml_tensor_info_get_size (&_info->info[i]);
 
             /* Not configured, yet. */
             if (sz == 0)
               ml_loge ("The caps for sink(%s) is not configured.", elem->name);
 
-            if (sz != data->tensors[i].size) {
+            if (sz != _data->tensors[i].size) {
               ml_loge
                   ("The sink event of [%s] cannot be handled because the tensor dimension mismatches.",
                   elem->name);
@@ -387,7 +389,7 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
 
     callback = sink->callback_info->cb;
     if (callback)
-      callback (data, &elem->tensors_info, sink->callback_info->pdata);
+      callback (_data, _info, sink->callback_info->pdata);
 
     /** @todo Measure time. Warn if it takes long. Kill if it takes too long. */
   }
@@ -396,13 +398,12 @@ error:
   g_mutex_unlock (&elem->lock);
 
   for (i = 0; i < num_mems; i++) {
-    gst_memory_unmap (mem[i], &info[i]);
+    gst_memory_unmap (mem[i], &map[i]);
   }
 
-  if (data) {
-    g_mutex_clear (&data->lock);
-    g_free (data);
-    data = NULL;
+  if (_data) {
+    ml_tensors_data_destroy_internal (_data, FALSE);
+    _data = NULL;
   }
   return;
 }
@@ -1263,6 +1264,7 @@ static int
 ml_pipeline_src_parse_tensors_info (ml_pipeline_element * elem)
 {
   int ret = ML_ERROR_NONE;
+  ml_tensors_info_s *_info = &elem->tensors_info;
 
   if (elem->src == NULL) {
     elem->src = gst_element_get_static_pad (elem->element, "src");
@@ -1280,7 +1282,7 @@ ml_pipeline_src_parse_tensors_info (ml_pipeline_element * elem)
       size_t sz;
 
       if (caps) {
-        found = get_tensors_info_from_caps (caps, &elem->tensors_info);
+        found = get_tensors_info_from_caps (caps, _info);
 
         if (!found && gst_caps_is_fixed (caps)) {
           GstStructure *caps_s;
@@ -1299,8 +1301,8 @@ ml_pipeline_src_parse_tensors_info (ml_pipeline_element * elem)
       }
 
       if (found) {
-        for (i = 0; i < elem->tensors_info.num_tensors; i++) {
-          sz = ml_tensor_info_get_size (&elem->tensors_info.info[i]);
+        for (i = 0; i < _info->num_tensors; i++) {
+          sz = ml_tensor_info_get_size (&_info->info[i]);
           elem->size += sz;
         }
       } else {
@@ -1495,8 +1497,7 @@ ml_pipeline_src_input_data (ml_pipeline_src_h h, ml_tensors_data_h data,
   /* Free data ptr if buffer policy is auto-free */
   if (policy == ML_PIPELINE_BUF_POLICY_AUTO_FREE) {
     G_UNLOCK_UNLESS_NOLOCK (*_data);
-    g_mutex_clear (&_data->lock);
-    g_free (_data);
+    ml_tensors_data_destroy_internal (_data, FALSE);
     _data = NULL;
   }
 
@@ -2403,7 +2404,6 @@ ml_pipeline_custom_invoke (void *data, const GstTensorFilterProperties * prop,
     _data->tensors[i].tensor = out[i].data;
 
   /* call invoke callback */
-
   status = c->cb (in_data, out_data, c->pdata);
 
 done:
