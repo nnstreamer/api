@@ -19,8 +19,8 @@
 
 #include "nnstreamer.h"
 #include "nnstreamer-single.h"
-#include "tensor_typedef.h"
-#include "nnstreamer_log.h"
+#include <tensor_typedef.h>
+#include <nnstreamer_log.h>
 
 /* Tizen ML feature */
 #if defined (__TIZEN__)
