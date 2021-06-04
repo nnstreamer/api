@@ -8,6 +8,6 @@ includedir=@INCLUDE_INSTALL_DIR@
 Name: tizen-api-ml-inference
 Description: ML inference API for Tizen
 Version: @VERSION@
-Requires: capi-ml-common
+Requires: @ML_INFERENCE_REQUIRE@
 Libs: -L${libdir} -lcapi-nnstreamer
 Cflags: -I${includedir}/nnstreamer

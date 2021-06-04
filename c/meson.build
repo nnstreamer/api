@@ -40,7 +40,6 @@ if (get_option('enable-tizen'))
   message('C-API is in Tizen mode')
 
   tizen_deps = [
-    dependency('capi-base-common'),
     dependency('capi-system-info'),
     dependency('dlog')
   ]
@@ -85,14 +84,22 @@ nns_capi_dep = declare_dependency(link_with: nns_capi_lib,
   include_directories: nns_capi_include,
 )
 
+ml_inf_conf = configuration_data()
+ml_inf_conf.merge_from(api_conf)
+ml_inf_conf.set('ML_INFERENCE_REQUIRE', 'capi-ml-common')
 configure_file(input: 'capi-ml-inference.pc.in', output: 'capi-ml-inference.pc',
   install_dir: join_paths(api_install_libdir, 'pkgconfig'),
   configuration: api_conf
 )
 
+ml_common_api_conf = configuration_data()
+ml_common_api_conf.merge_from(api_conf)
+if get_option('enable-tizen')
+  ml_common_api_conf.set('ML_COMMON_REQUIRE', 'capi-base-common')
+endif
 configure_file(input: 'capi-ml-common.pc.in', output: 'capi-ml-common.pc',
   install_dir: join_paths(api_install_libdir, 'pkgconfig'),
-  configuration: api_conf
+  configuration: ml_common_api_conf
 )
 
 install_headers(nns_capi_headers,
