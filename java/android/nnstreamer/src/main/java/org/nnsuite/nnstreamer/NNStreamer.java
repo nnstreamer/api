@@ -44,7 +44,11 @@ public final class NNStreamer {
     public enum NNFWType {
         /**
          * <a href="https://www.tensorflow.org/lite">TensorFlow Lite</a> is an open source
-         * deep learning framework for on-device inference.
+         * deep learning framework for on-device inference.<br>
+         * <br>
+         * Custom options (available from TensorFlow Lite 2.3.0 and Android 10)<br>
+         * - Delegate: the hardware acceleration of TensorFlow Lite model (GPU/NNAPI/XNNPACK delegates are available)<br>
+         * - NumThreads: the number of threads available to the interpreter
          */
         TENSORFLOW_LITE,
         /**

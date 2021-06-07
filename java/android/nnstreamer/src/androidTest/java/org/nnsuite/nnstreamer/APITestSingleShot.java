@@ -240,8 +240,14 @@ public class APITestSingleShot {
         }
 
         runImageClassification(NNStreamer.NNFWType.TENSORFLOW_LITE, null);
-        runImageClassification(NNStreamer.NNFWType.TENSORFLOW_LITE, "Delegate:NNAPI");
-        runImageClassification(NNStreamer.NNFWType.TENSORFLOW_LITE, "Delegate:GPU");
+
+        /* classification with delegates requires tensorflow-lite 2.3.0 */
+        if (android.os.Build.VERSION.SDK_INT >= 29) {
+            /* NNAPI supports AHardwareBuffer in Android 10. */
+            runImageClassification(NNStreamer.NNFWType.TENSORFLOW_LITE, "Delegate:NNAPI");
+            runImageClassification(NNStreamer.NNFWType.TENSORFLOW_LITE, "Delegate:GPU");
+            runImageClassification(NNStreamer.NNFWType.TENSORFLOW_LITE, "Delegate:XNNPACK");
+        }
     }
 
     @Test
