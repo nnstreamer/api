@@ -23,7 +23,7 @@ SYS_FLATC_VER := $(word 3, $(shell flatc --version))
 endif
 
 ifneq ($(SYS_FLATC_VER), $(FLATBUF_VER))
-$(error Found 'flatc' v$(SYS_FLATC_VER), but required v$(FLATBUF_VER))
+$(warning  Found 'flatc' v$(SYS_FLATC_VER), but required v$(FLATBUF_VER))
 endif
 
 FLATBUF_DIR := $(LOCAL_PATH)/flatbuffers
