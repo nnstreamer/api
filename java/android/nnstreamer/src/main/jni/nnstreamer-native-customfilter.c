@@ -19,6 +19,7 @@ typedef struct
 {
   jmethodID mid_invoke;
   ml_tensors_info_h in_info;
+  ml_tensors_info_h out_info;
   jobject in_info_obj;
 } customfilter_priv_data_s;
 
@@ -31,6 +32,7 @@ nns_customfilter_priv_free (gpointer data, JNIEnv * env)
   customfilter_priv_data_s *priv = (customfilter_priv_data_s *) data;
 
   ml_tensors_info_destroy (priv->in_info);
+  ml_tensors_info_destroy (priv->out_info);
   if (priv->in_info_obj)
     (*env)->DeleteGlobalRef (env, priv->in_info_obj);
 
@@ -41,31 +43,35 @@ nns_customfilter_priv_free (gpointer data, JNIEnv * env)
  * @brief Update input info in private data.
  */
 static gboolean
-nns_customfilter_priv_set_in_info (pipeline_info_s * pipe_info, JNIEnv * env,
-    ml_tensors_info_h in_info)
+nns_customfilter_priv_set_info (pipeline_info_s * pipe_info, JNIEnv * env,
+    const ml_tensors_info_h in_info, const ml_tensors_info_h out_info)
 {
   customfilter_priv_data_s *priv;
   jobject obj_info = NULL;
 
   priv = (customfilter_priv_data_s *) pipe_info->priv_data;
 
-  if (ml_tensors_info_is_equal (in_info, priv->in_info)) {
-    /* do nothing, tensors info is equal. */
-    return TRUE;
+  if (!ml_tensors_info_is_equal (in_info, priv->in_info)) {
+    /* set input info object for fast data conversion */
+    if (!nns_convert_tensors_info (pipe_info, env, in_info, &obj_info)) {
+      nns_loge ("Failed to convert tensors info.");
+      return FALSE;
+    }
+
+    ml_tensors_info_free (priv->in_info);
+    ml_tensors_info_clone (priv->in_info, in_info);
+
+    if (priv->in_info_obj)
+      (*env)->DeleteGlobalRef (env, priv->in_info_obj);
+    priv->in_info_obj = (*env)->NewGlobalRef (env, obj_info);
+    (*env)->DeleteLocalRef (env, obj_info);
   }
 
-  if (!nns_convert_tensors_info (pipe_info, env, in_info, &obj_info)) {
-    nns_loge ("Failed to convert tensors info.");
-    return FALSE;
+  if (!ml_tensors_info_is_equal (out_info, priv->out_info)) {
+    ml_tensors_info_free (priv->out_info);
+    ml_tensors_info_clone (priv->out_info, out_info);
   }
 
-  ml_tensors_info_free (priv->in_info);
-  ml_tensors_info_clone (priv->in_info, in_info);
-
-  if (priv->in_info_obj)
-    (*env)->DeleteGlobalRef (env, priv->in_info_obj);
-  priv->in_info_obj = (*env)->NewGlobalRef (env, obj_info);
-  (*env)->DeleteLocalRef (env, obj_info);
   return TRUE;
 }
 
@@ -116,7 +122,7 @@ nns_customfilter_invoke (const ml_tensors_data_h in, ml_tensors_data_h out,
     goto done;
   }
 
-  if (!nns_parse_tensors_data (pipe_info, env, obj_out_data, TRUE, &out, NULL)) {
+  if (!nns_parse_tensors_data (pipe_info, env, obj_out_data, TRUE, priv->out_info, &out)) {
     nns_loge ("Failed to parse output data.");
     goto done;
   }
@@ -161,6 +167,7 @@ nns_native_custom_initialize (JNIEnv * env, jobject thiz, jstring name,
   priv->mid_invoke = (*env)->GetMethodID (env, pipe_info->cls, "invoke",
       "(L" NNS_CLS_TDATA ";)L" NNS_CLS_TDATA ";");
   ml_tensors_info_create (&priv->in_info);
+  ml_tensors_info_create (&priv->out_info);
 
   nns_set_priv_data (pipe_info, priv, nns_customfilter_priv_free);
 
@@ -174,8 +181,8 @@ nns_native_custom_initialize (JNIEnv * env, jobject thiz, jstring name,
     goto done;
   }
 
-  /* update input info */
-  if (!nns_customfilter_priv_set_in_info (pipe_info, env, in_info)) {
+  /* set in/out info in private data */
+  if (!nns_customfilter_priv_set_info (pipe_info, env, in_info, out_info)) {
     goto done;
   }
 

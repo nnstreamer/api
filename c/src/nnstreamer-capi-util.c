@@ -622,6 +622,8 @@ ml_tensors_data_destroy_internal (ml_tensors_data_h data, gboolean free_data)
     }
   }
 
+  ml_tensors_info_destroy (_data->info);
+
   G_UNLOCK_UNLESS_NOLOCK (*_data);
   g_mutex_clear (&_data->lock);
   g_free (_data);
@@ -668,6 +670,9 @@ ml_tensors_data_create_no_alloc (const ml_tensors_info_h info,
 
   _info = (ml_tensors_info_s *) info;
   if (_info != NULL) {
+    ml_tensors_info_create (&_data->info);
+    ml_tensors_info_clone (_data->info, info);
+
     G_LOCK_UNLESS_NOLOCK (*_info);
     _data->num_tensors = _info->num_tensors;
     for (i = 0; i < _data->num_tensors; i++) {
@@ -697,7 +702,7 @@ ml_tensors_data_clone_no_alloc (const ml_tensors_data_s * data_src,
   if (data == NULL || data_src == NULL)
     return ML_ERROR_INVALID_PARAMETER;
 
-  status = ml_tensors_data_create_no_alloc (NULL,
+  status = ml_tensors_data_create_no_alloc (data_src->info,
       (ml_tensors_data_h *) & _data);
   if (status != ML_ERROR_NONE)
     return status;
