@@ -617,7 +617,7 @@ nns_native_pipe_input_data (JNIEnv * env, jobject thiz, jlong handle,
     goto done;
   }
 
-  if (!nns_parse_tensors_data (pipe_info, env, in, TRUE, &in_data, NULL)) {
+  if (!nns_parse_tensors_data (pipe_info, env, in, TRUE, NULL, &in_data)) {
     nns_loge ("Failed to parse input data.");
     goto done;
   }

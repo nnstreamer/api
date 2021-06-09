@@ -17,6 +17,7 @@
  */
 typedef struct
 {
+  ml_tensors_info_h in_info;
   ml_tensors_info_h out_info;
   jobject out_info_obj;
 } singleshot_priv_data_s;
@@ -29,6 +30,7 @@ nns_singleshot_priv_free (gpointer data, JNIEnv * env)
 {
   singleshot_priv_data_s *priv = (singleshot_priv_data_s *) data;
 
+  ml_tensors_info_destroy (priv->in_info);
   ml_tensors_info_destroy (priv->out_info);
   if (priv->out_info_obj)
     (*env)->DeleteGlobalRef (env, priv->out_info_obj);
@@ -44,26 +46,37 @@ nns_singleshot_priv_set_info (pipeline_info_s * pipe_info, JNIEnv * env)
 {
   ml_single_h single;
   singleshot_priv_data_s *priv;
-  ml_tensors_info_h out_info;
+  ml_tensors_info_h in_info, out_info;
   jobject obj_info = NULL;
+  gboolean ret = FALSE;
 
   single = pipe_info->pipeline_handle;
   priv = (singleshot_priv_data_s *) pipe_info->priv_data;
+  in_info = out_info = NULL;
+
+  if (ml_single_get_input_info (single, &in_info) != ML_ERROR_NONE) {
+    nns_loge ("Failed to get input info.");
+    goto done;
+  }
 
   if (ml_single_get_output_info (single, &out_info) != ML_ERROR_NONE) {
     nns_loge ("Failed to get output info.");
-    return FALSE;
+    goto done;
+  }
+
+  if (!ml_tensors_info_is_equal (in_info, priv->in_info)) {
+    ml_tensors_info_free (priv->in_info);
+    ml_tensors_info_clone (priv->in_info, in_info);
   }
 
   if (!ml_tensors_info_is_equal (out_info, priv->out_info)) {
     if (!nns_convert_tensors_info (pipe_info, env, out_info, &obj_info)) {
       nns_loge ("Failed to convert output info.");
-      ml_tensors_info_destroy (out_info);
-      return FALSE;
+      goto done;
     }
 
-    ml_tensors_info_destroy (priv->out_info);
-    priv->out_info = out_info;
+    ml_tensors_info_free (priv->out_info);
+    ml_tensors_info_clone (priv->out_info, out_info);
 
     if (priv->out_info_obj)
       (*env)->DeleteGlobalRef (env, priv->out_info_obj);
@@ -71,7 +84,12 @@ nns_singleshot_priv_set_info (pipeline_info_s * pipe_info, JNIEnv * env)
     (*env)->DeleteLocalRef (env, obj_info);
   }
 
-  return TRUE;
+  ret = TRUE;
+
+done:
+  ml_tensors_info_destroy (in_info);
+  ml_tensors_info_destroy (out_info);
+  return ret;
 }
 
 /**
@@ -160,6 +178,7 @@ nns_native_single_open (JNIEnv * env, jobject thiz,
 
   /* set private date */
   priv = g_new0 (singleshot_priv_data_s, 1);
+  ml_tensors_info_create (&priv->in_info);
   ml_tensors_info_create (&priv->out_info);
   nns_set_priv_data (pipe_info, priv, nns_singleshot_priv_free);
 
@@ -215,7 +234,7 @@ nns_native_single_invoke (JNIEnv * env, jobject thiz, jlong handle, jobject in)
   single = pipe_info->pipeline_handle;
   in_data = out_data = NULL;
 
-  if (!nns_parse_tensors_data (pipe_info, env, in, FALSE, &in_data, NULL)) {
+  if (!nns_parse_tensors_data (pipe_info, env, in, FALSE, priv->in_info, &in_data)) {
     nns_loge ("Failed to parse input tensors data.");
     failed = TRUE;
     goto done;
@@ -223,7 +242,7 @@ nns_native_single_invoke (JNIEnv * env, jobject thiz, jlong handle, jobject in)
 
   /* create output object and get the direct buffer address */
   if (!nns_create_tensors_data_object (pipe_info, env, priv->out_info_obj, &result) ||
-      !nns_parse_tensors_data (pipe_info, env, result, FALSE, &out_data, NULL)) {
+      !nns_parse_tensors_data (pipe_info, env, result, FALSE, priv->out_info, &out_data)) {
     nns_loge ("Failed to create output tensors object.");
     failed = TRUE;
     goto done;

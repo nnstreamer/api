@@ -474,29 +474,49 @@ nns_convert_tensors_data (pipeline_info_s * pipe_info, JNIEnv * env,
  */
 gboolean
 nns_parse_tensors_data (pipeline_info_s * pipe_info, JNIEnv * env,
-    jobject obj_data, gboolean clone, ml_tensors_data_h * data_h,
-    ml_tensors_info_h * info_h)
+    jobject obj_data, gboolean clone, const ml_tensors_info_h info_h,
+    ml_tensors_data_h * data_h)
 {
   guint i;
   data_class_info_s *dcls_info;
   ml_tensors_data_s *data;
   jobjectArray data_arr;
   gboolean failed = FALSE;
+  int status;
 
   g_return_val_if_fail (pipe_info, FALSE);
   g_return_val_if_fail (env, FALSE);
   g_return_val_if_fail (obj_data, FALSE);
   g_return_val_if_fail (data_h, FALSE);
 
-  if (*data_h == NULL &&
-      ml_tensors_data_create_no_alloc (NULL, data_h) != ML_ERROR_NONE) {
-    nns_loge ("Failed to create handle for tensors data.");
-    return FALSE;
+  dcls_info = &pipe_info->data_cls_info;
+
+  /* if data is not allocated, create new handle. */
+  if (*data_h == NULL) {
+    ml_tensors_info_h _info = info_h;
+
+    /* parse tensors info in data class */
+    if (_info == NULL) {
+      jobject obj_info =
+          (*env)->CallObjectMethod (env, obj_data, dcls_info->mid_get_info);
+
+      if (obj_info) {
+        nns_parse_tensors_info (pipe_info, env, obj_info, &_info);
+        (*env)->DeleteLocalRef (env, obj_info);
+      }
+    }
+
+    status = ml_tensors_data_create_no_alloc (_info, data_h);
+    if (_info != info_h)
+      ml_tensors_info_destroy (_info);
+
+    if (status != ML_ERROR_NONE) {
+      nns_loge ("Failed to create handle for tensors data.");
+      return FALSE;
+    }
   }
 
-  dcls_info = &pipe_info->data_cls_info;
   data = (ml_tensors_data_s *) (*data_h);
-
   data_arr = (*env)->CallObjectMethod (env, obj_data, dcls_info->mid_get_array);
 
   /* number of tensors data */
@@ -526,17 +546,6 @@ nns_parse_tensors_data (pipeline_info_s * pipe_info, JNIEnv * env,
       nns_loge ("Failed to get array element in tensors data object.");
       failed = TRUE;
       goto done;
-    }
-  }
-
-  /* parse tensors info in data class */
-  if (info_h) {
-    jobject obj_info =
-        (*env)->CallObjectMethod (env, obj_data, dcls_info->mid_get_info);
-
-    if (obj_info) {
-      nns_parse_tensors_info (pipe_info, env, obj_info, info_h);
-      (*env)->DeleteLocalRef (env, obj_info);
     }
   }
 

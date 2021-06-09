@@ -199,6 +199,7 @@ typedef struct {
   ml_tensor_data_s tensors[ML_TENSOR_SIZE_LIMIT]; /**< The list of tensor data. NULL for unused tensors. */
 
   /* private */
+  ml_tensors_info_h info;
   void *user_data; /**< The user data to pass to the callback function */
   ml_handle_destroy_cb destroy; /**< The function to be called to release the allocated buffer */
   GMutex lock; /**< Lock for thread safety */
