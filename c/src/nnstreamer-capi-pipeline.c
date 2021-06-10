@@ -493,6 +493,7 @@ cleanup_node (gpointer data)
     if (gst_app_src_end_of_stream (GST_APP_SRC (e->element)) != GST_FLOW_OK) {
       ml_logw ("Failed to set EOS in %s", e->name);
     }
+    g_mutex_unlock (&e->lock);
     while (!e->pipe->isEOS) {
       eos_check_cnt++;
       /** check EOS every 1ms */
@@ -502,6 +503,7 @@ cleanup_node (gpointer data)
         break;
       }
     }
+    g_mutex_lock (&e->lock);
   }
 
   if (e->custom_destroy) {
