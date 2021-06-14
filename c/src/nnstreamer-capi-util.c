@@ -189,13 +189,42 @@ ml_tensor_info_compare (const ml_tensor_info_s * i1,
 }
 
 /**
+ * @brief Validates the given tensors info is valid without acquiring lock
+ * @note This function assumes that lock on ml_tensors_info_h has already been acquired
+ */
+int
+_ml_tensors_info_validate_nolock (const ml_tensors_info_s * info, bool *valid)
+{
+  guint i;
+  int ret = ML_ERROR_NONE;
+
+  G_VERIFYLOCK_UNLESS_NOLOCK (*info);
+  /* init false */
+  *valid = false;
+
+  if (info->num_tensors < 1) {
+    ret = ML_ERROR_INVALID_PARAMETER;
+    goto done;
+  }
+
+  for (i = 0; i < info->num_tensors; i++) {
+    if (!ml_tensor_info_validate (&info->info[i]))
+      goto done;
+  }
+
+  *valid = true;
+
+done:
+  return ret;
+}
+
+/**
  * @brief Validates the given tensors info is valid.
  */
 int
 ml_tensors_info_validate (const ml_tensors_info_h info, bool *valid)
 {
   ml_tensors_info_s *tensors_info;
-  guint i;
   int ret = ML_ERROR_NONE;
 
   check_feature_state ();
@@ -209,22 +238,9 @@ ml_tensors_info_validate (const ml_tensors_info_h info, bool *valid)
     return ML_ERROR_INVALID_PARAMETER;
 
   G_LOCK_UNLESS_NOLOCK (*tensors_info);
-  /* init false */
-  *valid = false;
 
-  if (tensors_info->num_tensors < 1) {
-    ret = ML_ERROR_INVALID_PARAMETER;
-    goto done;
-  }
+  ret = _ml_tensors_info_validate_nolock (info, valid);
 
-  for (i = 0; i < tensors_info->num_tensors; i++) {
-    if (!ml_tensor_info_validate (&tensors_info->info[i]))
-      goto done;
-  }
-
-  *valid = true;
-
-done:
   G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
   return ret;
 }
@@ -835,6 +851,8 @@ ml_tensors_info_clone (ml_tensors_info_h dest, const ml_tensors_info_h src)
 {
   ml_tensors_info_s *dest_info, *src_info;
   guint i, j;
+  bool valid;
+  int status = ML_ERROR_NONE;
 
   check_feature_state ();
 
@@ -846,6 +864,10 @@ ml_tensors_info_clone (ml_tensors_info_h dest, const ml_tensors_info_h src)
 
   G_LOCK_UNLESS_NOLOCK (*dest_info);
   G_LOCK_UNLESS_NOLOCK (*src_info);
+
+  status = _ml_tensors_info_validate_nolock (src_info, &valid);
+  if (status != ML_ERROR_NONE || !valid)
+    goto done;
 
   ml_tensors_info_initialize (dest_info);
 
@@ -860,10 +882,11 @@ ml_tensors_info_clone (ml_tensors_info_h dest, const ml_tensors_info_h src)
       dest_info->info[i].dimension[j] = src_info->info[i].dimension[j];
   }
 
+done:
   G_UNLOCK_UNLESS_NOLOCK (*src_info);
   G_UNLOCK_UNLESS_NOLOCK (*dest_info);
 
-  return ML_ERROR_NONE;
+  return status;
 }
 
 /**

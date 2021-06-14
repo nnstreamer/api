@@ -156,6 +156,21 @@ typedef struct {
       g_mutex_unlock (l); \
   } while (0)
 
+/**
+ * @brief Macro to verify private lock acquired with nolock condition (lock)
+ * @param sname The name of struct (ml_tensors_info_s or ml_tensors_data_s)
+ */
+#define G_VERIFYLOCK_UNLESS_NOLOCK(sname) \
+  do { \
+    GMutex *l = (GMutex *) &(sname).lock; \
+    if (!(sname).nolock) { \
+      if (g_mutex_trylock(l)) { \
+        g_mutex_unlock(l); \
+        return ML_ERROR_INVALID_PARAMETER; \
+      } \
+    } \
+  } while (0)
+
 
 /**
  * @brief The function to be called when destroying the allocated handle.
@@ -454,6 +469,13 @@ ml_nnfw_type_e ml_get_nnfw_type_by_subplugin_name (const char *name);
  * @return The reference of pipeline itself. Null if the pipeline is not constructed or closed.
  */
 GstElement* ml_pipeline_get_gst_element (ml_pipeline_h pipe);
+
+/**
+ * @brief Validates the given tensors info is valid without acquiring lock
+ * @note This function assumes that lock on ml_tensors_info_s has already been acquired
+ */
+int
+_ml_tensors_info_validate_nolock (const ml_tensors_info_s * info, bool *valid);
 
 #if defined (__TIZEN__)
 /**
