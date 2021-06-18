@@ -403,12 +403,12 @@ svn --force export https://github.com/nnstreamer/nnstreamer-android-resource/tru
 rm -f ./$build_dir/external/*.tar.gz ./$build_dir/external/*.tar.xz
 if [[ $enable_tracing == "yes" ]]; then
     echo "Get Gst-Shark library"
-    wget --directory-prefix=./$build_dir/external https://raw.githubusercontent.com/nnstreamer/nnstreamer-android-resource/master/external/gst-shark.tar.xz
+    wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/gst-shark.tar.xz
     tar -xJf ./$build_dir/external/gst-shark.tar.xz -C $gstreamer_dir
 fi
 
 if [[ $enable_tflite == "yes" ]]; then
-    wget --directory-prefix=./$build_dir/external https://raw.githubusercontent.com/nnstreamer/nnstreamer-android-resource/master/external/tensorflow-lite-$tf_lite_ver.tar.xz
+    wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/tensorflow-lite-$tf_lite_ver.tar.xz
 fi
 
 if [[ $enable_nnfw == "yes" ]]; then
@@ -422,11 +422,11 @@ if [[ $enable_nnfw == "yes" ]]; then
 fi
 
 if [[ $enable_pytorch == "yes" ]]; then
-    wget --directory-prefix=./$build_dir/external https://raw.githubusercontent.com/nnstreamer/nnstreamer-android-resource/master/external/pytorch-$pytorch_ver.tar.xz
+    wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/pytorch-$pytorch_ver.tar.xz
 fi
 
 if [[ $enable_flatbuf == "yes" ]]; then
-    wget --directory-prefix=./$build_dir/external https://raw.githubusercontent.com/nnstreamer/nnstreamer-android-resource/master/external/flatbuffers-${flatbuf_ver}.tar.xz
+    wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/flatbuffers-${flatbuf_ver}.tar.xz
 fi
 
 pushd ./$build_dir
