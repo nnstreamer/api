@@ -91,7 +91,7 @@ include $(LOCAL_PATH)/Android-snap.mk
 endif
 
 ifeq ($(ENABLE_NNFW),true)
-NNS_API_FLAGS += -DENABLE_NNFW=1
+NNS_API_FLAGS += -DENABLE_NNFW_RUNTIME=1
 NNS_SUBPLUGINS += nnfw-subplugin
 
 include $(LOCAL_PATH)/Android-nnfw.mk

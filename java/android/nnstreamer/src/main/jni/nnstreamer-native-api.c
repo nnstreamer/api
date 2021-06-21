@@ -40,7 +40,7 @@ extern void init_filter_tflite (void);
 #if defined (ENABLE_SNAP)
 extern void init_filter_snap (void);
 #endif
-#if defined (ENABLE_NNFW)
+#if defined (ENABLE_NNFW_RUNTIME)
 extern void init_filter_nnfw (void);
 #endif
 #if defined (ENABLE_SNPE)
@@ -698,7 +698,7 @@ nns_get_nnfw_type (jint fw_type, ml_nnfw_type_e * nnfw)
       break;
     case 2: /* NNFWType.NNFW */
       *nnfw = ML_NNFW_TYPE_NNFW;
-#if !defined (ENABLE_NNFW)
+#if !defined (ENABLE_NNFW_RUNTIME)
       nns_logw ("NNFW is not supported.");
       is_supported = FALSE;
 #endif
@@ -792,7 +792,7 @@ nnstreamer_native_initialize (JNIEnv * env, jobject context)
 #if defined (ENABLE_SNAP)
     init_filter_snap ();
 #endif
-#if defined (ENABLE_NNFW)
+#if defined (ENABLE_NNFW_RUNTIME)
     init_filter_nnfw ();
 #endif
 #if defined (ENABLE_SNPE)
