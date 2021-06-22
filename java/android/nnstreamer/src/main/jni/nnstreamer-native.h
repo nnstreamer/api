@@ -14,8 +14,7 @@
 #define __NNSTREAMER_ANDROID_NATIVE_H__
 
 #include <jni.h>
-#include <android/native_window.h>
-#include <android/native_window_jni.h>
+#include <string.h>
 
 #include <gst/gst.h>
 #include <gst/video/video.h>
@@ -251,5 +250,11 @@ nns_native_pipe_register_natives (JNIEnv * env);
 extern gboolean
 nns_native_custom_register_natives (JNIEnv * env);
 #endif
+
+/**
+ * @brief Initialize NNStreamer, register required plugins.
+ */
+extern jboolean
+nnstreamer_native_initialize (JNIEnv * env, jobject context);
 
 #endif /* __NNSTREAMER_ANDROID_NATIVE_H__ */

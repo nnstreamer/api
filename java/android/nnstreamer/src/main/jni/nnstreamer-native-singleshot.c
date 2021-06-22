@@ -447,22 +447,24 @@ done:
  * @brief List of implemented native methods for SingleShot class.
  */
 static JNINativeMethod native_methods_singleshot[] = {
-  {"nativeOpen", "([Ljava/lang/String;L" NNS_CLS_TINFO ";"
+  {(char *) "nativeOpen", (char *) "([Ljava/lang/String;L" NNS_CLS_TINFO ";"
         "L" NNS_CLS_TINFO ";ILjava/lang/String;)J",
       (void *) nns_native_single_open},
-  {"nativeClose", "(J)V", (void *) nns_native_single_close},
-  {"nativeInvoke", "(JL" NNS_CLS_TDATA ";)L" NNS_CLS_TDATA ";",
+  {(char *) "nativeClose", (char *) "(J)V",
+      (void *) nns_native_single_close},
+  {(char *) "nativeInvoke", (char *) "(JL" NNS_CLS_TDATA ";)L" NNS_CLS_TDATA ";",
       (void *) nns_native_single_invoke},
-  {"nativeGetInputInfo", "(J)L" NNS_CLS_TINFO ";",
+  {(char *) "nativeGetInputInfo", (char *) "(J)L" NNS_CLS_TINFO ";",
       (void *) nns_native_single_get_input_info},
-  {"nativeGetOutputInfo", "(J)L" NNS_CLS_TINFO ";",
+  {(char *) "nativeGetOutputInfo", (char *) "(J)L" NNS_CLS_TINFO ";",
       (void *) nns_native_single_get_output_info},
-  {"nativeSetProperty", "(JLjava/lang/String;Ljava/lang/String;)Z",
+  {(char *) "nativeSetProperty", (char *) "(JLjava/lang/String;Ljava/lang/String;)Z",
       (void *) nns_native_single_set_prop},
-  {"nativeGetProperty", "(JLjava/lang/String;)Ljava/lang/String;",
+  {(char *) "nativeGetProperty", (char *) "(JLjava/lang/String;)Ljava/lang/String;",
       (void *) nns_native_single_get_prop},
-  {"nativeSetTimeout", "(JI)Z", (void *) nns_native_single_set_timeout},
-  {"nativeSetInputInfo", "(JL" NNS_CLS_TINFO ";)Z",
+  {(char *) "nativeSetTimeout", (char *) "(JI)Z",
+      (void *) nns_native_single_set_timeout},
+  {(char *) "nativeSetInputInfo", (char *) "(JL" NNS_CLS_TINFO ";)Z",
       (void *) nns_native_single_set_input_info}
 };
 

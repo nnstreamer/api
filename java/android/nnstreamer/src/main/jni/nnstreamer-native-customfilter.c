@@ -225,9 +225,10 @@ nns_native_custom_destroy (JNIEnv * env, jobject thiz, jlong handle)
  * @brief List of implemented native methods for CustomFilter class.
  */
 static JNINativeMethod native_methods_customfilter[] = {
-  {"nativeInitialize", "(Ljava/lang/String;L" NNS_CLS_TINFO ";L" NNS_CLS_TINFO ";)J",
+  {(char *) "nativeInitialize", (char *) "(Ljava/lang/String;L" NNS_CLS_TINFO ";L" NNS_CLS_TINFO ";)J",
       (void *) nns_native_custom_initialize},
-  {"nativeDestroy", "(J)V", (void *) nns_native_custom_destroy}
+  {(char *) "nativeDestroy", (char *) "(J)V",
+      (void *) nns_native_custom_destroy}
 };
 
 /**

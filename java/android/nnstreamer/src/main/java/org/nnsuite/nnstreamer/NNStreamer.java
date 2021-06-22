@@ -6,16 +6,11 @@
 
 package org.nnsuite.nnstreamer;
 
-import android.content.Context;
-import android.os.Build;
-
-import org.freedesktop.gstreamer.GStreamer;
-
 import java.util.Locale;
 
 /**
  * Defines the types and limits in NNStreamer.<br>
- * To use NNStreamer, an application should call {@link #initialize(Context)} with its context.<br>
+ * To use NNStreamer, an application should call {@code NNStreamer.initialize(this)} with its context.<br>
  * <br>
  * NNStreamer is a set of GStreamer plugins that allow GStreamer developers to adopt neural network models easily and efficiently
  * and neural network developers to manage stream pipelines and their filters easily and efficiently.<br>
@@ -108,21 +103,21 @@ public final class NNStreamer {
         /** Unknown data type (usually error) */ UNKNOWN
     }
 
-    private static native boolean nativeInitialize(Context context);
+    private static native boolean nativeInitialize(Object app);
     private static native boolean nativeCheckNNFWAvailability(int fw);
     private static native String nativeGetVersion();
 
     /**
      * Initializes GStreamer and NNStreamer, registering the plugins and loading necessary libraries.
      *
-     * @param context The application context
+     * @param app The application context
      *
      * @return true if successfully initialized
      *
      * @throws IllegalArgumentException if given param is invalid
      */
-    public static boolean initialize(Context context) {
-        if (context == null) {
+    public static boolean initialize(android.content.Context app) {
+        if (app == null) {
             throw new IllegalArgumentException("Given context is invalid");
         }
 
@@ -130,13 +125,13 @@ public final class NNStreamer {
             System.loadLibrary("gstreamer_android");
             System.loadLibrary("nnstreamer-native");
 
-            GStreamer.init(context);
+            org.freedesktop.gstreamer.GStreamer.init(app);
         } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
 
-        return nativeInitialize(context);
+        return nativeInitialize(app);
     }
 
     /**
@@ -151,8 +146,9 @@ public final class NNStreamer {
 
         /* sub-plugin for given framework is available */
         if (available) {
-            String manufacturer = Build.MANUFACTURER.toLowerCase(Locale.getDefault());
-            String hardware = Build.HARDWARE.toLowerCase(Locale.getDefault());
+            Locale locale = Locale.getDefault();
+            String manufacturer = android.os.Build.MANUFACTURER.toLowerCase(locale);
+            String hardware = android.os.Build.HARDWARE.toLowerCase(locale);
 
             switch (fw) {
                 case SNPE:

@@ -3,6 +3,7 @@ package org.nnsuite.nnstreamer;
 import android.os.Environment;
 import android.support.test.rule.GrantPermissionRule;
 import android.support.test.runner.AndroidJUnit4;
+import android.view.Surface;
 import android.view.SurfaceView;
 
 import org.junit.Before;
@@ -1389,8 +1390,10 @@ public class APITestPipeline {
 
         /* invalid surface */
         SurfaceView surfaceView = new SurfaceView(APITestCommon.getContext());
-        if (surfaceView.getHolder().getSurface().isValid()) {
-            fail();
+        Surface surface = surfaceView.getHolder().getSurface();
+
+        if (surface.isValid()) {
+            return;
         }
 
         String desc = "videotestsrc ! videoconvert ! glimagesink name=vsink";
@@ -1399,7 +1402,7 @@ public class APITestPipeline {
             pipe.start();
             Thread.sleep(500);
 
-            pipe.setSurface("vsink", surfaceView.getHolder());
+            pipe.setSurface("vsink", surface);
             fail();
         } catch (Exception e) {
             /* expected */

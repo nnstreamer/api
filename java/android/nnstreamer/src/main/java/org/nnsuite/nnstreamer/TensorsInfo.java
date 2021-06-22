@@ -6,9 +6,6 @@
 
 package org.nnsuite.nnstreamer;
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-
 import java.util.ArrayList;
 
 /**
@@ -71,7 +68,7 @@ public final class TensorsInfo implements AutoCloseable, Cloneable {
      * @throws IndexOutOfBoundsException when the maximum number of tensors in the list
      * @throws IllegalArgumentException if given param is null or invalid
      */
-    public void addTensorInfo(NNStreamer.TensorType type, @NonNull int[] dimension) {
+    public void addTensorInfo(NNStreamer.TensorType type, int[] dimension) {
         addTensorInfo(null, type, dimension);
     }
 
@@ -85,7 +82,7 @@ public final class TensorsInfo implements AutoCloseable, Cloneable {
      * @throws IndexOutOfBoundsException when the maximum number of tensors in the list
      * @throws IllegalArgumentException if given param is null or invalid
      */
-    public void addTensorInfo(@Nullable String name, NNStreamer.TensorType type, @NonNull int[] dimension) {
+    public void addTensorInfo(String name, NNStreamer.TensorType type, int[] dimension) {
         int index = getTensorsCount();
 
         if (index >= NNStreamer.TENSOR_SIZE_LIMIT) {
@@ -159,7 +156,7 @@ public final class TensorsInfo implements AutoCloseable, Cloneable {
      * @throws IndexOutOfBoundsException if the given index is invalid
      * @throws IllegalArgumentException if the given dimension is null or invalid
      */
-    public void setTensorDimension(int index, @NonNull int[] dimension) {
+    public void setTensorDimension(int index, int[] dimension) {
         checkIndexBounds(index);
         mInfoList.get(index).setDimension(dimension);
     }
@@ -237,13 +234,13 @@ public final class TensorsInfo implements AutoCloseable, Cloneable {
         private int type = NNStreamer.TensorType.UNKNOWN.ordinal();
         private int[] dimension = new int[NNStreamer.TENSOR_RANK_LIMIT];
 
-        public TensorInfo(@Nullable String name, NNStreamer.TensorType type, @NonNull int[] dimension) {
+        public TensorInfo(String name, NNStreamer.TensorType type, int[] dimension) {
             setName(name);
             setType(type);
             setDimension(dimension);
         }
 
-        public void setName(@Nullable String name) {
+        public void setName(String name) {
             this.name = name;
         }
 
@@ -263,7 +260,7 @@ public final class TensorsInfo implements AutoCloseable, Cloneable {
             return convertType(this.type);
         }
 
-        public void setDimension(@NonNull int[] dimension) {
+        public void setDimension(int[] dimension) {
             if (dimension == null) {
                 throw new IllegalArgumentException("Given tensor dimension is null");
             }

@@ -12,6 +12,10 @@
 
 #include "nnstreamer-native.h"
 
+#if defined(__ANDROID__)
+#include <android/native_window.h>
+#include <android/native_window_jni.h>
+
 /**
  * @brief Macro to release native window.
  */
@@ -21,6 +25,7 @@
     w = NULL; \
   } \
 } while (0)
+#endif /* __ANDROID__ */
 
 /**
  * @brief Private data for Pipeline class.
@@ -40,6 +45,7 @@ typedef struct
   jobject out_info_obj;
 } pipeline_sink_priv_data_s;
 
+#if defined(__ANDROID__)
 /**
  * @brief Private data for video sink.
  */
@@ -48,18 +54,6 @@ typedef struct
   ANativeWindow *window;
   ANativeWindow *old_window;
 } pipeline_video_sink_priv_data_s;
-
-/**
- * @brief Release private data in pipeline info.
- */
-static void
-nns_pipeline_priv_free (gpointer data, JNIEnv * env)
-{
-  pipeline_priv_data_s *priv = (pipeline_priv_data_s *) data;
-
-  /* nothing to free */
-  g_free (priv);
-}
 
 /**
  * @brief Release private data in video sink.
@@ -76,6 +70,19 @@ nns_pipeline_video_sink_priv_free (gpointer data, JNIEnv * env)
 
     g_free (priv);
   }
+}
+#endif /* __ANDROID__ */
+
+/**
+ * @brief Release private data in pipeline info.
+ */
+static void
+nns_pipeline_priv_free (gpointer data, JNIEnv * env)
+{
+  pipeline_priv_data_s *priv = (pipeline_priv_data_s *) data;
+
+  /* nothing to free */
+  g_free (priv);
 }
 
 /**
@@ -217,6 +224,7 @@ nns_get_sink_handle (pipeline_info_s * pipe_info, const gchar * element_name)
   const nns_element_type_e etype = NNS_ELEMENT_TYPE_SINK;
   ml_pipeline_sink_h handle;
   ml_pipeline_h pipe;
+  element_data_s *item;
   int status;
 
   g_assert (pipe_info);
@@ -226,7 +234,7 @@ nns_get_sink_handle (pipeline_info_s * pipe_info, const gchar * element_name)
       element_name, etype);
   if (handle == NULL) {
     /* get sink handle and register to table */
-    element_data_s *item = g_new0 (element_data_s, 1);
+    item = g_new0 (element_data_s, 1);
     if (item == NULL) {
       nns_loge ("Failed to allocate memory for sink handle data.");
       return NULL;
@@ -264,6 +272,7 @@ nns_get_src_handle (pipeline_info_s * pipe_info, const gchar * element_name)
   const nns_element_type_e etype = NNS_ELEMENT_TYPE_SRC;
   ml_pipeline_src_h handle;
   ml_pipeline_h pipe;
+  element_data_s *item;
   int status;
 
   g_assert (pipe_info);
@@ -279,7 +288,7 @@ nns_get_src_handle (pipeline_info_s * pipe_info, const gchar * element_name)
       return NULL;
     }
 
-    element_data_s *item = g_new0 (element_data_s, 1);
+    item = g_new0 (element_data_s, 1);
     if (item == NULL) {
       nns_loge ("Failed to allocate memory for src handle data.");
       ml_pipeline_src_release_handle (handle);
@@ -311,6 +320,7 @@ nns_get_switch_handle (pipeline_info_s * pipe_info, const gchar * element_name)
   ml_pipeline_switch_h handle;
   ml_pipeline_switch_e switch_type;
   ml_pipeline_h pipe;
+  element_data_s *item;
   int status;
 
   g_assert (pipe_info);
@@ -327,7 +337,7 @@ nns_get_switch_handle (pipeline_info_s * pipe_info, const gchar * element_name)
       return NULL;
     }
 
-    element_data_s *item = g_new0 (element_data_s, 1);
+    item = g_new0 (element_data_s, 1);
     if (item == NULL) {
       nns_loge ("Failed to allocate memory for switch handle data.");
       ml_pipeline_switch_release_handle (handle);
@@ -358,6 +368,7 @@ nns_get_valve_handle (pipeline_info_s * pipe_info, const gchar * element_name)
   const nns_element_type_e etype = NNS_ELEMENT_TYPE_VALVE;
   ml_pipeline_valve_h handle;
   ml_pipeline_h pipe;
+  element_data_s *item;
   int status;
 
   g_assert (pipe_info);
@@ -373,7 +384,7 @@ nns_get_valve_handle (pipeline_info_s * pipe_info, const gchar * element_name)
       return NULL;
     }
 
-    element_data_s *item = g_new0 (element_data_s, 1);
+    item = g_new0 (element_data_s, 1);
     if (item == NULL) {
       nns_loge ("Failed to allocate memory for valve handle data.");
       ml_pipeline_valve_release_handle (handle);
@@ -395,6 +406,7 @@ nns_get_valve_handle (pipeline_info_s * pipe_info, const gchar * element_name)
   return handle;
 }
 
+#if defined(__ANDROID__)
 /**
  * @brief Get video sink element data in the pipeline.
  */
@@ -446,6 +458,7 @@ nns_get_video_sink_data (pipeline_info_s * pipe_info,
 
   return item;
 }
+#endif /* __ANDROID__ */
 
 /**
  * @brief Native method for pipeline API.
@@ -820,6 +833,7 @@ static jboolean
 nns_native_pipe_initialize_surface (JNIEnv * env, jobject thiz, jlong handle,
     jstring name, jobject surface)
 {
+#if defined(__ANDROID__)
   pipeline_info_s *pipe_info;
   element_data_s *edata;
   jboolean res = JNI_FALSE;
@@ -872,6 +886,9 @@ nns_native_pipe_initialize_surface (JNIEnv * env, jobject thiz, jlong handle,
 
   (*env)->ReleaseStringUTFChars (env, name, element_name);
   return res;
+#else
+  return JNI_FALSE;
+#endif
 }
 
 /**
@@ -881,6 +898,7 @@ static jboolean
 nns_native_pipe_finalize_surface (JNIEnv * env, jobject thiz, jlong handle,
     jstring name)
 {
+#if defined(__ANDROID__)
   pipeline_info_s *pipe_info;
   element_data_s *edata;
   jboolean res = JNI_FALSE;
@@ -909,6 +927,9 @@ nns_native_pipe_finalize_surface (JNIEnv * env, jobject thiz, jlong handle,
 
   (*env)->ReleaseStringUTFChars (env, name, element_name);
   return res;
+#else
+  return JNI_FALSE;
+#endif
 }
 
 /**
@@ -928,30 +949,35 @@ nns_native_check_element_availability (JNIEnv * env, jclass clazz, jstring name)
  * @brief List of implemented native methods for Pipeline class.
  */
 static JNINativeMethod native_methods_pipeline[] = {
-  {"nativeCheckElementAvailability", "(Ljava/lang/String;)Z",
+  {(char *) "nativeCheckElementAvailability", (char *) "(Ljava/lang/String;)Z",
       (void *) nns_native_check_element_availability},
-  {"nativeConstruct", "(Ljava/lang/String;Z)J",
+  {(char *) "nativeConstruct", (char *) "(Ljava/lang/String;Z)J",
       (void *) nns_native_pipe_construct},
-  {"nativeDestroy", "(J)V", (void *) nns_native_pipe_destroy},
-  {"nativeStart", "(J)Z", (void *) nns_native_pipe_start},
-  {"nativeStop", "(J)Z", (void *) nns_native_pipe_stop},
-  {"nativeFlush", "(JZ)Z", (void *) nns_native_pipe_flush},
-  {"nativeGetState", "(J)I", (void *) nns_native_pipe_get_state},
-  {"nativeInputData", "(JLjava/lang/String;L" NNS_CLS_TDATA ";)Z",
+  {(char *) "nativeDestroy", (char *) "(J)V",
+      (void *) nns_native_pipe_destroy},
+  {(char *) "nativeStart", (char *) "(J)Z",
+      (void *) nns_native_pipe_start},
+  {(char *) "nativeStop", (char *) "(J)Z",
+      (void *) nns_native_pipe_stop},
+  {(char *) "nativeFlush", (char *) "(JZ)Z",
+      (void *) nns_native_pipe_flush},
+  {(char *) "nativeGetState", (char *) "(J)I",
+      (void *) nns_native_pipe_get_state},
+  {(char *) "nativeInputData", (char *) "(JLjava/lang/String;L" NNS_CLS_TDATA ";)Z",
       (void *) nns_native_pipe_input_data},
-  {"nativeGetSwitchPads", "(JLjava/lang/String;)[Ljava/lang/String;",
+  {(char *) "nativeGetSwitchPads", (char *) "(JLjava/lang/String;)[Ljava/lang/String;",
       (void *) nns_native_pipe_get_switch_pads},
-  {"nativeSelectSwitchPad", "(JLjava/lang/String;Ljava/lang/String;)Z",
+  {(char *) "nativeSelectSwitchPad", (char *) "(JLjava/lang/String;Ljava/lang/String;)Z",
       (void *) nns_native_pipe_select_switch_pad},
-  {"nativeControlValve", "(JLjava/lang/String;Z)Z",
+  {(char *) "nativeControlValve", (char *) "(JLjava/lang/String;Z)Z",
       (void *) nns_native_pipe_control_valve},
-  {"nativeAddSinkCallback", "(JLjava/lang/String;)Z",
+  {(char *) "nativeAddSinkCallback", (char *) "(JLjava/lang/String;)Z",
       (void *) nns_native_pipe_add_sink_cb},
-  {"nativeRemoveSinkCallback", "(JLjava/lang/String;)Z",
+  {(char *) "nativeRemoveSinkCallback", (char *) "(JLjava/lang/String;)Z",
       (void *) nns_native_pipe_remove_sink_cb},
-  {"nativeInitializeSurface", "(JLjava/lang/String;Ljava/lang/Object;)Z",
+  {(char *) "nativeInitializeSurface", (char *) "(JLjava/lang/String;Ljava/lang/Object;)Z",
       (void *) nns_native_pipe_initialize_surface},
-  {"nativeFinalizeSurface", "(JLjava/lang/String;)Z",
+  {(char *) "nativeFinalizeSurface", (char *) "(JLjava/lang/String;)Z",
       (void *) nns_native_pipe_finalize_surface}
 };
 

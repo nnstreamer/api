@@ -6,8 +6,6 @@
 
 package org.nnsuite.nnstreamer;
 
-import android.support.annotation.NonNull;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -45,7 +43,7 @@ public final class TensorsData implements AutoCloseable {
      *
      * @throws IllegalArgumentException if given info is invalid
      */
-    public static TensorsData allocate(@NonNull TensorsInfo info) {
+    public static TensorsData allocate(TensorsInfo info) {
         if (info == null || info.getTensorsCount() == 0) {
             throw new IllegalArgumentException("Given info is invalid");
         }
@@ -76,7 +74,7 @@ public final class TensorsData implements AutoCloseable {
      *
      * @throws IllegalArgumentException if given info is null
      */
-    private void setTensorsInfo(@NonNull TensorsInfo info) {
+    private void setTensorsInfo(TensorsInfo info) {
         if (info == null || info.getTensorsCount() == 0) {
             throw new IllegalArgumentException("Given info is invalid");
         }
@@ -101,7 +99,7 @@ public final class TensorsData implements AutoCloseable {
      * @throws IllegalArgumentException if given data is invalid
      * @throws IndexOutOfBoundsException when the maximum number of tensors in the list
      */
-    private void addTensorData(@NonNull ByteBuffer data) {
+    private void addTensorData(ByteBuffer data) {
         int index = getTensorsCount();
 
         checkByteBuffer(index, data);
@@ -131,7 +129,7 @@ public final class TensorsData implements AutoCloseable {
      * @throws IndexOutOfBoundsException if the given index is invalid
      * @throws IllegalArgumentException if given data is invalid
      */
-    public void setTensorData(int index, @NonNull ByteBuffer data) {
+    public void setTensorData(int index, ByteBuffer data) {
         checkIndexBounds(index);
         checkByteBuffer(index, data);
 
