@@ -6,9 +6,6 @@
 
 package org.nnsuite.nnstreamer;
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-
 import java.io.File;
 
 /**
@@ -44,7 +41,7 @@ public final class SingleShot implements AutoCloseable {
      * @throws IllegalArgumentException if given param is invalid
      * @throws IllegalStateException if this failed to construct the pipeline
      */
-    public SingleShot(@NonNull File model) {
+    public SingleShot(File model) {
         this(new File[]{model}, null, null, NNStreamer.NNFWType.TENSORFLOW_LITE, null);
     }
 
@@ -60,7 +57,7 @@ public final class SingleShot implements AutoCloseable {
      *
      * @see NNStreamer#isAvailable(NNStreamer.NNFWType)
      */
-    public SingleShot(@NonNull File model, NNStreamer.NNFWType fw) {
+    public SingleShot(File model, NNStreamer.NNFWType fw) {
         this(new File[]{model}, null, null, fw, null);
     }
 
@@ -77,7 +74,7 @@ public final class SingleShot implements AutoCloseable {
      *
      * @see NNStreamer#isAvailable(NNStreamer.NNFWType)
      */
-    public SingleShot(@NonNull File model, NNStreamer.NNFWType fw, @Nullable String custom) {
+    public SingleShot(File model, NNStreamer.NNFWType fw, String custom) {
         this(new File[]{model}, null, null, fw, custom);
     }
 
@@ -95,7 +92,7 @@ public final class SingleShot implements AutoCloseable {
      * @throws IllegalArgumentException if given param is invalid
      * @throws IllegalStateException    if this failed to construct the pipeline
      */
-    public SingleShot(@NonNull File model, @Nullable TensorsInfo inputInfo, @Nullable TensorsInfo outputInfo) {
+    public SingleShot(File model, TensorsInfo inputInfo, TensorsInfo outputInfo) {
         this(new File[]{model}, inputInfo, outputInfo, NNStreamer.NNFWType.TENSORFLOW_LITE, null);
     }
 
@@ -116,8 +113,8 @@ public final class SingleShot implements AutoCloseable {
      *
      * @see NNStreamer#isAvailable(NNStreamer.NNFWType)
      */
-    public SingleShot(@NonNull File[] models, @Nullable TensorsInfo inputInfo, @Nullable TensorsInfo outputInfo,
-                      NNStreamer.NNFWType fw, @Nullable String custom) {
+    public SingleShot(File[] models, TensorsInfo inputInfo, TensorsInfo outputInfo,
+                      NNStreamer.NNFWType fw, String custom) {
         this(new Options(fw, models, inputInfo, outputInfo, custom));
     }
 
@@ -129,7 +126,11 @@ public final class SingleShot implements AutoCloseable {
      * @throws IllegalArgumentException if given param is invalid
      * @throws IllegalStateException    if this failed to construct the pipeline
      */
-    public SingleShot(@NonNull Options options) {
+    public SingleShot(Options options) {
+        if (options == null) {
+            throw new IllegalArgumentException("Given option is invalid");
+        }
+
         File[] models = options.getModels();
         NNStreamer.NNFWType fw = options.getNNFWType();
         TensorsInfo inputInfo = options.getInputInfo();
@@ -167,7 +168,7 @@ public final class SingleShot implements AutoCloseable {
      * @throws IllegalStateException if this failed to invoke the model
      * @throws IllegalArgumentException if given param is null
      */
-    public TensorsData invoke(@NonNull TensorsData in) {
+    public TensorsData invoke(TensorsData in) {
         checkPipelineHandle();
 
         if (in == null) {
@@ -227,7 +228,7 @@ public final class SingleShot implements AutoCloseable {
      *
      * @throws IllegalArgumentException if given param is invalid
      */
-    public void setValue(@NonNull String name, @NonNull String value) {
+    public void setValue(String name, String value) {
         if (name == null || name.isEmpty()) {
             throw new IllegalArgumentException("Given property name is invalid");
         }
@@ -250,7 +251,7 @@ public final class SingleShot implements AutoCloseable {
      *
      * @throws IllegalArgumentException if given param is invalid
      */
-    public String getValue(@NonNull String name) {
+    public String getValue(String name) {
         if (name == null || name.isEmpty()) {
             throw new IllegalArgumentException("Given property name is invalid");
         }
@@ -295,7 +296,7 @@ public final class SingleShot implements AutoCloseable {
      * @throws IllegalStateException if this failed to set the input information
      * @throws IllegalArgumentException if given param is null
      */
-    public void setInputInfo(@NonNull TensorsInfo in) {
+    public void setInputInfo(TensorsInfo in) {
         checkPipelineHandle();
 
         if (in == null) {

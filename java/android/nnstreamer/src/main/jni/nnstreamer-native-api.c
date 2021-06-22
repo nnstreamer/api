@@ -76,8 +76,11 @@ nns_attach_current_thread (pipeline_info_s * pipe_info)
   args.version = pipe_info->version;
   args.name = NULL;
   args.group = NULL;
-
+#if defined(__ANDROID__)
   if ((*jvm)->AttachCurrentThread (jvm, &env, &args) < 0) {
+#else
+  if ((*jvm)->AttachCurrentThread (jvm, (void **) &env, &args) < 0) {
+#endif
     nns_loge ("Failed to attach current thread.");
     return NULL;
   }
@@ -645,10 +648,14 @@ nns_parse_tensors_info (pipeline_info_s * pipe_info, JNIEnv * env,
 
   /* read tensor info */
   for (i = 0; i < info->num_tensors; i++) {
-    jobject item = (*env)->GetObjectArrayElement (env, info_arr, i);
+    jobject item;
+    jstring name_str;
+    jintArray dimension;
+
+    item = (*env)->GetObjectArrayElement (env, info_arr, i);
 
     /* tensor name */
-    jstring name_str = (jstring) (*env)->GetObjectField (env, item,
+    name_str = (jstring) (*env)->GetObjectField (env, item,
         icls_info->fid_info_name);
     if (name_str) {
       const gchar *name = (*env)->GetStringUTFChars (env, name_str, NULL);
@@ -663,7 +670,7 @@ nns_parse_tensors_info (pipeline_info_s * pipe_info, JNIEnv * env,
         icls_info->fid_info_type);
 
     /* tensor dimension */
-    jintArray dimension = (jintArray) (*env)->GetObjectField (env, item,
+    dimension = (jintArray) (*env)->GetObjectField (env, item,
         icls_info->fid_info_dim);
     (*env)->GetIntArrayRegion (env, dimension, 0, ML_TENSOR_RANK_LIMIT,
         (jint *) info->info[i].dimension);
@@ -742,6 +749,7 @@ jboolean
 nnstreamer_native_initialize (JNIEnv * env, jobject context)
 {
   jboolean result = JNI_FALSE;
+  gchar *gst_ver, *nns_ver;
   static gboolean nns_is_initilaized = FALSE;
 
   nns_logi ("Called native initialize.");
@@ -751,9 +759,13 @@ nnstreamer_native_initialize (JNIEnv * env, jobject context)
 #if !defined (NNS_SINGLE_ONLY)
   /* single-shot does not require gstreamer */
   if (!gst_is_initialized ()) {
+#if defined(__ANDROID__)
     if (env && context) {
       gst_android_init (env, context);
     } else {
+#else
+    if (ml_initialize_gstreamer () != ML_ERROR_NONE) {
+#endif
       nns_loge ("Invalid params, cannot initialize GStreamer.");
       goto done;
     }
@@ -766,6 +778,7 @@ nnstreamer_native_initialize (JNIEnv * env, jobject context)
 #endif
 
   if (nns_is_initilaized == FALSE) {
+#if defined(__ANDROID__)
     /* register nnstreamer plugins */
 #if !defined (NNS_SINGLE_ONLY)
     GST_PLUGIN_STATIC_REGISTER (nnstreamer);
@@ -810,15 +823,15 @@ nnstreamer_native_initialize (JNIEnv * env, jobject context)
 #if defined (ENABLE_PYTORCH)
     init_filter_torch ();
 #endif
-
+#endif /* __ANDROID__ */
     nns_is_initilaized = TRUE;
   }
 
   result = JNI_TRUE;
 
   /* print version info */
-  gchar *gst_ver = gst_version_string ();
-  gchar *nns_ver = nnstreamer_version_string ();
+  gst_ver = gst_version_string ();
+  nns_ver = nnstreamer_version_string ();
 
   nns_logi ("%s %s GLib %d.%d.%d", nns_ver, gst_ver, GLIB_MAJOR_VERSION,
       GLIB_MINOR_VERSION, GLIB_MICRO_VERSION);
@@ -872,11 +885,12 @@ nns_native_get_version (JNIEnv * env, jclass clazz)
  * @brief List of implemented native methods for NNStreamer class.
  */
 static JNINativeMethod native_methods_nnstreamer[] = {
-  {"nativeInitialize", "(Landroid/content/Context;)Z",
+  {(char *) "nativeInitialize", (char *) "(Ljava/lang/Object;)Z",
       (void *) nns_native_initialize},
-  {"nativeCheckNNFWAvailability", "(I)Z",
+  {(char *) "nativeCheckNNFWAvailability", (char *) "(I)Z",
       (void *) nns_native_check_nnfw_availability},
-  {"nativeGetVersion", "()Ljava/lang/String;", (void *) nns_native_get_version}
+  {(char *) "nativeGetVersion", (char *) "()Ljava/lang/String;",
+      (void *) nns_native_get_version}
 };
 
 /**

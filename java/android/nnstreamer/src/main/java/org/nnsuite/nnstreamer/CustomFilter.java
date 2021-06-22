@@ -6,8 +6,6 @@
 
 package org.nnsuite.nnstreamer;
 
-import android.support.annotation.NonNull;
-
 /**
  * Provides interfaces to create a custom-filter in the pipeline.<br>
  * <br>
@@ -59,8 +57,7 @@ public final class CustomFilter implements AutoCloseable {
      * @throws IllegalArgumentException if given param is invalid
      * @throws IllegalStateException if failed to initialize custom-filter
      */
-    public static CustomFilter create(@NonNull String name, @NonNull TensorsInfo in,
-            @NonNull TensorsInfo out, @NonNull Callback callback) {
+    public static CustomFilter create(String name, TensorsInfo in, TensorsInfo out, Callback callback) {
         return new CustomFilter(name, in, out, callback);
     }
 

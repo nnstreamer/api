@@ -6,11 +6,6 @@
 
 package org.nnsuite.nnstreamer;
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.view.Surface;
-import android.view.SurfaceHolder;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -122,7 +117,7 @@ public final class Pipeline implements AutoCloseable {
      * @throws IllegalArgumentException if given param is null
      * @throws IllegalStateException if failed to construct the pipeline
      */
-    public Pipeline(@NonNull String description) {
+    public Pipeline(String description) {
         this(description, null);
     }
 
@@ -137,7 +132,7 @@ public final class Pipeline implements AutoCloseable {
      * @throws IllegalArgumentException if given param is invalid
      * @throws IllegalStateException if failed to construct the pipeline
      */
-    public Pipeline(@NonNull String description, @Nullable StateChangeCallback callback) {
+    public Pipeline(String description, StateChangeCallback callback) {
         if (description == null || description.isEmpty()) {
             throw new IllegalArgumentException("Given description is invalid");
         }
@@ -159,7 +154,7 @@ public final class Pipeline implements AutoCloseable {
      *
      * @throws IllegalArgumentException if given param is invalid
      */
-    public static boolean isElementAvailable(@NonNull String element) {
+    public static boolean isElementAvailable(String element) {
         if (element == null || element.isEmpty()) {
             throw new IllegalArgumentException("Given element is invalid");
         }
@@ -245,7 +240,7 @@ public final class Pipeline implements AutoCloseable {
      * @throws IllegalArgumentException if given param is invalid
      * @throws IllegalStateException if failed to push data to source node
      */
-    public void inputData(@NonNull String name, @NonNull TensorsData data) {
+    public void inputData(String name, TensorsData data) {
         checkPipelineHandle();
 
         if (name == null || name.isEmpty()) {
@@ -271,7 +266,7 @@ public final class Pipeline implements AutoCloseable {
      * @throws IllegalArgumentException if given param is invalid
      * @throws IllegalStateException if failed to get the list of pad names
      */
-    public String[] getSwitchPads(@NonNull String name) {
+    public String[] getSwitchPads(String name) {
         checkPipelineHandle();
 
         if (name == null || name.isEmpty()) {
@@ -296,7 +291,7 @@ public final class Pipeline implements AutoCloseable {
      * @throws IllegalArgumentException if given param is invalid
      * @throws IllegalStateException if failed to select the switch pad
      */
-    public void selectSwitchPad(@NonNull String name, @NonNull String pad) {
+    public void selectSwitchPad(String name, String pad) {
         checkPipelineHandle();
 
         if (name == null || name.isEmpty()) {
@@ -322,7 +317,7 @@ public final class Pipeline implements AutoCloseable {
      * @throws IllegalArgumentException if given param is invalid
      * @throws IllegalStateException if failed to change the valve state
      */
-    public void controlValve(@NonNull String name, boolean open) {
+    public void controlValve(String name, boolean open) {
         checkPipelineHandle();
 
         if (name == null || name.isEmpty()) {
@@ -344,7 +339,7 @@ public final class Pipeline implements AutoCloseable {
      * @throws IllegalArgumentException if given param is invalid
      * @throws IllegalStateException if failed to register the callback to sink node in the pipeline
      */
-    public void registerSinkCallback(@NonNull String name, @NonNull NewDataCallback callback) {
+    public void registerSinkCallback(String name, NewDataCallback callback) {
         if (name == null || name.isEmpty()) {
             throw new IllegalArgumentException("Given name is invalid");
         }
@@ -382,7 +377,7 @@ public final class Pipeline implements AutoCloseable {
      * @throws IllegalArgumentException if given param is invalid
      * @throws IllegalStateException if failed to unregister the callback from sink node
      */
-    public void unregisterSinkCallback(@NonNull String name, @NonNull NewDataCallback callback) {
+    public void unregisterSinkCallback(String name, NewDataCallback callback) {
         if (name == null || name.isEmpty()) {
             throw new IllegalArgumentException("Given name is invalid");
         }
@@ -409,25 +404,24 @@ public final class Pipeline implements AutoCloseable {
 
     /**
      * Sets a surface to video sink element.
-     * If {@code holder} is null, this will stop using the old surface.
+     * If {@code surface} is null, this will stop using the old surface.
+     * Note that, this method is available only on Android.
      *
-     * @param name   The name of video sink element
-     * @param holder The surface holder instance
+     * @param name    The name of video sink element
+     * @param surface The window surface instance
      *
      * @throws IllegalArgumentException if given param is invalid
      * @throws IllegalStateException if failed to set the surface to video sink
      */
-    public void setSurface(@NonNull String name, @Nullable SurfaceHolder holder) {
+    public void setSurface(String name, android.view.Surface surface) {
         if (name == null || name.isEmpty()) {
             throw new IllegalArgumentException("Given name is invalid");
         }
 
-        if (holder == null) {
+        if (surface == null) {
             nativeFinalizeSurface(mHandle, name);
         } else {
-            Surface surface = holder.getSurface();
-
-            if (surface == null || !surface.isValid()) {
+            if (!surface.isValid()) {
                 throw new IllegalArgumentException("The surface is not available");
             }
 
