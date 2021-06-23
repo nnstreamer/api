@@ -139,6 +139,14 @@ api_conf.set('INCLUDE_INSTALL_DIR', api_install_includedir)
 # Build C-API
 subdir('c')
 
+# Build JNI wrapper when developer sets java-home
+# (e.g., -Djava-home=$JAVA_HOME from environment variables)
+java_home = get_option('java-home').strip()
+if java_home != ''
+  message('Java home ' + java_home)
+  subdir('java')
+endif
+
 # Run unittest
 if get_option('enable-test')
   subdir('tests')
