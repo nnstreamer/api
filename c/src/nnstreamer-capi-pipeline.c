@@ -1486,7 +1486,7 @@ ml_pipeline_src_input_data (ml_pipeline_src_h h, ml_tensors_data_h data,
   }
 
   /* Unlock if it's not auto-free. We do not know when it'll be freed. */
-  if (policy == ML_PIPELINE_BUF_POLICY_DO_NOT_FREE)
+  if (policy != ML_PIPELINE_BUF_POLICY_AUTO_FREE)
     G_UNLOCK_UNLESS_NOLOCK (*_data);
 
   /* Push the data! */
@@ -1509,11 +1509,6 @@ ml_pipeline_src_input_data (ml_pipeline_src_h h, ml_tensors_data_h data,
     ret = ML_ERROR_STREAMS_PIPE;
   }
 
-  if (_data != NULL && policy == ML_PIPELINE_BUF_POLICY_AUTO_FREE) {
-    /* Free data handle */
-    G_UNLOCK_UNLESS_NOLOCK (*_data);
-    ml_tensors_data_destroy (data);
-  }
   goto unlock_return;
 
 dont_destroy_data:
