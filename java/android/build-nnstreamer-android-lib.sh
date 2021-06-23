@@ -80,7 +80,7 @@ build_type="all"
 nnstreamer_api_option="all"
 include_assets="no"
 
-# Set target ABI ('armeabi-v7a', 'arm64-v8a')
+# Set target ABI ('armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64')
 target_abi="arm64-v8a"
 
 # Run instrumentation test after build procedure is done
@@ -139,9 +139,6 @@ for arg in "$@"; do
             ;;
         --target_abi=*)
             target_abi=${arg#*=}
-            if [ $target_abi != "armeabi-v7a" ] && [ $target_abi != "arm64-v8a" ]; then
-                echo "Unknown target ABI." && exit 1
-            fi
             ;;
         --release=*)
             release_bintray=${arg#*=}
@@ -259,6 +256,19 @@ elif [[ $build_type != "all" ]]; then
     echo "Failed, unknown build type $build_type." && exit 1
 fi
 
+# Check target abi and set dir name prefix for each abi
+if [[ $target_abi == "arm64-v8a" ]]; then
+    target_abi_prefix="arm64"
+elif [[ $target_abi == "armeabi-v7a" ]]; then
+    target_abi_prefix="armv7"
+elif [[ $target_abi == "x86" ]]; then
+    target_abi_prefix="x86"
+elif [[ $target_abi == "x86_64" ]]; then
+    target_abi_prefix="x86_64"
+else
+    echo "Failed, unknown target ABI $target_abi." && exit 1
+fi
+
 if [[ $enable_tracing == "yes" ]]; then
     [ $target_abi != "arm64-v8a" ] && echo "Set target ABI arm64-v8a to build with tracing." && exit 1
 fi
@@ -362,20 +372,15 @@ echo "ML API root directory: $ml_api_dir"
 
 # Patch GStreamer build script
 echo "Patching Gstreamer build script for NNStreamer"
-pushd $gstreamer_dir/arm64/share/gst-android/ndk-build/
-patch -N < $ml_api_dir/java/android/gstreamer-1.16.2-patch-for-nns.patch
-popd
-pushd $gstreamer_dir/armv7/share/gst-android/ndk-build/
-patch -N < $ml_api_dir/java/android/gstreamer-1.16.2-patch-for-nns.patch
-popd
 
-# Enable GStreamer Tracing feature and GstShark
+pushd $gstreamer_dir/$target_abi_prefix/share/gst-android/ndk-build/
+patch -N < $ml_api_dir/java/android/gstreamer-1.16.2-patch-for-nns.patch
+
 if [[ $enable_tracing == "yes" ]]; then
     echo "Patching GStreamer build script to enable tracing feature and GstShark"
-    pushd $gstreamer_dir/arm64/share/gst-android/ndk-build/
     patch -N < $ml_api_dir/java/android/gstreamer-1.16.2-patch-for-nns-tracing.patch
-    popd
 fi
+popd
 
 # Build result directory
 if [[ -z "$result_dir" ]]; then
@@ -645,17 +650,13 @@ popd
 
 # Restore GStreamer build script
 echo "Restoring GStreamer build script"
-if [[ $enable_tracing == "yes" ]]; then
-    pushd $gstreamer_dir/arm64/share/gst-android/ndk-build/
-    patch -R < $ml_api_dir/java/android/gstreamer-1.16.2-patch-for-nns-tracing.patch
-    popd
-fi
 
-pushd $gstreamer_dir/arm64/share/gst-android/ndk-build/
+pushd $gstreamer_dir/$target_abi_prefix/share/gst-android/ndk-build/
 patch -R < $ml_api_dir/java/android/gstreamer-1.16.2-patch-for-nns.patch
-popd
-pushd $gstreamer_dir/armv7/share/gst-android/ndk-build/
-patch -R < $ml_api_dir/java/android/gstreamer-1.16.2-patch-for-nns.patch
+
+if [[ $enable_tracing == "yes" ]]; then
+    patch -R < $ml_api_dir/java/android/gstreamer-1.16.2-patch-for-nns-tracing.patch
+fi
 popd
 
 # Remove build directory
