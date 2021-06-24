@@ -421,9 +421,9 @@ public final class Pipeline implements AutoCloseable {
         if (surface == null) {
             nativeFinalizeSurface(mHandle, name);
         } else {
-            if (!surface.isValid()) {
-                throw new IllegalArgumentException("The surface is not available");
-            }
+@BUILD_ANDROID@            if (!surface.isValid()) {
+@BUILD_ANDROID@                throw new IllegalArgumentException("The surface is not available");
+@BUILD_ANDROID@            }
 
             if (!nativeInitializeSurface(mHandle, name, surface)) {
                 throw new IllegalStateException("Failed to set the surface to " + name);

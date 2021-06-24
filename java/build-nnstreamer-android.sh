@@ -3,7 +3,7 @@
 ##
 ## SPDX-License-Identifier: Apache-2.0
 ##
-# @file  build-nnstreamer-android-lib.sh
+# @file  build-nnstreamer-android.sh
 # @brief A script to build NNStreamer API library for Android
 #
 # The following comments that start with '##@@' are for the generation of usage messages.
@@ -15,7 +15,7 @@
 ##@@  - NNSTREAMER_ROOT: The source root directory of NNStreamer
 ##@@  - ML_API_ROOT: The source root directory of ML API
 ##@@ 
-##@@ usage: build-nnstreamer-android-lib.sh [OPTIONS]
+##@@ usage: build-nnstreamer-android.sh [OPTIONS]
 ##@@ 
 ##@@ basic options:
 ##@@   --help
@@ -34,11 +34,12 @@
 ##@@       This option overrides the NNSTREAMER_ROOT variable
 ##@@   --ml_api_dir=(the_source_root_of_ml_api)
 ##@@       This option overrides the ML_API_ROOT variable
+##@@   --result_dir=(path_to_build_result)
+##@@       Default path is 'ml_api_dir/android_lib'
 ##@@ 
 ##@@ options for GStreamer build:
 ##@@   --enable_tracing=(yes|no)
 ##@@       'yes'      : build with GStreamer Tracing feature
-##@@                    TODO: Integrate GstShark
 ##@@       'no'       : [default]
 ##@@ 
 ##@@ options for tensor filter sub-plugins:
@@ -68,7 +69,7 @@
 ##@@       'no'       : build without the sub-plugin for FlatBuffers and FlexBuffers
 ##@@ 
 ##@@ For example, to build library with core plugins for arm64-v8a
-##@@  ./build-nnstreamer-android-lib.sh --api_option=lite --target_abi=arm64-v8a
+##@@  ./build-nnstreamer-android.sh --api_option=lite --target_abi=arm64-v8a
 
 # API build option
 # 'all' : default
@@ -553,6 +554,8 @@ if [[ $nnstreamer_api_option == "single" ]]; then
     rm ./nnstreamer/src/androidTest/java/org/nnsuite/nnstreamer/APITestCustomFilter.java
     rm ./nnstreamer/src/androidTest/java/org/nnsuite/nnstreamer/APITestPipeline.java
 fi
+
+sed -i "s|@BUILD_ANDROID@||" nnstreamer/src/main/java/org/nnsuite/nnstreamer/*.java
 
 echo "Starting gradle build for Android library."
 
