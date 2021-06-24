@@ -122,10 +122,10 @@ public final class NNStreamer {
         }
 
         try {
-            System.loadLibrary("gstreamer_android");
+@BUILD_ANDROID@            System.loadLibrary("gstreamer_android");
             System.loadLibrary("nnstreamer-native");
 
-            org.freedesktop.gstreamer.GStreamer.init(app);
+@BUILD_ANDROID@            org.freedesktop.gstreamer.GStreamer.init(app);
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -145,27 +145,27 @@ public final class NNStreamer {
         boolean available = nativeCheckNNFWAvailability(fw.ordinal());
 
         /* sub-plugin for given framework is available */
-        if (available) {
-            Locale locale = Locale.getDefault();
-            String manufacturer = android.os.Build.MANUFACTURER.toLowerCase(locale);
-            String hardware = android.os.Build.HARDWARE.toLowerCase(locale);
-
-            switch (fw) {
-                case SNPE:
-                    if (!hardware.startsWith("qcom")) {
-                        available = false;
-                    }
-                    break;
-                case SNAP:
-                    if (!manufacturer.equals("samsung") ||
-                        !(hardware.startsWith("qcom") || hardware.startsWith("exynos"))) {
-                        available = false;
-                    }
-                    break;
-                default:
-                    break;
-            }
-        }
+@BUILD_ANDROID@        if (available) {
+@BUILD_ANDROID@            Locale locale = Locale.getDefault();
+@BUILD_ANDROID@            String manufacturer = android.os.Build.MANUFACTURER.toLowerCase(locale);
+@BUILD_ANDROID@            String hardware = android.os.Build.HARDWARE.toLowerCase(locale);
+@BUILD_ANDROID@
+@BUILD_ANDROID@            switch (fw) {
+@BUILD_ANDROID@                case SNPE:
+@BUILD_ANDROID@                    if (!hardware.startsWith("qcom")) {
+@BUILD_ANDROID@                        available = false;
+@BUILD_ANDROID@                    }
+@BUILD_ANDROID@                    break;
+@BUILD_ANDROID@                case SNAP:
+@BUILD_ANDROID@                    if (!manufacturer.equals("samsung") ||
+@BUILD_ANDROID@                        !(hardware.startsWith("qcom") || hardware.startsWith("exynos"))) {
+@BUILD_ANDROID@                        available = false;
+@BUILD_ANDROID@                    }
+@BUILD_ANDROID@                    break;
+@BUILD_ANDROID@                default:
+@BUILD_ANDROID@                    break;
+@BUILD_ANDROID@            }
+@BUILD_ANDROID@        }
 
         return available;
     }
