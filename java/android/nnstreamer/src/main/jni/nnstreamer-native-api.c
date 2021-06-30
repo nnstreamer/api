@@ -12,6 +12,7 @@
 
 #include "nnstreamer-native.h"
 
+#if defined(__ANDROID__)
 /* nnstreamer plugins and sub-plugins declaration */
 #if !defined (NNS_SINGLE_ONLY)
 GST_PLUGIN_STATIC_DECLARE (nnstreamer);
@@ -54,6 +55,7 @@ extern void init_filter_torch (void);
  * @brief External function from GStreamer Android.
  */
 extern void gst_android_init (JNIEnv * env, jobject context);
+#endif /* __ANDROID__ */
 
 /**
  * @brief Global lock for native functions.
@@ -689,8 +691,6 @@ nns_parse_tensors_info (pipeline_info_s * pipe_info, JNIEnv * env,
 gboolean
 nns_get_nnfw_type (jint fw_type, ml_nnfw_type_e * nnfw)
 {
-  gboolean is_supported = TRUE;
-
   if (!nnfw)
     return FALSE;
 
@@ -700,46 +700,25 @@ nns_get_nnfw_type (jint fw_type, ml_nnfw_type_e * nnfw)
   switch (fw_type) {
     case 0: /* NNFWType.TENSORFLOW_LITE */
       *nnfw = ML_NNFW_TYPE_TENSORFLOW_LITE;
-#if !defined (ENABLE_TENSORFLOW_LITE)
-      nns_logw ("tensorflow-lite is not supported.");
-      is_supported = FALSE;
-#endif
       break;
     case 1: /* NNFWType.SNAP */
       *nnfw = ML_NNFW_TYPE_SNAP;
-#if !defined (ENABLE_SNAP)
-      nns_logw ("SNAP is not supported.");
-      is_supported = FALSE;
-#endif
       break;
     case 2: /* NNFWType.NNFW */
       *nnfw = ML_NNFW_TYPE_NNFW;
-#if !defined (ENABLE_NNFW_RUNTIME)
-      nns_logw ("NNFW is not supported.");
-      is_supported = FALSE;
-#endif
       break;
     case 3: /* NNFWType.SNPE */
       *nnfw = ML_NNFW_TYPE_SNPE;
-#if !defined (ENABLE_SNPE)
-      nns_logw ("SNPE is not supported.");
-      is_supported = FALSE;
-#endif
       break;
     case 4: /* NNFWType.PYTORCH */
       *nnfw = ML_NNFW_TYPE_PYTORCH;
-#if !defined (ENABLE_PYTORCH)
-      nns_logw ("PYTORCH is not supported.");
-      is_supported = FALSE;
-#endif
       break;
     default: /* Unknown */
       nns_logw ("Unknown NNFW type (%d).", fw_type);
-      is_supported = FALSE;
-      break;
+      return FALSE;
   }
 
-  return is_supported && ml_nnfw_is_available (*nnfw, ML_NNFW_HW_ANY);
+  return ml_nnfw_is_available (*nnfw, ML_NNFW_HW_ANY);
 }
 
 /**
