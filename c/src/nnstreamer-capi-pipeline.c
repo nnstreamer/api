@@ -256,7 +256,7 @@ get_tensors_info_from_caps (GstCaps * caps, ml_tensors_info_s * info,
 
     if (found) {
       ml_tensors_info_copy_from_gst (info, &config.info);
-      *is_flexible = gst_tensors_info_is_flexible (&config.info);
+      *is_flexible = gst_tensors_config_is_flexible (&config);
       break;
     }
   }
