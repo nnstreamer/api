@@ -10667,7 +10667,7 @@ TEST (nnstreamer_capi_flex, sink_multi)
 {
   gchar pipeline[] = "appsrc name=srcx caps=application/octet-stream,framerate=(fraction)10/1 ! "
       "tensor_converter input-dim=4,2,4 input-type=int32,int32,int32 ! "
-      "other/tensors-flexible ! tensor_sink name=sinkx sync=false";
+      "other/tensors,format=flexible ! tensor_sink name=sinkx sync=false";
   guint test_data[10] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
   ml_pipeline_h handle;
   ml_pipeline_src_h srchandle;
@@ -10730,7 +10730,7 @@ TEST (nnstreamer_capi_flex, sink_multi)
  */
 TEST (nnstreamer_capi_flex, src_multi)
 {
-  gchar pipeline[] = "appsrc name=srcx caps=other/tensors-flexible,framerate=(fraction)10/1 ! "
+  gchar pipeline[] = "appsrc name=srcx caps=other/tensors,format=flexible,framerate=(fraction)10/1 ! "
       "tensor_converter input-dim=4,2,4 input-type=int32,int32,int32 ! "
       "tensor_sink name=sinkx sync=false";
   guint test_data[10] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
