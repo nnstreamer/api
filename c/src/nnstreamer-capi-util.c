@@ -1129,7 +1129,7 @@ ml_validate_model_file (const char *const *model,
    * If detected fw and given nnfw are same, we don't need to check the file extension.
    * If any condition for auto detection is added later, below code also should be updated.
    */
-  fw_name = gst_tensor_filter_detect_framework (model, num_models, FALSE);
+  fw_name = gst_tensor_filter_detect_framework (model, num_models, TRUE);
   detected = ml_get_nnfw_type_by_subplugin_name (fw_name);
   g_free (fw_name);
 
