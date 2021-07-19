@@ -1302,7 +1302,8 @@ ml_get_nnfw_type_by_subplugin_name (const char *name)
   ml_nnfw_type_e nnfw_type = ML_NNFW_TYPE_ANY;
   int idx = -1;
 
-  g_return_val_if_fail (name != NULL, ML_NNFW_TYPE_ANY);
+  if (name == NULL)
+    return ML_NNFW_TYPE_ANY;
 
   idx = find_key_strv (ml_nnfw_subplugin_name, name);
   if (idx < 0) {
