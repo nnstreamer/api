@@ -806,6 +806,89 @@ public class APITestSingleShot {
         runSNAPTensorflow(APITestCommon.SNAPComputingUnit.NPU);
     }
 
+    /**
+     * Run SNAP with TensorFlow Lite model.
+     */
+    private void runSNAPTensorflowLite(APITestCommon.SNAPComputingUnit CUnit) {
+        File[] model = APITestCommon.getSNAPTensorflowLiteModel();
+        String option = APITestCommon.getSNAPTensorflowLiteOption(CUnit);
+
+        /* expected label is orange (951) */
+        final int expectedLabel = 951;
+
+        try {
+            TensorsInfo in = new TensorsInfo();
+            in.addTensorInfo("input", NNStreamer.TensorType.FLOAT32, new int[]{3, 224, 224, 1});
+
+            TensorsInfo out = new TensorsInfo();
+            out.addTensorInfo("MobilenetV1/Predictions/Reshape_1", NNStreamer.TensorType.FLOAT32, new int[]{1001, 1});
+
+            SingleShot single = new SingleShot(model, in, out, NNStreamer.NNFWType.SNAP, option);
+
+            /* let's ignore timeout (set 60 sec) */
+            single.setTimeout(60000);
+
+            /* single-shot invoke */
+            for (int i = 0; i < 10; i++) {
+                /* invoke with orange image */
+                TensorsData output = single.invoke(APITestCommon.readRawImageDataSNAP());
+
+                /* output: float32 1:1001 */
+                assertEquals(1, output.getTensorsCount());
+                assertEquals(4004, output.getTensorData(0).capacity());
+
+                int labelIndex = APITestCommon.getMaxScoreFloatBuffer(output.getTensorData(0), 1001);
+                /* check label index (orange) */
+                if (labelIndex != expectedLabel) {
+                    fail();
+                }
+
+                Thread.sleep(100);
+            }
+
+        } catch (Exception e) {
+            fail();
+        }
+    }
+
+    @Test
+    public void testSNAPTensorflowLiteCPU() {
+        if (!NNStreamer.isAvailable(NNStreamer.NNFWType.SNAP)) {
+            /* cannot run the test */
+            return;
+        }
+
+        runSNAPTensorflowLite(APITestCommon.SNAPComputingUnit.CPU);
+    }
+
+    @Test
+    public void testSNAPTensorflowLiteGPU() {
+        if (!NNStreamer.isAvailable(NNStreamer.NNFWType.SNAP)) {
+            /* cannot run the test */
+            return;
+        }
+
+        runSNAPTensorflowLite(APITestCommon.SNAPComputingUnit.GPU);
+    }
+
+    @Test
+    public void testSNAPTensorflowLiteNPU() {
+        if (!NNStreamer.isAvailable(NNStreamer.NNFWType.SNAP)) {
+            /* cannot run the test */
+            return;
+        }
+
+        if (android.os.Build.HARDWARE.equals("qcom")) {
+            /*
+             * TensorFlow Lite model using NPU runtime can only be executed on
+             * Exynos. Cannot run this test on Snapdragon.
+             */
+            return;
+        }
+
+        runSNAPTensorflowLite(APITestCommon.SNAPComputingUnit.NPU);
+    }
+
     @Test
     public void testNNFWTFLite() {
         if (!NNStreamer.isAvailable(NNStreamer.NNFWType.NNFW)) {
