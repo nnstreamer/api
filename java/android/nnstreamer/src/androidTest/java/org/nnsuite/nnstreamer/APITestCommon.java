@@ -164,6 +164,40 @@ public class APITestCommon {
     }
 
     /**
+     * Reads raw float image file (orange) and returns TensorsData instance.
+     */
+    public static TensorsData readRawImageDataSNAP() {
+        String root = Environment.getExternalStorageDirectory().getAbsolutePath();
+        File raw = new File(root + "/nnstreamer/imgclf/orange_float_tflite.raw");
+
+        if (!raw.exists()) {
+            fail();
+        }
+
+        TensorsInfo info = new TensorsInfo();
+        info.addTensorInfo(NNStreamer.TensorType.FLOAT32, new int[]{3, 224, 224, 1});
+
+        int size = info.getTensorSize(0);
+        TensorsData data = TensorsData.allocate(info);
+
+        try {
+            byte[] content = Files.readAllBytes(raw.toPath());
+            if (content.length != size) {
+                fail();
+            }
+
+            ByteBuffer buffer = TensorsData.allocateByteBuffer(size);
+            buffer.put(content);
+
+            data.setTensorData(0, buffer);
+        } catch (Exception e) {
+            fail();
+        }
+
+        return data;
+    }
+
+    /**
      * Gets the label index with max score for float buffer with given length.
      */
     public static int getMaxScoreFloatBuffer(ByteBuffer buffer, int length) {
@@ -293,10 +327,10 @@ public class APITestCommon {
     /**
      * Gets the option string to run Tensorflow model for SNAP.
      *
-     * CPU: "custom=ModelFWType:CAFFE,ExecutionDataType:FLOAT32,ComputingUnit:CPU"
+     * CPU: "custom=ModelFWType:TENSORFLOW,ExecutionDataType:FLOAT32,ComputingUnit:CPU"
      * GPU: Not supported for Tensorflow model
-     * DSP: "custom=ModelFWType:CAFFE,ExecutionDataType:FLOAT32,ComputingUnit:DSP"
-     * NPU: "custom=ModelFWType:CAFFE,ExecutionDataType:FLOAT32,ComputingUnit:NPU"
+     * DSP: "custom=ModelFWType:TENSORFLOW,ExecutionDataType:FLOAT32,ComputingUnit:DSP"
+     * NPU: "custom=ModelFWType:TENSORFLOW,ExecutionDataType:FLOAT32,ComputingUnit:NPU"
      */
     public static String getSNAPTensorflowOption(SNAPComputingUnit CUnit) {
         String option = "ModelFWType:TENSORFLOW,ExecutionDataType:FLOAT32,InputFormat:NHWC,OutputFormat:NHWC,";
@@ -326,6 +360,36 @@ public class APITestCommon {
             default:
                 fail();
         }
+
+        File model = new File(root + model_path);
+        if (!model.exists()) {
+            fail();
+        }
+
+        return new File[]{model};
+    }
+
+    /**
+     * Gets the option string to run TensorFlow Lite model for SNAP.
+     *
+     * CPU: "custom=ModelFWType:TENSORFLOWLITE,ExecutionDataType:FLOAT32,ComputingUnit:CPU"
+     * GPU: "custom=ModelFWType:TENSORFLOWLITE,ExecutionDataType:FLOAT32,ComputingUnit:GPU"
+     * DSP: Not supported for TensorFlow Lite model
+     * NPU: "custom=ModelFWType:TENSORFLOWLITE,ExecutionDataType:FLOAT32,ComputingUnit:NPU"
+     */
+    public static String getSNAPTensorflowLiteOption(SNAPComputingUnit CUnit) {
+        String option = "ModelFWType:TENSORFLOWLITE,ExecutionDataType:FLOAT32,InputFormat:NHWC,OutputFormat:NHWC,";
+        option = option + CUnit.getOptionString();
+        return option;
+    }
+
+    /**
+     * Gets the File objects of Tensorflow Lite model for SNAP.
+     * Note that, to invoke model in the storage, the permission READ_EXTERNAL_STORAGE is required.
+     */
+    public static File[] getSNAPTensorflowLiteModel() {
+        String root = Environment.getExternalStorageDirectory().getAbsolutePath();
+        String model_path = "/nnstreamer/test/imgclf/mobilenet_v1_1.0_224.tflite";
 
         File model = new File(root + model_path);
         if (!model.exists()) {

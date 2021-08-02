@@ -54,7 +54,7 @@ public final class NNStreamer {
          * to specify the neural network and data format.<br>
          * <br>
          * Custom options<br>
-         * - ModelFWType: the type of model (TensorFlow/Caffe)<br>
+         * - ModelFWType: the type of model (TensorFlow Lite/TensorFlow/Caffe)<br>
          * - ExecutionDataType: the execution data type for SNAP (default float32)<br>
          * - ComputingUnit: the computing unit to execute the model (default CPU)<br>
          * - CpuThreadCount: the number of CPU threads to be executed (optional, default 4 if ComputingUnit is CPU)<br>
