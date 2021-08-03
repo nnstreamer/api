@@ -460,17 +460,19 @@ int ml_pipeline_src_release_handle (ml_pipeline_src_h src_handle);
 int ml_pipeline_src_input_data (ml_pipeline_src_h src_handle, ml_tensors_data_h data, ml_pipeline_buf_policy_e policy);
 
 /**
- * @brief Callbacks for src input events
- * @details A set of callbacks that can be installed on the appsrc with ml_pipeline_src_input_callback().
+ * @brief Callbacks for src input events.
+ * @details A set of callbacks that can be installed on the appsrc with ml_pipeline_src_set_callback().
+ * @since_tizen 6.5
  */
 typedef struct {
   void (*need_data) (ml_pipeline_src_h src_handle, unsigned int length, void *user_data);   /**< Called when the appsrc needs more data. User may submit a buffer via ml_pipeline_src_input_data() from this thread or another thread. length is just a hint and when it is set to -1, any number of bytes can be pushed into appsrc. */
-  void (*enough_data) (ml_pipeline_src_h src_handle, void *user_data);                      /**< Called when appsrc has enough data. It is recommended that the application stops calling push-buffer until the need_data callback is emitted again to avoid excessive buffer queueing.*/
-  void (*seek_data) (ml_pipeline_src_h src_handle, uint64_t offset, void *user_data);       /**< Called when a seek should be performed to the offset. The next push-buffer should produce buffers from the new offset . This callback is only called for seekable stream types.*/
-} ml_pipeline_src_callbacks;
+  void (*enough_data) (ml_pipeline_src_h src_handle, void *user_data);                      /**< Called when appsrc has enough data. It is recommended that the application stops calling push-buffer until the need_data callback is emitted again to avoid excessive buffer queueing. */
+  void (*seek_data) (ml_pipeline_src_h src_handle, uint64_t offset, void *user_data);       /**< Called when a seek should be performed to the offset. The next push-buffer should produce buffers from the new offset . This callback is only called for seekable stream types. */
+} ml_pipeline_src_callbacks_s;
 
 /**
- * @brief Invokes the callback when a new input frame may be accepted.
+ * @brief Sets the callbacks which will be invoked when a new input frame may be accepted.
+ * @details Note that, the last installed callbacks on appsrc are available in the pipeline. If developer sets new callbacks, old callbacks will be replaced with new one.
  * @since_tizen 6.5
  * @param[in] src_handle The source handle returned by ml_pipeline_src_get_handle().
  * @param[in] cb The app-src callbacks for event handling.
@@ -479,8 +481,9 @@ typedef struct {
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
+ * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
  */
-int ml_pipeline_src_input_callback (ml_pipeline_src_h src_handle, ml_pipeline_src_callbacks cb, void *user_data);
+int ml_pipeline_src_set_callback (ml_pipeline_src_h src_handle, ml_pipeline_src_callbacks_s *cb, void *user_data);
 
 /**
  * @brief Gets a handle for the tensors information of given src node.

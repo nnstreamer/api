@@ -422,7 +422,7 @@ send_cb:
     if (sink->callback_info == NULL)
       continue;
 
-    callback = sink->callback_info->cb;
+    callback = sink->callback_info->sink_cb;
     if (callback)
       callback (_data, _info, sink->callback_info->pdata);
 
@@ -507,8 +507,26 @@ static void
 free_element_handle (gpointer data)
 {
   ml_pipeline_common_elem *item = (ml_pipeline_common_elem *) data;
-  g_free (item->callback_info);
-  g_free (item);
+
+  if (item) {
+    ml_pipeline_element *elem = item->element;
+
+    /* clear callbacks */
+    if (item->callback_info) {
+      item->callback_info->sink_cb = NULL;
+
+      if (elem->type == ML_PIPELINE_ELEMENT_APP_SRC) {
+        GstAppSrcCallbacks appsrc_cb = { 0, };
+        gst_app_src_set_callbacks (GST_APP_SRC (elem->element), &appsrc_cb,
+            NULL, NULL);
+      }
+
+      g_free (item->callback_info);
+      item->callback_info = NULL;
+    }
+
+    g_free (item);
+  }
 }
 
 /**
@@ -520,6 +538,17 @@ cleanup_node (gpointer data)
   ml_pipeline_element *e = data;
 
   g_mutex_lock (&e->lock);
+  /** @todo CRITICAL. Stop the handle callbacks if they are running/ready */
+  if (e->handle_id > 0) {
+    g_signal_handler_disconnect (e->element, e->handle_id);
+    e->handle_id = 0;
+  }
+
+  /* clear all handles first */
+  if (e->handles)
+    g_list_free_full (e->handles, free_element_handle);
+  e->handles = NULL;
+
   if (e->type == ML_PIPELINE_ELEMENT_APP_SRC && !e->pipe->isEOS) {
     int eos_check_cnt = 0;
 
@@ -551,16 +580,6 @@ cleanup_node (gpointer data)
     gst_object_unref (e->src);
   if (e->sink)
     gst_object_unref (e->sink);
-
-  /** @todo CRITICAL. Stop the handle callbacks if they are running/ready */
-  if (e->handle_id > 0) {
-    g_signal_handler_disconnect (e->element, e->handle_id);
-    e->handle_id = 0;
-  }
-
-  if (e->handles)
-    g_list_free_full (e->handles, free_element_handle);
-  e->handles = NULL;
 
   ml_tensors_info_free (&e->tensors_info);
 
@@ -1245,7 +1264,7 @@ ml_pipeline_sink_register (ml_pipeline_h pipe, const char *sink_name,
     goto unlock_return;
   }
 
-  sink->callback_info = g_new (callback_info_s, 1);
+  sink->callback_info = g_new0 (callback_info_s, 1);
   if (sink->callback_info == NULL) {
     g_free (sink);
     ml_loge ("Failed to allocate the sink handle for %s.", sink_name);
@@ -1255,7 +1274,7 @@ ml_pipeline_sink_register (ml_pipeline_h pipe, const char *sink_name,
 
   sink->pipe = p;
   sink->element = elem;
-  sink->callback_info->cb = cb;
+  sink->callback_info->sink_cb = cb;
   sink->callback_info->pdata = user_data;
   *h = sink;
 
@@ -1286,8 +1305,7 @@ ml_pipeline_sink_unregister (ml_pipeline_sink_h h)
   }
 
   elem->handles = g_list_remove (elem->handles, sink);
-  g_free (sink->callback_info);
-  g_free (sink);
+  free_element_handle (sink);
 
   handle_exit (h);
 }
@@ -1437,7 +1455,7 @@ ml_pipeline_src_release_handle (ml_pipeline_src_h h)
   handle_init (src, h);
 
   elem->handles = g_list_remove (elem->handles, src);
-  g_free (src);
+  free_element_handle (src);
 
   handle_exit (h);
 }
@@ -1567,13 +1585,114 @@ dont_destroy_data:
 }
 
 /**
+ * @brief Internal function for appsrc callback - need_data.
+ */
+static void
+_pipe_src_cb_need_data (GstAppSrc * src, guint length, gpointer user_data)
+{
+  ml_pipeline_common_elem *src_h;
+  ml_pipeline_element *elem;
+  ml_pipeline_src_callbacks_s *src_cb = NULL;
+
+  src_h = (ml_pipeline_common_elem *) user_data;
+  if (src_h) {
+    elem = src_h->element;
+
+    g_mutex_lock (&elem->lock);
+    if (src_h->callback_info)
+      src_cb = &src_h->callback_info->src_cb;
+    g_mutex_unlock (&elem->lock);
+
+    if (src_cb && src_cb->need_data)
+      src_cb->need_data (src_h, length, src_h->callback_info->pdata);
+  }
+}
+
+/**
+ * @brief Internal function for appsrc callback - enough_data.
+ */
+static void
+_pipe_src_cb_enough_data (GstAppSrc * src, gpointer user_data)
+{
+  ml_pipeline_common_elem *src_h;
+  ml_pipeline_element *elem;
+  ml_pipeline_src_callbacks_s *src_cb = NULL;
+
+  src_h = (ml_pipeline_common_elem *) user_data;
+  if (src_h) {
+    elem = src_h->element;
+
+    g_mutex_lock (&elem->lock);
+    if (src_h->callback_info)
+      src_cb = &src_h->callback_info->src_cb;
+    g_mutex_unlock (&elem->lock);
+
+    if (src_cb && src_cb->enough_data)
+      src_cb->enough_data (src_h, src_h->callback_info->pdata);
+  }
+}
+
+/**
+ * @brief Internal function for appsrc callback - seek_data.
+ */
+static gboolean
+_pipe_src_cb_seek_data (GstAppSrc * src, guint64 offset, gpointer user_data)
+{
+  ml_pipeline_common_elem *src_h;
+  ml_pipeline_element *elem;
+  ml_pipeline_src_callbacks_s *src_cb = NULL;
+
+  src_h = (ml_pipeline_common_elem *) user_data;
+  if (src_h) {
+    elem = src_h->element;
+
+    g_mutex_lock (&elem->lock);
+    if (src_h->callback_info)
+      src_cb = &src_h->callback_info->src_cb;
+    g_mutex_unlock (&elem->lock);
+
+    if (src_cb && src_cb->seek_data)
+      src_cb->seek_data (src_h, offset, src_h->callback_info->pdata);
+  }
+
+  return TRUE;
+}
+
+/**
  * @brief Register callbacks for src events (more info in nnstreamer.h)
  */
 int
-ml_pipeline_src_input_callback (ml_pipeline_src_h src_handle,
-    ml_pipeline_src_callbacks cb, void *user_data)
+ml_pipeline_src_set_callback (ml_pipeline_src_h src_handle,
+    ml_pipeline_src_callbacks_s * cb, void *user_data)
 {
-  return ML_ERROR_NOT_SUPPORTED; /** @todo NYI */
+  GstAppSrcCallbacks appsrc_cb = { 0, };
+
+  handle_init (src, src_handle);
+
+  if (cb == NULL) {
+    ret = ML_ERROR_INVALID_PARAMETER;
+    goto unlock_return;
+  }
+
+  if (src->callback_info == NULL)
+    src->callback_info = g_new0 (callback_info_s, 1);
+  if (src->callback_info == NULL) {
+    ml_loge ("Failed to allocate the callback info for %s.", elem->name);
+    ret = ML_ERROR_OUT_OF_MEMORY;
+    goto unlock_return;
+  }
+
+  src->callback_info->src_cb = *cb;
+  src->callback_info->pdata = user_data;
+
+  appsrc_cb.need_data = _pipe_src_cb_need_data;
+  appsrc_cb.enough_data = _pipe_src_cb_enough_data;
+  appsrc_cb.seek_data = _pipe_src_cb_seek_data;
+
+  gst_app_src_set_callbacks (GST_APP_SRC (elem->element), &appsrc_cb,
+      src_handle, NULL);
+
+  handle_exit (src_handle);
 }
 
 /**
@@ -1692,7 +1811,7 @@ ml_pipeline_switch_release_handle (ml_pipeline_switch_h h)
   handle_init (swtc, h);
 
   elem->handles = g_list_remove (elem->handles, swtc);
-  g_free (swtc);
+  free_element_handle (swtc);
 
   handle_exit (h);
 }
@@ -1926,7 +2045,7 @@ ml_pipeline_valve_release_handle (ml_pipeline_valve_h h)
   handle_init (valve, h);
 
   elem->handles = g_list_remove (elem->handles, valve);
-  g_free (valve);
+  free_element_handle (valve);
 
   handle_exit (h);
 }
@@ -2052,7 +2171,7 @@ ml_pipeline_element_release_handle (ml_pipeline_element_h elem_h)
   handle_init (common_elem, elem_h);
 
   elem->handles = g_list_remove (elem->handles, common_elem);
-  g_free (common_elem);
+  free_element_handle (common_elem);
 
   handle_exit (elem_h);
 }
