@@ -299,7 +299,8 @@ struct _ml_pipeline {
  * @details This represents a single instance of callback registration. This should not be exposed to applications.
  */
 typedef struct {
-  ml_pipeline_sink_cb cb;
+  ml_pipeline_sink_cb sink_cb;
+  ml_pipeline_src_callbacks_s src_cb;
   void *pdata;
 } callback_info_s;
 
