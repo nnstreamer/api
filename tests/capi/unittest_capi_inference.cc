@@ -1292,6 +1292,150 @@ TEST (nnstreamer_capi_src, failure_06_n)
 }
 
 /**
+ * @brief Internal function to push dummy into appsrc.
+ */
+static void
+test_src_cb_push_dummy (ml_pipeline_src_h src_handle)
+{
+  ml_tensors_data_h data;
+  ml_tensors_info_h info;
+
+  if (ml_pipeline_src_get_tensors_info (src_handle, &info) == ML_ERROR_NONE) {
+    ml_tensors_data_create (info, &data);
+    ml_pipeline_src_input_data (src_handle, data, ML_PIPELINE_BUF_POLICY_AUTO_FREE);
+    ml_tensors_info_destroy (info);
+  }
+}
+
+/**
+ * @brief appsrc callback - need_data.
+ */
+static void
+test_src_cb_need_data (ml_pipeline_src_h src_handle, unsigned int length,
+    void *user_data)
+{
+  /* For test, push dummy if given src handles are same. */
+  if (src_handle == user_data)
+    test_src_cb_push_dummy (src_handle);
+}
+
+/**
+ * @brief Test NNStreamer pipeline src callback.
+ */
+TEST (nnstreamer_capi_src, callback_replace)
+{
+  const char pipeline[] = "appsrc name=srcx ! other/tensor,dimension=(string)4:1:1:1,type=(string)uint8,framerate=(fraction)0/1 ! tensor_sink name=sinkx";
+  ml_pipeline_h handle;
+  ml_pipeline_src_h srchandle1, srchandle2;
+  ml_pipeline_sink_h sinkhandle;
+  ml_pipeline_src_callbacks_s callback = { 0, };
+  guint *count_sink;
+  int status;
+
+  callback.need_data = test_src_cb_need_data;
+
+  count_sink = (guint *) g_malloc0 (sizeof (guint));
+  ASSERT_TRUE (count_sink != NULL);
+
+  status = ml_pipeline_construct (pipeline, NULL, NULL, &handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_src_get_handle (handle, "srcx", &srchandle1);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_src_set_callback (srchandle1, &callback, srchandle1);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_sink_register (
+    handle, "sinkx", test_sink_callback_count, count_sink, &sinkhandle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_start (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  test_src_cb_push_dummy (srchandle1);
+  g_usleep (100000);
+
+  status = ml_pipeline_stop (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  EXPECT_TRUE (*count_sink > 1U);
+
+  /* Set new callback with new handle. */
+  status = ml_pipeline_src_get_handle (handle, "srcx", &srchandle2);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  /* New callback will not push dummy. */
+  status = ml_pipeline_src_set_callback (srchandle2, &callback, srchandle1);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_start (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  g_usleep (100000);
+  *count_sink = 0;
+  test_src_cb_push_dummy (srchandle2);
+  g_usleep (100000);
+
+  status = ml_pipeline_destroy (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  EXPECT_TRUE (*count_sink == 1U);
+  g_free (count_sink);
+}
+
+/**
+ * @brief Test NNStreamer pipeline src callback.
+ */
+TEST (nnstreamer_capi_src, callback_invalid_param_01_n)
+{
+  const char pipeline[] = "appsrc name=srcx ! other/tensor,dimension=(string)4:1:1:1,type=(string)uint8,framerate=(fraction)0/1 ! tensor_sink";
+  ml_pipeline_h handle;
+  ml_pipeline_src_h srchandle;
+  ml_pipeline_src_callbacks_s callback = { 0, };
+  int status;
+
+  callback.need_data = test_src_cb_need_data;
+
+  status = ml_pipeline_construct (pipeline, NULL, NULL, &handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_src_get_handle (handle, "srcx", &srchandle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  /* invalid param */
+  status = ml_pipeline_src_set_callback (NULL, &callback, NULL);
+  EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
+
+  status = ml_pipeline_destroy (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+}
+
+/**
+ * @brief Test NNStreamer pipeline src callback.
+ */
+TEST (nnstreamer_capi_src, callback_invalid_param_02_n)
+{
+  const char pipeline[] = "appsrc name=srcx ! other/tensor,dimension=(string)4:1:1:1,type=(string)uint8,framerate=(fraction)0/1 ! tensor_sink";
+  ml_pipeline_h handle;
+  ml_pipeline_src_h srchandle;
+  int status;
+
+  status = ml_pipeline_construct (pipeline, NULL, NULL, &handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_src_get_handle (handle, "srcx", &srchandle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  /* invalid param */
+  status = ml_pipeline_src_set_callback (srchandle, NULL, NULL);
+  EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
+
+  status = ml_pipeline_destroy (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+}
+
+/**
  * @brief Test NNStreamer pipeline switch
  */
 TEST (nnstreamer_capi_switch, dummy_01)
