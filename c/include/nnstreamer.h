@@ -461,7 +461,7 @@ int ml_pipeline_src_input_data (ml_pipeline_src_h src_handle, ml_tensors_data_h 
 
 /**
  * @brief Callbacks for src input events.
- * @details A set of callbacks that can be installed on the appsrc with ml_pipeline_src_set_callback().
+ * @details A set of callbacks that can be installed on the appsrc with ml_pipeline_src_set_event_cb().
  * @since_tizen 6.5
  */
 typedef struct {
@@ -483,7 +483,7 @@ typedef struct {
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
  * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
  */
-int ml_pipeline_src_set_callback (ml_pipeline_src_h src_handle, ml_pipeline_src_callbacks_s *cb, void *user_data);
+int ml_pipeline_src_set_event_cb (ml_pipeline_src_h src_handle, ml_pipeline_src_callbacks_s *cb, void *user_data);
 
 /**
  * @brief Gets a handle for the tensors information of given src node.
