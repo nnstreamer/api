@@ -1662,7 +1662,7 @@ _pipe_src_cb_seek_data (GstAppSrc * src, guint64 offset, gpointer user_data)
  * @brief Register callbacks for src events (more info in nnstreamer.h)
  */
 int
-ml_pipeline_src_set_callback (ml_pipeline_src_h src_handle,
+ml_pipeline_src_set_event_cb (ml_pipeline_src_h src_handle,
     ml_pipeline_src_callbacks_s * cb, void *user_data)
 {
   GstAppSrcCallbacks appsrc_cb = { 0, };

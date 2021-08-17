@@ -1343,7 +1343,7 @@ TEST (nnstreamer_capi_src, callback_replace)
   status = ml_pipeline_src_get_handle (handle, "srcx", &srchandle1);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  status = ml_pipeline_src_set_callback (srchandle1, &callback, srchandle1);
+  status = ml_pipeline_src_set_event_cb (srchandle1, &callback, srchandle1);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   status = ml_pipeline_sink_register (
@@ -1366,7 +1366,7 @@ TEST (nnstreamer_capi_src, callback_replace)
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   /* New callback will not push dummy. */
-  status = ml_pipeline_src_set_callback (srchandle2, &callback, srchandle1);
+  status = ml_pipeline_src_set_event_cb (srchandle2, &callback, srchandle1);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   status = ml_pipeline_start (handle);
@@ -1404,7 +1404,7 @@ TEST (nnstreamer_capi_src, callback_invalid_param_01_n)
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   /* invalid param */
-  status = ml_pipeline_src_set_callback (NULL, &callback, NULL);
+  status = ml_pipeline_src_set_event_cb (NULL, &callback, NULL);
   EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
 
   status = ml_pipeline_destroy (handle);
@@ -1428,7 +1428,7 @@ TEST (nnstreamer_capi_src, callback_invalid_param_02_n)
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   /* invalid param */
-  status = ml_pipeline_src_set_callback (srchandle, NULL, NULL);
+  status = ml_pipeline_src_set_event_cb (srchandle, NULL, NULL);
   EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
 
   status = ml_pipeline_destroy (handle);
