@@ -87,9 +87,6 @@ target_abi="arm64-v8a"
 # Run instrumentation test after build procedure is done
 run_test="no"
 
-# Variables to release library (GROUP:ARTIFACT:VERSION)
-release_bintray="no"
-
 # Enable GStreamer Tracing
 enable_tracing="no"
 
@@ -140,18 +137,6 @@ for arg in "$@"; do
             ;;
         --target_abi=*)
             target_abi=${arg#*=}
-            ;;
-        --release=*)
-            release_bintray=${arg#*=}
-            ;;
-        --release_version=*)
-            release_version=${arg#*=}
-            ;;
-        --bintray_user_name=*)
-            bintray_user_name=${arg#*=}
-            ;;
-        --bintray_user_key=*)
-            bintray_user_key=${arg#*=}
             ;;
         --run_test=*)
             run_test=${arg#*=}
@@ -305,13 +290,6 @@ fi
 
 if [[ $enable_tflite == "yes" ]]; then
     echo "Build with tensorflow-lite $tf_lite_ver"
-fi
-
-if [[ $release_bintray == "yes" ]]; then
-    [ -z "$release_version" ] && echo "Set release version." && exit 1
-    [ -z "$bintray_user_name" ] || [ -z "$bintray_user_key" ] && echo "Set user info to release." && exit 1
-
-    echo "Release version: $release_version user: $bintray_user_name"
 fi
 
 if [[ $enable_flatbuf == "yes" ]]; then
@@ -528,25 +506,6 @@ if [[ $enable_flatbuf == "yes" ]]; then
     tar -xJf ./external/flatbuffers-${flatbuf_ver}.tar.xz -C ./nnstreamer/src/main/jni
 fi
 
-# Add dependency for release
-if [[ $release_bintray == "yes" ]]; then
-    sed -i "s|// add dependency (bintray)|classpath 'com.novoda:bintray-release:0.9.1'|" build.gradle
-
-    sed -i "s|// add plugin (bintray)|apply plugin: 'com.novoda.bintray-release'\n\
-\n\
-publish {\n\
-    userOrg = 'nnsuite'\n\
-    repoName = 'nnstreamer'\n\
-    groupId = 'org.nnsuite'\n\
-    artifactId = '$nnstreamer_lib_name'\n\
-    publishVersion = '$release_version'\n\
-    desc = 'NNStreamer API for Android'\n\
-    website = 'https://github.com/nnstreamer/nnstreamer'\n\
-    issueTracker = 'https://github.com/nnstreamer/nnstreamer/issues'\n\
-    repository = 'https://github.com/nnstreamer/nnstreamer.git'\n\
-}|" nnstreamer/build.gradle
-fi
-
 # If build option is single-shot only, remove unnecessary files.
 if [[ $nnstreamer_api_option == "single" ]]; then
     rm ./nnstreamer/src/main/java/org/nnsuite/nnstreamer/CustomFilter.java
@@ -614,12 +573,6 @@ if [[ -e "$nnstreamer_android_api_lib" ]]; then
     zip -r $nnstreamer_static_libs ndk_static
 
     rm -rf aar_extracted main ndk_static
-
-    # Upload to jcenter
-    if [[ $release_bintray == "yes" ]]; then
-        echo "Upload NNStreamer library to Bintray."
-        sh ./gradlew nnstreamer:bintrayUpload -PbintrayUser=$bintray_user_name -PbintrayKey=$bintray_user_key -PdryRun=false
-    fi
 
     # Run instrumentation test
     if [[ $run_test == "yes" ]]; then
