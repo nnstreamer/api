@@ -1320,11 +1320,11 @@ ml_get_nnfw_type_by_subplugin_name (const char *name)
 }
 
 /**
- * @brief Checks the availability of the given execution environments.
+ * @brief Checks the availability of the given execution environments with custom option.
  */
 int
-ml_check_nnfw_availability (ml_nnfw_type_e nnfw, ml_nnfw_hw_e hw,
-    bool *available)
+ml_check_nnfw_availability_full (ml_nnfw_type_e nnfw, ml_nnfw_hw_e hw,
+    const char *custom, bool *available)
 {
   const char *fw_name = NULL;
 
@@ -1345,7 +1345,7 @@ ml_check_nnfw_availability (ml_nnfw_type_e nnfw, ml_nnfw_hw_e hw,
     if (nnstreamer_filter_find (fw_name) != NULL) {
       accl_hw accl = ml_nnfw_to_accl_hw (hw);
 
-      if (gst_tensor_filter_check_hw_availability (fw_name, accl)) {
+      if (gst_tensor_filter_check_hw_availability (fw_name, accl, custom)) {
         *available = true;
       } else {
         ml_logw ("%s is supported but not with the specified hardware.",
@@ -1357,6 +1357,16 @@ ml_check_nnfw_availability (ml_nnfw_type_e nnfw, ml_nnfw_hw_e hw,
   }
 
   return ML_ERROR_NONE;
+}
+
+/**
+ * @brief Checks the availability of the given execution environments.
+ */
+int
+ml_check_nnfw_availability (ml_nnfw_type_e nnfw, ml_nnfw_hw_e hw,
+    bool *available)
+{
+  return ml_check_nnfw_availability_full (nnfw, hw, NULL, available);
 }
 
 /**
