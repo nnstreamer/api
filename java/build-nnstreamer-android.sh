@@ -118,7 +118,7 @@ tf_lite_ver="2.3.0"
 tf_lite_vers_support="1.9.0 1.13.1 1.15.2 2.3.0"
 
 # Set NNFW version (https://github.com/Samsung/ONE/releases)
-nnfw_ver="1.15.0"
+nnfw_ver="1.17.0"
 enable_nnfw_ext="no"
 
 # Find '--help' in the given arguments
