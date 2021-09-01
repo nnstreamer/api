@@ -1884,6 +1884,30 @@ TEST (nnstreamer_capi_util, plugin_availability_fail_invalid_02_n)
 }
 
 /**
+ * @brief Test NNStreamer Utility for checking nnfw availability with custom option
+ */
+TEST (nnstreamer_capi_util, nnfw_availability_full_01)
+{
+  int status;
+  bool result;
+
+  status = ml_check_nnfw_availability_full (ML_NNFW_TYPE_TENSORFLOW_LITE, ML_NNFW_HW_ANY, NULL, &result);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  EXPECT_EQ (result, is_enabled_tensorflow_lite);
+}
+
+/**
+ * @brief Test NNStreamer Utility for checking nnfw availability with custom option (invalid param)
+ */
+TEST (nnstreamer_capi_util, nnfw_availability_full_02_n)
+{
+  int status;
+
+  status = ml_check_nnfw_availability_full (ML_NNFW_TYPE_TENSORFLOW_LITE, ML_NNFW_HW_ANY, NULL, NULL);
+  EXPECT_NE (status, ML_ERROR_NONE);
+}
+
+/**
  * @brief Test NNStreamer Utility for checking nnfw availability (invalid param)
  */
 TEST (nnstreamer_capi_util, nnfw_availability_fail_invalid_01_n)
