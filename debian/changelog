@@ -1,3 +1,9 @@
+ml-api (1.8.0.0) unstable xenial bionic focal; urgency=medium
+
+  * Release of 1.8.0
+
+ -- MyungJoo Ham <myungjoo.ham@samsung.com>  Fri, 24 Sep 2021 15:50:00 +0900
+
 ml-api (1.7.2.0) unstable xenial bionic; urgency=medium
 
   * 1.7.2 development starts
