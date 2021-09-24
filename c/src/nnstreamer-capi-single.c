@@ -98,7 +98,7 @@ typedef struct
   thread_state state;                 /**< current state of the thread */
   gboolean free_output;               /**< true if output tensors are allocated in single-shot */
   int status;                         /**< status of processing */
-
+  gboolean invoking;                  /**< invoke running flag */
   ml_tensors_data_s in_tensors;    /**< input tensor wrapper for processing */
   ml_tensors_data_s out_tensors;   /**< output tensor wrapper for processing */
 
@@ -308,9 +308,11 @@ invoke_thread (void *arg)
     input = single_h->input;
     output = single_h->output;
 
+    single_h->invoking = TRUE;
     g_mutex_unlock (&single_h->mutex);
     status = __invoke (single_h, input, output);
     g_mutex_lock (&single_h->mutex);
+    single_h->invoking = FALSE;
 
     if (status != ML_ERROR_NONE) {
       if (single_h->free_output) {
@@ -590,6 +592,7 @@ ml_single_create_handle (ml_nnfw_type_e nnfw)
   single_h->input = NULL;
   single_h->output = NULL;
   single_h->destroy_data_list = NULL;
+  single_h->invoking = FALSE;
 
   ml_tensors_info_initialize (&single_h->in_info);
   ml_tensors_info_initialize (&single_h->out_info);
@@ -841,6 +844,7 @@ int
 ml_single_close (ml_single_h single)
 {
   ml_single *single_h;
+  gboolean invoking;
 
   check_feature_state ();
 
@@ -853,8 +857,17 @@ ml_single_close (ml_single_h single)
 
   single_h->state = JOIN_REQUESTED;
   g_cond_broadcast (&single_h->cond);
-
+  invoking = single_h->invoking;
   ML_SINGLE_HANDLE_UNLOCK (single_h);
+
+  /** Wait until invoke process is finished */
+  while (invoking) {
+    ml_logw ("Wait 1 ms until invoke is finished and close the handle.");
+    g_usleep (1000);
+    g_mutex_lock (&single_h->mutex);
+    invoking = single_h->invoking;
+    g_mutex_unlock (&single_h->mutex);
+  }
 
   if (single_h->thread != NULL)
     g_thread_join (single_h->thread);
@@ -1054,7 +1067,9 @@ _ml_single_invoke_internal (ml_single_h single,
      * with the same handle. Thus we can call __invoke without
      * having yet another mutex for __invoke.
      */
+    single_h->invoking = TRUE;
     status = __invoke (single_h, single_h->input, single_h->output);
+    single_h->invoking = FALSE;
     single_h->state = IDLE;
 
     if (status != ML_ERROR_NONE) {
