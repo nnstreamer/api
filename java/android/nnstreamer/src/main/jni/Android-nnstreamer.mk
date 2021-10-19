@@ -15,18 +15,20 @@ endif
 NNSTREAMER_CAPI_INCLUDES := \
     $(NNSTREAMER_ROOT)/gst/nnstreamer/tensor_filter \
     $(ML_API_ROOT)/c/include/platform \
-    $(ML_API_ROOT)/c/include
+    $(ML_API_ROOT)/c/include \
+    $(ML_API_ROOT)/c/src
 
 # nnstreamer and single-shot api
 NNSTREAMER_SRC_FILES := \
     $(NNSTREAMER_COMMON_SRCS) \
-    $(ML_API_ROOT)/c/src/nnstreamer-capi-util.c \
-    $(ML_API_ROOT)/c/src/nnstreamer-capi-single.c
+    $(ML_API_ROOT)/c/src/ml-api-common.c \
+    $(ML_API_ROOT)/c/src/ml-api-inference-internal.c \
+    $(ML_API_ROOT)/c/src/ml-api-inference-single.c
 
 # pipeline api and nnstreamer plugins
 ifneq ($(NNSTREAMER_API_OPTION),single)
 NNSTREAMER_SRC_FILES += \
-    $(ML_API_ROOT)/c/src/nnstreamer-capi-pipeline.c \
+    $(ML_API_ROOT)/c/src/ml-api-inference-pipeline.c \
     $(NNSTREAMER_PLUGINS_SRCS) \
     $(NNSTREAMER_SOURCE_AMC_SRCS) \
     $(NNSTREAMER_DECODER_BB_SRCS) \

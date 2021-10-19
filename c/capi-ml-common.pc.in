@@ -9,5 +9,5 @@ Name: tizen-api-ml-common
 Description: ML common API for Tizen
 Version: @VERSION@
 Requires: @ML_COMMON_REQUIRE@
-Libs: -L${libdir}
+Libs: -L${libdir} -lcapi-ml-common
 Cflags: -I${includedir}/nnstreamer

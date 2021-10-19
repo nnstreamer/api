@@ -13,7 +13,7 @@
 
 /* ML API Side */
 #include <nnstreamer.h>
-#include <nnstreamer-capi-private.h>
+#include <ml-api-internal.h>
 
 /* GStreamer Side */
 #include <gst/gst.h>

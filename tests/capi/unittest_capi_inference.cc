@@ -13,8 +13,10 @@
 #include <nnstreamer.h>
 #include <nnstreamer-single.h>
 #include <nnstreamer_plugin_api.h>
-#include <nnstreamer-capi-private.h>
 #include <nnstreamer_internal.h>
+#include <nnstreamer-tizen-internal.h>
+#include <ml-api-internal.h>
+#include <ml-api-inference-internal.h>
 
 #if defined (__APPLE__)
 #define SO_FILE_EXTENSION ".dylib"

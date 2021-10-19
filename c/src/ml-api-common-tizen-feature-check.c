@@ -2,9 +2,9 @@
 /**
  * Copyright (c) 2020 Samsung Electronics Co., Ltd. All Rights Reserved.
  *
- * @file nnstreamer-capi-tizen-feature-check.c
+ * @file ml-api-common-tizen-feature-check.c
  * @date 21 July 2020
- * @brief NNStreamer/C-API Tizen dependent functions.
+ * @brief NNStreamer/C-API Tizen dependent functions, common for ML APIs, common for ML APIs.
  * @see	https://github.com/nnstreamer/nnstreamer
  * @author MyungJoo Ham <myungjoo.ham@samsung.com>
  * @bug No known bugs except for NYI items
@@ -17,7 +17,7 @@
 #include <glib.h>
 #include <system_info.h>
 
-#include "nnstreamer-capi-private.h"
+#include "ml-api-internal.h"
 
 /**
  * @brief Tizen ML feature.
@@ -86,7 +86,7 @@ ml_tizen_get_feature_enabled (void)
   g_mutex_unlock (&feature_info->mutex);
 
   if (NOT_SUPPORTED == feature_enabled) {
-    ml_loge ("machine_learning.inference NOT supported");
+    mlapi_loge ("machine_learning.inference NOT supported");
     return ML_ERROR_NOT_SUPPORTED;
   } else if (NOT_CHECKED_YET == feature_enabled) {
     bool ml_inf_supported = false;
@@ -94,7 +94,7 @@ ml_tizen_get_feature_enabled (void)
         system_info_get_platform_bool (ML_INF_FEATURE_PATH, &ml_inf_supported);
     if (0 == ret) {
       if (false == ml_inf_supported) {
-        ml_loge ("machine_learning.inference NOT supported");
+        mlapi_loge ("machine_learning.inference NOT supported");
         ml_tizen_set_feature_state (NOT_SUPPORTED);
         return ML_ERROR_NOT_SUPPORTED;
       }
@@ -103,23 +103,25 @@ ml_tizen_get_feature_enabled (void)
     } else {
       switch (ret) {
         case SYSTEM_INFO_ERROR_INVALID_PARAMETER:
-          ml_loge
+          mlapi_loge
               ("failed to get feature value because feature key is not vaild");
           ret = ML_ERROR_NOT_SUPPORTED;
           break;
 
         case SYSTEM_INFO_ERROR_IO_ERROR:
-          ml_loge ("failed to get feature value because of input/output error");
+          mlapi_loge
+              ("failed to get feature value because of input/output error");
           ret = ML_ERROR_NOT_SUPPORTED;
           break;
 
         case SYSTEM_INFO_ERROR_PERMISSION_DENIED:
-          ml_loge ("failed to get feature value because of permission denied");
+          mlapi_loge
+              ("failed to get feature value because of permission denied");
           ret = ML_ERROR_PERMISSION_DENIED;
           break;
 
         default:
-          ml_loge ("failed to get feature value because of unknown error");
+          mlapi_loge ("failed to get feature value because of unknown error");
           ret = ML_ERROR_NOT_SUPPORTED;
           break;
       }

@@ -154,11 +154,25 @@ Requires:	capi-machine-learning-inference-devel = %{version}-%{release}
 %description devel-static
 Static library of capi-machine-learning-inference-devel package.
 
+%package -n capi-machine-learning-common
+Summary:	Common utility functions for Tizen Machine Learning API
+Group:		Machine Learning/ML Framework
+%description -n capi-machine-learning-common
+Tizen ML(Machine Learning) native API's common parts.
+
 %package -n capi-machine-learning-common-devel
 Summary:	Common headers for Tizen Machine Learning API
 Group:		Machine Learning/ML Framework
+Requires:	capi-machine-larning-common = %{version}-%{release}
 %description -n capi-machine-learning-common-devel
 Common headers for Tizen Machine Learning API.
+
+%package -n capi-machine-learning-common-devel-static
+Summary:	Static library of common utility functions for Tizen Machine Learning API
+Group:		Machine Learning/ML Framework
+Requires:	capi-machine-larning-common-devel = %{version}-%{release}
+%description -n capi-machine-learning-common-devel-static
+Static library of common headers for Tizen Machine Learning API.
 
 %package -n capi-machine-learning-tizen-internal-devel
 Summary:	Tizen internal headers for Tizen Machine Learning API
@@ -290,9 +304,15 @@ cp -r result %{buildroot}%{_datadir}/ml-api/unittest/
 %files devel-static
 %{_libdir}/libcapi-nnstreamer.a
 
+%files -n capi-machine-learning-common
+%{_libdir}/libcapi-ml-common.so*
+
 %files -n capi-machine-learning-common-devel
 %{_includedir}/nnstreamer/ml-api-common.h
 %{_libdir}/pkgconfig/capi-ml-common.pc
+
+%files -n capi-machine-learning-common-devel-static
+%{_libdir}/libcapi-ml-common.a
 
 %files -n capi-machine-learning-tizen-internal-devel
 %{_includedir}/nnstreamer/nnstreamer-tizen-internal.h

@@ -2,9 +2,9 @@
 /**
  * Copyright (c) 2020 Samsung Electronics Co., Ltd. All Rights Reserved.
  *
- * @file nnstreamer-capi-tizen-privilege-check.c
+ * @file ml-api-inference-tizen-privilege-check.c
  * @date 22 July 2020
- * @brief NNStreamer/C-API Tizen dependent functions.
+ * @brief NNStreamer/C-API Tizen dependent functions for inference APIs.
  * @see	https://github.com/nnstreamer/nnstreamer
  * @author MyungJoo Ham <myungjoo.ham@samsung.com>
  * @bug No known bugs except for NYI items
@@ -19,14 +19,14 @@
 #include <system_info.h>
 #include <restriction.h>        /* device policy manager */
 #include <privacy_privilege_manager.h>
-#include "nnstreamer-capi-private.h"
+#include <nnstreamer.h>
+#include "ml-api-internal.h"
+#include "ml-api-inference-internal.h"
 #if TIZEN5PLUS
 #include <mm_resource_manager.h>
 #endif
 #include <mm_camcorder.h>
 
-#include "nnstreamer.h"
-#include "nnstreamer_plugin_api.h"
 
 #if TIZENMMCONF
 /* We can use "MMCAM_VIDEOSRC_ELEMENT_NAME and MMCAM_AUDIOSRC_ELEMENT_NAME */
@@ -150,7 +150,7 @@ ml_tizen_check_privilege (const gchar * privilege)
       priv_result == PRIVACY_PRIVILEGE_MANAGER_CHECK_RESULT_ALLOW) {
     /* privilege allowed */
   } else {
-    ml_loge ("Failed to check the privilege %s.", privilege);
+    mlapi_loge ("Failed to check the privilege %s.", privilege);
     status = ML_ERROR_PERMISSION_DENIED;
   }
 
@@ -179,7 +179,7 @@ ml_tizen_check_dpm_restriction (device_policy_manager_h dpm_handle, int type)
   }
 
   if (err != DPM_ERROR_NONE || dpm_is_allowed != 1) {
-    ml_loge ("Failed, device policy is not allowed.");
+    mlapi_loge ("Failed, device policy is not allowed.");
     return ML_ERROR_PERMISSION_DENIED;
   }
 
@@ -237,7 +237,7 @@ ml_tizen_mm_res_get_key_string (mm_resource_manager_res_type_e type)
       res_key = g_strdup ("tizen_mm_res_radio");
       break;
     default:
-      ml_logw ("The resource type %d is invalid.", type);
+      mlapi_logw ("The resource type %d is invalid.", type);
       break;
   }
 
@@ -456,7 +456,7 @@ ml_tizen_mm_res_initialize (ml_pipeline_h pipe, gboolean has_video_src,
   if (!res) {
     res = g_new0 (pipeline_resource_s, 1);
     if (!res) {
-      ml_loge ("Failed to allocate pipeline resource handle.");
+      mlapi_loge ("Failed to allocate pipeline resource handle.");
       status = ML_ERROR_OUT_OF_MEMORY;
       goto rm_error;
     }
@@ -469,7 +469,7 @@ ml_tizen_mm_res_initialize (ml_pipeline_h pipe, gboolean has_video_src,
   if (!mm_handle) {
     mm_handle = g_new0 (tizen_mm_handle_s, 1);
     if (!mm_handle) {
-      ml_loge ("Failed to allocate media resource handle.");
+      mlapi_loge ("Failed to allocate media resource handle.");
       status = ML_ERROR_OUT_OF_MEMORY;
       goto rm_error;
     }
@@ -482,7 +482,7 @@ ml_tizen_mm_res_initialize (ml_pipeline_h pipe, gboolean has_video_src,
     if (dpm_add_policy_changed_cb (mm_handle->dpm_h, "camera",
             ml_tizen_dpm_policy_changed_cb, pipe,
             &mm_handle->dpm_cb_id) != DPM_ERROR_NONE) {
-      ml_loge ("Failed to add device policy callback.");
+      mlapi_loge ("Failed to add device policy callback.");
       status = ML_ERROR_PERMISSION_DENIED;
       goto rm_error;
     }
@@ -604,7 +604,7 @@ ml_tizen_mm_res_acquire (ml_pipeline_h pipe,
       if (!mm_res) {
         mm_res = g_new0 (pipeline_resource_s, 1);
         if (mm_res == NULL) {
-          ml_loge ("Failed to allocate media resource data.");
+          mlapi_loge ("Failed to allocate media resource data.");
           g_free (res_key);
           status = ML_ERROR_OUT_OF_MEMORY;
           goto rm_error;
@@ -650,14 +650,15 @@ ml_tizen_mm_replace_element (MMHandleType * handle, camera_conf * conf,
   _mmcamcorder_conf_get_value_element_name (element, &src_name);
 
   if (!src_name) {
-    ml_loge ("Failed to get the name of %s.", name);
+    mlapi_loge ("Failed to get the name of %s.", name);
     return ML_ERROR_STREAMS_PIPE;
   }
 
-  *description = replace_string (*description, what, src_name, " !", &changed);
+  *description =
+      ml_replace_string (*description, what, src_name, " !", &changed);
   if (changed > 1) {
     /* allow one src in the pipeline */
-    ml_loge ("Cannot parse duplicated src node.");
+    mlapi_loge ("Cannot parse duplicated src node.");
     return ML_ERROR_STREAMS_PIPE;
   }
 
@@ -713,7 +714,7 @@ ml_tizen_mm_convert_element (ml_pipeline_h pipe, gchar ** result,
     }
 
     if ((err = mm_camcorder_create (&hcam, &cam_info)) != MM_ERROR_NONE) {
-      ml_loge ("Fail to call mm_camcorder_create = %x\n", err);
+      mlapi_loge ("Fail to call mm_camcorder_create = %x\n", err);
       goto mm_error;
     }
 #if TIZENMMCONF                 /* 6.5 or higher */
@@ -725,15 +726,15 @@ ml_tizen_mm_convert_element (ml_pipeline_h pipe, gchar ** result,
           MMCAM_VIDEOSRC_ELEMENT_NAME, &src_name, &size, NULL);
 
       if (err != MM_ERROR_NONE || !src_name || size < 1) {
-        ml_loge ("Failed to get attributes of MMCAM_VIDEOSRC_ELEMENT_NAME.");
+        mlapi_loge ("Failed to get attributes of MMCAM_VIDEOSRC_ELEMENT_NAME.");
         status = ML_ERROR_NOT_SUPPORTED;
         goto mm_error;
       }
-      *result = replace_string (*result, ML_TIZEN_CAM_VIDEO_SRC, src_name,
+      *result = ml_replace_string (*result, ML_TIZEN_CAM_VIDEO_SRC, src_name,
           " !", &changed);
       if (changed > 1) {
         /* Allow one src only in a pipeline */
-        ml_loge ("Cannot parse duplicated Tizen video src nodes.");
+        mlapi_loge ("Cannot parse duplicated Tizen video src nodes.");
         status = ML_ERROR_INVALID_PARAMETER;
         goto mm_error;
       }
@@ -746,15 +747,15 @@ ml_tizen_mm_convert_element (ml_pipeline_h pipe, gchar ** result,
           MMCAM_AUDIOSRC_ELEMENT_NAME, &src_name, &size, NULL);
 
       if (err != MM_ERROR_NONE || !src_name || size < 1) {
-        ml_loge ("Failed to get attributes of MMCAM_AUDIOSRC_ELEMENT_NAME.");
+        mlapi_loge ("Failed to get attributes of MMCAM_AUDIOSRC_ELEMENT_NAME.");
         status = ML_ERROR_NOT_SUPPORTED;
         goto mm_error;
       }
-      *result = replace_string (*result, ML_TIZEN_CAM_AUDIO_SRC, src_name,
+      *result = ml_replace_string (*result, ML_TIZEN_CAM_AUDIO_SRC, src_name,
           " !", &changed);
       if (changed > 1) {
         /* Allow one src only in a pipeline */
-        ml_loge ("Cannot parse duplicated Tizen audio src nodes.");
+        mlapi_loge ("Cannot parse duplicated Tizen audio src nodes.");
         status = ML_ERROR_INVALID_PARAMETER;
         goto mm_error;
       }
@@ -765,7 +766,7 @@ ml_tizen_mm_convert_element (ml_pipeline_h pipe, gchar ** result,
     err =
         _mmcamcorder_conf_get_info (hcam, 0, MMFW_CONFIG_MAIN_FILE, &cam_conf);
     if (err != MM_ERROR_NONE || !cam_conf) {
-      ml_loge ("Failed to load conf %s.", MMFW_CONFIG_MAIN_FILE);
+      mlapi_loge ("Failed to load conf %s.", MMFW_CONFIG_MAIN_FILE);
       status = ML_ERROR_NOT_SUPPORTED;
       goto mm_error;
     }

@@ -21,10 +21,12 @@
 
 #include "nnstreamer.h"
 #include "nnstreamer-single.h"
-#include "nnstreamer-capi-private.h"
+#include "nnstreamer-tizen-internal.h"
 #include "nnstreamer_log.h"
 #include "nnstreamer_plugin_api.h"
 #include "nnstreamer_plugin_api_filter.h"
+#include <ml-api-internal.h>
+#include <ml-api-inference-internal.h>
 
 #if GLIB_SIZEOF_VOID_P == 8
 #define CAST_TO_LONG(p) (jlong)(p)
