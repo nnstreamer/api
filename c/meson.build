@@ -2,22 +2,25 @@
 
 nns_capi_include = []
 nns_capi_include += include_directories('include')
+nns_capi_include += include_directories('src')
 if not get_option('enable-tizen')
   nns_capi_include += include_directories('include/platform')
 endif
 
 nns_capi_srcs = []
-nns_capi_srcs += join_paths(meson.current_source_dir(), 'src', 'nnstreamer-capi-pipeline.c')
-nns_capi_srcs += join_paths(meson.current_source_dir(), 'src', 'nnstreamer-capi-util.c')
-nns_capi_srcs += join_paths(meson.current_source_dir(), 'src', 'nnstreamer-capi-single.c')
+nns_capi_common_srcs = []
+nns_capi_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-inference-pipeline.c')
+nns_capi_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-inference-single.c')
+nns_capi_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-inference-internal.c')
+nns_capi_common_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-common.c')
 
 if get_option('enable-tizen')
   if get_option('enable-tizen-feature-check')
-    nns_capi_srcs += join_paths(meson.current_source_dir(), 'src', 'nnstreamer-capi-tizen-feature-check.c')
+    nns_capi_common_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-common-tizen-feature-check.c')
   endif
 
   if get_option('enable-tizen-privilege-check')
-    nns_capi_srcs += join_paths(meson.current_source_dir(), 'src', 'nnstreamer-capi-tizen-privilege-check.c')
+    nns_capi_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-inference-tizen-privilege-check.c')
   endif
 endif
 
@@ -33,8 +36,10 @@ else
   nns_capi_headers += join_paths(meson.current_source_dir(), 'include', 'platform', 'tizen_error.h')
 endif
 
+
 # Dependencies
 nns_capi_deps = [nnstreamer_dep, glib_dep, gmodule_dep, gst_dep, gst_app_dep]
+nns_capi_common_deps = [glib_dep, gmodule_dep, gst_dep]
 
 if (get_option('enable-tizen'))
   message('C-API is in Tizen mode')
@@ -55,7 +60,30 @@ if (get_option('enable-tizen'))
   endif
 
   nns_capi_deps += tizen_deps
+  nns_capi_common_deps += tizen_deps
 endif
+
+# Build ML-API Common Lib First.
+nns_capi_common_shared_lib = shared_library ('capi-ml-common',
+  nns_capi_common_srcs,
+  dependencies: nns_capi_common_deps,
+  include_directories: nns_capi_include,
+  install: true,
+  install_dir: api_install_libdir,
+)
+nns_capi_common_static_lib = static_library ('capi-ml-common',
+  nns_capi_common_srcs,
+  dependencies: nns_capi_common_deps,
+  include_directories: nns_capi_include,
+  install: true,
+  install_dir: api_install_libdir,
+)
+nns_capi_common_lib = nns_capi_common_shared_lib
+if get_option('default_library') == 'static'
+  nns_capi_common_lib = nns_capi_common_static_lib
+endif
+nns_capi_common_dep = declare_dependency(link_with: nns_capi_common_lib)
+nns_capi_deps += nns_capi_common_dep
 
 nns_capi_shared_lib = shared_library ('capi-nnstreamer',
   nns_capi_srcs,

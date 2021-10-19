@@ -16,9 +16,10 @@
 
 #include <nnstreamer.h>
 #include <nnstreamer-single.h>
-#include <nnstreamer-capi-private.h>
 #include <nnstreamer_plugin_api.h>
 #include <nnstreamer_plugin_api_filter.h>
+#include <ml-api-internal.h>
+#include <ml-api-inference-internal.h>
 
 /**
  * @brief nnstreamer invoke latency testing base class
