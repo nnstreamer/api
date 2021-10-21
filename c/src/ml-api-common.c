@@ -928,3 +928,23 @@ ml_replace_string (gchar * source, const gchar * what, const gchar * to,
   g_free (source);
   return result;
 }
+
+/**
+ * @brief public API function of error reporting.
+ */
+const char *
+ml_error (void)
+{
+  /** @todo NYI **/
+  return NULL;
+}
+
+/**
+ * @brief public API function of error code descriptions
+ */
+const char *
+ml_strerror (int errnum)
+{
+  /** @todo NYI **/
+  return NULL;
+}
