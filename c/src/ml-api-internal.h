@@ -293,6 +293,27 @@ int ml_tizen_get_feature_enabled (void);
 int ml_tizen_set_feature_state (int state);
 /****** TIZEN CHECK FEATURE ENDS *****/
 #endif /* __TIZEN__ */
+
+
+/***** Begin: Error reporting internal interfaces ****
+ * ml-api-* implementation needs to use these interfaces to provide
+ * proper error messages for ml_error();
+ */
+
+/**
+ * @brief Call when an error occurs during API execution.
+ * @param[in] message The error description
+ */
+void _ml_error_report (const char *message);
+
+#define _ml_error_report_return (errno, message)  do { \
+  _ml_error_report (message); \
+  return errno; \
+} while(0)
+
+/***** End: Error reporting internal interfaces *****/
+
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
