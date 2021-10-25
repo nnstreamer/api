@@ -11,6 +11,7 @@
  */
 
 #include <string.h>
+#include <glib.h>
 
 #include "nnstreamer.h"
 #include "ml-api-internal.h"
@@ -930,14 +931,54 @@ ml_replace_string (gchar * source, const gchar * what, const gchar * to,
 }
 
 /**
+ * @brief error reporting infra
+ */
+#define _ML_ERRORMSG_LENGTH (4096)
+static char errormsg[_ML_ERRORMSG_LENGTH] = { 0 };      /* one page limit */
+
+static int reported = 0;
+G_LOCK_DEFINE_STATIC (errlock);
+
+/**
  * @brief public API function of error reporting.
  */
 const char *
 ml_error (void)
 {
-  /** @todo NYI **/
-  return NULL;
+  G_LOCK (errlock);
+  if (reported != 0) {
+    errormsg[0] = '\0';
+    reported = 0;
+  }
+  if (errormsg[0] == '\0') {
+    G_UNLOCK (errlock);
+    return NULL;
+  }
+
+  reported = 1;
+
+  G_UNLOCK (errlock);
+  return errormsg;
 }
+
+/**
+ * @brief Internal interface to write messages for ml_error()
+ */
+void
+_ml_error_report (const char *message)
+{
+  G_LOCK (errlock);
+  strncpy (errormsg, message, _ML_ERRORMSG_LENGTH);
+  errormsg[_ML_ERRORMSG_LENGTH - 1] = '\0';
+  reported = 0;
+  G_UNLOCK (errlock);
+}
+
+static const char *strerrors[] = {
+  [0] = "Not an error",
+  [EINVAL] =
+      "Invalid parameters are given to a function. Check parameter values. (EINVAL)",
+};
 
 /**
  * @brief public API function of error code descriptions
@@ -945,6 +986,8 @@ ml_error (void)
 const char *
 ml_strerror (int errnum)
 {
-  /** @todo NYI **/
-  return NULL;
+  int size = sizeof (strerrors) / sizeof (strerrors[0]);
+  if (errnum < 0 || errnum >= size)
+    return NULL;
+  return strerrors[errnum];
 }
