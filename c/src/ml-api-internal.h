@@ -28,30 +28,30 @@ extern "C" {
 
 #if defined(__TIZEN__)
 #include <dlog.h>
-#define mlapi_loge(...) \
+#define _ml_loge(...) \
     dlog_print (DLOG_ERROR, MLAPI_TAG_NAME, __VA_ARGS__)
-#define mlapi_logi(...) \
+#define _ml_logi(...) \
     dlog_print (DLOG_INFO, MLAPI_TAG_NAME, __VA_ARGS__)
-#define mlapi_logw(...) \
+#define _ml_logw(...) \
     dlog_print (DLOG_WARN, MLAPI_TAG_NAME, __VA_ARGS__)
-#define mlapi_logd(...) \
+#define _ml_logd(...) \
     dlog_print (DLOG_DEBUG, MLAPI_TAG_NAME, __VA_ARGS__)
 #elif defined(__ANDROID__)
 #include <android/log.h>
-#define mlapi_loge(...) \
+#define _ml_loge(...) \
     __android_log_print (ANDROID_LOG_ERROR, MLAPI_TAG_NAME, __VA_ARGS__)
-#define mlapi_logi(...) \
+#define _ml_logi(...) \
     __android_log_print (ANDROID_LOG_INFO, MLAPI_TAG_NAME, __VA_ARGS__)
-#define mlapi_logw(...) \
+#define _ml_logw(...) \
     __android_log_print (ANDROID_LOG_WARN, MLAPI_TAG_NAME, __VA_ARGS__)
-#define mlapi_logd(...) \
+#define _ml_logd(...) \
     __android_log_print (ANDROID_LOG_DEBUG, MLAPI_TAG_NAME, __VA_ARGS__)
 #else /* Linux distro */
 #include <glib.h>
-#define mlapi_loge g_critical
-#define mlapi_logi g_info
-#define mlapi_logw g_warning
-#define mlapi_logd g_debug
+#define _ml_loge g_critical
+#define _ml_logi g_info
+#define _ml_logw g_warning
+#define _ml_logd g_debug
 #endif
 
 #if defined (__TIZEN__)

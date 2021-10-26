@@ -235,10 +235,10 @@ ml_initialize_gstreamer (void)
 
   if (!gst_init_check (NULL, NULL, &err)) {
     if (err) {
-      mlapi_loge ("GStreamer has the following error: %s", err->message);
+      _ml_loge ("GStreamer has the following error: %s", err->message);
       g_clear_error (&err);
     } else {
-      mlapi_loge ("Cannot initialize GStreamer. Unknown reason.");
+      _ml_loge ("Cannot initialize GStreamer. Unknown reason.");
     }
 
     return ML_ERROR_STREAMS_PIPE;
@@ -257,7 +257,7 @@ _ml_validate_model_file (const char *const *model,
   guint i;
 
   if (!model || num_models < 1) {
-    mlapi_loge ("The required param, model is not provided (null).");
+    _ml_loge ("The required param, model is not provided (null).");
     return ML_ERROR_INVALID_PARAMETER;
   }
 
@@ -268,7 +268,7 @@ _ml_validate_model_file (const char *const *model,
 
   for (i = 0; i < num_models; i++) {
     if (!model[i] || !g_file_test (model[i], G_FILE_TEST_IS_REGULAR)) {
-      mlapi_loge ("The given param, model path [%s] is invalid or not given.",
+      _ml_loge ("The given param, model path [%s] is invalid or not given.",
           GST_STR_NULL (model[i]));
       return ML_ERROR_INVALID_PARAMETER;
     }
@@ -295,7 +295,7 @@ ml_get_nnfw_type_by_subplugin_name (const char *name)
     if (g_ascii_strcasecmp (name, "snap") == 0)
       nnfw_type = ML_NNFW_TYPE_SNAP;
     else
-      mlapi_logw ("Cannot find nnfw, %s is invalid name.", GST_STR_NULL (name));
+      _ml_logw ("Cannot find nnfw, %s is invalid name.", GST_STR_NULL (name));
   } else {
     nnfw_type = (ml_nnfw_type_e) idx;
   }
@@ -342,10 +342,10 @@ ml_validate_model_file (const char *const *model,
 
   if (*nnfw == ML_NNFW_TYPE_ANY) {
     if (detected == ML_NNFW_TYPE_ANY) {
-      mlapi_loge ("The given model has unknown or not supported extension.");
+      _ml_loge ("The given model has unknown or not supported extension.");
       status = ML_ERROR_INVALID_PARAMETER;
     } else {
-      mlapi_logi ("The given model is supposed a %s model.",
+      _ml_logi ("The given model is supposed a %s model.",
           ml_get_nnfw_subplugin_name (detected));
       *nnfw = detected;
     }
@@ -353,7 +353,7 @@ ml_validate_model_file (const char *const *model,
     goto done;
   } else if (is_dir && *nnfw != ML_NNFW_TYPE_NNFW) {
     /* supposed it is ONE if given model is directory */
-    mlapi_loge ("The given model is directory, check model and framework.");
+    _ml_loge ("The given model is directory, check model and framework.");
     status = ML_ERROR_INVALID_PARAMETER;
     goto done;
   } else if (detected == *nnfw) {
@@ -365,7 +365,7 @@ ml_validate_model_file (const char *const *model,
   file_ext = g_malloc0 (sizeof (char *) * (num_models + 1));
   for (i = 0; i < num_models; i++) {
     if ((pos = strrchr (model[i], '.')) == NULL) {
-      mlapi_loge ("The given model [%s] has invalid extension.", model[i]);
+      _ml_loge ("The given model [%s] has invalid extension.", model[i]);
       status = ML_ERROR_INVALID_PARAMETER;
       goto done;
     }
@@ -385,7 +385,7 @@ ml_validate_model_file (const char *const *model,
     case ML_NNFW_TYPE_OPENVINO:
     case ML_NNFW_TYPE_EDGE_TPU:
       /** @todo Need to check method to validate model */
-      mlapi_loge ("Given NNFW is not supported yet.");
+      _ml_loge ("Given NNFW is not supported yet.");
       status = ML_ERROR_NOT_SUPPORTED;
       break;
     case ML_NNFW_TYPE_VD_AIFW:
@@ -397,7 +397,7 @@ ml_validate_model_file (const char *const *model,
       break;
     case ML_NNFW_TYPE_SNAP:
 #if !defined (__ANDROID__)
-      mlapi_loge ("SNAP only can be included in Android (arm64-v8a only).");
+      _ml_loge ("SNAP only can be included in Android (arm64-v8a only).");
       status = ML_ERROR_NOT_SUPPORTED;
 #endif
       /* SNAP requires multiple files, set supported if model file exists. */
@@ -418,11 +418,11 @@ ml_validate_model_file (const char *const *model,
 done:
   if (status == ML_ERROR_NONE) {
     if (!ml_nnfw_is_available (*nnfw, ML_NNFW_HW_ANY)) {
-      mlapi_loge ("%s is not available.", ml_get_nnfw_subplugin_name (*nnfw));
+      _ml_loge ("%s is not available.", ml_get_nnfw_subplugin_name (*nnfw));
       status = ML_ERROR_NOT_SUPPORTED;
     }
   } else {
-    mlapi_loge ("The given model file is invalid.");
+    _ml_loge ("The given model file is invalid.");
   }
 
   g_strfreev (file_ext);
@@ -534,7 +534,7 @@ ml_check_plugin_availability (const char *plugin_name, const char *element_name)
   static gchar **restricted_elements = NULL;
 
   if (!plugin_name || !element_name) {
-    mlapi_loge ("The name is invalid, failed to check the availability.");
+    _ml_loge ("The name is invalid, failed to check the availability.");
     return ML_ERROR_INVALID_PARAMETER;
   }
 
@@ -568,7 +568,7 @@ ml_check_plugin_availability (const char *plugin_name, const char *element_name)
 
   if (restricted_elements &&
       find_key_strv ((const gchar **) restricted_elements, element_name) < 0) {
-    mlapi_logw ("The element %s is restricted.", element_name);
+    _ml_logw ("The element %s is restricted.", element_name);
     return ML_ERROR_NOT_SUPPORTED;
   }
 

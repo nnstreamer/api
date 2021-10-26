@@ -51,7 +51,7 @@ G_LOCK_DEFINE_STATIC (magic);
   G_LOCK (magic); \
   single_h = (ml_single *) single; \
   if (G_UNLIKELY(single_h->magic != ML_SINGLE_MAGIC)) { \
-    mlapi_loge ("The given param, single is invalid."); \
+    _ml_loge ("The given param, single is invalid."); \
     G_UNLOCK (magic); \
     return ML_ERROR_INVALID_PARAMETER; \
   } \
@@ -139,11 +139,11 @@ ml_check_nnfw_availability_full (ml_nnfw_type_e nnfw, ml_nnfw_hw_e hw,
       if (gst_tensor_filter_check_hw_availability (fw_name, accl, custom)) {
         *available = true;
       } else {
-        mlapi_logw ("%s is supported but not with the specified hardware.",
+        _ml_logw ("%s is supported but not with the specified hardware.",
             fw_name);
       }
     } else {
-      mlapi_logw ("%s is not supported.", fw_name);
+      _ml_logw ("%s is not supported.", fw_name);
     }
   }
 
@@ -242,7 +242,7 @@ exit:
   ML_SINGLE_HANDLE_UNLOCK (single_h);
 
   if (G_UNLIKELY (status != ML_ERROR_NONE))
-    mlapi_loge ("Failed to destroy the data.");
+    _ml_loge ("Failed to destroy the data.");
   return status;
 }
 
@@ -287,7 +287,7 @@ __invoke (ml_single * single_h, ml_tensors_data_h in, ml_tensors_data_h out)
   /** invoke the thread */
   if (!single_h->klass->invoke (single_h->filter, in_tensors, out_tensors,
           single_h->free_output)) {
-    mlapi_loge ("Failed to invoke the tensors.");
+    _ml_loge ("Failed to invoke the tensors.");
     status = ML_ERROR_STREAMS_PIPE;
   }
 
@@ -467,7 +467,7 @@ ml_single_get_gst_info (ml_single * single_h, gboolean is_input,
   g_free (val);
 
   if (gst_info->num_tensors != num) {
-    mlapi_logw ("The number of tensor type is mismatched in filter.");
+    _ml_logw ("The number of tensor type is mismatched in filter.");
   }
 
   /* get names */
@@ -476,7 +476,7 @@ ml_single_get_gst_info (ml_single * single_h, gboolean is_input,
   g_free (val);
 
   if (gst_info->num_tensors != num) {
-    mlapi_logw ("The number of tensor name is mismatched in filter.");
+    _ml_logw ("The number of tensor name is mismatched in filter.");
   }
 }
 
@@ -628,13 +628,13 @@ ml_single_create_handle (ml_nnfw_type_e nnfw)
 
   single_h = g_new0 (ml_single, 1);
   if (single_h == NULL) {
-    mlapi_loge ("Failed to allocate the single handle.");
+    _ml_loge ("Failed to allocate the single handle.");
     return NULL;
   }
 
   single_h->filter = g_object_new (G_TYPE_TENSOR_FILTER_SINGLE, NULL);
   if (single_h->filter == NULL) {
-    mlapi_loge ("Failed to create a new instance for filter.");
+    _ml_loge ("Failed to create a new instance for filter.");
     g_free (single_h);
     return NULL;
   }
@@ -656,7 +656,7 @@ ml_single_create_handle (ml_nnfw_type_e nnfw)
 
   single_h->klass = g_type_class_ref (G_TYPE_TENSOR_FILTER_SINGLE);
   if (single_h->klass == NULL) {
-    mlapi_loge ("Failed to get class of the filter.");
+    _ml_loge ("Failed to get class of the filter.");
     ml_single_close (single_h);
     return NULL;
   }
@@ -664,8 +664,7 @@ ml_single_create_handle (ml_nnfw_type_e nnfw)
   single_h->thread =
       g_thread_try_new (NULL, invoke_thread, (gpointer) single_h, &error);
   if (single_h->thread == NULL) {
-    mlapi_loge ("Failed to create the invoke thread, error: %s.",
-        error->message);
+    _ml_loge ("Failed to create the invoke thread, error: %s.", error->message);
     g_clear_error (&error);
     ml_single_close (single_h);
     return NULL;
@@ -682,28 +681,28 @@ _ml_single_open_custom_validate_arguments (ml_single_h * single,
     ml_single_preset * info)
 {
   if (!single) {
-    mlapi_loge ("The given param is invalid: 'single' is NULL.");
+    _ml_loge ("The given param is invalid: 'single' is NULL.");
     return ML_ERROR_INVALID_PARAMETER;
   }
   if (!info) {
-    mlapi_loge ("The given param is invalid: 'info' is NULL.");
+    _ml_loge ("The given param is invalid: 'info' is NULL.");
     return ML_ERROR_INVALID_PARAMETER;
   }
 
   /* Validate input tensor info. */
   if (info->input_info && !ml_tensors_info_is_valid (info->input_info)) {
-    mlapi_loge ("The given param, input tensor info is invalid.");
+    _ml_loge ("The given param, input tensor info is invalid.");
     return ML_ERROR_INVALID_PARAMETER;
   }
 
   /* Validate output tensor info. */
   if (info->output_info && !ml_tensors_info_is_valid (info->output_info)) {
-    mlapi_loge ("The given param, output tensor info is invalid.");
+    _ml_loge ("The given param, output tensor info is invalid.");
     return ML_ERROR_INVALID_PARAMETER;
   }
 
   if (!info->models) {
-    mlapi_loge ("The given param, model is invalid: info->models is NULL.");
+    _ml_loge ("The given param, model is invalid: info->models is NULL.");
     return ML_ERROR_INVALID_PARAMETER;
   }
 
@@ -762,7 +761,7 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
    * (Supposed CPU only) Support others later.
    */
   if (!ml_nnfw_is_available (nnfw, hw)) {
-    mlapi_loge ("The given nnfw is not available.");
+    _ml_loge ("The given nnfw is not available.");
     return ML_ERROR_NOT_SUPPORTED;
   }
 
@@ -791,7 +790,7 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
       if (status != ML_ERROR_NONE)
         goto error;
     } else {
-      mlapi_loge
+      _ml_loge
           ("To run the pipeline, input and output information should be initialized.");
       status = ML_ERROR_INVALID_PARAMETER;
       goto error;
@@ -826,20 +825,20 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
 
   /* 4. Start the nnfw to get inout configurations if needed */
   if (!single_h->klass->start (single_h->filter)) {
-    mlapi_loge ("Failed to start NNFW to get inout configurations.");
+    _ml_loge ("Failed to start NNFW to get inout configurations.");
     status = ML_ERROR_STREAMS_PIPE;
     goto error;
   }
 
   /* 5. Set in/out configs and metadata */
   if (!ml_single_set_info_in_handle (single_h, TRUE, in_tensors_info)) {
-    mlapi_loge ("The input tensor info is invalid.");
+    _ml_loge ("The input tensor info is invalid.");
     status = ML_ERROR_INVALID_PARAMETER;
     goto error;
   }
 
   if (!ml_single_set_info_in_handle (single_h, FALSE, out_tensors_info)) {
-    mlapi_loge ("The output tensor info is invalid.");
+    _ml_loge ("The output tensor info is invalid.");
     status = ML_ERROR_INVALID_PARAMETER;
     goto error;
   }
@@ -905,7 +904,7 @@ ml_single_close (ml_single_h single)
   check_feature_state ();
 
   if (!single) {
-    mlapi_loge ("The given param, single is invalid.");
+    _ml_loge ("The given param, single is invalid.");
     return ML_ERROR_INVALID_PARAMETER;
   }
 
@@ -918,7 +917,7 @@ ml_single_close (ml_single_h single)
 
   /** Wait until invoke process is finished */
   while (invoking) {
-    mlapi_logw ("Wait 1 ms until invoke is finished and close the handle.");
+    _ml_logw ("Wait 1 ms until invoke is finished and close the handle.");
     g_usleep (1000);
     g_mutex_lock (&single_h->mutex);
     invoking = single_h->invoking;
@@ -972,7 +971,7 @@ _ml_single_invoke_validate_data (ml_single_h single,
   _data = (ml_tensors_data_s *) data;
 
   if (G_UNLIKELY (!_data)) {
-    mlapi_loge ("The data handle to invoke the model is invalid.");
+    _ml_loge ("The data handle to invoke the model is invalid.");
     return ML_ERROR_INVALID_PARAMETER;
   }
 
@@ -982,7 +981,7 @@ _ml_single_invoke_validate_data (ml_single_h single,
     _model = &single_h->out_tensors;
 
   if (G_UNLIKELY (_data->num_tensors != _model->num_tensors)) {
-    mlapi_loge
+    _ml_loge
         ("The number of %s tensors is not compatible with model. Given: %u, Expected: %u.",
         (is_input) ? "input" : "output", _data->num_tensors,
         _model->num_tensors);
@@ -991,13 +990,13 @@ _ml_single_invoke_validate_data (ml_single_h single,
 
   for (i = 0; i < _data->num_tensors; i++) {
     if (G_UNLIKELY (!_data->tensors[i].tensor)) {
-      mlapi_loge ("The %d-th input tensor is not valid.", i);
+      _ml_loge ("The %d-th input tensor is not valid.", i);
       return ML_ERROR_INVALID_PARAMETER;
     }
 
     raw_size = _model->tensors[i].size;
     if (G_UNLIKELY (_data->tensors[i].size != raw_size)) {
-      mlapi_loge
+      _ml_loge
           ("The size of %d-th %s tensor is not compatible with model. Given: %zu, Expected: %zu (type: %d).",
           i, (is_input) ? "input" : "output", _data->tensors[i].size, raw_size,
           single_h->in_info.info[i].type);
@@ -1033,19 +1032,19 @@ _ml_single_invoke_internal (ml_single_h single,
   check_feature_state ();
 
   if (G_UNLIKELY (!single)) {
-    mlapi_loge
+    _ml_loge
         ("The first argument of ml_single_invoke() is not valid. Please check the single handle.");
     return ML_ERROR_INVALID_PARAMETER;
   }
 
   if (G_UNLIKELY (!input)) {
-    mlapi_loge
+    _ml_loge
         ("The second argument of ml_single_invoke() is not valid. Please check the input data handle.");
     return ML_ERROR_INVALID_PARAMETER;
   }
 
   if (G_UNLIKELY (!output)) {
-    mlapi_loge
+    _ml_loge
         ("The third argument of ml_single_invoke() is not valid. Please check the output data handle.");
     return ML_ERROR_INVALID_PARAMETER;
   }
@@ -1053,7 +1052,7 @@ _ml_single_invoke_internal (ml_single_h single,
   ML_SINGLE_GET_VALID_HANDLE_LOCKED (single_h, single, 0);
 
   if (G_UNLIKELY (!single_h->filter)) {
-    mlapi_loge
+    _ml_loge
         ("The tensor_filter element is not valid. It is not correctly created or already freed.");
     status = ML_ERROR_INVALID_PARAMETER;
     goto exit;
@@ -1072,11 +1071,11 @@ _ml_single_invoke_internal (ml_single_h single,
 
   if (single_h->state != IDLE) {
     if (G_UNLIKELY (single_h->state == JOIN_REQUESTED)) {
-      mlapi_loge ("The handle is closed or being closed.");
+      _ml_loge ("The handle is closed or being closed.");
       status = ML_ERROR_STREAMS_PIPE;
       goto exit;
     }
-    mlapi_loge ("The single invoking thread is not idle.");
+    _ml_loge ("The single invoking thread is not idle.");
     status = ML_ERROR_TRY_AGAIN;
     goto exit;
   }
@@ -1108,7 +1107,7 @@ _ml_single_invoke_internal (ml_single_h single,
     if (g_cond_wait_until (&single_h->cond, &single_h->mutex, end_time)) {
       status = single_h->status;
     } else {
-      mlapi_logw ("Wait for invoke has timed out");
+      _ml_logw ("Wait for invoke has timed out");
       status = ML_ERROR_TIMED_OUT;
       /** This is set to notify invoke_thread to not process if timed out */
       if (need_alloc)
@@ -1139,7 +1138,7 @@ _ml_single_invoke_internal (ml_single_h single,
 
 exit:
   if (G_UNLIKELY (status != ML_ERROR_NONE)) {
-    mlapi_loge ("Failed to invoke the model.");
+    _ml_loge ("Failed to invoke the model.");
   } else {
     if (need_alloc)
       *output = single_h->output;
@@ -1357,7 +1356,7 @@ ml_single_set_property (ml_single_h single, const char *name, const char *value)
         g_object_set (G_OBJECT (single_h->filter), name, (gboolean) FALSE,
             NULL);
     } else {
-      mlapi_loge ("The property value (%s) is not available.", value);
+      _ml_loge ("The property value (%s) is not available.", value);
       status = ML_ERROR_INVALID_PARAMETER;
     }
   } else if (g_str_equal (name, "input") || g_str_equal (name, "inputtype")
@@ -1386,7 +1385,7 @@ ml_single_set_property (ml_single_h single, const char *name, const char *value)
 
       ml_tensors_info_destroy (ml_info);
     } else {
-      mlapi_loge ("The property value (%s) is not available.", value);
+      _ml_loge ("The property value (%s) is not available.", value);
       status = ML_ERROR_INVALID_PARAMETER;
     }
 
@@ -1434,7 +1433,7 @@ ml_single_get_property (ml_single_h single, const char *name, char **value)
     g_object_get (G_OBJECT (single_h->filter), name, &bool_value, NULL);
     *value = (bool_value) ? g_strdup ("true") : g_strdup ("false");
   } else {
-    mlapi_loge ("The property %s is not available.", name);
+    _ml_loge ("The property %s is not available.", name);
     status = ML_ERROR_NOT_SUPPORTED;
   }
 
