@@ -511,7 +511,7 @@ nns_parse_tensors_data (pipeline_info_s * pipe_info, JNIEnv * env,
       }
     }
 
-    status = ml_tensors_data_create_no_alloc (_info, data_h);
+    status = _ml_tensors_data_create_no_alloc (_info, data_h);
     if (_info != info_h)
       ml_tensors_info_destroy (_info);
 
@@ -718,7 +718,7 @@ nns_get_nnfw_type (jint fw_type, ml_nnfw_type_e * nnfw)
       return FALSE;
   }
 
-  return ml_nnfw_is_available (*nnfw, ML_NNFW_HW_ANY);
+  return _ml_nnfw_is_available (*nnfw, ML_NNFW_HW_ANY);
 }
 
 /**
@@ -743,7 +743,7 @@ nnstreamer_native_initialize (JNIEnv * env, jobject context)
       gst_android_init (env, context);
     } else {
 #else
-    if (ml_initialize_gstreamer () != ML_ERROR_NONE) {
+    if (_ml_initialize_gstreamer () != ML_ERROR_NONE) {
 #endif
       nns_loge ("Invalid params, cannot initialize GStreamer.");
       goto done;

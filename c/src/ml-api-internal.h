@@ -65,12 +65,12 @@ typedef enum
 #if defined (__FEATURE_CHECK_SUPPORT__)
 #define check_feature_state() \
   do { \
-    int feature_ret = ml_tizen_get_feature_enabled (); \
+    int feature_ret = _ml_tizen_get_feature_enabled (); \
     if (ML_ERROR_NONE != feature_ret) \
       return feature_ret; \
   } while (0);
 
-#define set_feature_state(...) ml_tizen_set_feature_state(__VA_ARGS__)
+#define set_feature_state(...) _ml_tizen_set_feature_state(__VA_ARGS__)
 #else /* __FEATURE_CHECK_SUPPORT__ */
 #define check_feature_state()
 #define set_feature_state(...)
@@ -164,7 +164,7 @@ typedef struct {
 /**
  * @brief Macro to compare the tensors info.
  */
-#define ml_tensors_info_is_equal(i1,i2) ({bool e; (ml_tensors_info_compare ((i1), (i2), &e) == ML_ERROR_NONE && e);})
+#define ml_tensors_info_is_equal(i1,i2) ({bool e; (_ml_tensors_info_compare ((i1), (i2), &e) == ML_ERROR_NONE && e);})
 
 /**
  * @brief The function to be called when destroying the allocated handle.
@@ -204,7 +204,7 @@ typedef struct {
  * @brief Gets the byte size of the given tensor info.
  * @note This is not thread safe.
  */
-size_t ml_tensor_info_get_size (const ml_tensor_info_s *info);
+size_t _ml_tensor_info_get_size (const ml_tensor_info_s *info);
 
 /**
  * @brief Initializes the tensors information with default value.
@@ -214,14 +214,14 @@ size_t ml_tensor_info_get_size (const ml_tensor_info_s *info);
  * @retval #ML_ERROR_NONE Successful
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
  */
-int ml_tensors_info_initialize (ml_tensors_info_s *info);
+int _ml_tensors_info_initialize (ml_tensors_info_s *info);
 
 /**
  * @brief Frees and initialize the data in tensors info.
  * @since_tizen 5.5
  * @param[in] info The tensors info pointer to be freed.
  */
-void ml_tensors_info_free (ml_tensors_info_s *info);
+void _ml_tensors_info_free (ml_tensors_info_s *info);
 
 /**
  * @brief Creates a tensor data frame without allocating new buffer cloning the given tensors data.
@@ -233,7 +233,7 @@ void ml_tensors_info_free (ml_tensors_info_s *info);
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
  * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
  */
-int ml_tensors_data_clone_no_alloc (const ml_tensors_data_s * data_src, ml_tensors_data_h * data);
+int _ml_tensors_data_clone_no_alloc (const ml_tensors_data_s * data_src, ml_tensors_data_h * data);
 
 /**
  * @brief Replaces string.
@@ -246,7 +246,7 @@ int ml_tensors_data_clone_no_alloc (const ml_tensors_data_s * data_src, ml_tenso
  * @param[out] count The count of replaced. Set NULL if it is unnecessary.
  * @return Newly allocated string. The returned string should be freed with g_free().
  */
-gchar * ml_replace_string (gchar * source, const gchar * what, const gchar * to, const gchar * delimiters, guint * count);
+gchar * _ml_replace_string (gchar * source, const gchar * what, const gchar * to, const gchar * delimiters, guint * count);
 
 /**
  * @brief Compares the given tensors information.
@@ -260,7 +260,7 @@ gchar * ml_replace_string (gchar * source, const gchar * what, const gchar * to,
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
  */
-int ml_tensors_info_compare (const ml_tensors_info_h info1, const ml_tensors_info_h info2, bool *equal);
+int _ml_tensors_info_compare (const ml_tensors_info_h info1, const ml_tensors_info_h info2, bool *equal);
 
 /**
  * @brief Frees the tensors data handle and its data.
@@ -268,7 +268,7 @@ int ml_tensors_info_compare (const ml_tensors_info_h info1, const ml_tensors_inf
  * @param[in] free_data The flag to free the buffers in handle.
  * @return @c 0 on success. Otherwise a negative error value.
  */
-int ml_tensors_data_destroy_internal (ml_tensors_data_h data, gboolean free_data);
+int _ml_tensors_data_destroy_internal (ml_tensors_data_h data, gboolean free_data);
 
 /**
  * @brief Creates a tensor data frame without buffer with the given tensors information.
@@ -277,20 +277,20 @@ int ml_tensors_data_destroy_internal (ml_tensors_data_h data, gboolean free_data
  * @param[out] data The handle of tensors data.
  * @return @c 0 on success. Otherwise a negative error value.
  */
-int ml_tensors_data_create_no_alloc (const ml_tensors_info_h info, ml_tensors_data_h *data);
+int _ml_tensors_data_create_no_alloc (const ml_tensors_info_h info, ml_tensors_data_h *data);
 
 #if defined (__TIZEN__)
 /****** TIZEN CHECK FEATURE BEGINS *****/
 /**
  * @brief Checks whether machine_learning.inference feature is enabled or not.
  */
-int ml_tizen_get_feature_enabled (void);
+int _ml_tizen_get_feature_enabled (void);
 
 /**
  * @brief Set the feature status of machine_learning.inference.
  * This is only used for Unit test.
  */
-int ml_tizen_set_feature_state (int state);
+int _ml_tizen_set_feature_state (int state);
 /****** TIZEN CHECK FEATURE ENDS *****/
 #endif /* __TIZEN__ */
 

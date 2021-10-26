@@ -130,11 +130,11 @@ ml_check_nnfw_availability_full (ml_nnfw_type_e nnfw, ml_nnfw_hw_e hw,
   if (nnfw == ML_NNFW_TYPE_ANY)
     return ML_ERROR_INVALID_PARAMETER;
 
-  fw_name = ml_get_nnfw_subplugin_name (nnfw);
+  fw_name = _ml_get_nnfw_subplugin_name (nnfw);
 
   if (fw_name) {
     if (nnstreamer_filter_find (fw_name) != NULL) {
-      accl_hw accl = ml_nnfw_to_accl_hw (hw);
+      accl_hw accl = _ml_nnfw_to_accl_hw (hw);
 
       if (gst_tensor_filter_check_hw_availability (fw_name, accl, custom)) {
         *available = true;
@@ -177,7 +177,7 @@ __setup_in_out_tensors (ml_single * single_h)
     /** memory will be allocated by tensor_filter_single */
     in_tensors->tensors[i].tensor = NULL;
     in_tensors->tensors[i].size =
-        ml_tensor_info_get_size (&single_h->in_info.info[i]);
+        _ml_tensor_info_get_size (&single_h->in_info.info[i]);
   }
 
   /** Setup output buffer */
@@ -186,7 +186,7 @@ __setup_in_out_tensors (ml_single * single_h)
     /** memory will be allocated by tensor_filter_single */
     out_tensors->tensors[i].tensor = NULL;
     out_tensors->tensors[i].size =
-        ml_tensor_info_get_size (&single_h->out_info.info[i]);
+        _ml_tensor_info_get_size (&single_h->out_info.info[i]);
   }
 }
 
@@ -490,13 +490,13 @@ ml_single_set_gst_info (ml_single * single_h, const ml_tensors_info_h info)
   int status = ML_ERROR_NONE;
   int ret = -EINVAL;
 
-  ml_tensors_info_copy_from_ml (&gst_in_info, info);
+  _ml_tensors_info_copy_from_ml (&gst_in_info, info);
 
   ret = single_h->klass->set_input_info (single_h->filter, &gst_in_info,
       &gst_out_info);
   if (ret == 0) {
-    ml_tensors_info_copy_from_gst (&single_h->in_info, &gst_in_info);
-    ml_tensors_info_copy_from_gst (&single_h->out_info, &gst_out_info);
+    _ml_tensors_info_copy_from_gst (&single_h->in_info, &gst_in_info);
+    _ml_tensors_info_copy_from_gst (&single_h->out_info, &gst_out_info);
     __setup_in_out_tensors (single_h);
   } else if (ret == -ENOENT) {
     status = ML_ERROR_NOT_SUPPORTED;
@@ -530,7 +530,7 @@ ml_single_set_inout_tensors_info (GObject * object,
     str_name_name = CONCAT_MACRO_STR (OUTPUT_STR, NAME_STR);
   }
 
-  ml_tensors_info_copy_from_ml (&info, tensors_info);
+  _ml_tensors_info_copy_from_ml (&info, tensors_info);
 
   /* Set input option */
   str_dim = gst_tensors_info_get_dimensions_string (&info);
@@ -584,7 +584,7 @@ ml_single_set_info_in_handle (ml_single_h single, gboolean is_input,
     ml_tensors_info_h info = NULL;
 
     ml_single_get_gst_info (single_h, is_input, &gst_info);
-    ml_tensors_info_create_from_gst (&info, &gst_info);
+    _ml_tensors_info_create_from_gst (&info, &gst_info);
 
     gst_tensors_info_free (&gst_info);
 
@@ -649,8 +649,8 @@ ml_single_create_handle (ml_nnfw_type_e nnfw)
   single_h->destroy_data_list = NULL;
   single_h->invoking = FALSE;
 
-  ml_tensors_info_initialize (&single_h->in_info);
-  ml_tensors_info_initialize (&single_h->out_info);
+  _ml_tensors_info_initialize (&single_h->in_info);
+  _ml_tensors_info_initialize (&single_h->out_info);
   g_mutex_init (&single_h->mutex);
   g_cond_init (&single_h->cond);
 
@@ -747,7 +747,7 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
   list_models = g_strsplit (info->models, ",", -1);
   num_models = g_strv_length (list_models);
 
-  status = ml_validate_model_file ((const char **) list_models, num_models,
+  status = _ml_validate_model_file ((const char **) list_models, num_models,
       &nnfw);
   if (status != ML_ERROR_NONE) {
     g_strfreev (list_models);
@@ -760,7 +760,7 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
    * 2. Determine hw
    * (Supposed CPU only) Support others later.
    */
-  if (!ml_nnfw_is_available (nnfw, hw)) {
+  if (!_ml_nnfw_is_available (nnfw, hw)) {
     _ml_loge ("The given nnfw is not available.");
     return ML_ERROR_NOT_SUPPORTED;
   }
@@ -813,8 +813,8 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
   }
 
   /* set accelerator, framework, model files and custom option */
-  fw_name = ml_get_nnfw_subplugin_name (nnfw);
-  hw_name = ml_nnfw_to_str_prop (hw);
+  fw_name = _ml_get_nnfw_subplugin_name (nnfw);
+  hw_name = _ml_nnfw_to_str_prop (hw);
   g_object_set (filter_obj, "framework", fw_name, "accelerator", hw_name,
       "model", info->models, NULL);
   g_free (hw_name);
@@ -944,8 +944,8 @@ ml_single_close (ml_single_h single)
     single_h->klass = NULL;
   }
 
-  ml_tensors_info_free (&single_h->in_info);
-  ml_tensors_info_free (&single_h->out_info);
+  _ml_tensors_info_free (&single_h->in_info);
+  _ml_tensors_info_free (&single_h->out_info);
 
   g_cond_clear (&single_h->cond);
   g_mutex_clear (&single_h->mutex);
@@ -1084,7 +1084,7 @@ _ml_single_invoke_internal (ml_single_h single,
   if (need_alloc) {
     *output = NULL;
 
-    status = ml_tensors_data_clone_no_alloc (&single_h->out_tensors,
+    status = _ml_tensors_data_clone_no_alloc (&single_h->out_tensors,
         &single_h->output);
     if (status != ML_ERROR_NONE)
       goto exit;
@@ -1378,7 +1378,7 @@ ml_single_set_property (ml_single_h single, const char *name, const char *value)
     if (num == gst_info.num_tensors) {
       ml_tensors_info_h ml_info;
 
-      ml_tensors_info_create_from_gst (&ml_info, &gst_info);
+      _ml_tensors_info_create_from_gst (&ml_info, &gst_info);
 
       /* change configuration */
       status = ml_single_set_gst_info (single_h, ml_info);

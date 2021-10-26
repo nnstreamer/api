@@ -230,7 +230,7 @@ construct_element (GstElement * e, ml_pipeline * p, const char *name,
   ret->handles = NULL;
   ret->src = NULL;
   ret->sink = NULL;
-  ml_tensors_info_initialize (&ret->tensors_info);
+  _ml_tensors_info_initialize (&ret->tensors_info);
   ret->size = 0;
   ret->maxid = 0;
   ret->handle_id = 0;
@@ -252,7 +252,7 @@ get_tensors_info_from_caps (GstCaps * caps, ml_tensors_info_s * info,
   guint i, n_caps;
   gboolean found = FALSE;
 
-  ml_tensors_info_initialize (info);
+  _ml_tensors_info_initialize (info);
   n_caps = gst_caps_get_size (caps);
 
   for (i = 0; i < n_caps; i++) {
@@ -260,7 +260,7 @@ get_tensors_info_from_caps (GstCaps * caps, ml_tensors_info_s * info,
     found = gst_tensors_config_from_structure (&config, s);
 
     if (found) {
-      ml_tensors_info_copy_from_gst (info, &config.info);
+      _ml_tensors_info_copy_from_gst (info, &config.info);
       *is_flexible = gst_tensors_config_is_flexible (&config);
       break;
     }
@@ -301,7 +301,7 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
 
   /* set tensor data */
   status =
-      ml_tensors_data_create_no_alloc (NULL, (ml_tensors_data_h *) & _data);
+      _ml_tensors_data_create_no_alloc (NULL, (ml_tensors_data_h *) & _data);
   if (status != ML_ERROR_NONE) {
     _ml_loge ("Failed to allocate memory for tensors data in sink callback.");
     return;
@@ -359,7 +359,7 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
           }
 
           for (i = 0; i < _info->num_tensors; i++) {
-            size_t sz = ml_tensor_info_get_size (&_info->info[i]);
+            size_t sz = _ml_tensor_info_get_size (&_info->info[i]);
 
             /* Not configured, yet. */
             if (sz == 0)
@@ -418,7 +418,7 @@ send_cb:
       _data->tensors[i].size = map[i].size - hsize;
     }
 
-    ml_tensors_info_copy_from_gst (_info, &gst_info);
+    _ml_tensors_info_copy_from_gst (_info, &gst_info);
   }
 
   /* Iterate e->handles, pass the data to them */
@@ -443,7 +443,7 @@ error:
   }
 
   if (_data) {
-    ml_tensors_data_destroy_internal (_data, FALSE);
+    _ml_tensors_data_destroy_internal (_data, FALSE);
     _data = NULL;
   }
   return;
@@ -587,7 +587,7 @@ cleanup_node (gpointer data)
   if (e->sink)
     gst_object_unref (e->sink);
 
-  ml_tensors_info_free (&e->tensors_info);
+  _ml_tensors_info_free (&e->tensors_info);
 
   g_mutex_unlock (&e->lock);
   g_mutex_clear (&e->lock);
@@ -733,7 +733,7 @@ iterate_element (ml_pipeline * pipe_h, GstElement * pipeline,
             const gchar *element_name = gst_plugin_feature_get_name (feature);
 
             /* validate the availability of the plugin */
-            if (!is_internal && ml_check_plugin_availability (plugin_name,
+            if (!is_internal && _ml_check_plugin_availability (plugin_name,
                     element_name) != ML_ERROR_NONE) {
               status = ML_ERROR_NOT_SUPPORTED;
               done = TRUE;
@@ -842,7 +842,7 @@ construct_pipeline_internal (const char *pipeline_description,
   /* init null */
   *pipe = NULL;
 
-  if ((status = ml_initialize_gstreamer ()) != ML_ERROR_NONE)
+  if ((status = _ml_initialize_gstreamer ()) != ML_ERROR_NONE)
     return status;
 
   /* prepare pipeline handle */
@@ -1359,7 +1359,7 @@ ml_pipeline_src_parse_tensors_info (ml_pipeline_element * elem)
 
       if (found && !flexible) {
         for (i = 0; i < _info->num_tensors; i++) {
-          sz = ml_tensor_info_get_size (&_info->info[i]);
+          sz = _ml_tensor_info_get_size (&_info->info[i]);
           elem->size += sz;
         }
       } else {
@@ -1519,7 +1519,7 @@ ml_pipeline_src_input_data (ml_pipeline_src_h h, ml_tensors_data_h data,
     }
 
     for (i = 0; i < elem->tensors_info.num_tensors; i++) {
-      size_t sz = ml_tensor_info_get_size (&elem->tensors_info.info[i]);
+      size_t sz = _ml_tensor_info_get_size (&elem->tensors_info.info[i]);
 
       if (sz != _data->tensors[i].size) {
         _ml_loge
@@ -1534,7 +1534,7 @@ ml_pipeline_src_input_data (ml_pipeline_src_h h, ml_tensors_data_h data,
 
   /* Create buffer to be pushed from buf[] */
   buffer = gst_buffer_new ();
-  ml_tensors_info_copy_from_ml (&gst_info, _data->info);
+  _ml_tensors_info_copy_from_ml (&gst_info, _data->info);
 
   for (i = 0; i < _data->num_tensors; i++) {
     mem_data = _data->tensors[i].tensor;
@@ -1570,7 +1570,7 @@ ml_pipeline_src_input_data (ml_pipeline_src_h h, ml_tensors_data_h data,
   /* Free data ptr if buffer policy is auto-free */
   if (policy == ML_PIPELINE_BUF_POLICY_AUTO_FREE) {
     G_UNLOCK_UNLESS_NOLOCK (*_data);
-    ml_tensors_data_destroy_internal (_data, FALSE);
+    _ml_tensors_data_destroy_internal (_data, FALSE);
     _data = NULL;
   }
 
@@ -2469,7 +2469,7 @@ ml_pipeline_element_get_property_enum (ml_pipeline_element_h elem_h,
  * @brief Gets the element of pipeline itself (GstElement).
  */
 GstElement *
-ml_pipeline_get_gst_element (ml_pipeline_h pipe)
+_ml_pipeline_get_gst_element (ml_pipeline_h pipe)
 {
   ml_pipeline *p = (ml_pipeline *) pipe;
   GstElement *element = NULL;
@@ -2561,7 +2561,7 @@ ml_pipeline_custom_invoke (void *data, const GstTensorFilterProperties * prop,
   g_mutex_lock (&c->lock);
 
   /* prepare invoke */
-  status = ml_tensors_data_create_no_alloc (c->in_info, &in_data);
+  status = _ml_tensors_data_create_no_alloc (c->in_info, &in_data);
   if (status != ML_ERROR_NONE)
     goto done;
 
@@ -2569,7 +2569,7 @@ ml_pipeline_custom_invoke (void *data, const GstTensorFilterProperties * prop,
   for (i = 0; i < _data->num_tensors; i++)
     _data->tensors[i].tensor = in[i].data;
 
-  status = ml_tensors_data_create_no_alloc (c->out_info, &out_data);
+  status = _ml_tensors_data_create_no_alloc (c->out_info, &out_data);
   if (status != ML_ERROR_NONE)
     goto done;
 
@@ -2636,8 +2636,8 @@ ml_pipeline_custom_easy_filter_register (const char *name,
     goto exit;
 
   /* register custom filter */
-  ml_tensors_info_copy_from_ml (&in_info, c->in_info);
-  ml_tensors_info_copy_from_ml (&out_info, c->out_info);
+  _ml_tensors_info_copy_from_ml (&in_info, c->in_info);
+  _ml_tensors_info_copy_from_ml (&out_info, c->out_info);
 
   if (NNS_custom_easy_register (name, ml_pipeline_custom_invoke, c,
           &in_info, &out_info) != 0) {
@@ -2752,8 +2752,8 @@ ml_pipeline_if_custom (const GstTensorsInfo * info,
   if (!c || !c->cb)
     return FALSE;
 
-  ml_tensors_info_create_from_gst (&ml_info, &in_info);
-  status = ml_tensors_data_create_no_alloc (ml_info, &in_data);
+  _ml_tensors_info_create_from_gst (&ml_info, &in_info);
+  status = _ml_tensors_data_create_no_alloc (ml_info, &in_data);
   if (status != ML_ERROR_NONE)
     goto done;
 

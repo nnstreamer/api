@@ -32,11 +32,11 @@ extern "C" {
 #if defined (__TIZEN__)
 #if defined (__PRIVILEGE_CHECK_SUPPORT__)
 
-#define convert_tizen_element(...) ml_tizen_convert_element(__VA_ARGS__)
+#define convert_tizen_element(...) _ml_tizen_convert_element(__VA_ARGS__)
 
 #if (TIZENVERSION >= 5) && (TIZENVERSION < 9999)
-#define get_tizen_resource(...) ml_tizen_get_resource(__VA_ARGS__)
-#define release_tizen_resource(...) ml_tizen_release_resource(__VA_ARGS__)
+#define get_tizen_resource(...) _ml_tizen_get_resource(__VA_ARGS__)
+#define release_tizen_resource(...) _ml_tizen_release_resource(__VA_ARGS__)
 
 #elif (TIZENVERSION < 5)
 #define get_tizen_resource(...) (0)
@@ -189,47 +189,47 @@ typedef struct _ml_pipeline_common_elem {
 /**
  * @brief Macro to check the availability of given NNFW.
  */
-#define ml_nnfw_is_available(f,h) ({bool a; (ml_check_nnfw_availability ((f), (h), &a) == ML_ERROR_NONE && a);})
+#define _ml_nnfw_is_available(f,h) ({bool a; (ml_check_nnfw_availability ((f), (h), &a) == ML_ERROR_NONE && a);})
 
 /**
  * @brief Macro to check the availability of given element.
  */
-#define ml_element_is_available(e) ({bool a; (ml_check_element_availability ((e), &a) == ML_ERROR_NONE && a);})
+#define _ml_element_is_available(e) ({bool a; (ml_check_element_availability ((e), &a) == ML_ERROR_NONE && a);})
 
 /**
  * @brief Allocates a tensors information handle from gst info.
  */
-int ml_tensors_info_create_from_gst (ml_tensors_info_h *ml_info, GstTensorsInfo *gst_info);
+int _ml_tensors_info_create_from_gst (ml_tensors_info_h *ml_info, GstTensorsInfo *gst_info);
 
 /**
  * @brief Copies tensor metadata from gst tensors info.
  */
-void ml_tensors_info_copy_from_gst (ml_tensors_info_s *ml_info, const GstTensorsInfo *gst_info);
+void _ml_tensors_info_copy_from_gst (ml_tensors_info_s *ml_info, const GstTensorsInfo *gst_info);
 
 /**
  * @brief Copies tensor metadata from ml tensors info.
  */
-void ml_tensors_info_copy_from_ml (GstTensorsInfo *gst_info, const ml_tensors_info_s *ml_info);
+void _ml_tensors_info_copy_from_ml (GstTensorsInfo *gst_info, const ml_tensors_info_s *ml_info);
 
 /**
  * @brief Internal function to get the sub-plugin name.
  */
-const char * ml_get_nnfw_subplugin_name (ml_nnfw_type_e nnfw);
+const char * _ml_get_nnfw_subplugin_name (ml_nnfw_type_e nnfw);
 
 /**
  * @brief Convert c-api based hw to internal representation
  */
-accl_hw ml_nnfw_to_accl_hw (const ml_nnfw_hw_e hw);
+accl_hw _ml_nnfw_to_accl_hw (const ml_nnfw_hw_e hw);
 
 /**
  * @brief Internal function to get the nnfw type.
  */
-ml_nnfw_type_e ml_get_nnfw_type_by_subplugin_name (const char *name);
+ml_nnfw_type_e _ml_get_nnfw_type_by_subplugin_name (const char *name);
 
 /**
  * @brief Initializes the GStreamer library. This is internal function.
  */
-int ml_initialize_gstreamer (void);
+int _ml_initialize_gstreamer (void);
 
 /**
  * @brief Validates the nnfw model file. (Internal only)
@@ -242,18 +242,18 @@ int ml_initialize_gstreamer (void);
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
  */
-int ml_validate_model_file (const char * const *model, const unsigned int num_models, ml_nnfw_type_e * nnfw);
+int _ml_validate_model_file (const char * const *model, const unsigned int num_models, ml_nnfw_type_e * nnfw);
 
 /**
  * @brief Checks the availability of the plugin.
  */
-int ml_check_plugin_availability (const char *plugin_name, const char *element_name);
+int _ml_check_plugin_availability (const char *plugin_name, const char *element_name);
 
 /**
  * @brief Internal function to convert accelerator as tensor_filter property format.
  * @note returned value must be freed by the caller
  */
-char* ml_nnfw_to_str_prop (ml_nnfw_hw_e hw);
+char* _ml_nnfw_to_str_prop (ml_nnfw_hw_e hw);
 
 /**
  * @brief Gets the element of pipeline itself (GstElement).
@@ -261,24 +261,24 @@ char* ml_nnfw_to_str_prop (ml_nnfw_hw_e hw);
  *          Note that caller should release the returned reference using gst_object_unref().
  * @return The reference of pipeline itself. Null if the pipeline is not constructed or closed.
  */
-GstElement* ml_pipeline_get_gst_element (ml_pipeline_h pipe);
+GstElement* _ml_pipeline_get_gst_element (ml_pipeline_h pipe);
 
 #if defined (__TIZEN__)
 /****** TIZEN PRIVILEGE CHECK BEGINS ******/
 /**
  * @brief Releases the resource handle of Tizen.
  */
-void ml_tizen_release_resource (gpointer handle, const gchar * res_type);
+void _ml_tizen_release_resource (gpointer handle, const gchar * res_type);
 
 /**
  * @brief Gets the resource handle of Tizen.
  */
-int ml_tizen_get_resource (ml_pipeline_h pipe, const gchar * res_type);
+int _ml_tizen_get_resource (ml_pipeline_h pipe, const gchar * res_type);
 
 /**
  * @brief Converts predefined element for Tizen.
  */
-int ml_tizen_convert_element (ml_pipeline_h pipe, gchar ** result, gboolean is_internal);
+int _ml_tizen_convert_element (ml_pipeline_h pipe, gchar ** result, gboolean is_internal);
 /****** TIZEN PRIVILEGE CHECK ENDS ******/
 #endif /* __TIZEN */
 #ifdef __cplusplus

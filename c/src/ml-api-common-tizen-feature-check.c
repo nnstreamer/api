@@ -55,7 +55,7 @@ ml_tizen_initialize_feature_state (void)
  * @brief Set the feature status of machine_learning.inference.
  */
 int
-ml_tizen_set_feature_state (int state)
+_ml_tizen_set_feature_state (int state)
 {
   ml_tizen_initialize_feature_state ();
   g_mutex_lock (&feature_info->mutex);
@@ -74,7 +74,7 @@ ml_tizen_set_feature_state (int state)
  * @brief Checks whether machine_learning.inference feature is enabled or not.
  */
 int
-ml_tizen_get_feature_enabled (void)
+_ml_tizen_get_feature_enabled (void)
 {
   int ret;
   int feature_enabled;
@@ -95,11 +95,11 @@ ml_tizen_get_feature_enabled (void)
     if (0 == ret) {
       if (false == ml_inf_supported) {
         _ml_loge ("machine_learning.inference NOT supported");
-        ml_tizen_set_feature_state (NOT_SUPPORTED);
+        _ml_tizen_set_feature_state (NOT_SUPPORTED);
         return ML_ERROR_NOT_SUPPORTED;
       }
 
-      ml_tizen_set_feature_state (SUPPORTED);
+      _ml_tizen_set_feature_state (SUPPORTED);
     } else {
       switch (ret) {
         case SYSTEM_INFO_ERROR_INVALID_PARAMETER:

@@ -655,7 +655,7 @@ ml_tizen_mm_replace_element (MMHandleType * handle, camera_conf * conf,
   }
 
   *description =
-      ml_replace_string (*description, what, src_name, " !", &changed);
+      _ml_replace_string (*description, what, src_name, " !", &changed);
   if (changed > 1) {
     /* allow one src in the pipeline */
     _ml_loge ("Cannot parse duplicated src node.");
@@ -730,7 +730,7 @@ ml_tizen_mm_convert_element (ml_pipeline_h pipe, gchar ** result,
         status = ML_ERROR_NOT_SUPPORTED;
         goto mm_error;
       }
-      *result = ml_replace_string (*result, ML_TIZEN_CAM_VIDEO_SRC, src_name,
+      *result = _ml_replace_string (*result, ML_TIZEN_CAM_VIDEO_SRC, src_name,
           " !", &changed);
       if (changed > 1) {
         /* Allow one src only in a pipeline */
@@ -751,7 +751,7 @@ ml_tizen_mm_convert_element (ml_pipeline_h pipe, gchar ** result,
         status = ML_ERROR_NOT_SUPPORTED;
         goto mm_error;
       }
-      *result = ml_replace_string (*result, ML_TIZEN_CAM_AUDIO_SRC, src_name,
+      *result = _ml_replace_string (*result, ML_TIZEN_CAM_AUDIO_SRC, src_name,
           " !", &changed);
       if (changed > 1) {
         /* Allow one src only in a pipeline */
@@ -851,7 +851,7 @@ ml_tizen_mm_convert_element (ml_pipeline_h pipe, gchar ** result,
  * @brief Releases the resource handle of Tizen.
  */
 void
-ml_tizen_release_resource (gpointer handle, const gchar * res_type)
+_ml_tizen_release_resource (gpointer handle, const gchar * res_type)
 {
   if (g_str_equal (res_type, TIZEN_RES_MM)) {
     ml_tizen_mm_res_release (handle, TRUE);
@@ -862,7 +862,7 @@ ml_tizen_release_resource (gpointer handle, const gchar * res_type)
  * @brief Gets the resource handle of Tizen.
  */
 int
-ml_tizen_get_resource (ml_pipeline_h pipe, const gchar * res_type)
+_ml_tizen_get_resource (ml_pipeline_h pipe, const gchar * res_type)
 {
   int status = ML_ERROR_NONE;
 
@@ -878,7 +878,7 @@ ml_tizen_get_resource (ml_pipeline_h pipe, const gchar * res_type)
  * @brief Converts predefined element for Tizen.
  */
 int
-ml_tizen_convert_element (ml_pipeline_h pipe, gchar ** result,
+_ml_tizen_convert_element (ml_pipeline_h pipe, gchar ** result,
     gboolean is_internal)
 {
   int status;

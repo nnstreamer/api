@@ -1870,7 +1870,7 @@ TEST (nnstreamer_capi_util, plugin_availability_fail_invalid_01_n)
 {
   int status;
 
-  status = ml_check_plugin_availability (NULL, "tensor_filter");
+  status = _ml_check_plugin_availability (NULL, "tensor_filter");
   EXPECT_NE (status, ML_ERROR_NONE);
 }
 
@@ -1881,7 +1881,7 @@ TEST (nnstreamer_capi_util, plugin_availability_fail_invalid_02_n)
 {
   int status;
 
-  status = ml_check_plugin_availability (NULL, "tensor_filter");
+  status = _ml_check_plugin_availability (NULL, "tensor_filter");
   EXPECT_NE (status, ML_ERROR_NONE);
 }
 
@@ -2455,7 +2455,7 @@ TEST (nnstreamer_capi_util, info_create_1_n)
 TEST (nnstreamer_capi_util, info_create_2_n)
 {
   ml_tensors_info_h i;
-  int status = ml_tensors_info_create_from_gst (&i, nullptr);
+  int status = _ml_tensors_info_create_from_gst (&i, nullptr);
   ASSERT_EQ (status, ML_ERROR_INVALID_PARAMETER);
 }
 
@@ -2465,7 +2465,7 @@ TEST (nnstreamer_capi_util, info_create_2_n)
 TEST (nnstreamer_capi_util, info_create_3_n)
 {
   GstTensorsInfo gi;
-  int status = ml_tensors_info_create_from_gst (nullptr, &gi);
+  int status = _ml_tensors_info_create_from_gst (nullptr, &gi);
   ASSERT_EQ (status, ML_ERROR_INVALID_PARAMETER);
 }
 
@@ -2483,7 +2483,7 @@ TEST (nnstreamer_capi_util, info_destroy_n)
  */
 TEST (nnstreamer_capi_util, info_init_n)
 {
-  int status = ml_tensors_info_initialize (nullptr);
+  int status = _ml_tensors_info_initialize (nullptr);
   ASSERT_EQ (status, ML_ERROR_INVALID_PARAMETER);
 }
 
@@ -2537,7 +2537,7 @@ TEST (nnstreamer_capi_util, info_comp_01_n)
   ml_tensors_info_set_tensor_type (info, 0, ML_TENSOR_TYPE_UINT8);
   ml_tensors_info_set_tensor_dimension (info, 0, dim);
 
-  status = ml_tensors_info_compare (nullptr, info, &equal);
+  status = _ml_tensors_info_compare (nullptr, info, &equal);
   ASSERT_EQ (status, ML_ERROR_INVALID_PARAMETER);
 
   status = ml_tensors_info_destroy (info);
@@ -2562,7 +2562,7 @@ TEST (nnstreamer_capi_util, info_comp_02_n)
   ml_tensors_info_set_tensor_type (info, 0, ML_TENSOR_TYPE_UINT8);
   ml_tensors_info_set_tensor_dimension (info, 0, dim);
 
-  status = ml_tensors_info_compare (info, nullptr, &equal);
+  status = _ml_tensors_info_compare (info, nullptr, &equal);
   ASSERT_EQ (status, ML_ERROR_INVALID_PARAMETER);
 
   status = ml_tensors_info_destroy (info);
@@ -2592,7 +2592,7 @@ TEST (nnstreamer_capi_util, info_comp_03_n)
   ml_tensors_info_set_tensor_type (info2, 0, ML_TENSOR_TYPE_UINT8);
   ml_tensors_info_set_tensor_dimension (info2, 0, dim);
 
-  status = ml_tensors_info_compare (info1, info2, nullptr);
+  status = _ml_tensors_info_compare (info1, info2, nullptr);
   ASSERT_EQ (status, ML_ERROR_INVALID_PARAMETER);
 
   status = ml_tensors_info_destroy (info1);
@@ -2620,7 +2620,7 @@ TEST (nnstreamer_capi_util, info_comp_0)
   is = (ml_tensors_info_s *)info2;
   is->num_tensors = 2;
 
-  status = ml_tensors_info_compare (info1, info2, &equal);
+  status = _ml_tensors_info_compare (info1, info2, &equal);
   ASSERT_EQ (status, ML_ERROR_NONE);
   ASSERT_FALSE (equal);
 
@@ -3131,7 +3131,7 @@ TEST (nnstreamer_capi_util, data_create_internal_n)
 {
   int status;
 
-  status = ml_tensors_data_create_no_alloc (NULL, NULL);
+  status = _ml_tensors_data_create_no_alloc (NULL, NULL);
   EXPECT_NE (status, ML_ERROR_NONE);
 }
 
@@ -3396,16 +3396,16 @@ TEST (nnstreamer_capi_util, data_set_tdata_05_n)
  */
 TEST (nnstreamer_capi_util, nnfw_name_01_p)
 {
-  EXPECT_STREQ (ml_get_nnfw_subplugin_name (ML_NNFW_TYPE_TENSORFLOW_LITE), "tensorflow-lite");
-  EXPECT_EQ (ml_get_nnfw_type_by_subplugin_name ("tensorflow-lite"), ML_NNFW_TYPE_TENSORFLOW_LITE);
-  EXPECT_STREQ (ml_get_nnfw_subplugin_name (ML_NNFW_TYPE_TENSORFLOW), "tensorflow");
-  EXPECT_EQ (ml_get_nnfw_type_by_subplugin_name ("tensorflow"), ML_NNFW_TYPE_TENSORFLOW);
-  EXPECT_STREQ (ml_get_nnfw_subplugin_name (ML_NNFW_TYPE_NNFW), "nnfw");
-  EXPECT_EQ (ml_get_nnfw_type_by_subplugin_name ("nnfw"), ML_NNFW_TYPE_NNFW);
-  EXPECT_STREQ (ml_get_nnfw_subplugin_name (ML_NNFW_TYPE_VIVANTE), "vivante");
-  EXPECT_EQ (ml_get_nnfw_type_by_subplugin_name ("vivante"), ML_NNFW_TYPE_VIVANTE);
-  EXPECT_STREQ (ml_get_nnfw_subplugin_name (ML_NNFW_TYPE_SNAP), "snap");
-  EXPECT_EQ (ml_get_nnfw_type_by_subplugin_name ("snap"), ML_NNFW_TYPE_SNAP);
+  EXPECT_STREQ (_ml_get_nnfw_subplugin_name (ML_NNFW_TYPE_TENSORFLOW_LITE), "tensorflow-lite");
+  EXPECT_EQ (_ml_get_nnfw_type_by_subplugin_name ("tensorflow-lite"), ML_NNFW_TYPE_TENSORFLOW_LITE);
+  EXPECT_STREQ (_ml_get_nnfw_subplugin_name (ML_NNFW_TYPE_TENSORFLOW), "tensorflow");
+  EXPECT_EQ (_ml_get_nnfw_type_by_subplugin_name ("tensorflow"), ML_NNFW_TYPE_TENSORFLOW);
+  EXPECT_STREQ (_ml_get_nnfw_subplugin_name (ML_NNFW_TYPE_NNFW), "nnfw");
+  EXPECT_EQ (_ml_get_nnfw_type_by_subplugin_name ("nnfw"), ML_NNFW_TYPE_NNFW);
+  EXPECT_STREQ (_ml_get_nnfw_subplugin_name (ML_NNFW_TYPE_VIVANTE), "vivante");
+  EXPECT_EQ (_ml_get_nnfw_type_by_subplugin_name ("vivante"), ML_NNFW_TYPE_VIVANTE);
+  EXPECT_STREQ (_ml_get_nnfw_subplugin_name (ML_NNFW_TYPE_SNAP), "snap");
+  EXPECT_EQ (_ml_get_nnfw_type_by_subplugin_name ("snap"), ML_NNFW_TYPE_SNAP);
 }
 
 /**
@@ -3414,8 +3414,8 @@ TEST (nnstreamer_capi_util, nnfw_name_01_p)
  */
 TEST (nnstreamer_capi_util, nnfw_name_02_n)
 {
-  EXPECT_EQ (ml_get_nnfw_type_by_subplugin_name ("invalid-fw"), ML_NNFW_TYPE_ANY);
-  EXPECT_EQ (ml_get_nnfw_type_by_subplugin_name (NULL), ML_NNFW_TYPE_ANY);
+  EXPECT_EQ (_ml_get_nnfw_type_by_subplugin_name ("invalid-fw"), ML_NNFW_TYPE_ANY);
+  EXPECT_EQ (_ml_get_nnfw_type_by_subplugin_name (NULL), ML_NNFW_TYPE_ANY);
 }
 
 /**
@@ -3515,7 +3515,7 @@ TEST (nnstreamer_capi_singleshot, invoke_invalid_param_02_n)
   ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
 
   /* handle null data */
-  status = ml_tensors_data_create_no_alloc (in_info, &input);
+  status = _ml_tensors_data_create_no_alloc (in_info, &input);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   status = ml_single_invoke (single, input, &output);
@@ -9632,7 +9632,7 @@ TEST (nnstreamer_capi_element, scenario_02_p)
 }
 
 /**
- * @brief Test for internal function 'ml_tensors_info_copy_from_gst'.
+ * @brief Test for internal function '_ml_tensors_info_copy_from_gst'.
  */
 TEST (nnstreamer_capi_internal, copy_from_gst)
 {
@@ -9655,7 +9655,7 @@ TEST (nnstreamer_capi_internal, copy_from_gst)
   status = ml_tensors_info_create (&ml_info);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  ml_tensors_info_copy_from_gst ((ml_tensors_info_s *)ml_info, &gst_info);
+  _ml_tensors_info_copy_from_gst ((ml_tensors_info_s *)ml_info, &gst_info);
   status = ml_tensors_info_get_count (ml_info, &count);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (count, 2U);
@@ -9668,7 +9668,7 @@ TEST (nnstreamer_capi_internal, copy_from_gst)
 
   gst_info.info[0].type = _NNS_INT32;
   gst_info.info[1].type = _NNS_UINT32;
-  ml_tensors_info_copy_from_gst ((ml_tensors_info_s *)ml_info, &gst_info);
+  _ml_tensors_info_copy_from_gst ((ml_tensors_info_s *)ml_info, &gst_info);
   status = ml_tensors_info_get_tensor_type (ml_info, 0, &type);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (type, ML_TENSOR_TYPE_INT32);
@@ -9678,7 +9678,7 @@ TEST (nnstreamer_capi_internal, copy_from_gst)
 
   gst_info.info[0].type = _NNS_INT16;
   gst_info.info[1].type = _NNS_UINT16;
-  ml_tensors_info_copy_from_gst ((ml_tensors_info_s *)ml_info, &gst_info);
+  _ml_tensors_info_copy_from_gst ((ml_tensors_info_s *)ml_info, &gst_info);
   status = ml_tensors_info_get_tensor_type (ml_info, 0, &type);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (type, ML_TENSOR_TYPE_INT16);
@@ -9688,7 +9688,7 @@ TEST (nnstreamer_capi_internal, copy_from_gst)
 
   gst_info.info[0].type = _NNS_INT8;
   gst_info.info[1].type = _NNS_UINT8;
-  ml_tensors_info_copy_from_gst ((ml_tensors_info_s *)ml_info, &gst_info);
+  _ml_tensors_info_copy_from_gst ((ml_tensors_info_s *)ml_info, &gst_info);
   status = ml_tensors_info_get_tensor_type (ml_info, 0, &type);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (type, ML_TENSOR_TYPE_INT8);
@@ -9698,7 +9698,7 @@ TEST (nnstreamer_capi_internal, copy_from_gst)
 
   gst_info.info[0].type = _NNS_INT64;
   gst_info.info[1].type = _NNS_UINT64;
-  ml_tensors_info_copy_from_gst ((ml_tensors_info_s *)ml_info, &gst_info);
+  _ml_tensors_info_copy_from_gst ((ml_tensors_info_s *)ml_info, &gst_info);
   status = ml_tensors_info_get_tensor_type (ml_info, 0, &type);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (type, ML_TENSOR_TYPE_INT64);
@@ -9708,7 +9708,7 @@ TEST (nnstreamer_capi_internal, copy_from_gst)
 
   gst_info.info[0].type = _NNS_FLOAT64;
   gst_info.info[1].type = _NNS_FLOAT32;
-  ml_tensors_info_copy_from_gst ((ml_tensors_info_s *)ml_info, &gst_info);
+  _ml_tensors_info_copy_from_gst ((ml_tensors_info_s *)ml_info, &gst_info);
   status = ml_tensors_info_get_tensor_type (ml_info, 0, &type);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (type, ML_TENSOR_TYPE_FLOAT64);
@@ -9718,7 +9718,7 @@ TEST (nnstreamer_capi_internal, copy_from_gst)
 
   gst_info.info[0].name = g_strdup ("tn1");
   gst_info.info[1].name = g_strdup ("tn2");
-  ml_tensors_info_copy_from_gst ((ml_tensors_info_s *)ml_info, &gst_info);
+  _ml_tensors_info_copy_from_gst ((ml_tensors_info_s *)ml_info, &gst_info);
   status = ml_tensors_info_get_tensor_name (ml_info, 0, &name);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_STREQ (name, "tn1");
@@ -9735,7 +9735,7 @@ TEST (nnstreamer_capi_internal, copy_from_gst)
 }
 
 /**
- * @brief Test for internal function 'ml_tensors_info_copy_from_ml'.
+ * @brief Test for internal function '_ml_tensors_info_copy_from_ml'.
  */
 TEST (nnstreamer_capi_internal, copy_from_ml)
 {
@@ -9755,7 +9755,7 @@ TEST (nnstreamer_capi_internal, copy_from_ml)
   status = ml_tensors_info_set_tensor_dimension (ml_info, 1, dim);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  ml_tensors_info_copy_from_ml (&gst_info, (ml_tensors_info_s *)ml_info);
+  _ml_tensors_info_copy_from_ml (&gst_info, (ml_tensors_info_s *)ml_info);
   EXPECT_EQ (gst_info.num_tensors, 2U);
   EXPECT_EQ (gst_info.info[0].dimension[0], 1U);
   EXPECT_EQ (gst_info.info[0].dimension[1], 2U);
@@ -9766,7 +9766,7 @@ TEST (nnstreamer_capi_internal, copy_from_ml)
   EXPECT_EQ (status, ML_ERROR_NONE);
   status = ml_tensors_info_set_tensor_type (ml_info, 1, ML_TENSOR_TYPE_UINT32);
   EXPECT_EQ (status, ML_ERROR_NONE);
-  ml_tensors_info_copy_from_ml (&gst_info, (ml_tensors_info_s *)ml_info);
+  _ml_tensors_info_copy_from_ml (&gst_info, (ml_tensors_info_s *)ml_info);
   EXPECT_EQ (gst_info.info[0].type, _NNS_INT32);
   EXPECT_EQ (gst_info.info[1].type, _NNS_UINT32);
 
@@ -9774,7 +9774,7 @@ TEST (nnstreamer_capi_internal, copy_from_ml)
   EXPECT_EQ (status, ML_ERROR_NONE);
   status = ml_tensors_info_set_tensor_type (ml_info, 1, ML_TENSOR_TYPE_UINT16);
   EXPECT_EQ (status, ML_ERROR_NONE);
-  ml_tensors_info_copy_from_ml (&gst_info, (ml_tensors_info_s *)ml_info);
+  _ml_tensors_info_copy_from_ml (&gst_info, (ml_tensors_info_s *)ml_info);
   EXPECT_EQ (gst_info.info[0].type, _NNS_INT16);
   EXPECT_EQ (gst_info.info[1].type, _NNS_UINT16);
 
@@ -9782,7 +9782,7 @@ TEST (nnstreamer_capi_internal, copy_from_ml)
   EXPECT_EQ (status, ML_ERROR_NONE);
   status = ml_tensors_info_set_tensor_type (ml_info, 1, ML_TENSOR_TYPE_UINT8);
   EXPECT_EQ (status, ML_ERROR_NONE);
-  ml_tensors_info_copy_from_ml (&gst_info, (ml_tensors_info_s *)ml_info);
+  _ml_tensors_info_copy_from_ml (&gst_info, (ml_tensors_info_s *)ml_info);
   EXPECT_EQ (gst_info.info[0].type, _NNS_INT8);
   EXPECT_EQ (gst_info.info[1].type, _NNS_UINT8);
 
@@ -9790,7 +9790,7 @@ TEST (nnstreamer_capi_internal, copy_from_ml)
   EXPECT_EQ (status, ML_ERROR_NONE);
   status = ml_tensors_info_set_tensor_type (ml_info, 1, ML_TENSOR_TYPE_UINT64);
   EXPECT_EQ (status, ML_ERROR_NONE);
-  ml_tensors_info_copy_from_ml (&gst_info, (ml_tensors_info_s *)ml_info);
+  _ml_tensors_info_copy_from_ml (&gst_info, (ml_tensors_info_s *)ml_info);
   EXPECT_EQ (gst_info.info[0].type, _NNS_INT64);
   EXPECT_EQ (gst_info.info[1].type, _NNS_UINT64);
 
@@ -9798,7 +9798,7 @@ TEST (nnstreamer_capi_internal, copy_from_ml)
   EXPECT_EQ (status, ML_ERROR_NONE);
   status = ml_tensors_info_set_tensor_type (ml_info, 1, ML_TENSOR_TYPE_FLOAT32);
   EXPECT_EQ (status, ML_ERROR_NONE);
-  ml_tensors_info_copy_from_ml (&gst_info, (ml_tensors_info_s *)ml_info);
+  _ml_tensors_info_copy_from_ml (&gst_info, (ml_tensors_info_s *)ml_info);
   EXPECT_EQ (gst_info.info[0].type, _NNS_FLOAT64);
   EXPECT_EQ (gst_info.info[1].type, _NNS_FLOAT32);
 
@@ -9806,7 +9806,7 @@ TEST (nnstreamer_capi_internal, copy_from_ml)
   EXPECT_EQ (status, ML_ERROR_NONE);
   status = ml_tensors_info_set_tensor_name (ml_info, 1, "tn2");
   EXPECT_EQ (status, ML_ERROR_NONE);
-  ml_tensors_info_copy_from_ml (&gst_info, (ml_tensors_info_s *)ml_info);
+  _ml_tensors_info_copy_from_ml (&gst_info, (ml_tensors_info_s *)ml_info);
   EXPECT_STREQ (gst_info.info[0].name, "tn1");
   EXPECT_STREQ (gst_info.info[1].name, "tn2");
 
@@ -9817,7 +9817,7 @@ TEST (nnstreamer_capi_internal, copy_from_ml)
 }
 
 /**
- * @brief Test for internal function 'ml_validate_model_file'.
+ * @brief Test for internal function '_ml_validate_model_file'.
  * @detail Invalid params.
  */
 TEST (nnstreamer_capi_internal, validate_model_file_01_n)
@@ -9839,13 +9839,13 @@ TEST (nnstreamer_capi_internal, validate_model_file_01_n)
     goto skip_test;
   }
 
-  status = ml_validate_model_file (NULL, 1, &nnfw);
+  status = _ml_validate_model_file (NULL, 1, &nnfw);
   EXPECT_NE (status, ML_ERROR_NONE);
 
-  status = ml_validate_model_file (&test_model, 0, &nnfw);
+  status = _ml_validate_model_file (&test_model, 0, &nnfw);
   EXPECT_NE (status, ML_ERROR_NONE);
 
-  status = ml_validate_model_file (&test_model, 1, NULL);
+  status = _ml_validate_model_file (&test_model, 1, NULL);
   EXPECT_NE (status, ML_ERROR_NONE);
 
 skip_test:
@@ -9854,7 +9854,7 @@ skip_test:
 }
 
 /**
- * @brief Test for internal function 'ml_validate_model_file'.
+ * @brief Test for internal function '_ml_validate_model_file'.
  * @detail Invalid file extension.
  */
 TEST (nnstreamer_capi_internal, validate_model_file_02_n)
@@ -9891,41 +9891,41 @@ TEST (nnstreamer_capi_internal, validate_model_file_02_n)
   test_models[1] = test_model2;
 
   nnfw = ML_NNFW_TYPE_CUSTOM_FILTER;
-  status = ml_validate_model_file (&test_model2, 1, &nnfw);
+  status = _ml_validate_model_file (&test_model2, 1, &nnfw);
   EXPECT_NE (status, ML_ERROR_NONE);
 
   nnfw = ML_NNFW_TYPE_TENSORFLOW_LITE;
-  status = ml_validate_model_file (&test_model1, 1, &nnfw);
+  status = _ml_validate_model_file (&test_model1, 1, &nnfw);
   EXPECT_NE (status, ML_ERROR_NONE);
 
   nnfw = ML_NNFW_TYPE_TENSORFLOW;
-  status = ml_validate_model_file (&test_model2, 1, &nnfw);
+  status = _ml_validate_model_file (&test_model2, 1, &nnfw);
   EXPECT_NE (status, ML_ERROR_NONE);
 
   /* snap only for android */
   nnfw = ML_NNFW_TYPE_SNAP;
-  status = ml_validate_model_file (&test_model1, 1, &nnfw);
+  status = _ml_validate_model_file (&test_model1, 1, &nnfw);
   EXPECT_NE (status, ML_ERROR_NONE);
 
   nnfw = ML_NNFW_TYPE_VIVANTE;
-  status = ml_validate_model_file (test_models, 1, &nnfw);
+  status = _ml_validate_model_file (test_models, 1, &nnfw);
   EXPECT_NE (status, ML_ERROR_NONE);
 
   /** @todo currently mvnc, openvino and edgetpu always return failure */
   nnfw = ML_NNFW_TYPE_MVNC;
-  status = ml_validate_model_file (&test_model1, 1, &nnfw);
+  status = _ml_validate_model_file (&test_model1, 1, &nnfw);
   EXPECT_NE (status, ML_ERROR_NONE);
 
   nnfw = ML_NNFW_TYPE_OPENVINO;
-  status = ml_validate_model_file (&test_model1, 1, &nnfw);
+  status = _ml_validate_model_file (&test_model1, 1, &nnfw);
   EXPECT_NE (status, ML_ERROR_NONE);
 
   nnfw = ML_NNFW_TYPE_EDGE_TPU;
-  status = ml_validate_model_file (&test_model1, 1, &nnfw);
+  status = _ml_validate_model_file (&test_model1, 1, &nnfw);
   EXPECT_NE (status, ML_ERROR_NONE);
 
   nnfw = ML_NNFW_TYPE_ARMNN;
-  status = ml_validate_model_file (&test_model1, 1, &nnfw);
+  status = _ml_validate_model_file (&test_model1, 1, &nnfw);
   EXPECT_NE (status, ML_ERROR_NONE);
 
 skip_test:
@@ -9935,7 +9935,7 @@ skip_test:
 }
 
 /**
- * @brief Test for internal function 'ml_validate_model_file'.
+ * @brief Test for internal function '_ml_validate_model_file'.
  * @detail Invalid model path.
  */
 TEST (nnstreamer_capi_internal, validate_model_file_03_n)
@@ -9956,21 +9956,21 @@ TEST (nnstreamer_capi_internal, validate_model_file_03_n)
   test_dir2 = g_build_filename (test_dir1, "invaliddir", NULL);
 
   nnfw = ML_NNFW_TYPE_TENSORFLOW_LITE;
-  status = ml_validate_model_file (&test_dir1, 1, &nnfw);
+  status = _ml_validate_model_file (&test_dir1, 1, &nnfw);
   EXPECT_NE (status, ML_ERROR_NONE);
 
   nnfw = ML_NNFW_TYPE_TENSORFLOW;
-  status = ml_validate_model_file (&test_dir1, 1, &nnfw);
+  status = _ml_validate_model_file (&test_dir1, 1, &nnfw);
   EXPECT_NE (status, ML_ERROR_NONE);
 
   nnfw = ML_NNFW_TYPE_NNFW;
-  status = ml_validate_model_file (&test_dir2, 1, &nnfw);
+  status = _ml_validate_model_file (&test_dir2, 1, &nnfw);
   EXPECT_NE (status, ML_ERROR_NONE);
 
 #ifdef ENABLE_NNFW_RUNTIME
   /* only NNFW supports dir path */
   nnfw = ML_NNFW_TYPE_NNFW;
-  status = ml_validate_model_file (&test_dir1, 1, &nnfw);
+  status = _ml_validate_model_file (&test_dir1, 1, &nnfw);
   EXPECT_EQ (status, ML_ERROR_NONE);
 #endif
 
