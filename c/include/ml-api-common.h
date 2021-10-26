@@ -145,7 +145,7 @@ int ml_tensors_info_validate (const ml_tensors_info_h info, bool *valid);
  * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
- * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
+ * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid. Note that src should be a valid tensors info handle and dest should be a created (allocated) tensors info handle.
  */
 int ml_tensors_info_clone (ml_tensors_info_h dest, const ml_tensors_info_h src);
 
@@ -296,7 +296,7 @@ int ml_tensors_data_destroy (ml_tensors_data_h data);
 
 /**
  * @brief Gets a tensor data of given handle.
- * @details This returns the pointer of memory block in the handle. Do not deallocate the returned tensor data.
+ * @details This returns the pointer of memory block in the handle. Do not deallocate the returned tensor data. The returned pointer (raw_data) directly points to the internal data of data. If you modify the returned memory block (raw_data), the contents of data is updated.
  * @since_tizen 5.5
  * @param[in] data The handle of tensors data.
  * @param[in] index The index of the tensor.
