@@ -31,7 +31,7 @@ ml_tensors_info_create (ml_tensors_info_h * info)
 
   *info = tensors_info = g_new0 (ml_tensors_info_s, 1);
   if (tensors_info == NULL) {
-    mlapi_loge ("Failed to allocate the tensors info handle.");
+    _ml_loge ("Failed to allocate the tensors info handle.");
     return ML_ERROR_OUT_OF_MEMORY;
   }
   g_mutex_init (&tensors_info->lock);
@@ -488,7 +488,7 @@ ml_tensor_info_get_size (const ml_tensor_info_s * info)
       tensor_size = 8;
       break;
     default:
-      mlapi_loge ("In the given param, tensor type is invalid.");
+      _ml_loge ("In the given param, tensor type is invalid.");
       return 0;
   }
 
@@ -634,7 +634,7 @@ ml_tensors_data_create_no_alloc (const ml_tensors_info_h info,
 
   _data = g_new0 (ml_tensors_data_s, 1);
   if (!_data) {
-    mlapi_loge ("Failed to allocate the tensors data handle.");
+    _ml_loge ("Failed to allocate the tensors data handle.");
     return ML_ERROR_OUT_OF_MEMORY;
   }
   g_mutex_init (&_data->lock);
@@ -705,7 +705,7 @@ ml_tensors_data_create (const ml_tensors_info_h info, ml_tensors_data_h * data)
     return ML_ERROR_INVALID_PARAMETER;
 
   if (!ml_tensors_info_is_valid (info)) {
-    mlapi_loge ("Given tensors information is invalid.");
+    _ml_loge ("Given tensors information is invalid.");
     return ML_ERROR_INVALID_PARAMETER;
   }
 
@@ -733,7 +733,7 @@ failed:
   }
   g_free (_data);
 
-  mlapi_loge ("Failed to allocate the memory block.");
+  _ml_loge ("Failed to allocate the memory block.");
   return status;
 }
 
