@@ -11,6 +11,8 @@
  */
 
 #include <string.h>
+#include <stdio.h>
+#include <stdarg.h>
 #include <glib.h>
 
 #include "nnstreamer.h"
@@ -933,7 +935,7 @@ _ml_replace_string (gchar * source, const gchar * what, const gchar * to,
 /**
  * @brief error reporting infra
  */
-#define _ML_ERRORMSG_LENGTH (4096)
+#define _ML_ERRORMSG_LENGTH (4096U)
 static char errormsg[_ML_ERRORMSG_LENGTH] = { 0 };      /* one page limit */
 
 static int reported = 0;
@@ -965,10 +967,65 @@ ml_error (void)
  * @brief Internal interface to write messages for ml_error()
  */
 void
-_ml_error_report (const char *message)
+_ml_error_report_ (const char *fmt, ...)
 {
+  int n;
+  va_list arg_ptr;
   G_LOCK (errlock);
-  strncpy (errormsg, message, _ML_ERRORMSG_LENGTH);
+
+  va_start (arg_ptr, fmt);
+  n = vsnprintf (errormsg, _ML_ERRORMSG_LENGTH, fmt, arg_ptr);
+  va_end (arg_ptr);
+
+  if (n > _ML_ERRORMSG_LENGTH) {
+    errormsg[_ML_ERRORMSG_LENGTH - 2] = '.';
+    errormsg[_ML_ERRORMSG_LENGTH - 3] = '.';
+    errormsg[_ML_ERRORMSG_LENGTH - 4] = '.';
+  }
+
+  _ml_loge ("%s", errormsg);
+
+  reported = 0;
+
+  G_UNLOCK (errlock);
+}
+
+/**
+ * @brief Internal interface to write messages for ml_error(), relaying previously reported errors.
+ */
+void
+_ml_error_report_continue_ (const char *fmt, ...)
+{
+  size_t cursor = 0;
+  va_list arg_ptr;
+  char buf[_ML_ERRORMSG_LENGTH];
+  G_LOCK (errlock);
+
+  /* Check if there is a message to relay */
+  if (reported == 0) {
+    cursor = strlen (errormsg);
+    if (cursor < (_ML_ERRORMSG_LENGTH - 1)) {
+      errormsg[cursor] = '\n';
+      errormsg[cursor + 1] = '\0';
+      cursor++;
+    }
+  } else {
+    errormsg[0] = '\0';
+  }
+
+  va_start (arg_ptr, fmt);
+  vsnprintf (buf, _ML_ERRORMSG_LENGTH - 1, fmt, arg_ptr);
+  _ml_loge ("%s", buf);
+
+  memcpy (errormsg + cursor, buf, _ML_ERRORMSG_LENGTH - strlen (errormsg) - 1);
+  if (strlen (errormsg) >= (_ML_ERRORMSG_LENGTH - 2)) {
+    errormsg[_ML_ERRORMSG_LENGTH - 2] = '.';
+    errormsg[_ML_ERRORMSG_LENGTH - 3] = '.';
+    errormsg[_ML_ERRORMSG_LENGTH - 4] = '.';
+  }
+
+  va_end (arg_ptr);
+
   errormsg[_ML_ERRORMSG_LENGTH - 1] = '\0';
   reported = 0;
   G_UNLOCK (errlock);
@@ -987,7 +1044,11 @@ const char *
 ml_strerror (int errnum)
 {
   int size = sizeof (strerrors) / sizeof (strerrors[0]);
-  if (errnum < 0 || errnum >= size)
+
+  if (errnum < 0)
+    errnum = errnum * -1;
+
+  if (errnum == 0 || errnum >= size)
     return NULL;
   return strerrors[errnum];
 }

@@ -301,15 +301,66 @@ int _ml_tizen_set_feature_state (int state);
  */
 
 /**
- * @brief Call when an error occurs during API execution.
- * @param[in] message The error description
+ * @brief Private function for error reporting infrastructure. Don't use.
+ * @note Use _ml_error_report instead!
  */
-void _ml_error_report (const char *message);
+void _ml_error_report_ (const char *fmt, ...);
 
-#define _ml_error_report_return (errno, message)  do { \
-  _ml_error_report (message); \
+/**
+ * @brief Private function for error reporting infrastructure. Don't use.
+ * @note Use _ml_error_report instead!
+ */
+void _ml_error_report_continue_ (const char *fmt, ...);
+
+/**
+ * @brief Private macro for error repoting infra. Don't use.
+ */
+#define _ml_error_report_return_(errno, ...)  do { \
+  _ml_error_report_ (__VA_ARGS__); \
   return errno; \
 } while(0)
+
+/**
+ * @brief Private macro for error repoting infra. Don't use.
+ */
+#define _ml_error_report_return_continue_(errno, ...)  do { \
+  _ml_error_report_continue_ (__VA_ARGS__); \
+  return errno; \
+} while(0)
+
+/**
+ * @brief Error report API. W/o return & previous report reset.
+ * @param[in] fmt The printf-styled error message.
+ * @note This provides source file, function name, and line number as well.
+ */
+#define _ml_error_report(fmt, ...) \
+  _ml_error_report_ ("%s:%s:%d: " fmt,  __FILE__, __func__, __LINE__, ##__VA_ARGS__)
+
+/**
+ * @brief Error report API. With return / W/o previous report reset.
+ * @param[in] errno The error code (negative numbers)
+ * @param[in] fmt The printf-styled error message.
+ * @note This provides source file, function name, and line number as well.
+ */
+#define _ml_error_report_return(errno, fmt, ...) \
+  _ml_error_report_return_ (errno, "%s:%s:%d: " fmt, __FILE__, __func__, __LINE__,  ##__VA_ARGS__)
+
+/**
+ * @brief Error report API. W/o return / With previous report reset.
+ * @param[in] fmt The printf-styled error message.
+ * @note This provides source file, function name, and line number as well.
+ */
+#define _ml_error_report_continue(fmt, ...) \
+  _ml_error_report_continue_ ("%s:%s:%d: " fmt,  __FILE__, __func__, __LINE__, ##__VA_ARGS__)
+
+/**
+ * @brief Error report API. With return & previous report reset.
+ * @param[in] errno The error code (negative numbers)
+ * @param[in] fmt The printf-styled error message.
+ * @note This provides source file, function name, and line number as well.
+ */
+#define _ml_error_report_return_continue(errno, fmt, ...) \
+  _ml_error_report_return_continue_ (errno, "%s:%s:%d: " fmt, __FILE__, __func__, __LINE__,  ##__VA_ARGS__)
 
 /***** End: Error reporting internal interfaces *****/
 
