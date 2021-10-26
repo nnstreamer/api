@@ -29,13 +29,14 @@ ml_tensors_info_create (ml_tensors_info_h * info)
   check_feature_state ();
 
   if (!info)
-    return ML_ERROR_INVALID_PARAMETER;
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, info, is NULL. Provide a valid pointer.");
 
   *info = tensors_info = g_new0 (ml_tensors_info_s, 1);
-  if (tensors_info == NULL) {
-    _ml_loge ("Failed to allocate the tensors info handle.");
-    return ML_ERROR_OUT_OF_MEMORY;
-  }
+  if (tensors_info == NULL)
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Failed to allocate the tensors info handle. Out of memory?");
+
   g_mutex_init (&tensors_info->lock);
 
   /* init tensors info struct */
@@ -55,7 +56,8 @@ ml_tensors_info_destroy (ml_tensors_info_h info)
   tensors_info = (ml_tensors_info_s *) info;
 
   if (!tensors_info)
-    return ML_ERROR_INVALID_PARAMETER;
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, info, is NULL. Provide a valid pointer.");
 
   G_LOCK_UNLESS_NOLOCK (*tensors_info);
 
@@ -76,7 +78,8 @@ _ml_tensors_info_initialize (ml_tensors_info_s * info)
   guint i, j;
 
   if (!info)
-    return ML_ERROR_INVALID_PARAMETER;
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, info, is NULL. Provide a valid pointer.");
 
   info->num_tensors = 0;
 
@@ -146,15 +149,15 @@ static int
 _ml_tensors_info_validate_nolock (const ml_tensors_info_s * info, bool *valid)
 {
   guint i;
-  int ret = ML_ERROR_NONE;
 
   G_VERIFYLOCK_UNLESS_NOLOCK (*info);
   /* init false */
   *valid = false;
 
   if (info->num_tensors < 1) {
-    ret = ML_ERROR_INVALID_PARAMETER;
-    goto done;
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The given tensors_info to be validated has invalid num_tensors (%u). It should be 1 or more.",
+        info->num_tensors);
   }
 
   for (i = 0; i < info->num_tensors; i++) {
@@ -165,7 +168,7 @@ _ml_tensors_info_validate_nolock (const ml_tensors_info_s * info, bool *valid)
   *valid = true;
 
 done:
-  return ret;
+  return ML_ERROR_NONE;
 }
 
 /**
@@ -180,12 +183,14 @@ ml_tensors_info_validate (const ml_tensors_info_h info, bool *valid)
   check_feature_state ();
 
   if (!valid)
-    return ML_ERROR_INVALID_PARAMETER;
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The data-return parameter, valid, is NULL. It should be a pointer pre-allocated by the caller.");
 
   tensors_info = (ml_tensors_info_s *) info;
 
   if (!tensors_info)
-    return ML_ERROR_INVALID_PARAMETER;
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The input parameter, tensors_info, is NULL. It should be a valid ml_tensors_info_h, which is usually created by ml_tensors_info_create().");
 
   G_LOCK_UNLESS_NOLOCK (*tensors_info);
 
@@ -207,8 +212,15 @@ _ml_tensors_info_compare (const ml_tensors_info_h info1,
 
   check_feature_state ();
 
-  if (info1 == NULL || info2 == NULL || equal == NULL)
-    return ML_ERROR_INVALID_PARAMETER;
+  if (info1 == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The input parameter, info1, should be a valid ml_tensors_info_h handle, which is usually created by ml_tensors_info_create(). However, info1 is NULL.");
+  if (info2 == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The input parameter, info2, should be a valid ml_tensors_info_h handle, which is usually created by ml_tensors_info_create(). However, info2 is NULL.");
+  if (equal == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The output parameter, equal, should be a valid pointer allocated by the caller. However, equal is NULL.");
 
   i1 = (ml_tensors_info_s *) info1;
   G_LOCK_UNLESS_NOLOCK (*i1);
@@ -244,8 +256,13 @@ ml_tensors_info_set_count (ml_tensors_info_h info, unsigned int count)
 
   check_feature_state ();
 
-  if (!info || count > ML_TENSOR_SIZE_LIMIT)
-    return ML_ERROR_INVALID_PARAMETER;
+  if (!info)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, info, is NULL. It should be a valid ml_tensors_info_h handle, which is usually created by ml_tensors_info_create().");
+  if (count > ML_TENSOR_SIZE_LIMIT || count == 0)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, count, is the number of tensors, which should be between 1 and 16. The given count is %u.",
+        count);
 
   tensors_info = (ml_tensors_info_s *) info;
 
@@ -265,8 +282,12 @@ ml_tensors_info_get_count (ml_tensors_info_h info, unsigned int *count)
 
   check_feature_state ();
 
-  if (!info || !count)
-    return ML_ERROR_INVALID_PARAMETER;
+  if (!info)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The paramter, info, is NULL. It should be a valid ml_tensors_info_h handle, which is usually created by ml_tensors_info_create().");
+  if (!count)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, count, is NULL. It should be a valid unsigned int * pointer, allocated by the caller.");
 
   tensors_info = (ml_tensors_info_s *) info;
   /* This is atomic. No need for locks */
@@ -287,14 +308,17 @@ ml_tensors_info_set_tensor_name (ml_tensors_info_h info,
   check_feature_state ();
 
   if (!info)
-    return ML_ERROR_INVALID_PARAMETER;
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, info, is NULL. It should be a valid ml_tensors_info_h handle, which is usually created by ml_tensors_info_create().");
 
   tensors_info = (ml_tensors_info_s *) info;
   G_LOCK_UNLESS_NOLOCK (*tensors_info);
 
   if (tensors_info->num_tensors <= index) {
     G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
-    return ML_ERROR_INVALID_PARAMETER;
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, index, is too large, it should be smaller than the number of tensors, given by info. info says num_tensors is %u and index is %u.",
+        tensors_info->num_tensors, index);
   }
 
   if (tensors_info->info[index].name) {
@@ -320,15 +344,21 @@ ml_tensors_info_get_tensor_name (ml_tensors_info_h info,
 
   check_feature_state ();
 
-  if (!info || !name)
-    return ML_ERROR_INVALID_PARAMETER;
+  if (!info)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, info, is NULL. It should be a valid ml_tensors_info_h handle, which is usually created by ml_tensors_info_create().");
+  if (!name)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, name, is NULL. It should be a valid char ** pointer, allocated by the caller. E.g., char *name; ml_tensors_info_get_tensor_name (info, index, &name);");
 
   tensors_info = (ml_tensors_info_s *) info;
   G_LOCK_UNLESS_NOLOCK (*tensors_info);
 
   if (tensors_info->num_tensors <= index) {
     G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
-    return ML_ERROR_INVALID_PARAMETER;
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, index, is too large. It should be smaller than the number of tensors, given by info. info says num_tensors is %u and index is %u.",
+        tensors_info->num_tensors, index);
   }
 
   *name = g_strdup (tensors_info->info[index].name);
@@ -349,10 +379,13 @@ ml_tensors_info_set_tensor_type (ml_tensors_info_h info,
   check_feature_state ();
 
   if (!info)
-    return ML_ERROR_INVALID_PARAMETER;
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, info, is NULL. It should be a valid pointer of ml_tensors_info_h, which is usually created by ml_tensors_info_create().");
 
-  if (type == ML_TENSOR_TYPE_UNKNOWN)
-    return ML_ERROR_INVALID_PARAMETER;
+  if (type >= ML_TENSOR_TYPE_UNKNOWN || type < 0)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, type, ML_TENSOR_TYPE_UNKNOWN or out of bound. The valud of type should be between 0 and ML_TENSOR_TYPE_UNKNOWN - 1. type = %d, ML_TENSOR_TYPE_UNKNOWN = %d.",
+        type, ML_TENSOR_TYPE_UNKNOWN);
 
   tensors_info = (ml_tensors_info_s *) info;
   G_LOCK_UNLESS_NOLOCK (*tensors_info);
@@ -379,8 +412,12 @@ ml_tensors_info_get_tensor_type (ml_tensors_info_h info,
 
   check_feature_state ();
 
-  if (!info || !type)
-    return ML_ERROR_INVALID_PARAMETER;
+  if (!info)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, info, is NULL. It should be a valid ml_tensors_info_h handle, which is usually created by ml_tensors_info_create().");
+  if (!type)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, type, is NULL. It should be a valid pointer of ml_tensor_type_e *, allocated by the caller. E.g., ml_tensor_type_e t; ml_tensors_info_get_tensor_type (info, index, &t);");
 
   tensors_info = (ml_tensors_info_s *) info;
   G_LOCK_UNLESS_NOLOCK (*tensors_info);
@@ -409,7 +446,8 @@ ml_tensors_info_set_tensor_dimension (ml_tensors_info_h info,
   check_feature_state ();
 
   if (!info)
-    return ML_ERROR_INVALID_PARAMETER;
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, info, is NULL. It should be a valid pointer of ml_tensors_info_h, which is usually created by ml_tensors_info_create().");
 
   tensors_info = (ml_tensors_info_s *) info;
   G_LOCK_UNLESS_NOLOCK (*tensors_info);
@@ -440,7 +478,8 @@ ml_tensors_info_get_tensor_dimension (ml_tensors_info_h info,
   check_feature_state ();
 
   if (!info)
-    return ML_ERROR_INVALID_PARAMETER;
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, info, is NULL. It should be a valid pointer of ml_tensors_info_h, which is usually created by ml_tensors_info_create().");
 
   tensors_info = (ml_tensors_info_s *) info;
   G_LOCK_UNLESS_NOLOCK (*tensors_info);
@@ -512,8 +551,12 @@ ml_tensors_info_get_tensor_size (ml_tensors_info_h info,
 
   check_feature_state ();
 
-  if (!info || !data_size)
-    return ML_ERROR_INVALID_PARAMETER;
+  if (!info)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, info, is NULL. Provide a valid pointer.");
+  if (!data_size)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, data_size, is NULL. It should be a valid size_t * pointer allocated by the caller. E.g., size_t d; ml_tensors_info_get_tensor_size (info, index, &d);");
 
   tensors_info = (ml_tensors_info_s *) info;
   G_LOCK_UNLESS_NOLOCK (*tensors_info);
@@ -531,7 +574,9 @@ ml_tensors_info_get_tensor_size (ml_tensors_info_h info,
   } else {
     if (tensors_info->num_tensors <= index) {
       G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
-      return ML_ERROR_INVALID_PARAMETER;
+      _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+          "The parameter, index (%u), is too large. Index should be smaller than the number of tensors of the parameter, info (info's num-tensors: %u).",
+          index, tensors_info->num_tensors);
     }
 
     *data_size = _ml_tensor_info_get_size (&tensors_info->info[index]);
@@ -543,7 +588,7 @@ ml_tensors_info_get_tensor_size (ml_tensors_info_h info,
 
 /**
  * @brief Frees and initialize the data in tensors info.
- * @note This does not touch the lock
+ * @note This does not touch the lock. The caller should lock.
  */
 void
 _ml_tensors_info_free (ml_tensors_info_s * info)
@@ -576,8 +621,9 @@ _ml_tensors_data_destroy_internal (ml_tensors_data_h data, gboolean free_data)
   ml_tensors_data_s *_data;
   guint i;
 
-  if (!data)
-    return ML_ERROR_INVALID_PARAMETER;
+  if (data == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, data, is NULL. It should be a valid ml_tensors_data_h handle, which is usually created by ml_tensors_data_create ().");
 
   _data = (ml_tensors_data_s *) data;
   G_LOCK_UNLESS_NOLOCK (*_data);
@@ -585,6 +631,10 @@ _ml_tensors_data_destroy_internal (ml_tensors_data_h data, gboolean free_data)
   if (free_data) {
     if (_data->destroy) {
       status = _data->destroy (_data, _data->user_data);
+      if (status != ML_ERROR_NONE)
+        _ml_error_report_return_continue (status,
+            "Tried to destroy internal user_data of the given parameter, data, with its destroy callback; however, it has failed with %d.",
+            status);
     } else {
       for (i = 0; i < ML_TENSOR_SIZE_LIMIT; i++) {
         if (_data->tensors[i].tensor) {
@@ -610,13 +660,18 @@ _ml_tensors_data_destroy_internal (ml_tensors_data_h data, gboolean free_data)
 int
 ml_tensors_data_destroy (ml_tensors_data_h data)
 {
+  int ret;
   check_feature_state ();
-  return _ml_tensors_data_destroy_internal (data, TRUE);
+  ret = _ml_tensors_data_destroy_internal (data, TRUE);
+  if (ret != ML_ERROR_NONE)
+    _ml_error_report_return_continue (ret,
+        "Call to _ml_tensors_data_destroy_internal failed with %d", ret);
+  return ret;
 }
 
 /**
- * @brief Allocates a tensor data frame with the given tensors info. (more info in nnstreamer.h)
- * @note Memory for data buffer is not allocated.
+ * @brief Creates a tensor data frame without buffer with the given tensors information.
+ * @note Memory for tensor data buffers is not allocated.
  */
 int
 _ml_tensors_data_create_no_alloc (const ml_tensors_info_h info,
@@ -629,16 +684,17 @@ _ml_tensors_data_create_no_alloc (const ml_tensors_info_h info,
   check_feature_state ();
 
   if (data == NULL)
-    return ML_ERROR_INVALID_PARAMETER;
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, data, is NULL. It should be a valid ml_tensors_info_h handle, which is usually created by ml_tensors_info_create ().");
 
   /* init null */
   *data = NULL;
 
   _data = g_new0 (ml_tensors_data_s, 1);
-  if (!_data) {
-    _ml_loge ("Failed to allocate the tensors data handle.");
-    return ML_ERROR_OUT_OF_MEMORY;
-  }
+  if (!_data)
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Failed to allocate memory for tensors data with g_new0(). Probably the system is out of memory.");
+
   g_mutex_init (&_data->lock);
 
   _info = (ml_tensors_info_s *) info;
@@ -672,13 +728,19 @@ _ml_tensors_data_clone_no_alloc (const ml_tensors_data_s * data_src,
 
   check_feature_state ();
 
-  if (data == NULL || data_src == NULL)
-    return ML_ERROR_INVALID_PARAMETER;
+  if (data == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, data, is NULL. It should be a valid ml_tensors_data_h handle, which is usually created by ml_tensors_data_create ().");
+  if (data_src == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, data_src, the source data to be cloned, is NULL. It should be a valid ml_tensors_data_s struct (internal representation of ml_tensors_data_h handle).");
 
   status = _ml_tensors_data_create_no_alloc (data_src->info,
       (ml_tensors_data_h *) & _data);
   if (status != ML_ERROR_NONE)
-    return status;
+    _ml_error_report_return_continue (status,
+        "The call to _ml_tensors_data_create_no_alloc has failed with %d.",
+        status);
 
   G_LOCK_UNLESS_NOLOCK (*_data);
 
@@ -700,43 +762,52 @@ ml_tensors_data_create (const ml_tensors_info_h info, ml_tensors_data_h * data)
   gint status = ML_ERROR_STREAMS_PIPE;
   ml_tensors_data_s *_data = NULL;
   gint i;
+  bool valid;
 
   check_feature_state ();
 
-  if (info == NULL || data == NULL)
-    return ML_ERROR_INVALID_PARAMETER;
+  if (info == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, info, is NULL. It should be a valid pointer of ml_tensors_info_h, which is usually created by ml_tensors_info_create().");
+  if (data == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, data, is NULL. It should be a valid ml_tensors_data_h handle, which is usually created by ml_tensors_data_create ().");
 
-  if (!ml_tensors_info_is_valid (info)) {
-    _ml_loge ("Given tensors information is invalid.");
-    return ML_ERROR_INVALID_PARAMETER;
-  }
+  status = ml_tensors_info_validate (info, &valid);
+  if (status != ML_ERROR_NONE)
+    _ml_error_report_return_continue (status,
+        "_ml_error_report_return_continue has reported that the parameter, info, is not NULL, but its contents are not valid. The user must provide a valid tensor information with it.");
+  if (valid == FALSE)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, info, is not NULL, but its contents are not valid. The user must provide a valid tensor information with it. Probably, there is an entry that is not allocated or dimention/type infomration not available. The given info should have valid number of tensors, entries of every tensor along with its type and dimension info.");
 
   status =
       _ml_tensors_data_create_no_alloc (info, (ml_tensors_data_h *) & _data);
 
   if (status != ML_ERROR_NONE) {
-    return status;
+    _ml_error_report_return_continue (status,
+        "Failed to allocate tensor data based on the given info with the call to _ml_tensors_data_create_no_alloc (): %d. Check if it's out-of-memory.",
+        status);
   }
 
   for (i = 0; i < _data->num_tensors; i++) {
     _data->tensors[i].tensor = g_malloc0 (_data->tensors[i].size);
     if (_data->tensors[i].tensor == NULL) {
-      status = ML_ERROR_OUT_OF_MEMORY;
-      goto failed;
+      goto failed_oom;
     }
   }
 
   *data = _data;
   return ML_ERROR_NONE;
 
-failed:
+failed_oom:
   for (i = 0; i < _data->num_tensors; i++) {
     g_free (_data->tensors[i].tensor);
   }
   g_free (_data);
 
-  _ml_loge ("Failed to allocate the memory block.");
-  return status;
+  _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+      "Failed to allocate memory blocks for tensors data. Check if it's out-of-memory.");
 }
 
 /**
@@ -751,13 +822,23 @@ ml_tensors_data_get_tensor_data (ml_tensors_data_h data, unsigned int index,
 
   check_feature_state ();
 
-  if (!data || !raw_data || !data_size)
-    return ML_ERROR_INVALID_PARAMETER;
+  if (data == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, data, is NULL. It should be a valid ml_tensors_data_h handle, which is usually created by ml_tensors_data_create ().");
+  if (raw_data == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, raw_data, is NULL. It should be a valid, non-NULL, void ** pointer, which is supposed to point to the raw data of tensors[index] after the call.");
+  if (data_size == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, data_size, is NULL. It should be a valid, non-NULL, size_t * pointer, which is suppsoed to point to the size of returning raw_data after the call.");
 
   _data = (ml_tensors_data_s *) data;
   G_LOCK_UNLESS_NOLOCK (*_data);
 
   if (_data->num_tensors <= index) {
+    _ml_error_report
+        ("The parameter, index, is out of bound. The number of tensors of 'data' is %u while you requested %u'th tensor (index = %u).",
+        _data->num_tensors, index, index);
     status = ML_ERROR_INVALID_PARAMETER;
     goto report;
   }
@@ -782,18 +863,29 @@ ml_tensors_data_set_tensor_data (ml_tensors_data_h data, unsigned int index,
 
   check_feature_state ();
 
-  if (!data || !raw_data)
-    return ML_ERROR_INVALID_PARAMETER;
+  if (data == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, data, is NULL. It should be a valid ml_tensors_data_h handle, which is usually created by ml_tensors_data_create ().");
+  if (raw_data == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, raw_data, is NULL. It should be a valid, non-NULL, void * pointer, which is supposed to point to the raw data of tensors[index: %u].",
+        index);
 
   _data = (ml_tensors_data_s *) data;
   G_LOCK_UNLESS_NOLOCK (*_data);
 
   if (_data->num_tensors <= index) {
+    _ml_error_report
+        ("The parameter, index, is out of bound. The number of tensors of 'data' is %u, while you've requested index of %u.",
+        _data->num_tensors, index);
     status = ML_ERROR_INVALID_PARAMETER;
     goto report;
   }
 
   if (data_size <= 0 || _data->tensors[index].size < data_size) {
+    _ml_error_report
+        ("The parameter, data_size (%zu), is invalid. It should be larger than 0 and not larger than the required size of tensors[index: %u] (%zu).",
+        data_size, index, _data->tensors[index].size);
     status = ML_ERROR_INVALID_PARAMETER;
     goto report;
   }
@@ -822,13 +914,29 @@ ml_tensors_info_clone (ml_tensors_info_h dest, const ml_tensors_info_h src)
   dest_info = (ml_tensors_info_s *) dest;
   src_info = (ml_tensors_info_s *) src;
 
-  if (!dest_info || !src_info)
-    return ML_ERROR_INVALID_PARAMETER;
+  if (!dest_info)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, dest, is NULL. It should be an allocated handle (ml_tensors_info_h), usually allocated by ml_tensors_info_create ().");
+  if (!src_info)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, src, is NULL. It should be a handle (ml_tensors_info_h) with valid data.");
 
   G_LOCK_UNLESS_NOLOCK (*dest_info);
   G_LOCK_UNLESS_NOLOCK (*src_info);
 
   status = _ml_tensors_info_validate_nolock (src_info, &valid);
+  if (status != ML_ERROR_NONE) {
+    _ml_error_report_continue
+        ("Cannot check the validity of src. Maybe src is not valid or its internal data is not consistent.");
+    goto done;
+  }
+  if (!valid) {
+    _ml_error_report
+        ("The parameter, src, is a ml_tensors_info_h handle without valid data. Every tensor-info of tensors-info should have a valid type and dimension information and the number of tensors should be between 1 and 16.");
+    status = ML_ERROR_INVALID_PARAMETER;
+    goto done;
+  }
+
   if (status != ML_ERROR_NONE || !valid)
     goto done;
 

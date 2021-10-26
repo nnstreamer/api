@@ -66,8 +66,15 @@ typedef enum
 #define check_feature_state() \
   do { \
     int feature_ret = _ml_tizen_get_feature_enabled (); \
-    if (ML_ERROR_NONE != feature_ret) \
+    if (ML_ERROR_NONE != feature_ret) { \
+      if (ML_ERROR_NOT_SUPPORTED == feature_ret) \
+        _ml_error_report_return (feature_ret, \
+            "Tizen MachineLearning.Inference feature is not enabled. Enable the feature before calling ML.Inference APIs."); \
+      _ml_error_report_return (feature_ret, \
+          "_ml_tizen_get_feature_enabled() has returned an error. (%d)", \
+          feature_ret); \
       return feature_ret; \
+    } \
   } while (0);
 
 #define set_feature_state(...) _ml_tizen_set_feature_state(__VA_ARGS__)
@@ -151,7 +158,9 @@ typedef struct {
     if (!(sname).nolock) { \
       if (g_mutex_trylock(l)) { \
         g_mutex_unlock(l); \
-        return ML_ERROR_INVALID_PARAMETER; \
+        _ml_error_report_return (ML_ERROR_INVALID_PARAMETER, \
+            "The lock of an object %s is not locked. It should've been locked already.", \
+            #sname); \
       } \
     } \
   } while (0)
