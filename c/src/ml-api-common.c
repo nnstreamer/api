@@ -37,7 +37,7 @@ ml_tensors_info_create (ml_tensors_info_h * info)
   g_mutex_init (&tensors_info->lock);
 
   /* init tensors info struct */
-  return ml_tensors_info_initialize (tensors_info);
+  return _ml_tensors_info_initialize (tensors_info);
 }
 
 /**
@@ -57,7 +57,7 @@ ml_tensors_info_destroy (ml_tensors_info_h info)
 
   G_LOCK_UNLESS_NOLOCK (*tensors_info);
 
-  ml_tensors_info_free (tensors_info);
+  _ml_tensors_info_free (tensors_info);
   G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
   g_mutex_clear (&tensors_info->lock);
   g_free (tensors_info);
@@ -69,7 +69,7 @@ ml_tensors_info_destroy (ml_tensors_info_h info)
  * @brief Initializes the tensors information with default value.
  */
 int
-ml_tensors_info_initialize (ml_tensors_info_s * info)
+_ml_tensors_info_initialize (ml_tensors_info_s * info)
 {
   guint i, j;
 
@@ -197,7 +197,7 @@ ml_tensors_info_validate (const ml_tensors_info_h info, bool *valid)
  * @brief Compares the given tensors information.
  */
 int
-ml_tensors_info_compare (const ml_tensors_info_h info1,
+_ml_tensors_info_compare (const ml_tensors_info_h info1,
     const ml_tensors_info_h info2, bool *equal)
 {
   ml_tensors_info_s *i1, *i2;
@@ -460,7 +460,7 @@ ml_tensors_info_get_tensor_dimension (ml_tensors_info_h info,
  * @brief Gets the byte size of the given tensor info.
  */
 size_t
-ml_tensor_info_get_size (const ml_tensor_info_s * info)
+_ml_tensor_info_get_size (const ml_tensor_info_s * info)
 {
   size_t tensor_size;
   gint i;
@@ -524,7 +524,7 @@ ml_tensors_info_get_tensor_size (ml_tensors_info_h info,
 
     /* get total byte size */
     for (i = 0; i < tensors_info->num_tensors; i++) {
-      *data_size += ml_tensor_info_get_size (&tensors_info->info[i]);
+      *data_size += _ml_tensor_info_get_size (&tensors_info->info[i]);
     }
   } else {
     if (tensors_info->num_tensors <= index) {
@@ -532,7 +532,7 @@ ml_tensors_info_get_tensor_size (ml_tensors_info_h info,
       return ML_ERROR_INVALID_PARAMETER;
     }
 
-    *data_size = ml_tensor_info_get_size (&tensors_info->info[index]);
+    *data_size = _ml_tensor_info_get_size (&tensors_info->info[index]);
   }
 
   G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
@@ -544,7 +544,7 @@ ml_tensors_info_get_tensor_size (ml_tensors_info_h info,
  * @note This does not touch the lock
  */
 void
-ml_tensors_info_free (ml_tensors_info_s * info)
+_ml_tensors_info_free (ml_tensors_info_s * info)
 {
   gint i;
 
@@ -558,7 +558,7 @@ ml_tensors_info_free (ml_tensors_info_s * info)
     }
   }
 
-  ml_tensors_info_initialize (info);
+  _ml_tensors_info_initialize (info);
 }
 
 /**
@@ -568,7 +568,7 @@ ml_tensors_info_free (ml_tensors_info_s * info)
  * @return @c 0 on success. Otherwise a negative error value.
  */
 int
-ml_tensors_data_destroy_internal (ml_tensors_data_h data, gboolean free_data)
+_ml_tensors_data_destroy_internal (ml_tensors_data_h data, gboolean free_data)
 {
   int status = ML_ERROR_NONE;
   ml_tensors_data_s *_data;
@@ -609,7 +609,7 @@ int
 ml_tensors_data_destroy (ml_tensors_data_h data)
 {
   check_feature_state ();
-  return ml_tensors_data_destroy_internal (data, TRUE);
+  return _ml_tensors_data_destroy_internal (data, TRUE);
 }
 
 /**
@@ -617,7 +617,7 @@ ml_tensors_data_destroy (ml_tensors_data_h data)
  * @note Memory for data buffer is not allocated.
  */
 int
-ml_tensors_data_create_no_alloc (const ml_tensors_info_h info,
+_ml_tensors_data_create_no_alloc (const ml_tensors_info_h info,
     ml_tensors_data_h * data)
 {
   ml_tensors_data_s *_data;
@@ -647,7 +647,7 @@ ml_tensors_data_create_no_alloc (const ml_tensors_info_h info,
     G_LOCK_UNLESS_NOLOCK (*_info);
     _data->num_tensors = _info->num_tensors;
     for (i = 0; i < _data->num_tensors; i++) {
-      _data->tensors[i].size = ml_tensor_info_get_size (&_info->info[i]);
+      _data->tensors[i].size = _ml_tensor_info_get_size (&_info->info[i]);
       _data->tensors[i].tensor = NULL;
     }
     G_UNLOCK_UNLESS_NOLOCK (*_info);
@@ -662,7 +662,7 @@ ml_tensors_data_create_no_alloc (const ml_tensors_info_h info,
  * @note Memory ptr for data buffer is copied. No new memory for data buffer is allocated.
  */
 int
-ml_tensors_data_clone_no_alloc (const ml_tensors_data_s * data_src,
+_ml_tensors_data_clone_no_alloc (const ml_tensors_data_s * data_src,
     ml_tensors_data_h * data)
 {
   int status;
@@ -673,7 +673,7 @@ ml_tensors_data_clone_no_alloc (const ml_tensors_data_s * data_src,
   if (data == NULL || data_src == NULL)
     return ML_ERROR_INVALID_PARAMETER;
 
-  status = ml_tensors_data_create_no_alloc (data_src->info,
+  status = _ml_tensors_data_create_no_alloc (data_src->info,
       (ml_tensors_data_h *) & _data);
   if (status != ML_ERROR_NONE)
     return status;
@@ -710,7 +710,7 @@ ml_tensors_data_create (const ml_tensors_info_h info, ml_tensors_data_h * data)
   }
 
   status =
-      ml_tensors_data_create_no_alloc (info, (ml_tensors_data_h *) & _data);
+      _ml_tensors_data_create_no_alloc (info, (ml_tensors_data_h *) & _data);
 
   if (status != ML_ERROR_NONE) {
     return status;
@@ -830,7 +830,7 @@ ml_tensors_info_clone (ml_tensors_info_h dest, const ml_tensors_info_h src)
   if (status != ML_ERROR_NONE || !valid)
     goto done;
 
-  ml_tensors_info_initialize (dest_info);
+  _ml_tensors_info_initialize (dest_info);
 
   dest_info->num_tensors = src_info->num_tensors;
 
@@ -862,7 +862,7 @@ done:
  * @return Newly allocated string. The returned string should be freed with g_free().
  */
 gchar *
-ml_replace_string (gchar * source, const gchar * what, const gchar * to,
+_ml_replace_string (gchar * source, const gchar * what, const gchar * to,
     const gchar * delimiters, guint * count)
 {
   GString *builder;

@@ -47,7 +47,7 @@ static const char *ml_nnfw_subplugin_name[] = {
  * @brief Internal function to get the sub-plugin name.
  */
 const char *
-ml_get_nnfw_subplugin_name (ml_nnfw_type_e nnfw)
+_ml_get_nnfw_subplugin_name (ml_nnfw_type_e nnfw)
 {
   /* check sub-plugin for android */
   if (nnfw == ML_NNFW_TYPE_SNAP)
@@ -60,7 +60,7 @@ ml_get_nnfw_subplugin_name (ml_nnfw_type_e nnfw)
  * @brief Allocates a tensors information handle from gst info.
  */
 int
-ml_tensors_info_create_from_gst (ml_tensors_info_h * ml_info,
+_ml_tensors_info_create_from_gst (ml_tensors_info_h * ml_info,
     GstTensorsInfo * gst_info)
 {
   int status;
@@ -72,7 +72,7 @@ ml_tensors_info_create_from_gst (ml_tensors_info_h * ml_info,
   if (status != ML_ERROR_NONE)
     return status;
 
-  ml_tensors_info_copy_from_gst (*ml_info, gst_info);
+  _ml_tensors_info_copy_from_gst (*ml_info, gst_info);
   return ML_ERROR_NONE;
 }
 
@@ -81,7 +81,7 @@ ml_tensors_info_create_from_gst (ml_tensors_info_h * ml_info,
  * @bug Thread safety required. Check its internal users first!
  */
 void
-ml_tensors_info_copy_from_gst (ml_tensors_info_s * ml_info,
+_ml_tensors_info_copy_from_gst (ml_tensors_info_s * ml_info,
     const GstTensorsInfo * gst_info)
 {
   guint i, j;
@@ -90,7 +90,7 @@ ml_tensors_info_copy_from_gst (ml_tensors_info_s * ml_info,
   if (!ml_info || !gst_info)
     return;
 
-  ml_tensors_info_initialize (ml_info);
+  _ml_tensors_info_initialize (ml_info);
   max_dim = MIN (ML_TENSOR_RANK_LIMIT, NNS_TENSOR_RANK_LIMIT);
 
   ml_info->num_tensors = gst_info->num_tensors;
@@ -154,7 +154,7 @@ ml_tensors_info_copy_from_gst (ml_tensors_info_s * ml_info,
  * @bug Thread safety required. Check its internal users first!
  */
 void
-ml_tensors_info_copy_from_ml (GstTensorsInfo * gst_info,
+_ml_tensors_info_copy_from_ml (GstTensorsInfo * gst_info,
     const ml_tensors_info_s * ml_info)
 {
   guint i, j;
@@ -229,7 +229,7 @@ ml_tensors_info_copy_from_ml (GstTensorsInfo * gst_info,
  * @brief Initializes the GStreamer library. This is internal function.
  */
 int
-ml_initialize_gstreamer (void)
+_ml_initialize_gstreamer (void)
 {
   GError *err = NULL;
 
@@ -251,7 +251,7 @@ ml_initialize_gstreamer (void)
  * @brief Internal helper function to validate model files.
  */
 static int
-_ml_validate_model_file (const char *const *model,
+__ml_validate_model_file (const char *const *model,
     const unsigned int num_models, gboolean * is_dir)
 {
   guint i;
@@ -281,7 +281,7 @@ _ml_validate_model_file (const char *const *model,
  * @brief Internal function to get the nnfw type.
  */
 ml_nnfw_type_e
-ml_get_nnfw_type_by_subplugin_name (const char *name)
+_ml_get_nnfw_type_by_subplugin_name (const char *name)
 {
   ml_nnfw_type_e nnfw_type = ML_NNFW_TYPE_ANY;
   int idx = -1;
@@ -314,7 +314,7 @@ ml_get_nnfw_type_by_subplugin_name (const char *name)
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
  */
 int
-ml_validate_model_file (const char *const *model,
+_ml_validate_model_file (const char *const *model,
     const unsigned int num_models, ml_nnfw_type_e * nnfw)
 {
   int status = ML_ERROR_NONE;
@@ -327,7 +327,7 @@ ml_validate_model_file (const char *const *model,
   if (!nnfw)
     return ML_ERROR_INVALID_PARAMETER;
 
-  status = _ml_validate_model_file (model, num_models, &is_dir);
+  status = __ml_validate_model_file (model, num_models, &is_dir);
   if (status != ML_ERROR_NONE)
     return status;
 
@@ -337,7 +337,7 @@ ml_validate_model_file (const char *const *model,
    * If any condition for auto detection is added later, below code also should be updated.
    */
   fw_name = gst_tensor_filter_detect_framework (model, num_models, TRUE);
-  detected = ml_get_nnfw_type_by_subplugin_name (fw_name);
+  detected = _ml_get_nnfw_type_by_subplugin_name (fw_name);
   g_free (fw_name);
 
   if (*nnfw == ML_NNFW_TYPE_ANY) {
@@ -346,7 +346,7 @@ ml_validate_model_file (const char *const *model,
       status = ML_ERROR_INVALID_PARAMETER;
     } else {
       _ml_logi ("The given model is supposed a %s model.",
-          ml_get_nnfw_subplugin_name (detected));
+          _ml_get_nnfw_subplugin_name (detected));
       *nnfw = detected;
     }
 
@@ -417,8 +417,8 @@ ml_validate_model_file (const char *const *model,
 
 done:
   if (status == ML_ERROR_NONE) {
-    if (!ml_nnfw_is_available (*nnfw, ML_NNFW_HW_ANY)) {
-      _ml_loge ("%s is not available.", ml_get_nnfw_subplugin_name (*nnfw));
+    if (!_ml_nnfw_is_available (*nnfw, ML_NNFW_HW_ANY)) {
+      _ml_loge ("%s is not available.", _ml_get_nnfw_subplugin_name (*nnfw));
       status = ML_ERROR_NOT_SUPPORTED;
     }
   } else {
@@ -433,7 +433,7 @@ done:
  * @brief Convert c-api based hw to internal representation
  */
 accl_hw
-ml_nnfw_to_accl_hw (const ml_nnfw_hw_e hw)
+_ml_nnfw_to_accl_hw (const ml_nnfw_hw_e hw)
 {
   switch (hw) {
     case ML_NNFW_HW_ANY:
@@ -475,13 +475,13 @@ ml_nnfw_to_accl_hw (const ml_nnfw_hw_e hw)
  * @note More details on format can be found in gst_tensor_filter_install_properties() in tensor_filter_common.c.
  */
 char *
-ml_nnfw_to_str_prop (const ml_nnfw_hw_e hw)
+_ml_nnfw_to_str_prop (const ml_nnfw_hw_e hw)
 {
   const gchar *hw_name;
   const gchar *use_accl = "true:";
   gchar *str_prop = NULL;
 
-  hw_name = get_accl_hw_str (ml_nnfw_to_accl_hw (hw));
+  hw_name = get_accl_hw_str (_ml_nnfw_to_accl_hw (hw));
   str_prop = g_strdup_printf ("%s%s", use_accl, hw_name);
 
   return str_prop;
@@ -501,7 +501,7 @@ ml_check_element_availability (const char *element_name, bool *available)
   if (!element_name || !available)
     return ML_ERROR_INVALID_PARAMETER;
 
-  status = ml_initialize_gstreamer ();
+  status = _ml_initialize_gstreamer ();
   if (status != ML_ERROR_NONE)
     return status;
 
@@ -514,7 +514,7 @@ ml_check_element_availability (const char *element_name, bool *available)
     const gchar *plugin_name = gst_plugin_feature_get_plugin_name (feature);
 
     /* check restricted element */
-    status = ml_check_plugin_availability (plugin_name, element_name);
+    status = _ml_check_plugin_availability (plugin_name, element_name);
     if (status == ML_ERROR_NONE)
       *available = true;
 
@@ -528,7 +528,8 @@ ml_check_element_availability (const char *element_name, bool *available)
  * @brief Checks the availability of the plugin.
  */
 int
-ml_check_plugin_availability (const char *plugin_name, const char *element_name)
+_ml_check_plugin_availability (const char *plugin_name,
+    const char *element_name)
 {
   static gboolean list_loaded = FALSE;
   static gchar **restricted_elements = NULL;

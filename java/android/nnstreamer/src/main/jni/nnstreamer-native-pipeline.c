@@ -128,7 +128,7 @@ nns_pipeline_sink_priv_set_out_info (element_data_s * item, JNIEnv * env,
     return FALSE;
   }
 
-  ml_tensors_info_free (priv->out_info);
+  _ml_tensors_info_free (priv->out_info);
   ml_tensors_info_clone (priv->out_info, out_info);
 
   if (priv->out_info_obj)
@@ -939,7 +939,7 @@ static jboolean
 nns_native_check_element_availability (JNIEnv * env, jclass clazz, jstring name)
 {
   const char *element_name = (*env)->GetStringUTFChars (env, name, NULL);
-  jboolean res = ml_element_is_available (element_name) ? JNI_TRUE : JNI_FALSE;
+  jboolean res = _ml_element_is_available (element_name) ? JNI_TRUE : JNI_FALSE;
 
   (*env)->ReleaseStringUTFChars (env, name, element_name);
   return res;

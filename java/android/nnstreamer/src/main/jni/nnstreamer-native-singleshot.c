@@ -65,7 +65,7 @@ nns_singleshot_priv_set_info (pipeline_info_s * pipe_info, JNIEnv * env)
   }
 
   if (!ml_tensors_info_is_equal (in_info, priv->in_info)) {
-    ml_tensors_info_free (priv->in_info);
+    _ml_tensors_info_free (priv->in_info);
     ml_tensors_info_clone (priv->in_info, in_info);
   }
 
@@ -75,7 +75,7 @@ nns_singleshot_priv_set_info (pipeline_info_s * pipe_info, JNIEnv * env)
       goto done;
     }
 
-    ml_tensors_info_free (priv->out_info);
+    _ml_tensors_info_free (priv->out_info);
     ml_tensors_info_clone (priv->out_info, out_info);
 
     if (priv->out_info_obj)

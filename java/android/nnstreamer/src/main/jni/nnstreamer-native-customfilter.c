@@ -58,7 +58,7 @@ nns_customfilter_priv_set_info (pipeline_info_s * pipe_info, JNIEnv * env,
       return FALSE;
     }
 
-    ml_tensors_info_free (priv->in_info);
+    _ml_tensors_info_free (priv->in_info);
     ml_tensors_info_clone (priv->in_info, in_info);
 
     if (priv->in_info_obj)
@@ -68,7 +68,7 @@ nns_customfilter_priv_set_info (pipeline_info_s * pipe_info, JNIEnv * env,
   }
 
   if (!ml_tensors_info_is_equal (out_info, priv->out_info)) {
-    ml_tensors_info_free (priv->out_info);
+    _ml_tensors_info_free (priv->out_info);
     ml_tensors_info_clone (priv->out_info, out_info);
   }
 
