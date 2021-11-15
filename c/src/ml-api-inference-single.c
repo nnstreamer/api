@@ -830,6 +830,30 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
     goto error;
   }
 
+  if (nnfw == ML_NNFW_TYPE_NNTR_INF) {
+    if (!in_tensors_info || !out_tensors_info) {
+      if (!in_tensors_info) {
+        ml_tensors_info_h in_info;
+        status = ml_tensors_info_create (&in_info);
+        if (status != ML_ERROR_NONE) {
+          goto error;
+        }
+
+        /* ml_single_set_input_info() can't be done as it checks num_tensors */
+        status = ml_single_set_gst_info (single_h, in_info);
+        ml_tensors_info_destroy (in_info);
+        if (status != ML_ERROR_NONE) {
+          goto error;
+        }
+      } else {
+        status = ml_single_set_input_info (single_h, in_tensors_info);
+        if (status != ML_ERROR_NONE) {
+          goto error;
+        }
+      }
+    }
+  }
+
   /* 5. Set in/out configs and metadata */
   if (!ml_single_set_info_in_handle (single_h, TRUE, in_tensors_info)) {
     _ml_loge ("The input tensor info is invalid.");
