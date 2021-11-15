@@ -55,6 +55,9 @@ ENABLE_PYTORCH := false
 # Converter/decoder sub-plugin for flatbuffers support
 ENABLE_FLATBUF := false
 
+# MQTT (paho.mqtt.c) support
+ENABLE_MQTT := false
+
 ifeq ($(ENABLE_SNAP),true)
 ifeq ($(ENABLE_SNPE),true)
 $(error DO NOT enable SNAP and SNPE both. The app would fail to use DSP or NPU runtime.)

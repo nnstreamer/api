@@ -68,6 +68,11 @@
 ##@@       'yes'      : [default]
 ##@@       'no'       : build without the sub-plugin for FlatBuffers and FlexBuffers
 ##@@ 
+##@@ options for mqtt:
+##@@   --enable_mqtt=(yes|no)
+##@@       'yes'      : [default] build with paho.mqtt.c prebuilt libs. This option supports the mqtt plugin
+##@@       'no'       : build without the mqtt support
+##@@
 ##@@ For example, to build library with core plugins for arm64-v8a
 ##@@  ./build-nnstreamer-android.sh --api_option=lite --target_abi=arm64-v8a
 
@@ -112,6 +117,10 @@ enable_tflite="yes"
 # Enable the flatbuffer converter/decoder by default
 enable_flatbuf="yes"
 flatbuf_ver="1.12.0"
+
+# Enable option for MQTT
+enable_mqtt="no"
+paho_mqtt_c_ver="1.3.7"
 
 # Set tensorflow-lite version (available: 1.9.0 / 1.13.1 / 1.15.2 / 2.3.0)
 tf_lite_ver="2.3.0"
@@ -219,6 +228,9 @@ for arg in "$@"; do
         --enable_flatbuf=*)
             enable_flatbuf=${arg#*=}
             ;;
+        --enable_mqtt=*)
+            enable_mqtt=${arg#*=}
+            ;;
     esac
 done
 
@@ -294,6 +306,10 @@ fi
 
 if [[ $enable_flatbuf == "yes" ]]; then
     echo "Build with flatbuffers v$flatbuf_ver for the converter/decoder sub-plugin"
+fi
+
+if [[ $enable_mqtt == "yes" ]]; then
+    echo "Build with paho.mqtt.c-v$paho_mqtt_c_ver for the mqtt plugin"
 fi
 
 # Set library name
@@ -413,6 +429,10 @@ if [[ $enable_flatbuf == "yes" ]]; then
     wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/flatbuffers-${flatbuf_ver}.tar.xz
 fi
 
+if [[ $enable_mqtt == "yes" ]]; then
+    wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/paho-mqtt-c-${paho_mqtt_c_ver}.tar.xz
+fi
+
 pushd ./$build_dir
 
 # Update target ABI
@@ -504,6 +524,11 @@ if [[ $enable_flatbuf == "yes" ]]; then
     sed -i "s|ENABLE_FLATBUF := false|ENABLE_FLATBUF := true|" nnstreamer/src/main/jni/Android.mk
     sed -i "s|FLATBUF_VER := @FLATBUF_VER@|FLATBUF_VER := ${flatbuf_ver}|" nnstreamer/src/main/jni/Android-flatbuf.mk
     tar -xJf ./external/flatbuffers-${flatbuf_ver}.tar.xz -C ./nnstreamer/src/main/jni
+fi
+
+if [[ $enable_mqtt == "yes" ]]; then
+    sed -i "s|ENABLE_MQTT := false|ENABLE_MQTT := true|" nnstreamer/src/main/jni/Android.mk
+    tar -xJf ./external/paho-mqtt-c-${paho_mqtt_c_ver}.tar.xz -C ./nnstreamer/src/main/jni
 fi
 
 # If build option is single-shot only, remove unnecessary files.

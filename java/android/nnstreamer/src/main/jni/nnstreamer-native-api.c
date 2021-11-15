@@ -18,6 +18,9 @@
 GST_PLUGIN_STATIC_DECLARE (nnstreamer);
 GST_PLUGIN_STATIC_DECLARE (amcsrc);
 GST_PLUGIN_STATIC_DECLARE (join);
+#if defined (ENABLE_MQTT)
+GST_PLUGIN_STATIC_DECLARE (mqtt);
+#endif
 extern void init_dv (void);
 extern void init_bb (void);
 extern void init_il (void);
@@ -767,6 +770,11 @@ nnstreamer_native_initialize (JNIEnv * env, jobject context)
 
     /* GStreamer join element */
     GST_PLUGIN_STATIC_REGISTER (join);
+
+#if defined (ENABLE_MQTT)
+    /* GStreamer MQTT element */
+    GST_PLUGIN_STATIC_REGISTER (mqtt);
+#endif
 
     /* tensor-decoder sub-plugins */
     init_dv ();
