@@ -7,6 +7,7 @@ import android.view.Surface;
 import android.view.SurfaceView;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -2269,6 +2270,47 @@ public class APITestPipeline {
             /* check received data from sink */
             assertFalse(mInvalidState);
             assertEquals(1, mReceived);
+        } catch (Exception e) {
+            fail();
+        }
+    }
+
+    @Ignore("Checking available mqtt broker is not ready, please ignore")
+    @Test
+    public void testMQTTElement() {
+        String sub_desc = "mqttsrc sub-topic=test/videotestsrc ! " +
+                "video/x-raw,format=RGB,width=40,height=40,framerate=5/1 ! " +
+                "tensor_converter ! tensor_sink name=sinkx";
+        String pub_desc = "videotestsrc is-live=true num-buffers=10 ! " +
+                "video/x-raw,format=RGB,width=40,height=40,framerate=5/1 ! " +
+                "mqttsink pub-topic=test/videotestsrc";
+
+        try {
+            Pipeline sub_pipe = new Pipeline(sub_desc);
+            /* register sink callback */
+            sub_pipe.registerSinkCallback("sinkx", new Pipeline.NewDataCallback() {
+                @Override
+                public void onNewDataReceived(TensorsData data) {
+                    if (data == null || data.getTensorsCount() != 1) {
+                        mInvalidState = true;
+                        return;
+                    }
+                    mReceived++;
+                }
+            });
+            sub_pipe.start();
+
+            Pipeline pub_pipe = new Pipeline(pub_desc);
+            pub_pipe.start();
+
+            Thread.sleep(3000);
+
+            sub_pipe.stop();
+            pub_pipe.stop();
+
+            /* check received data from sink */
+            assertFalse(mInvalidState);
+            assertEquals(10, mReceived);
         } catch (Exception e) {
             fail();
         }
