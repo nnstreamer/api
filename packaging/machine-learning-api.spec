@@ -163,14 +163,14 @@ Tizen ML(Machine Learning) native API's common parts.
 %package -n capi-machine-learning-common-devel
 Summary:	Common headers for Tizen Machine Learning API
 Group:		Machine Learning/ML Framework
-Requires:	capi-machine-larning-common = %{version}-%{release}
+Requires:	capi-machine-learning-common = %{version}-%{release}
 %description -n capi-machine-learning-common-devel
 Common headers for Tizen Machine Learning API.
 
 %package -n capi-machine-learning-common-devel-static
 Summary:	Static library of common utility functions for Tizen Machine Learning API
 Group:		Machine Learning/ML Framework
-Requires:	capi-machine-larning-common-devel = %{version}-%{release}
+Requires:	capi-machine-learning-common-devel = %{version}-%{release}
 %description -n capi-machine-learning-common-devel-static
 Static library of common headers for Tizen Machine Learning API.
 
