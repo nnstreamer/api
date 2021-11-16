@@ -14,9 +14,6 @@
 #ifndef __TIZEN_MACHINELEARNING_NNSTREAMER_H__
 #define __TIZEN_MACHINELEARNING_NNSTREAMER_H__
 
-#include <stddef.h>
-#include <stdbool.h>
-#include <stdint.h>
 #include <ml-api-common.h>
 
 #ifdef __cplusplus

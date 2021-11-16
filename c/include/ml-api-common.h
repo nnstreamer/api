@@ -18,7 +18,9 @@
 #ifndef __ML_API_COMMON_H__
 #define __ML_API_COMMON_H__
 
-#include <stddef.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <tizen_error.h>
 
 #ifdef __cplusplus

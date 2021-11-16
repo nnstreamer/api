@@ -38,7 +38,7 @@ public class APITestPipeline {
 
             TensorsInfo info = data.getTensorsInfo();
 
-            /* validate received data (unit8 2:10:10:1) */
+            /* validate received data (uint8 2:10:10:1) */
             if (info == null ||
                 info.getTensorsCount() != 1 ||
                 info.getTensorName(0) != null ||
