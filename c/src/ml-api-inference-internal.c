@@ -63,14 +63,16 @@ int
 _ml_tensors_info_create_from_gst (ml_tensors_info_h * ml_info,
     GstTensorsInfo * gst_info)
 {
-  int status;
+  if (!ml_info)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, ml_info, is NULL. It should be a valid ml_tensors_info_h instance usually created by ml_tensors_info_create(). This could be an internal bug of ML API.");
 
-  if (!ml_info || !gst_info)
-    return ML_ERROR_INVALID_PARAMETER;
+  if (!gst_info)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, gst_info, is NULL. It should be a valid GstTensorsInfo instance. This could be an internal bug of ML API.");
 
-  status = ml_tensors_info_create (ml_info);
-  if (status != ML_ERROR_NONE)
-    return status;
+  _ml_error_report_return_continue_iferr (ml_tensors_info_create (ml_info),
+      "The call to ml_tensors_info_create has failed with %d.", _ERRNO);
 
   _ml_tensors_info_copy_from_gst (*ml_info, gst_info);
   return ML_ERROR_NONE;
@@ -87,10 +89,15 @@ _ml_tensors_info_copy_from_gst (ml_tensors_info_s * ml_info,
   guint i, j;
   guint max_dim;
 
-  if (!ml_info || !gst_info)
-    return;
+  if (!ml_info)
+    _ml_error_report_return ((void) (NULL),
+        "The parmater, ml_info, is NULL. It should be a valid ml_tensors_info_s instance, usually created by ml_tensors_info_create(). This is probably an internal bug of ML API.");
+  if (!gst_info)
+    _ml_error_report_return ((void) (NULL),
+        "The parmater, gst_info, is NULL. It should be a valid GstTensorsInfo instance. This is probably an internal bug of ML API.");
 
   _ml_tensors_info_initialize (ml_info);
+
   max_dim = MIN (ML_TENSOR_RANK_LIMIT, NNS_TENSOR_RANK_LIMIT);
 
   ml_info->num_tensors = gst_info->num_tensors;
@@ -160,8 +167,12 @@ _ml_tensors_info_copy_from_ml (GstTensorsInfo * gst_info,
   guint i, j;
   guint max_dim;
 
-  if (!gst_info || !ml_info)
-    return;
+  if (!ml_info)
+    _ml_error_report_return ((void) (NULL),
+        "The parmater, ml_info, is NULL. It should be a valid ml_tensors_info_s instance, usually created by ml_tensors_info_create(). This is probably an internal bug of ML API.");
+  if (!gst_info)
+    _ml_error_report_return ((void) (NULL),
+        "The parmater, gst_info, is NULL. It should be a valid GstTensorsInfo instance. This is probably an internal bug of ML API.");
 
   G_LOCK_UNLESS_NOLOCK (*ml_info);
 
@@ -235,10 +246,12 @@ _ml_initialize_gstreamer (void)
 
   if (!gst_init_check (NULL, NULL, &err)) {
     if (err) {
-      _ml_loge ("GStreamer has the following error: %s", err->message);
+      _ml_error_report
+          ("Initrializing ML-API failed: GStreamer has the following error from gst_init_check(): %s",
+          err->message);
       g_clear_error (&err);
     } else {
-      _ml_loge ("Cannot initialize GStreamer. Unknown reason.");
+      _ml_error_report ("Cannot initialize GStreamer. Unknown reason.");
     }
 
     return ML_ERROR_STREAMS_PIPE;
@@ -256,10 +269,12 @@ __ml_validate_model_file (const char *const *model,
 {
   guint i;
 
-  if (!model || num_models < 1) {
-    _ml_loge ("The required param, model is not provided (null).");
-    return ML_ERROR_INVALID_PARAMETER;
-  }
+  if (!model)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, model, is NULL. It should be a valid array of strings, where each string is a valid file path for a neural network model file.");
+  if (num_models < 1)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, num_models, is 0. It should be the number of files for the given neural network model.");
 
   if (g_file_test (model[0], G_FILE_TEST_IS_DIR)) {
     *is_dir = TRUE;
@@ -268,11 +283,13 @@ __ml_validate_model_file (const char *const *model,
 
   for (i = 0; i < num_models; i++) {
     if (!model[i] || !g_file_test (model[i], G_FILE_TEST_IS_REGULAR)) {
-      _ml_loge ("The given param, model path [%s] is invalid or not given.",
-          GST_STR_NULL (model[i]));
-      return ML_ERROR_INVALID_PARAMETER;
+      _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+          "The given param, model path [%d] = \"%s\" is invalid or the file is not found or accessible.",
+          i, GST_STR_NULL (model[i]));
     }
   }
+
+  *is_dir = FALSE;
 
   return ML_ERROR_NONE;
 }
@@ -295,7 +312,8 @@ _ml_get_nnfw_type_by_subplugin_name (const char *name)
     if (g_ascii_strcasecmp (name, "snap") == 0)
       nnfw_type = ML_NNFW_TYPE_SNAP;
     else
-      _ml_logw ("Cannot find nnfw, %s is invalid name.", GST_STR_NULL (name));
+      _ml_error_report ("Cannot find nnfw, %s is an invalid name.",
+          GST_STR_NULL (name));
   } else {
     nnfw_type = (ml_nnfw_type_e) idx;
   }
@@ -325,11 +343,12 @@ _ml_validate_model_file (const char *const *model,
   guint i;
 
   if (!nnfw)
-    return ML_ERROR_INVALID_PARAMETER;
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, nnfw, is NULL. It should be a valid pointer of ml_nnfw_type_e.");
 
-  status = __ml_validate_model_file (model, num_models, &is_dir);
-  if (status != ML_ERROR_NONE)
-    return status;
+  _ml_error_report_return_continue_iferr (__ml_validate_model_file (model,
+          num_models, &is_dir),
+      "The parameters, model and num_models, are not valid.");
 
   /**
    * @note detect-fw checks the file ext and returns proper fw name for given models.
@@ -342,7 +361,9 @@ _ml_validate_model_file (const char *const *model,
 
   if (*nnfw == ML_NNFW_TYPE_ANY) {
     if (detected == ML_NNFW_TYPE_ANY) {
-      _ml_loge ("The given model has unknown or not supported extension.");
+      _ml_error_report
+          ("The given neural network model (1st path is \"%s\", and there are %d paths declared) has unknown or unsupported extension. Please check its corresponding neural network framework and try to specify it instead of \"ML_NNFW_TYPE_ANY\".",
+          model[0], num_models);
       status = ML_ERROR_INVALID_PARAMETER;
     } else {
       _ml_logi ("The given model is supposed a %s model.",
@@ -353,7 +374,9 @@ _ml_validate_model_file (const char *const *model,
     goto done;
   } else if (is_dir && *nnfw != ML_NNFW_TYPE_NNFW) {
     /* supposed it is ONE if given model is directory */
-    _ml_loge ("The given model is directory, check model and framework.");
+    _ml_error_report
+        ("The given model (1st path is \"%s\", and there are %d paths declared) is directory, which is allowed by \"NNFW (One Runtime)\" only, Please check the model and framework.",
+        model[0], num_models);
     status = ML_ERROR_INVALID_PARAMETER;
     goto done;
   } else if (detected == *nnfw) {
@@ -365,7 +388,8 @@ _ml_validate_model_file (const char *const *model,
   file_ext = g_malloc0 (sizeof (char *) * (num_models + 1));
   for (i = 0; i < num_models; i++) {
     if ((pos = strrchr (model[i], '.')) == NULL) {
-      _ml_loge ("The given model [%s] has invalid extension.", model[i]);
+      _ml_error_report ("The given model [%d]=\"%s\" has invalid extension.", i,
+          model[i]);
       status = ML_ERROR_INVALID_PARAMETER;
       goto done;
     }
@@ -384,8 +408,13 @@ _ml_validate_model_file (const char *const *model,
     case ML_NNFW_TYPE_MVNC:
     case ML_NNFW_TYPE_OPENVINO:
     case ML_NNFW_TYPE_EDGE_TPU:
-      /** @todo Need to check method to validate model */
-      _ml_loge ("Given NNFW is not supported yet.");
+      /**
+       * @todo Need to check method to validate model
+       * Although nnstreamer supports these frameworks,
+       * ML-API implementation is not ready.
+       */
+      _ml_error_report
+          ("Given NNFW is not supported by ML-API Inference.Single, yet, although it is supported by NNStreamer. If you have such NNFW integrated into your machine and want to access via ML-API, please update the corresponding implementation or report and discuss at github.com/nnstreamer/nnstreamer/issues.");
       status = ML_ERROR_NOT_SUPPORTED;
       break;
     case ML_NNFW_TYPE_VD_AIFW:
@@ -397,7 +426,7 @@ _ml_validate_model_file (const char *const *model,
       break;
     case ML_NNFW_TYPE_SNAP:
 #if !defined (__ANDROID__)
-      _ml_loge ("SNAP only can be included in Android (arm64-v8a only).");
+      _ml_error_report ("SNAP is supported by Android/arm64-v8a devices only.");
       status = ML_ERROR_NOT_SUPPORTED;
 #endif
       /* SNAP requires multiple files, set supported if model file exists. */
@@ -407,10 +436,15 @@ _ml_validate_model_file (const char *const *model,
           !g_str_equal (file_ext[0], ".tflite") &&
           !g_str_equal (file_ext[0], ".pb") &&
           !g_str_equal (file_ext[0], ".prototxt")) {
+        _ml_error_report
+            ("ARMNN accepts .caffemodel, .tflite, .pb, and .probotxt files only. Please support correct file extension. You have specified: \"%s\"",
+            file_ext[0]);
         status = ML_ERROR_INVALID_PARAMETER;
       }
       break;
     default:
+      _ml_error_report
+          ("You have designated an incorrect neural network framework (out of bound).");
       status = ML_ERROR_INVALID_PARAMETER;
       break;
   }
@@ -418,11 +452,15 @@ _ml_validate_model_file (const char *const *model,
 done:
   if (status == ML_ERROR_NONE) {
     if (!_ml_nnfw_is_available (*nnfw, ML_NNFW_HW_ANY)) {
-      _ml_loge ("%s is not available.", _ml_get_nnfw_subplugin_name (*nnfw));
       status = ML_ERROR_NOT_SUPPORTED;
+      _ml_error_report
+          ("The subplugin for tensor-filter \"%s\" is not available. Please install the corresponding tensor-filter subplugin file (usually, \"libnnstreamer_filter_${NAME}.so\") at the correct path. Please use \"nnstreamer-check\" utility to check related configurations. If you do not have the utility ready, build and install \"confchk\", which is located at ${nnstreamer_source}/tools/development/confchk/ .",
+          _ml_get_nnfw_subplugin_name (*nnfw));
     }
   } else {
-    _ml_loge ("The given model file is invalid.");
+    _ml_error_report
+        ("The given model file, \"%s\" (1st of %d files), is invalid.",
+        model[0], num_models);
   }
 
   g_strfreev (file_ext);
@@ -498,12 +536,16 @@ ml_check_element_availability (const char *element_name, bool *available)
 
   check_feature_state ();
 
-  if (!element_name || !available)
-    return ML_ERROR_INVALID_PARAMETER;
+  if (!element_name)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, element_name, is NULL. It should be a name (string) to be queried if it exists as a GStreamer/NNStreamer element.");
 
-  status = _ml_initialize_gstreamer ();
-  if (status != ML_ERROR_NONE)
-    return status;
+  if (!available)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, available, is NULL. It should be a valid pointer to a bool entry so that the API (ml_check_element_availability) may return the queried result via \"available\" parameter. E.g., bool available; ml_check_element_availability (\"tensor_converter\", &available);");
+
+  _ml_error_report_return_continue_iferr (_ml_initialize_gstreamer (),
+      "Internal error of _ml_initialize_gstreamer(). Check the availability of gstreamer libraries in your system.");
 
   /* init false */
   *available = false;
@@ -534,10 +576,13 @@ _ml_check_plugin_availability (const char *plugin_name,
   static gboolean list_loaded = FALSE;
   static gchar **restricted_elements = NULL;
 
-  if (!plugin_name || !element_name) {
-    _ml_loge ("The name is invalid, failed to check the availability.");
-    return ML_ERROR_INVALID_PARAMETER;
-  }
+  if (!plugin_name)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, plugin_name, is NULL. It should be a valid string.");
+
+  if (!element_name)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, element_name, is NULL. It should be a valid string.");
 
   if (!list_loaded) {
     gboolean restricted;
@@ -569,8 +614,8 @@ _ml_check_plugin_availability (const char *plugin_name,
 
   if (restricted_elements &&
       find_key_strv ((const gchar **) restricted_elements, element_name) < 0) {
-    _ml_logw ("The element %s is restricted.", element_name);
-    return ML_ERROR_NOT_SUPPORTED;
+    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
+        "The element %s is restricted.", element_name);
   }
 
   return ML_ERROR_NONE;
