@@ -223,6 +223,7 @@ accl_hw _ml_nnfw_to_accl_hw (const ml_nnfw_hw_e hw);
 
 /**
  * @brief Internal function to get the nnfw type.
+ * @return Returns ML_NNFW_TYPE_ANY if there is an error.
  */
 ml_nnfw_type_e _ml_get_nnfw_type_by_subplugin_name (const char *name);
 

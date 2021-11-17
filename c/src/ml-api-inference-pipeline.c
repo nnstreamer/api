@@ -35,22 +35,30 @@
   int ret = ML_ERROR_NONE; \
   check_feature_state (); \
   if ((h) == NULL) { \
-    _ml_loge ("The given handle is invalid"); \
-    return ML_ERROR_INVALID_PARAMETER; \
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER, \
+        "The parameter, %s, (handle) is invalid (NULL). Please provide a valid handle.", \
+        #h); \
   } \
-\
   p = name->pipe; \
   elem = name->element; \
-  if (p == NULL || elem == NULL || p != elem->pipe) { \
-    _ml_loge ("The handle appears to be broken."); \
-    return ML_ERROR_INVALID_PARAMETER; \
-  } \
-\
+  if (p == NULL) \
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER, \
+        "Internal error. The contents of parameter, %s, (handle), is invalid. The pipeline entry (%s->pipe) is NULL. The handle (%s) is either not properly created or application threads may have touched its contents.", \
+        #h, #h, #h); \
+  if (elem == NULL) \
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER, \
+        "Internal error. The contents of parameter, %s, (handle), is invalid. The element entry (%s->element) is NULL. The handle (%s) is either not properly created or application threads may have touched its contents.", \
+        #h, #h, #h); \
+  if (elem->pipe == NULL) \
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER, \
+        "Internal error. The contents of parameter, %s, (handle), is invalid. The pipeline entry of the element entry (%s->element->pipe) is NULL. The handle (%s) is either not properly created or application threads may have touched its contents.", \
+        #h, #h, #h); \
   g_mutex_lock (&p->lock); \
   g_mutex_lock (&elem->lock); \
-\
   if (NULL == g_list_find (elem->handles, name)) { \
-    _ml_loge ("The handle does not exists."); \
+    _ml_error_report \
+        ("Internal error. The handle name, %s, does not exists in the list of %s->element->handles.", \
+        #h, #h); \
     ret = ML_ERROR_INVALID_PARAMETER; \
     goto unlock_return; \
   }
@@ -193,7 +201,9 @@ pipe_custom_destroy_cb (void *handle, void *user_data)
   pipe_custom_data_s *custom_data;
 
   custom_data = (pipe_custom_data_s *) handle;
-  g_return_val_if_fail (custom_data != NULL, ML_ERROR_INVALID_PARAMETER);
+  if (custom_data == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, handle, is NULL. It should be a valid internal object. This is possibly a bug in ml-api-inference-pipeline.c along with tensor-if or tensor-filter/custom function. Please report to https://github.com/nnstreamer/nnstreamer/issues");
 
   switch (custom_data->type) {
     case PIPE_CUSTOM_TYPE_IF:
@@ -218,10 +228,9 @@ construct_element (GstElement * e, ml_pipeline * p, const char *name,
 {
   ml_pipeline_element *ret = g_new0 (ml_pipeline_element, 1);
 
-  if (ret == NULL) {
-    _ml_loge ("Failed to allocate memory for the pipeline.");
-    return NULL;
-  }
+  if (ret == NULL)
+    _ml_error_report_return (NULL,
+        "Failed to allocate memory for the pipeline.");
 
   ret->element = e;
   ret->pipe = p;
@@ -293,9 +302,9 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
   num_mems = gst_buffer_n_memory (b);
 
   if (num_mems > ML_TENSOR_SIZE_LIMIT) {
-    _ml_loge
-        ("Number of memory chunks in a GstBuffer exceed the limit: %u > %u",
-        num_mems, ML_TENSOR_SIZE_LIMIT);
+    _ml_loge (_ml_detail
+        ("Number of memory chunks in a GstBuffer exceed the limit: %u > %u. Please check the version or variants of GStreamer you use. If you have modified the maximum number of memory chunks of a GST-Buffer, this might happen. Please update nnstreamer and ml-api code to make them consistent with your modification of GStreamer.",
+            num_mems, ML_TENSOR_SIZE_LIMIT));
     return;
   }
 
@@ -303,7 +312,8 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
   status =
       _ml_tensors_data_create_no_alloc (NULL, (ml_tensors_data_h *) & _data);
   if (status != ML_ERROR_NONE) {
-    _ml_loge ("Failed to allocate memory for tensors data in sink callback.");
+    _ml_loge (_ml_detail
+        ("Failed to allocate memory for tensors data in sink callback, which is registered by ml_pipeline_sink_register ()."));
     return;
   }
 
@@ -311,7 +321,9 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
   for (i = 0; i < num_mems; i++) {
     mem[i] = gst_buffer_peek_memory (b, i);
     if (!gst_memory_map (mem[i], &map[i], GST_MAP_READ)) {
-      nns_loge ("Failed to map the output in sink '%s' callback", elem->name);
+      _ml_loge (_ml_detail
+          ("Failed to map the output in sink '%s' callback, which is registered by ml_pipeline_sink_register ()",
+              elem->name));
       num_mems = i;
       goto error;
     }
@@ -349,9 +361,9 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
           }
 
           if (_info->num_tensors != num_mems) {
-            _ml_loge
+            _ml_loge (_ml_detail
                 ("The sink event of [%s] cannot be handled because the number of tensors mismatches.",
-                elem->name);
+                    elem->name));
 
             gst_object_unref (elem->sink);
             elem->sink = NULL;
@@ -363,12 +375,13 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
 
             /* Not configured, yet. */
             if (sz == 0)
-              _ml_loge ("The caps for sink(%s) is not configured.", elem->name);
+              _ml_loge (_ml_detail
+                  ("The caps for sink(%s) is not configured.", elem->name));
 
             if (sz != _data->tensors[i].size) {
-              _ml_loge
+              _ml_loge (_ml_detail
                   ("The sink event of [%s] cannot be handled because the tensor dimension mismatches.",
-                  elem->name);
+                      elem->name));
 
               gst_object_unref (elem->sink);
               elem->sink = NULL;
@@ -390,9 +403,9 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
   /* Get the data! */
   if (gst_buffer_get_size (b) != total_size ||
       (elem->size > 0 && total_size != elem->size)) {
-    _ml_loge
+    _ml_loge (_ml_detail
         ("The buffersize mismatches. All the three values must be the same: %zu, %zu, %zu",
-        total_size, elem->size, gst_buffer_get_size (b));
+            total_size, elem->size, gst_buffer_get_size (b)));
     goto error;
   }
 
@@ -491,9 +504,9 @@ cb_bus_sync_message (GstBus * bus, GstMessage * message, gpointer user_data)
         gst_message_parse_state_changed (message, &old_state, &new_state, NULL);
         pipe_h->pipe_state = (ml_pipeline_state_e) new_state;
 
-        _ml_logd ("The pipeline state changed from %s to %s.",
-            gst_element_state_get_name (old_state),
-            gst_element_state_get_name (new_state));
+        _ml_logd (_ml_detail ("The pipeline state changed from %s to %s.",
+                gst_element_state_get_name (old_state),
+                gst_element_state_get_name (new_state)));
 
         if (pipe_h->state_cb.cb) {
           pipe_h->state_cb.cb (pipe_h->pipe_state, pipe_h->state_cb.user_data);
@@ -561,7 +574,9 @@ cleanup_node (gpointer data)
     gst_element_set_state (e->pipe->element, GST_STATE_PLAYING);
 
     if (gst_app_src_end_of_stream (GST_APP_SRC (e->element)) != GST_FLOW_OK) {
-      _ml_logw ("Failed to set EOS in %s", e->name);
+      _ml_logw (_ml_detail
+          ("Cleaning up a pipeline has failed to set End-Of-Stream for the pipeline element of %s",
+              e->name));
     }
     g_mutex_unlock (&e->lock);
     while (!e->pipe->isEOS) {
@@ -569,7 +584,9 @@ cleanup_node (gpointer data)
       /** check EOS every 1ms */
       g_usleep (1000);
       if (eos_check_cnt >= EOS_MESSAGE_TIME_LIMIT) {
-        _ml_loge ("Failed to get EOS message");
+        _ml_loge (_ml_detail
+            ("Cleaning up a pipeline has requested to set End-Of-Stream. However, the pipeline has not become EOS after the timeout. It has failed to become EOS with the element of %s.",
+                e->name));
         break;
       }
     }
@@ -633,10 +650,15 @@ convert_element (ml_pipeline_h pipe, const gchar * description, gchar ** result,
   status = convert_tizen_element (pipe, &converted, is_internal);
 
   if (status == ML_ERROR_NONE) {
-    _ml_logd ("Converted pipeline: %s", converted);
+    _ml_logd (_ml_detail
+        ("Pipeline element converted with aliases for gstreamer (Tizen element aliases): %s",
+            converted));
     *result = converted;
   } else {
     g_free (converted);
+    _ml_error_report_continue
+        ("Failed to convert element: convert_tizen_elemt() returned %d",
+        status);
   }
 
   return status;
@@ -734,6 +756,9 @@ iterate_element (ml_pipeline * pipe_h, GstElement * pipeline,
             /* validate the availability of the plugin */
             if (!is_internal && _ml_check_plugin_availability (plugin_name,
                     element_name) != ML_ERROR_NONE) {
+              _ml_error_report_continue
+                  ("There is a pipeline element (filter) that is not allowed for applications via ML-API (privilege not granted) or now available: '%s'/'%s'.",
+                  plugin_name, element_name);
               status = ML_ERROR_NOT_SUPPORTED;
               done = TRUE;
               break;
@@ -769,8 +794,8 @@ iterate_element (ml_pipeline * pipe_h, GstElement * pipeline,
 
                 g_object_get (G_OBJECT (elem), "sync", &sync, NULL);
                 if (sync) {
-                  _ml_logw
-                      ("It is recommended to apply 'sync=false' property to a sink element in most AI applications. Otherwise, inference results of large neural networks will be frequently dropped by the synchronization mechanism at the sink element.");
+                  _ml_logw (_ml_detail
+                      ("It is recommended to apply 'sync=false' property to a sink element in most AI applications. Otherwise, inference results of large neural networks will be frequently dropped by the synchronization mechanism at the sink element."));
                 }
               }
 
@@ -787,6 +812,8 @@ iterate_element (ml_pipeline * pipe_h, GstElement * pipeline,
                   g_hash_table_insert (pipe_h->namednodes, g_strdup (name), e);
                 } else {
                   /* allocation failure */
+                  _ml_error_report_continue
+                      ("Cannot allocate memory with construct_element().");
                   status = ML_ERROR_OUT_OF_MEMORY;
                   done = TRUE;
                 }
@@ -800,8 +827,8 @@ iterate_element (ml_pipeline * pipe_h, GstElement * pipeline,
           break;
         case GST_ITERATOR_RESYNC:
         case GST_ITERATOR_ERROR:
-          _ml_logw
-              ("There is an error or a resync-event while inspecting a pipeline. However, we can still execute the pipeline.");
+          _ml_logw (_ml_detail
+              ("There is an error or a resync-event while inspecting a pipeline. However, we can still execute the pipeline."));
           /* fallthrough */
         case GST_ITERATOR_DONE:
           done = TRUE;
@@ -835,21 +862,25 @@ construct_pipeline_internal (const char *pipeline_description,
 
   check_feature_state ();
 
-  if (!pipe || !pipeline_description)
-    return ML_ERROR_INVALID_PARAMETER;
+  if (!pipe)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "ml_pipeline_construct error: parameter pipe is NULL. It should be a valid ml_pipeline_h pointer. E.g., ml_pipeline_h pipe; ml_pipeline_construct (..., &pip);");
+
+  if (!pipeline_description)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "ml_pipeline_construct error: parameter pipeline_description is NULL. It should be a valid string of Gstreamer/NNStreamer pipeline description.");
 
   /* init null */
   *pipe = NULL;
 
-  if ((status = _ml_initialize_gstreamer ()) != ML_ERROR_NONE)
-    return status;
+  _ml_error_report_return_continue_iferr (_ml_initialize_gstreamer (),
+      "ml_pipeline_construct error: it has failed to initialize gstreamer(). Please check if you have a valid GStreamer library installed in your system.");
 
   /* prepare pipeline handle */
   pipe_h = g_new0 (ml_pipeline, 1);
-  if (pipe_h == NULL) {
-    _ml_loge ("Failed to allocate handle for pipeline.");
-    return ML_ERROR_OUT_OF_MEMORY;
-  }
+  if (pipe_h == NULL)
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "ml_pipeline_construct error: failed to allocate memory for pipeline handle. Out of memory?");
 
   g_mutex_init (&pipe_h->lock);
 
@@ -865,16 +896,20 @@ construct_pipeline_internal (const char *pipeline_description,
   status =
       convert_element ((ml_pipeline_h) pipe_h, pipeline_description,
       &description, is_internal);
-  if (status != ML_ERROR_NONE)
+  if (status != ML_ERROR_NONE) {
+    _ml_error_report_continue
+        ("ml_pipeline_construct error: failed while converting pipeline description for GStreamer w/ convert_element() function, which has returned %d",
+        status);
     goto failed;
+  }
 
   pipeline = gst_parse_launch (description, &err);
   g_free (description);
 
   if (pipeline == NULL || err) {
-    _ml_loge ("Cannot parse and launch the given pipeline = [%s]",
-        pipeline_description);
-    _ml_loge ("  - Error Message: %s", (err) ? err->message : "unknown reason");
+    _ml_error_report
+        ("ml_pipeline_construct error: gst_parse_launch cannot parse and launch the given pipeline = [%s]. The error message from gst_parse_launch is '%s'.",
+        pipeline_description, (err) ? err->message : "unknown reason");
     g_clear_error (&err);
 
     if (pipeline)
@@ -901,21 +936,27 @@ construct_pipeline_internal (const char *pipeline_description,
 
   /* iterate elements and prepare element handle */
   status = iterate_element (pipe_h, pipeline, is_internal);
+  if (status != ML_ERROR_NONE) {
+    _ml_error_report_continue ("ml_pipeline_construct error: ...");
+    goto failed;
+  }
 
   /* finally set pipeline state to PAUSED */
-  if (status == ML_ERROR_NONE) {
-    status = ml_pipeline_stop ((ml_pipeline_h) pipe_h);
+  status = ml_pipeline_stop ((ml_pipeline_h) pipe_h);
 
-    if (status == ML_ERROR_NONE) {
-      /**
-       * Let's wait until the pipeline state is changed to paused.
-       * Otherwise, the following APIs like 'set_property' may incur
-       * unintended behaviors. But, don't need to return any error
-       * even if this state change is not finished within the timeout,
-       * just replying on the caller.
-       */
-      gst_element_get_state (pipeline, NULL, NULL, 10 * GST_MSECOND);
-    }
+  if (status == ML_ERROR_NONE) {
+    /**
+     * Let's wait until the pipeline state is changed to paused.
+     * Otherwise, the following APIs like 'set_property' may incur
+     * unintended behaviors. But, don't need to return any error
+     * even if this state change is not finished within the timeout,
+     * just replying on the caller.
+     */
+    gst_element_get_state (pipeline, NULL, NULL, 10 * GST_MSECOND);
+  } else {
+    _ml_error_report_continue
+        ("ml_pipeline_construct error: ml_pipeline_stop has failed with %d return. The pipeline should be able to be stopped when it is constructed.",
+        status);
   }
 
 failed:
@@ -969,7 +1010,8 @@ ml_pipeline_destroy (ml_pipeline_h pipe)
   check_feature_state ();
 
   if (p == NULL)
-    return ML_ERROR_INVALID_PARAMETER;
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, pipe, is NULL. It should be a valid ml_pipeline_h handle instance, usually created by ml_pipeline_construct().");
 
   g_mutex_lock (&p->lock);
 
@@ -986,8 +1028,8 @@ ml_pipeline_destroy (ml_pipeline_h pipe)
       scret = gst_element_set_state (p->element, GST_STATE_PAUSED);
       if (scret == GST_STATE_CHANGE_FAILURE) {
         g_mutex_unlock (&p->lock);
-        _ml_loge
-            ("Failed to wait until state changed PLAYING to PAUSED. For the detail, please check the GStreamer log messages.");
+        _ml_error_report_return (ML_ERROR_STREAMS_PIPE,
+            "gst_element_get_state() has failed to wait until state changed from PLAYING to PAUSED and returned GST_STATE_CHANGE_FAILURE. For the detail, please check the GStreamer log messages (or dlog messages in Tizen). It is possible that there is a filter or neural network that is taking too much time to finish.");
         return ML_ERROR_STREAMS_PIPE;
       }
     }
@@ -998,7 +1040,8 @@ ml_pipeline_destroy (ml_pipeline_h pipe)
       /** check PAUSED every 1ms */
       g_usleep (1000);
       if (check_paused_cnt >= WAIT_PAUSED_TIME_LIMIT) {
-        _ml_loge ("Failed to wait until state changed to PAUSED");
+        _ml_error_report
+            ("Timeout while waiting for a state change to 'PAUSED' from a 'sync-message' signal from the pipeline. It is possible that there is a filter or neural network that is taking too much time to finish.");
         break;
       }
     }
@@ -1008,9 +1051,8 @@ ml_pipeline_destroy (ml_pipeline_h pipe)
     scret = gst_element_set_state (p->element, GST_STATE_NULL);
     if (scret != GST_STATE_CHANGE_SUCCESS) {
       g_mutex_unlock (&p->lock);
-      _ml_loge
-          ("Failed to wait until state changed to NULL(STOP). For the detail, please check the GStreamer log messages.");
-      return ML_ERROR_STREAMS_PIPE;
+      _ml_error_report_return (ML_ERROR_STREAMS_PIPE,
+          "gst_element_set_state to stop the pipeline has failed after trying to stop the pipeline with PAUSE and waiting for stopping. For the detail, please check the GStreamer log messages. It is possible that there is a filter of neural network that is taking too much time to finish.");
     }
 
     if (p->bus) {
@@ -1046,8 +1088,12 @@ ml_pipeline_get_state (ml_pipeline_h pipe, ml_pipeline_state_e * state)
 
   check_feature_state ();
 
-  if (p == NULL || state == NULL)
-    return ML_ERROR_INVALID_PARAMETER;
+  if (p == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, pipe, is NULL. It should be a valid ml_pipeline_h handle, which is usually created by ml_pipeline_construct ().");
+  if (state == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, state, is NULL. It should be a valid pointer of ml_pipeline_state_e. E.g., ml_pipeline_state_e state; ml_pipeline_get_state(pipe, &state);");
 
   *state = ML_PIPELINE_STATE_UNKNOWN;
 
@@ -1055,11 +1101,9 @@ ml_pipeline_get_state (ml_pipeline_h pipe, ml_pipeline_state_e * state)
   scret = gst_element_get_state (p->element, &_state, NULL, GST_MSECOND);       /* Do it within 1ms! */
   g_mutex_unlock (&p->lock);
 
-  if (scret == GST_STATE_CHANGE_FAILURE) {
-    _ml_loge
-        ("Failed to get the state of the pipeline. For the detail, please check the GStreamer log messages.");
-    return ML_ERROR_STREAMS_PIPE;
-  }
+  if (scret == GST_STATE_CHANGE_FAILURE)
+    _ml_error_report_return (ML_ERROR_STREAMS_PIPE,
+        "Failed to get the state of the pipeline. For the detail, please check the GStreamer log messages.");
 
   *state = (ml_pipeline_state_e) _state;
   return ML_ERROR_NONE;
@@ -1081,7 +1125,8 @@ ml_pipeline_start (ml_pipeline_h pipe)
   check_feature_state ();
 
   if (p == NULL)
-    return ML_ERROR_INVALID_PARAMETER;
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, pipe, is NULL. It should be a valid ml_pipeline_h handle, which is usually created by ml_pipeline_construct ().");
 
   g_mutex_lock (&p->lock);
 
@@ -1095,15 +1140,19 @@ ml_pipeline_start (ml_pipeline_h pipe)
     while (g_hash_table_iter_next (&iter, &key, &value)) {
       if (g_str_has_prefix (key, "tizen")) {
         status = get_tizen_resource (pipe, key);
-        if (status != ML_ERROR_NONE)
+        if (status != ML_ERROR_NONE) {
+          _ml_error_report_continue
+              ("Internal API _ml_tizen_get_resource () has failed: Tizen mm resource manager has failed to acquire the resource of '%s'",
+              (gchar *) key);
           goto done;
+        }
       }
     }
   }
 
   scret = gst_element_set_state (p->element, GST_STATE_PLAYING);
   if (scret == GST_STATE_CHANGE_FAILURE) {
-    _ml_loge
+    _ml_error_report
         ("Failed to set the state of the pipeline to PLAYING. For the detail, please check the GStreamer log messages.");
     status = ML_ERROR_STREAMS_PIPE;
   }
@@ -1125,17 +1174,16 @@ ml_pipeline_stop (ml_pipeline_h pipe)
   check_feature_state ();
 
   if (p == NULL)
-    return ML_ERROR_INVALID_PARAMETER;
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, pipe, is NULL. It should be a valid ml_pipeline_h instance, which is usually created by ml_pipeline_construct().");
 
   g_mutex_lock (&p->lock);
   scret = gst_element_set_state (p->element, GST_STATE_PAUSED);
   g_mutex_unlock (&p->lock);
 
-  if (scret == GST_STATE_CHANGE_FAILURE) {
-    _ml_loge
-        ("Failed to set the state of the pipeline to PAUSED. For the detail, please check the GStreamer log messages.");
-    return ML_ERROR_STREAMS_PIPE;
-  }
+  if (scret == GST_STATE_CHANGE_FAILURE)
+    _ml_error_report_return (ML_ERROR_STREAMS_PIPE,
+        "Failed to set the state of the pipeline to PAUSED. For the detail, please check the GStreamer log messages.");
 
   return ML_ERROR_NONE;
 }
@@ -1147,16 +1195,17 @@ int
 ml_pipeline_flush (ml_pipeline_h pipe, bool start)
 {
   ml_pipeline *p = pipe;
-  int status;
+  int status = ML_ERROR_NONE;
 
   check_feature_state ();
 
   if (p == NULL)
-    return ML_ERROR_INVALID_PARAMETER;
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, pipe, is NULL. It should be a valid ml_pipeline_h instance, which is usually created by ml_pipeline_construct().");
 
-  status = ml_pipeline_stop (pipe);
-  if (status != ML_ERROR_NONE)
-    return status;
+  _ml_error_report_return_continue_iferr (ml_pipeline_stop (pipe),
+      "Failed to stop the pipeline with ml_pipeline_stop (). It has returned %d.",
+      _ERRNO);
 
   _ml_logi ("The pipeline is stopped, clear all data from the pipeline.");
 
@@ -1194,41 +1243,40 @@ ml_pipeline_sink_register (ml_pipeline_h pipe, const char *sink_name,
 
   check_feature_state ();
 
-  if (h == NULL) {
-    _ml_loge ("The argument sink handle is not valid.");
-    return ML_ERROR_INVALID_PARAMETER;
-  }
+  if (h == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The argument, h (ml_pipeline_sink_h), is NULL. It should be a valid pointer to a new ml_pipeline_sink_h instance. E.g., ml_pipeline_sink_h h; ml_pipeline_sink_register (...., &h);");
 
   /* init null */
   *h = NULL;
 
-  if (pipe == NULL) {
-    _ml_loge ("The first argument, pipeline handle is not valid.");
-    return ML_ERROR_INVALID_PARAMETER;
-  }
+  if (pipe == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The argument, pipe (ml_pipeline_h), is NULL. It should be a valid ml_pipeline_h instance, usually created by ml_pipeline_construct.");
 
-  if (sink_name == NULL) {
-    _ml_loge ("The second argument, sink name is not valid.");
-    return ML_ERROR_INVALID_PARAMETER;
-  }
+  if (sink_name == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The argument, sink_name (const char *), is NULL. It should be a valid string naming the sink handle (h).");
 
-  if (cb == NULL) {
-    _ml_loge ("The callback argument, cb, is not valid.");
-    return ML_ERROR_INVALID_PARAMETER;
-  }
+  if (cb == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The argument, cb (ml_pipeline_sink_cb), is NULL. It should be a call-back function called for data-sink events.");
 
   g_mutex_lock (&p->lock);
   elem = g_hash_table_lookup (p->namednodes, sink_name);
 
   if (elem == NULL) {
-    _ml_loge ("There is no element named [%s] in the pipeline.", sink_name);
+    _ml_error_report
+        ("There is no element named [%s](sink_name) in the pipeline. Please check your pipeline description.",
+        sink_name);
     ret = ML_ERROR_INVALID_PARAMETER;
     goto unlock_return;
   }
 
   if (elem->type != ML_PIPELINE_ELEMENT_SINK &&
       elem->type != ML_PIPELINE_ELEMENT_APP_SINK) {
-    _ml_loge ("The element [%s] in the pipeline is not a sink element.",
+    _ml_error_report
+        ("The element [%s](sink_name) in the pipeline is not a sink element. Please supply the name of tensor_sink or appsink.",
         sink_name);
     ret = ML_ERROR_INVALID_PARAMETER;
     goto unlock_return;
@@ -1256,7 +1304,9 @@ ml_pipeline_sink_register (ml_pipeline_h pipe, const char *sink_name,
     }
 
     if (elem->handle_id == 0) {
-      _ml_loge ("Failed to connect a signal to the element [%s].", sink_name);
+      _ml_error_report
+          ("Failed to connect a signal to the element [%s](sink_name). g_signal_connect has returned NULL.",
+          sink_name);
       ret = ML_ERROR_STREAMS_PIPE;
       goto unlock_return;
     }
@@ -1264,7 +1314,9 @@ ml_pipeline_sink_register (ml_pipeline_h pipe, const char *sink_name,
 
   sink = g_new0 (ml_pipeline_common_elem, 1);
   if (sink == NULL) {
-    _ml_loge ("Failed to allocate the sink handle for %s.", sink_name);
+    _ml_error_report
+        ("Failed to allocate memoery for the sink handle of %s. Out of memory?",
+        sink_name);
     ret = ML_ERROR_OUT_OF_MEMORY;
     goto unlock_return;
   }
@@ -1272,7 +1324,9 @@ ml_pipeline_sink_register (ml_pipeline_h pipe, const char *sink_name,
   sink->callback_info = g_new0 (callback_info_s, 1);
   if (sink->callback_info == NULL) {
     g_free (sink);
-    _ml_loge ("Failed to allocate the sink handle for %s.", sink_name);
+    _ml_error_report
+        ("Failed to allocate memory for the sink handle of %s. Out of memory?",
+        sink_name);
     ret = ML_ERROR_OUT_OF_MEMORY;
     goto unlock_return;
   }
@@ -1329,8 +1383,8 @@ ml_pipeline_src_parse_tensors_info (ml_pipeline_element * elem)
     elem->size = 0;
 
     if (elem->src == NULL) {
-      _ml_loge
-          ("Failed to get the src pad of the element[%s]. For the detail, please check the GStreamer log messages.",
+      _ml_error_report
+          ("Failed to get the src pad of the element[%s]. The designated source element does not have available src pad? For the detail, please check the GStreamer log messages.",
           elem->name);
       ret = ML_ERROR_STREAMS_PIPE;
     } else {
@@ -1391,36 +1445,36 @@ ml_pipeline_src_get_handle (ml_pipeline_h pipe, const char *src_name,
 
   check_feature_state ();
 
-  if (h == NULL) {
-    _ml_loge ("The argument source handle is not valid.");
-    return ML_ERROR_INVALID_PARAMETER;
-  }
+  if (h == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, h (ml_pipeline_src_h), is NULL. It should be a valid pointer to a new (or to be cleared) instance. E.g., ml_pipeline_src_h h; ml_pipeline_src_get_handle (..., &h);");
 
   /* init null */
   *h = NULL;
 
-  if (pipe == NULL) {
-    _ml_loge ("The first argument, pipeline handle is not valid.");
-    return ML_ERROR_INVALID_PARAMETER;
-  }
+  if (pipe == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, pipe (ml_pipeline_h), is NULL. It should be a valid ml_pipeline_h instance, which is usually created by ml_pipeline_construct().");
 
-  if (src_name == NULL) {
-    _ml_loge ("The second argument, source name is not valid.");
-    return ML_ERROR_INVALID_PARAMETER;
-  }
+  if (src_name == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, src_name (const char *), is NULL. This string is the name of source element (appsrc) you want to push data stream from your application threads.");
 
   g_mutex_lock (&p->lock);
 
   elem = g_hash_table_lookup (p->namednodes, src_name);
 
   if (elem == NULL) {
-    _ml_loge ("There is no element named [%s] in the pipeline.", src_name);
+    _ml_error_report
+        ("Cannot find the name, '%s': there is no element named [%s] in the given pipeline.",
+        src_name, src_name);
     ret = ML_ERROR_INVALID_PARAMETER;
     goto unlock_return;
   }
 
   if (elem->type != ML_PIPELINE_ELEMENT_APP_SRC) {
-    _ml_loge ("The element [%s] in the pipeline is not a source element.",
+    _ml_error_report
+        ("The element deisngated by '%s' is not a source element (appsrc). Please provide a name of source element for ml_pipeline_src_get_handle API.",
         src_name);
     ret = ML_ERROR_INVALID_PARAMETER;
     goto unlock_return;
@@ -1428,7 +1482,8 @@ ml_pipeline_src_get_handle (ml_pipeline_h pipe, const char *src_name,
 
   src = *h = g_new0 (ml_pipeline_common_elem, 1);
   if (src == NULL) {
-    _ml_loge ("Failed to allocate the src handle for %s.", src_name);
+    _ml_error_report
+        ("Failed to allocate the src handle for %s. Out of memory?", src_name);
     ret = ML_ERROR_OUT_OF_MEMORY;
     goto unlock_return;
   }
@@ -1485,16 +1540,17 @@ ml_pipeline_src_input_data (ml_pipeline_src_h h, ml_tensors_data_h data,
 
   _data = (ml_tensors_data_s *) data;
   if (!_data) {
-    _ml_loge ("The given param data is invalid.");
+    _ml_error_report
+        ("The given parameter, data (ml_tensors_data_h), is NULL. It should be a valid ml_tensor_data_h instance, which is usually created by ml_tensors_data_create().");
     ret = ML_ERROR_INVALID_PARAMETER;
     goto unlock_return;
   }
   G_LOCK_UNLESS_NOLOCK (*_data);
 
   if (_data->num_tensors < 1 || _data->num_tensors > ML_TENSOR_SIZE_LIMIT) {
-    _ml_loge
-        ("The tensor size is invalid. It should be 1 ~ %u; where it is %u",
-        ML_TENSOR_SIZE_LIMIT, _data->num_tensors);
+    _ml_error_report
+        ("The number of tensors of the given data (ml_tensors_data_h) is invalid. The number of tensors of data is %u. It should be between 1 and %u.",
+        _data->num_tensors, ML_TENSOR_SIZE_LIMIT);
     ret = ML_ERROR_INVALID_PARAMETER;
     goto dont_destroy_data;
   }
@@ -1502,14 +1558,18 @@ ml_pipeline_src_input_data (ml_pipeline_src_h h, ml_tensors_data_h data,
   ret = ml_pipeline_src_parse_tensors_info (elem);
 
   if (ret != ML_ERROR_NONE) {
-    _ml_logw
-        ("The pipeline is not ready to accept inputs. The input is ignored.");
+    if (ret == ML_ERROR_TRY_AGAIN)
+      _ml_error_report_continue
+          ("The pipeline is not ready to accept input streams. The input is ignored.");
+    else
+      _ml_error_report_continue
+          ("The pipeline is either not ready to accept input streams, yet, or does not have appropriate source elements to accept input streams.");
     goto dont_destroy_data;
   }
 
   if (!elem->is_media_stream && !elem->is_flexible_tensor) {
     if (elem->tensors_info.num_tensors != _data->num_tensors) {
-      _ml_loge
+      _ml_error_report
           ("The src push of [%s] cannot be handled because the number of tensors in a frame mismatches. %u != %u",
           elem->name, elem->tensors_info.num_tensors, _data->num_tensors);
 
@@ -1521,7 +1581,7 @@ ml_pipeline_src_input_data (ml_pipeline_src_h h, ml_tensors_data_h data,
       size_t sz = _ml_tensor_info_get_size (&elem->tensors_info.info[i]);
 
       if (sz != _data->tensors[i].size) {
-        _ml_loge
+        _ml_error_report
             ("The given input tensor size (%d'th, %zu bytes) mismatches the source pad (%zu bytes)",
             i, _data->tensors[i].size, sz);
 
@@ -1683,7 +1743,9 @@ ml_pipeline_src_set_event_cb (ml_pipeline_src_h src_handle,
   if (src->callback_info == NULL)
     src->callback_info = g_new0 (callback_info_s, 1);
   if (src->callback_info == NULL) {
-    _ml_loge ("Failed to allocate the callback info for %s.", elem->name);
+    _ml_error_report
+        ("Failed to allocate memory of the callback info for %s. Out of memory?",
+        elem->name);
     ret = ML_ERROR_OUT_OF_MEMORY;
     goto unlock_return;
   }
@@ -1710,6 +1772,8 @@ ml_pipeline_src_get_tensors_info (ml_pipeline_src_h h, ml_tensors_info_h * info)
   handle_init (src, h);
 
   if (info == NULL) {
+    _ml_error_report
+        ("The parameter, info (ml_tensors_info_h *), is NULL. It should be a valid pointer to a ml_tensors_info_h instance, which is usually created by ml_tensors_info_create().");
     ret = ML_ERROR_INVALID_PARAMETER;
     goto unlock_return;
   }
@@ -1719,6 +1783,9 @@ ml_pipeline_src_get_tensors_info (ml_pipeline_src_h h, ml_tensors_info_h * info)
   if (ret == ML_ERROR_NONE) {
     ml_tensors_info_create (info);
     ml_tensors_info_clone (*info, &elem->tensors_info);
+  } else {
+    _ml_error_report_continue
+        ("ml_pipeline_src_parse_tensors_info () has returned error; it cannot fetch input tensor info (metadata of input stream) for the given ml_pipeline_src_h handle (h). ml_pipeline_src_get_tensors_info () cannot conitnue.");
   }
 
   handle_exit (h);
@@ -1742,30 +1809,28 @@ ml_pipeline_switch_get_handle (ml_pipeline_h pipe, const char *switch_name,
 
   check_feature_state ();
 
-  if (h == NULL) {
-    _ml_loge ("The argument switch handle is not valid.");
-    return ML_ERROR_INVALID_PARAMETER;
-  }
+  if (h == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, h (ml_pipeline_switch_h *), is NULL. It should be a new or to-be-cleared instance of ml_pipeline_switch_h. E.g., ml_pipeline_switch_h h; ml_pipeline_switch_get_handle (..., &h);");
 
   /* init null */
   *h = NULL;
 
-  if (pipe == NULL) {
-    _ml_loge ("The first argument, pipeline handle, is not valid.");
-    return ML_ERROR_INVALID_PARAMETER;
-  }
+  if (pipe == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, pipe (ml_pipeline_h), is NULL. It should be a valid ml_pipeline_h piepline instance, which is usually created by ml_pipeline_construct().");
 
-  if (switch_name == NULL) {
-    _ml_loge ("The second argument, switch name, is not valid.");
-    return ML_ERROR_INVALID_PARAMETER;
-  }
+  if (switch_name == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, switch_name, is NULL. It should be a valid straing of the corresponding name of a switch element.");
 
   g_mutex_lock (&p->lock);
   elem = g_hash_table_lookup (p->namednodes, switch_name);
 
   if (elem == NULL) {
-    _ml_loge ("There is no switch element named [%s] in the pipeline.",
-        switch_name);
+    _ml_error_report
+        ("The parameter, switch_name (%s), is invalid. An element with the name, '%s', cannot be found in the supplied pipeline (pipe)",
+        switch_name, switch_name);
     ret = ML_ERROR_INVALID_PARAMETER;
     goto unlock_return;
   }
@@ -1777,17 +1842,18 @@ ml_pipeline_switch_get_handle (ml_pipeline_h pipe, const char *switch_name,
     if (type)
       *type = ML_PIPELINE_SWITCH_OUTPUT_SELECTOR;
   } else {
-    _ml_loge
-        ("There is an element named [%s] in the pipeline, but it is not an input/output switch",
+    _ml_error_report
+        ("An element with the given name, '%s', is found; however, it is not a 'switch' eleent. A switch-handle cannot be fetched from a non-switch element. It should be either input-selector or output-selector.",
         switch_name);
-
     ret = ML_ERROR_INVALID_PARAMETER;
     goto unlock_return;
   }
 
   swtc = *h = g_new0 (ml_pipeline_common_elem, 1);
   if (swtc == NULL) {
-    _ml_loge ("Failed to allocate the switch handle for %s.", switch_name);
+    _ml_error_report
+        ("Failed to allocate memory of the switch handle, %s. Out of memory?",
+        switch_name);
     ret = ML_ERROR_OUT_OF_MEMORY;
     goto unlock_return;
   }
@@ -1834,7 +1900,8 @@ ml_pipeline_switch_select (ml_pipeline_switch_h h, const char *pad_name)
   handle_init (swtc, h);
 
   if (pad_name == NULL) {
-    _ml_loge ("The second argument, pad name, is not valid.");
+    _ml_error_report
+        ("The parameter, pad_name (const char *), is NULL. It should be a valid name of a pad (GSTPAD) in the given switch, h.");
     ret = ML_ERROR_INVALID_PARAMETER;
     goto unlock_return;
   }
@@ -1857,7 +1924,8 @@ ml_pipeline_switch_select (ml_pipeline_switch_h h, const char *pad_name)
   new_pad = gst_element_get_static_pad (elem->element, pad_name);
   if (new_pad == NULL) {
     /* Not Found! */
-    _ml_loge ("Cannot find the pad, [%s], from the switch, [%s].",
+    _ml_error_report
+        ("Cannot find the pad, [%s], from the switch, [%s]. Please check the pad name. You may use ml_pipeline_switch_pad_list() to fetch the valid pad names.",
         pad_name, elem->name);
     ret = ML_ERROR_INVALID_PARAMETER;
     goto unlock_return;
@@ -1888,7 +1956,8 @@ ml_pipeline_switch_get_pad_list (ml_pipeline_switch_h h, char ***list)
   handle_init (swtc, h);
 
   if (list == NULL) {
-    _ml_loge ("The second argument, list, is not valid.");
+    _ml_error_report
+        ("The parameter, list (char ***), is NULL. It should be a valid pointer to store a list of strings. E.g., char **list; ml_pipeline_switch_get_pad_list (h, &list);");
     ret = ML_ERROR_INVALID_PARAMETER;
     goto unlock_return;
   }
@@ -1901,7 +1970,7 @@ ml_pipeline_switch_get_pad_list (ml_pipeline_switch_h h, char ***list)
   else if (elem->type == ML_PIPELINE_ELEMENT_SWITCH_OUTPUT)
     it = gst_element_iterate_src_pads (elem->element);
   else {
-    _ml_loge
+    _ml_error_report
         ("The element, [%s], is supposed to be input/output switch, but it is not. Internal data structure is broken.",
         elem->name);
     ret = ML_ERROR_STREAMS_PIPE;
@@ -1923,7 +1992,8 @@ ml_pipeline_switch_get_pad_list (ml_pipeline_switch_h h, char ***list)
         gst_iterator_resync (it);
         break;
       case GST_ITERATOR_ERROR:
-        _ml_loge ("Cannot access the list of pad properly of a switch, [%s].",
+        _ml_error_report
+            ("Cannot access the list of pad properly of a switch, [%s]. Internal data structure is broken?",
             elem->name);
         ret = ML_ERROR_STREAMS_PIPE;
         break;
@@ -1942,7 +2012,8 @@ ml_pipeline_switch_get_pad_list (ml_pipeline_switch_h h, char ***list)
 
     *list = g_malloc0 (sizeof (char *) * (counter + 1));
     if (*list == NULL) {
-      _ml_loge ("Failed to allocate memory for pad list.");
+      _ml_error_report
+          ("Failed to allocate memory for pad list (parameter list). Out of memory?");
       ret = ML_ERROR_OUT_OF_MEMORY;
       goto unlock_return;
     }
@@ -1956,7 +2027,7 @@ ml_pipeline_switch_get_pad_list (ml_pipeline_switch_h h, char ***list)
         g_free (*list);
         *list = NULL;
 
-        _ml_loge
+        _ml_error_report
             ("Internal data inconsistency. This could be a bug in nnstreamer. Switch [%s].",
             elem->name);
         ret = ML_ERROR_STREAMS_PIPE;
@@ -1983,37 +2054,35 @@ ml_pipeline_valve_get_handle (ml_pipeline_h pipe, const char *valve_name,
 
   check_feature_state ();
 
-  if (h == NULL) {
-    _ml_loge ("The argument valve handle is not valid.");
-    return ML_ERROR_INVALID_PARAMETER;
-  }
+  if (h == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, h (ml_pipeline_valve_h), is NULL. It should be a valid pointer of ml_pipeline_valve_h. E.g., ml_pipeline_valve_h h; ml_pipeline_valve_get_handle (..., &h);");
 
   /* init null */
   *h = NULL;
 
-  if (pipe == NULL) {
-    _ml_loge ("The first argument, pipeline handle, is not valid.");
-    return ML_ERROR_INVALID_PARAMETER;
-  }
+  if (pipe == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, pipe (ml_pipeline_h), is NULL. It should be a valid ml_pipeline_h instance, which is usually created by ml_pipeline_construct().");
 
-  if (valve_name == NULL) {
-    _ml_loge ("The second argument, valve name, is not valid.");
-    return ML_ERROR_INVALID_PARAMETER;
-  }
+  if (valve_name == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, valve_name (const char *), is NULL. It should be a valid string of the valve name.");
 
   g_mutex_lock (&p->lock);
   elem = g_hash_table_lookup (p->namednodes, valve_name);
 
   if (elem == NULL) {
-    _ml_loge ("There is no valve element named [%s] in the pipeline.",
+    _ml_error_report
+        ("Cannot find the valve with the given name, '%s', in the pipeline. There is no element in the pipeline with such a name. Please check if you have a value with the appropriate name.",
         valve_name);
     ret = ML_ERROR_INVALID_PARAMETER;
     goto unlock_return;
   }
 
   if (elem->type != ML_PIPELINE_ELEMENT_VALVE) {
-    _ml_loge
-        ("There is an element named [%s] in the pipeline, but it is not a valve",
+    _ml_error_report
+        ("Cannot find the value with the given name, '%s', in the pipeline. There is an element with such a name; however, the element is not a valve. Please correct the names of element in the pipeline.",
         valve_name);
     ret = ML_ERROR_INVALID_PARAMETER;
     goto unlock_return;
@@ -2021,7 +2090,9 @@ ml_pipeline_valve_get_handle (ml_pipeline_h pipe, const char *valve_name,
 
   valve = *h = g_new0 (ml_pipeline_common_elem, 1);
   if (valve == NULL) {
-    _ml_loge ("Failed to allocate the valve handle for %s.", valve_name);
+    _ml_error_report
+        ("Cannot allocate memory for valve handle of %s. Out of memory?",
+        valve_name);
     ret = ML_ERROR_OUT_OF_MEMORY;
     goto unlock_return;
   }
@@ -2095,20 +2166,17 @@ ml_pipeline_element_get_handle (ml_pipeline_h pipe, const char *element_name,
   ml_pipeline *p = pipe;
 
   /* Check input parameter */
-  if (pipe == NULL) {
-    _ml_loge ("The first argument, pipeline handle, is not valid.");
-    return ML_ERROR_INVALID_PARAMETER;
-  }
+  if (pipe == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, pipe (ml_pipeline_h), is NULL. It should be a valid ml_pipeline_h instance, which is usually created by ml_pipeline_construct().");
 
-  if (element_name == NULL) {
-    _ml_loge ("The second argument, element name, is not valid.");
-    return ML_ERROR_INVALID_PARAMETER;
-  }
+  if (element_name == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, element_name (const char *), is NULL. It should be a valid string of the element name to be searched.");
 
-  if (elem_h == NULL) {
-    _ml_loge ("The argument element handle is not valid.");
-    return ML_ERROR_INVALID_PARAMETER;
-  }
+  if (elem_h == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, elem_h (ml_pipeline_element_h), is NULL. It should be a valid pointer of ml_pipeline_element_h. E.g., ml_pipeline_element_h eh; ml_pipeline_element_get_handle (..., &eh);");
   *elem_h = NULL;
 
   g_mutex_lock (&p->lock);
@@ -2121,7 +2189,8 @@ ml_pipeline_element_get_handle (ml_pipeline_h pipe, const char *element_name,
 
     gst_elem = gst_bin_get_by_name (GST_BIN (p->element), element_name);
     if (gst_elem == NULL) {
-      _ml_loge ("The element named [%s] is not found in the pipeline",
+      _ml_error_report
+          ("Cannot find the element with the given name, '%s', in the pipeline. There is no element in the pipeline with such a name. Please check if you have an element with the appropriate name.",
           element_name);
       ret = ML_ERROR_INVALID_PARAMETER;
       goto unlock_return;
@@ -2131,7 +2200,9 @@ ml_pipeline_element_get_handle (ml_pipeline_h pipe, const char *element_name,
     elem = construct_element (gst_elem, pipe, element_name,
         ML_PIPELINE_ELEMENT_COMMON);
     if (elem == NULL) {
-      _ml_loge ("Failed to allocate the internal memory");
+      _ml_error_report
+          ("Cannot allocate memory for element handle of %s. Out of memory?",
+          element_name);
       ret = ML_ERROR_OUT_OF_MEMORY;
       goto unlock_return;
     }
@@ -2140,8 +2211,8 @@ ml_pipeline_element_get_handle (ml_pipeline_h pipe, const char *element_name,
 
   /* Type checking */
   if (elem->type == ML_PIPELINE_ELEMENT_UNKNOWN) {
-    _ml_loge
-        ("There is an element named [%s] in the pipeline, but it is unknown type.",
+    _ml_error_report
+        ("There is an element named [%s] in the pipeline, but its type is unknown. It is possible that the app thread has touched ML-API's internal data structure.",
         element_name);
     ret = ML_ERROR_INVALID_PARAMETER;
     goto unlock_return;
@@ -2149,7 +2220,9 @@ ml_pipeline_element_get_handle (ml_pipeline_h pipe, const char *element_name,
 
   common_elem = *elem_h = g_new0 (ml_pipeline_common_elem, 1);
   if (common_elem == NULL) {
-    _ml_loge ("Failed to allocate the internal handler for %s.", element_name);
+    _ml_error_report
+        ("Failed to allocate the internal handler for %s. Out of memory?",
+        element_name);
     ret = ML_ERROR_OUT_OF_MEMORY;
     goto unlock_return;
   }
@@ -2194,7 +2267,7 @@ ml_pipeline_element_check_property (GObjectClass * class,
   /* Check property existence */
   pspec = g_object_class_find_property (class, property_name);
   if (pspec == NULL) {
-    _ml_loge ("The property name [%s] does not exist.", property_name);
+    _ml_logw ("The property name [%s] does not exist.", property_name);
     return FALSE;
   }
 
@@ -2206,7 +2279,7 @@ ml_pipeline_element_check_property (GObjectClass * class,
           (type == G_TYPE_INT && G_TYPE_IS_ENUM (pspec->value_type)) ||
           (type == G_TYPE_UINT && G_TYPE_IS_ENUM (pspec->value_type)) ||
           (type == G_TYPE_DOUBLE && pspec->value_type == G_TYPE_FLOAT))) {
-    _ml_loge ("The type of property name [%s] is '%s'", property_name,
+    _ml_logw ("The type of property name [%s] is '%s'", property_name,
         g_type_name (pspec->value_type));
     return FALSE;
   }
@@ -2224,7 +2297,8 @@ ml_pipeline_element_set_property (ml_pipeline_element_h elem_h,
 
   /* Check the input parameter */
   if (property_name == NULL) {
-    _ml_loge ("The second argument, property name is not valid.");
+    _ml_error_report
+        ("The parameter, property_name (const char *), is NULL. It should be a valid string of property name.");
     ret = ML_ERROR_INVALID_PARAMETER;
     goto unlock_return;
   }
@@ -2232,6 +2306,9 @@ ml_pipeline_element_set_property (ml_pipeline_element_h elem_h,
   /* Check property existence & its type */
   if (!ml_pipeline_element_check_property (G_OBJECT_GET_CLASS (elem->element),
           property_name, type)) {
+    _ml_error_report
+        ("The property ('%s') of the element, '%s', cannot be checked. It looks like this property does not exist in this element.",
+        property_name, elem->name);
     ret = ML_ERROR_INVALID_PARAMETER;
     goto unlock_return;
   }
@@ -2264,13 +2341,15 @@ ml_pipeline_element_get_property (ml_pipeline_element_h elem_h,
 
   /* Check the input parameter */
   if (property_name == NULL) {
-    _ml_loge ("The second argument, property_name is not valid.");
+    _ml_error_report
+        ("The parameter, property_name (const char *), is NULL. It should be a valid string of the property name of an element.");
     ret = ML_ERROR_INVALID_PARAMETER;
     goto unlock_return;
   }
 
   if (pvalue == NULL) {
-    _ml_loge ("The third argument, value is not valid.");
+    _ml_error_report
+        ("The parameter, pvalue (gpointer / a pointer of a value), is NULL. It should be a valid gpointer (a pointer of a value). E.g., char *str; ... ml_pipeline_get_property_string (... &str); ... int32_t val; ... ml_pipeline_get_property_int32 (..., &val);");
     ret = ML_ERROR_INVALID_PARAMETER;
     goto unlock_return;
   }
@@ -2278,6 +2357,9 @@ ml_pipeline_element_get_property (ml_pipeline_element_h elem_h,
   /* Check property existence & its type */
   if (!ml_pipeline_element_check_property (G_OBJECT_GET_CLASS (elem->element),
           property_name, type)) {
+    _ml_error_report
+        ("Cannot check the property ('%s') or the element ('%s'). Please check if you have the corresponding element in the pipeline.",
+        property_name, elem->name);
     ret = ML_ERROR_INVALID_PARAMETER;
     goto unlock_return;
   }
@@ -2555,22 +2637,27 @@ ml_pipeline_custom_invoke (void *data, const GstTensorFilterProperties * prop,
 
   /* internal error? */
   if (!c || !c->cb)
-    return -1;
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "Internal error of callback function, ml_pipeline_custom_invoke. Its internal data structure is broken.");
 
   g_mutex_lock (&c->lock);
 
   /* prepare invoke */
   status = _ml_tensors_data_create_no_alloc (c->in_info, &in_data);
-  if (status != ML_ERROR_NONE)
+  if (status != ML_ERROR_NONE) {
+    _ml_error_report_continue ("_ml_tensors_data_create_no_alloc has failed.");
     goto done;
+  }
 
   _data = (ml_tensors_data_s *) in_data;
   for (i = 0; i < _data->num_tensors; i++)
     _data->tensors[i].tensor = in[i].data;
 
   status = _ml_tensors_data_create_no_alloc (c->out_info, &out_data);
-  if (status != ML_ERROR_NONE)
+  if (status != ML_ERROR_NONE) {
+    _ml_error_report_continue ("_ml_tensors_data_create_no_alloc has failed.");
     goto done;
+  }
 
   _data = (ml_tensors_data_s *) out_data;
   for (i = 0; i < _data->num_tensors; i++)
@@ -2603,18 +2690,30 @@ ml_pipeline_custom_easy_filter_register (const char *name,
 
   check_feature_state ();
 
-  if (!name || !cb || !custom)
-    return ML_ERROR_INVALID_PARAMETER;
+  if (!name)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, name (const char *), is NULL. It should be a valid string of the filter name.");
+  if (!cb)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, cb (ml_custom_easy_invoke_cb), is NULL. It should be a valid call-back struct containing function pointer and its related data.");
+  if (!custom)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, custom (ml_custom_easy_filter_h *), is NULL. It should be a valid pointer of ml_custom_easy_filter. E.g., ml_custom_easy_filter_h custom; ml_pipeline_custom_easy_filter_register (..., &custom);");
 
   /* init null */
   *custom = NULL;
 
-  if (!ml_tensors_info_is_valid (in) || !ml_tensors_info_is_valid (out))
-    return ML_ERROR_INVALID_PARAMETER;
+  if (!ml_tensors_info_is_valid (in))
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, in (const ml_tensors_info_h), is not valid. ml_tensors_info_is_valid(in) has returned FALSE. Please check if its cloned/fetched from a valid object or if you have configured it properly.");
+  if (!ml_tensors_info_is_valid (out))
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, out (const ml_tensors_info_h), is not valid. ml_tensors_info_is_valid(in) has returned FALSE. Please check if its cloned/fetched from a valid object or if you have configured it properly.");
 
   /* create and init custom handle */
   if ((c = g_new0 (ml_custom_filter_s, 1)) == NULL)
-    return ML_ERROR_OUT_OF_MEMORY;
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Cannot allocate memory. Out of memory?");
 
   g_mutex_init (&c->lock);
 
@@ -2627,21 +2726,42 @@ ml_pipeline_custom_easy_filter_register (const char *name,
   ml_tensors_info_create (&c->out_info);
 
   status = ml_tensors_info_clone (c->in_info, in);
-  if (status != ML_ERROR_NONE)
+  if (status != ML_ERROR_NONE) {
+    _ml_error_report_continue
+        ("ml_tensors_info_clone has failed with %d. Cannot fetch input tensor-info (metadata).",
+        status);
     goto exit;
+  }
 
   status = ml_tensors_info_clone (c->out_info, out);
-  if (status != ML_ERROR_NONE)
+  if (status != ML_ERROR_NONE) {
+    _ml_error_report_continue
+        ("ml_tensors_info_clone has filed with %d. Cannot fetch output tensor-info (metadata).",
+        status);
     goto exit;
+  }
 
   /* register custom filter */
   _ml_tensors_info_copy_from_ml (&in_info, c->in_info);
   _ml_tensors_info_copy_from_ml (&out_info, c->out_info);
 
-  if (NNS_custom_easy_register (name, ml_pipeline_custom_invoke, c,
-          &in_info, &out_info) != 0) {
-    nns_loge ("Failed to register custom filter %s.", name);
-    status = ML_ERROR_INVALID_PARAMETER;
+  status = NNS_custom_easy_register (name, ml_pipeline_custom_invoke, c,
+      &in_info, &out_info);
+  if (status != 0) {
+    char buf[255] = { 0 };
+    if (status == -EINVAL) {
+      status = ML_ERROR_INVALID_PARAMETER;
+      strncpy (buf, "invalid parameters are given.", 254);
+    } else if (status == -ENOMEM) {
+      status = ML_ERROR_OUT_OF_MEMORY;
+      strncpy (buf, "out of memory. cannot allocate.", 254);
+    } else {
+      status = ML_ERROR_UNKNOWN;
+      strncpy (buf, "unknown error.", 254);
+    }
+    _ml_error_report
+        ("Failed to register custom filter %s with NNStreamer API, NNS_custom_easy_register(). It has returned %d, which means '%s'.",
+        name, status, buf);
   }
 
 exit:
@@ -2667,21 +2787,25 @@ ml_pipeline_custom_easy_filter_unregister (ml_custom_easy_filter_h custom)
   check_feature_state ();
 
   if (!custom)
-    return ML_ERROR_INVALID_PARAMETER;
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, custom (ml_custom_easy_filter_h), is NULL. It should be a valid ml_custom_easy_filter_h instance, usually created by ml_pipeline_custom_easy_filter_register().");
 
   c = (ml_custom_filter_s *) custom;
   g_mutex_lock (&c->lock);
 
   if (c->ref_count > 0) {
-    _ml_loge
-        ("Failed to unregister custom filter %s, it is used in the pipeline.",
-        c->name);
+    _ml_error_report
+        ("Failed to unregister custom filter %s, it is used in the pipeline. Its reference counter value is %u.",
+        c->name, c->ref_count);
     status = ML_ERROR_INVALID_PARAMETER;
     goto done;
   }
 
-  if (NNS_custom_easy_unregister (c->name) != 0) {
-    _ml_loge ("Failed to unregister custom filter %s.", c->name);
+  status = NNS_custom_easy_unregister (c->name);
+  if (status != 0) {
+    _ml_error_report
+        ("Failed to unregister custom filter %s. It is possible that this is already unregistered or not registered.",
+        c->name);
     status = ML_ERROR_INVALID_PARAMETER;
     goto done;
   }
@@ -2740,7 +2864,7 @@ ml_pipeline_if_custom (const GstTensorsInfo * info,
   ml_if_custom_s *c;
   ml_tensors_data_h in_data;
   ml_tensors_data_s *_data;
-  ml_tensors_info_h ml_info;
+  ml_tensors_info_h ml_info = NULL;
   GstTensorsInfo in_info = *info;
   gboolean ret = FALSE;
 
@@ -2749,12 +2873,21 @@ ml_pipeline_if_custom (const GstTensorsInfo * info,
 
   /* internal error? */
   if (!c || !c->cb)
-    return FALSE;
+    _ml_error_report_return (FALSE,
+        "Internal error: the parameter, data, is not valid. App thread might have touched internal data structure.");
 
-  _ml_tensors_info_create_from_gst (&ml_info, &in_info);
-  status = _ml_tensors_data_create_no_alloc (ml_info, &in_data);
+  status = _ml_tensors_info_create_from_gst (&ml_info, &in_info);
   if (status != ML_ERROR_NONE)
+    _ml_error_report_return_continue (status,
+        "Cannot create tensors-info from the parameter, info (const GstTensorsInfo). _ml_tensors_info_create_from_gst has returned %d.",
+        status);
+  status = _ml_tensors_data_create_no_alloc (ml_info, &in_data);
+  if (status != ML_ERROR_NONE) {
+    _ml_error_report_continue
+        ("Cannot create data entry from the given metadata, info (const GstTensorMemory, although we could create tensor-info from info. _ml_tensors_data_create_no_alloc() has returned %d.",
+        status);
     goto done;
+  }
 
   _data = (ml_tensors_data_s *) in_data;
   for (i = 0; i < _data->num_tensors; i++)
@@ -2767,9 +2900,13 @@ ml_pipeline_if_custom (const GstTensorsInfo * info,
 
   if (status == 0)
     ret = TRUE;
+  else
+    _ml_error_report
+        ("The callback function of if-statement has returned error: %d.", ret);
 
 done:
-  ml_tensors_info_destroy (ml_info);
+  if (ml_info)
+    ml_tensors_info_destroy (ml_info);
   g_free (in_data);
 
   return ret;
@@ -2805,15 +2942,23 @@ ml_pipeline_tensor_if_custom_register (const char *name,
 
   check_feature_state ();
 
-  if (!name || !cb || !if_custom)
-    return ML_ERROR_INVALID_PARAMETER;
+  if (!name)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, name (const char *), is NULL. It should be a valid string of the tensor_if element in your pipeline.");
+  if (!cb)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, cb (ml_pipeline_if_custom_cb callback function pointer), is NULL. It should be a valid function pointer that determines if the 'if' statement is TRUE or FALSE from the given tensor data frame.");
+  if (!if_custom)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, if_custom (ml_pipeline_if_h *), is NULL. It should be a valid pointer to the pipeline-if handle instance. E.g., ml_pipeline_if_h h; ml_pipeline_tensor_if_custom_register (..., &h);");
 
   /* init null */
   *if_custom = NULL;
 
   /* create and init custom handle */
   if ((c = g_try_new0 (ml_if_custom_s, 1)) == NULL)
-    return ML_ERROR_OUT_OF_MEMORY;
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Cannot allocate memory. Out of memory?");
 
   g_mutex_init (&c->lock);
 
@@ -2823,9 +2968,24 @@ ml_pipeline_tensor_if_custom_register (const char *name,
   c->cb = cb;
   c->pdata = user_data;
 
-  if (nnstreamer_if_custom_register (name, ml_pipeline_if_custom, c) != 0) {
-    nns_loge ("Failed to register tensor_if custom condition %s.", name);
-    status = ML_ERROR_STREAMS_PIPE;
+  status = nnstreamer_if_custom_register (name, ml_pipeline_if_custom, c);
+  if (status != 0) {
+    if (status == -ENOMEM) {
+      _ml_error_report
+          ("Failed to register tensor_if custom condition %s because nnstreamer_if_custom_register has failed to allocate memory. Out of memory?",
+          name);
+      status = ML_ERROR_OUT_OF_MEMORY;
+    } else if (status == -EINVAL) {
+      _ml_error_report
+          ("Failed to register tensor_if custom condition %s because nnstreamer_if_custom_register has reported that an invalid parameter is given to the API call. Please check if the given name is 0-length or duplicated (already registered), memory is full, or the name is not allowed ('any', 'auto' are not allowed).",
+          name);
+      status = ML_ERROR_INVALID_PARAMETER;
+    } else {
+      _ml_error_report
+          ("Failed to register tensor_if custom condition %s because nnstreamer_if_custom_register has returned unknown error.",
+          name);
+      status = ML_ERROR_UNKNOWN;
+    }
   }
   g_mutex_unlock (&c->lock);
 
@@ -2857,15 +3017,23 @@ ml_pipeline_tensor_if_custom_unregister (ml_pipeline_if_h if_custom)
   g_mutex_lock (&c->lock);
 
   if (c->ref_count > 0) {
-    _ml_loge
+    _ml_error_report
         ("Failed to unregister custom condition %s, it is used in the pipeline.",
         c->name);
     status = ML_ERROR_INVALID_PARAMETER;
     goto done;
   }
 
-  if (nnstreamer_if_custom_unregister (c->name) != 0) {
-    _ml_loge ("Failed to unregister tensor_if custom condition %s.", c->name);
+  status = nnstreamer_if_custom_unregister (c->name);
+  if (status != 0) {
+    if (status == -EINVAL)
+      _ml_error_report
+          ("Failed to unregister tensor_if custom condition %s. It appears that it is already unregistered or not yet registered.",
+          c->name);
+    else
+      _ml_error_report
+          ("Failed to unregister tensor_if custom condition %s with unknown reason. Internal error?",
+          c->name);
     status = ML_ERROR_STREAMS_PIPE;
     goto done;
   }
