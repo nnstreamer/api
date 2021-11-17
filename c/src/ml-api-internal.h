@@ -337,13 +337,15 @@ void _ml_error_report_continue_ (const char *fmt, ...);
   return errno; \
 } while(0)
 
+#define _ml_detail(fmt, ...) "%s:%s:%d: " fmt, __FILE__, __func__, __LINE__, ##__VA_ARGS__
+
 /**
  * @brief Error report API. W/o return & previous report reset.
  * @param[in] fmt The printf-styled error message.
  * @note This provides source file, function name, and line number as well.
  */
 #define _ml_error_report(fmt, ...) \
-  _ml_error_report_ ("%s:%s:%d: " fmt,  __FILE__, __func__, __LINE__, ##__VA_ARGS__)
+  _ml_error_report_ (_ml_detail (fmt, ##__VA_ARGS__))
 
 /**
  * @brief Error report API. With return / W/o previous report reset.
@@ -352,7 +354,7 @@ void _ml_error_report_continue_ (const char *fmt, ...);
  * @note This provides source file, function name, and line number as well.
  */
 #define _ml_error_report_return(errno, fmt, ...) \
-  _ml_error_report_return_ (errno, "%s:%s:%d: " fmt, __FILE__, __func__, __LINE__,  ##__VA_ARGS__)
+  _ml_error_report_return_ (errno, _ml_detail (fmt, ##__VA_ARGS__))
 
 /**
  * @brief Error report API. W/o return / With previous report reset.
@@ -360,7 +362,7 @@ void _ml_error_report_continue_ (const char *fmt, ...);
  * @note This provides source file, function name, and line number as well.
  */
 #define _ml_error_report_continue(fmt, ...) \
-  _ml_error_report_continue_ ("%s:%s:%d: " fmt,  __FILE__, __func__, __LINE__, ##__VA_ARGS__)
+  _ml_error_report_continue_ (_ml_detail (fmt, ##__VA_ARGS__))
 
 /**
  * @brief Error report API. With return & previous report reset.
@@ -369,7 +371,20 @@ void _ml_error_report_continue_ (const char *fmt, ...);
  * @note This provides source file, function name, and line number as well.
  */
 #define _ml_error_report_return_continue(errno, fmt, ...) \
-  _ml_error_report_return_continue_ (errno, "%s:%s:%d: " fmt, __FILE__, __func__, __LINE__,  ##__VA_ARGS__)
+  _ml_error_report_return_continue_ (errno, _ml_detail (fmt, ##__VA_ARGS__))
+
+/**
+ * @brief macro to relay previous error only if the errno is nonzero
+ * @param[in] op The statement to be executed, which will return an errno.
+ * @param[in] fmt The printf-styled error message.
+ * @note Execute _ml_error_report_return_continue if errno is nonzero. The errno should be int. Use _ERRNO to refer to the error return value.
+ */
+#define _ml_error_report_return_continue_iferr(op, fmt, ...) \
+  do { \
+    int _ERRNO = (op); \
+    if (_ERRNO) \
+      _ml_error_report_return_continue (_ERRNO, fmt, ##__VA_ARGS__); \
+  } while (0)
 
 /***** End: Error reporting internal interfaces *****/
 
