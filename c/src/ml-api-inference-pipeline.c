@@ -442,10 +442,9 @@ error:
     gst_memory_unmap (mem[i], &map[i]);
   }
 
-  if (_data) {
-    _ml_tensors_data_destroy_internal (_data, FALSE);
-    _data = NULL;
-  }
+  _ml_tensors_data_destroy_internal (_data, FALSE);
+  _data = NULL;
+
   return;
 }
 
