@@ -937,9 +937,6 @@ ml_tensors_info_clone (ml_tensors_info_h dest, const ml_tensors_info_h src)
     goto done;
   }
 
-  if (status != ML_ERROR_NONE || !valid)
-    goto done;
-
   _ml_tensors_info_initialize (dest_info);
 
   dest_info->num_tensors = src_info->num_tensors;
