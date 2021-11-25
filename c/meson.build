@@ -89,7 +89,7 @@ ml_inf_conf.merge_from(api_conf)
 ml_inf_conf.set('ML_INFERENCE_REQUIRE', 'capi-ml-common')
 configure_file(input: 'capi-ml-inference.pc.in', output: 'capi-ml-inference.pc',
   install_dir: join_paths(api_install_libdir, 'pkgconfig'),
-  configuration: api_conf
+  configuration: ml_inf_conf
 )
 
 ml_common_api_conf = configuration_data()
