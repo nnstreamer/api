@@ -82,7 +82,7 @@ _ml_tensors_info_create_from_gst (ml_tensors_info_h * ml_info,
  * @brief Copies tensor meta info from gst tensors info.
  * @bug Thread safety required. Check its internal users first!
  */
-void
+int
 _ml_tensors_info_copy_from_gst (ml_tensors_info_s * ml_info,
     const GstTensorsInfo * gst_info)
 {
@@ -90,10 +90,10 @@ _ml_tensors_info_copy_from_gst (ml_tensors_info_s * ml_info,
   guint max_dim;
 
   if (!ml_info)
-    _ml_error_report_return ((void) (NULL),
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parmater, ml_info, is NULL. It should be a valid ml_tensors_info_s instance, usually created by ml_tensors_info_create(). This is probably an internal bug of ML API.");
   if (!gst_info)
-    _ml_error_report_return ((void) (NULL),
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parmater, gst_info, is NULL. It should be a valid GstTensorsInfo instance. This is probably an internal bug of ML API.");
 
   _ml_tensors_info_initialize (ml_info);
@@ -154,13 +154,14 @@ _ml_tensors_info_copy_from_gst (ml_tensors_info_s * ml_info,
       ml_info->info[i].dimension[j] = 1;
     }
   }
+  return ML_ERROR_NONE;
 }
 
 /**
  * @brief Copies tensor meta info from gst tensors info.
  * @bug Thread safety required. Check its internal users first!
  */
-void
+int
 _ml_tensors_info_copy_from_ml (GstTensorsInfo * gst_info,
     const ml_tensors_info_s * ml_info)
 {
@@ -168,10 +169,10 @@ _ml_tensors_info_copy_from_ml (GstTensorsInfo * gst_info,
   guint max_dim;
 
   if (!ml_info)
-    _ml_error_report_return ((void) (NULL),
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parmater, ml_info, is NULL. It should be a valid ml_tensors_info_s instance, usually created by ml_tensors_info_create(). This is probably an internal bug of ML API.");
   if (!gst_info)
-    _ml_error_report_return ((void) (NULL),
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parmater, gst_info, is NULL. It should be a valid GstTensorsInfo instance. This is probably an internal bug of ML API.");
 
   G_LOCK_UNLESS_NOLOCK (*ml_info);
@@ -234,6 +235,8 @@ _ml_tensors_info_copy_from_ml (GstTensorsInfo * gst_info,
     }
   }
   G_UNLOCK_UNLESS_NOLOCK (*ml_info);
+
+  return ML_ERROR_NONE;
 }
 
 /**
