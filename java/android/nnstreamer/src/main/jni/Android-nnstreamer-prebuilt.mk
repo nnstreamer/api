@@ -2,6 +2,7 @@
 # nnstreamer
 #
 # This mk file defines nnstreamer module with prebuilt shared libraries.
+# For those who want to use native libs, you may use this file in your project.
 # ABI: armeabi-v7a, arm64-v8a
 #------------------------------------------------------
 LOCAL_PATH := $(call my-dir)
