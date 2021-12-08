@@ -4,6 +4,10 @@
 #
 # This mk file defines nnfw module with prebuilt shared library.
 # (nnfw core libraries, arm64-v8a only)
+#
+# You should check your `gradle.properties` to set the variable `NNFW_EXT_LIBRARY_PATH` properly.
+# The variable should be assigend with path for external shared libs.
+# An example: "NNFW_EXT_LIBRARY_PATH=src/main/jni/nnfw/ext"
 #------------------------------------------------------
 LOCAL_PATH := $(call my-dir)
 
