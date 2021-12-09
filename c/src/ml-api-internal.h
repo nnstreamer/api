@@ -27,6 +27,12 @@ extern "C" {
 #define MLAPI_TAG_NAME "ml-api"
 
 #if defined(__TIZEN__)
+#ifdef FAKEDLOG
+#define _ml_loge(...) dlog_print (0, "MLAPI ERR", __VA_ARGS__)
+#define _ml_logi(...) dlog_print (0, "MLAPI_INFO", __VA_ARGS__)
+#define _ml_logw(...) dlog_print (0, "MLAPI_WARN", __VA_ARGS__)
+#define _ml_logd(...) dlog_print (0, "MLAPI_DEBUG", __VA_ARGS__)
+#else /* FAKEDLOG */
 #include <dlog.h>
 #define _ml_loge(...) \
     dlog_print (DLOG_ERROR, MLAPI_TAG_NAME, __VA_ARGS__)
@@ -36,6 +42,7 @@ extern "C" {
     dlog_print (DLOG_WARN, MLAPI_TAG_NAME, __VA_ARGS__)
 #define _ml_logd(...) \
     dlog_print (DLOG_DEBUG, MLAPI_TAG_NAME, __VA_ARGS__)
+#endif /* FAKEDLOG */
 #elif defined(__ANDROID__)
 #include <android/log.h>
 #define _ml_loge(...) \
