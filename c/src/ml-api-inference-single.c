@@ -1494,10 +1494,6 @@ ml_single_set_property (ml_single_h single, const char *name, const char *value)
   if (!name)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, name (const char *), is NULL. It should be a valid string representing a property key.");
-  if (!value)
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, value (const char *), is NULL. It should be a valid string representing the value to be set for the given property key, '%s'",
-        name);
 
   /* get old value, also check the property is updatable. */
   _ml_error_report_return_continue_iferr
@@ -1506,7 +1502,7 @@ ml_single_set_property (ml_single_h single, const char *name, const char *value)
       name, name);
 
   /* if sets same value, do not change. */
-  if (old_value != NULL && g_ascii_strcasecmp (old_value, value) == 0) {
+  if (old_value && value && g_ascii_strcasecmp (old_value, value) == 0) {
     g_free (old_value);
     return ML_ERROR_NONE;
   }
@@ -1515,6 +1511,8 @@ ml_single_set_property (ml_single_h single, const char *name, const char *value)
 
   /* update property */
   if (g_str_equal (name, "is-updatable")) {
+    if (!value)
+      goto error;
     /* boolean */
     if (g_ascii_strcasecmp (value, "true") == 0) {
       if (g_ascii_strcasecmp (old_value, "true") != 0)
@@ -1535,6 +1533,9 @@ ml_single_set_property (ml_single_h single, const char *name, const char *value)
     GstTensorsInfo gst_info;
     gboolean is_input = g_str_has_prefix (name, "input");
     guint num;
+
+    if (!value)
+      goto error;
 
     ml_single_get_gst_info (single_h, is_input, &gst_info);
 
@@ -1565,7 +1566,13 @@ ml_single_set_property (ml_single_h single, const char *name, const char *value)
   } else {
     g_object_set (G_OBJECT (single_h->filter), name, value, NULL);
   }
-
+  goto done;
+error:
+  _ml_error_report
+      ("The parameter, value (const char *), is NULL. It should be a valid string representing the value to be set for the given property key, '%s'",
+      name);
+  status = ML_ERROR_INVALID_PARAMETER;
+done:
   ML_SINGLE_HANDLE_UNLOCK (single_h);
 
   g_free (old_value);
