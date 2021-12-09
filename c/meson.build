@@ -46,7 +46,6 @@ if (get_option('enable-tizen'))
 
   tizen_deps = [
     dependency('capi-system-info'),
-    dependency('dlog')
   ]
 
   if get_option('enable-tizen-privilege-check')
@@ -61,6 +60,8 @@ if (get_option('enable-tizen'))
 
   nns_capi_deps += tizen_deps
   nns_capi_common_deps += tizen_deps
+
+  nns_capi_common_deps += [dependency('dlog')]
 endif
 
 # Build ML-API Common Lib First.
@@ -84,6 +85,10 @@ if get_option('default_library') == 'static'
 endif
 nns_capi_common_dep = declare_dependency(link_with: nns_capi_common_lib)
 nns_capi_deps += nns_capi_common_dep
+nns_capi_test_deps = nns_capi_deps
+if (get_option('enable-tizen'))
+  nns_capi_deps += [dependency('dlog')]
+endif
 
 nns_capi_shared_lib = shared_library ('capi-nnstreamer',
   nns_capi_srcs,
