@@ -1881,7 +1881,7 @@ TEST (nnstreamer_capi_util, plugin_availability_fail_invalid_02_n)
 {
   int status;
 
-  status = _ml_check_plugin_availability (NULL, "tensor_filter");
+  status = _ml_check_plugin_availability ("nnstreamer", NULL);
   EXPECT_NE (status, ML_ERROR_NONE);
 }
 
