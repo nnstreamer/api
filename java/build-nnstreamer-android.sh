@@ -58,7 +58,7 @@
 ##@@       'yes'      : build with sub-plugin for PyTorch. You can optionally specify the version of
 ##@@                    PyTorch to use by appending ':version' [1.8.0 is the default].
 ##@@       'no'       : [default] build without the sub-plugin for PyTorch
-##@@   --enable_tflite=(yes(:(1.9|1.13.1|1.15.2|2.3.0))?|no)
+##@@   --enable_tflite=(yes(:(1.9|1.13.1|1.15.2|2.3.0|2.7.0))?|no)
 ##@@       'yes'      : [default] you can optionally specify the version of tensorflow-lite to use
 ##@@                    by appending ':version' [2.3.0 is the default].
 ##@@       'no'       : build without the sub-plugin for tensorflow-lite
@@ -122,9 +122,9 @@ flatbuf_ver="1.12.0"
 enable_mqtt="no"
 paho_mqtt_c_ver="1.3.7"
 
-# Set tensorflow-lite version (available: 1.9.0 / 1.13.1 / 1.15.2 / 2.3.0)
-tf_lite_ver="2.3.0"
-tf_lite_vers_support="1.9.0 1.13.1 1.15.2 2.3.0"
+# Set tensorflow-lite version (available: 1.9.0 / 1.13.1 / 1.15.2 / 2.3.0 / 2.7.0)
+tf_lite_ver="2.7.0"
+tf_lite_vers_support="1.9.0 1.13.1 1.15.2 2.3.0 2.7.0"
 
 # Set NNFW version (https://github.com/Samsung/ONE/releases)
 nnfw_ver="1.17.0"
@@ -516,7 +516,7 @@ fi
 if [[ $enable_tflite == "yes" ]]; then
     sed -i "s|ENABLE_TF_LITE := false|ENABLE_TF_LITE := true|" nnstreamer/src/main/jni/Android-nnstreamer-prebuilt.mk
     sed -i "s|ENABLE_TF_LITE := false|ENABLE_TF_LITE := true|" nnstreamer/src/main/jni/Android.mk
-    sed -i "s|TFLITE_VERSION := 2.3.0|TFLITE_VERSION := $tf_lite_ver|" nnstreamer/src/main/jni/Android-tensorflow-lite.mk
+    sed -i "s|TFLITE_VERSION := 2.7.0|TFLITE_VERSION := $tf_lite_ver|" nnstreamer/src/main/jni/Android-tensorflow-lite.mk
     tar -xJf ./external/tensorflow-lite-$tf_lite_ver.tar.xz -C ./nnstreamer/src/main/jni
 fi
 
