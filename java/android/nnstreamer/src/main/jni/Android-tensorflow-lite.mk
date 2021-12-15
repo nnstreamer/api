@@ -15,7 +15,7 @@ endif
 
 include $(NNSTREAMER_ROOT)/jni/nnstreamer.mk
 
-TFLITE_VERSION := 2.3.0
+TFLITE_VERSION := 2.7.0
 
 _TFLITE_VERSIONS = $(subst ., , $(TFLITE_VERSION))
 TFLITE_VERSION_MAJOR := $(word 1, $(_TFLITE_VERSIONS))
@@ -37,12 +37,20 @@ TFLITE_FLAGS := \
 TFLITE_ENABLE_GPU_DELEGATE := false
 TFLITE_ENABLE_NNAPI_DELEGATE := false
 TFLITE_ENABLE_XNNPACK_DELEGATE := false
+TFLITE_REQUIRE_XNNPACK_PREBUILT_LIBS := false
 TFLITE_EXPORT_LDLIBS :=
 
 ifeq ($(shell test $(TFLITE_VERSION_MAJOR) -ge 2; echo $$?),0)
 TFLITE_ENABLE_GPU_DELEGATE := true
 TFLITE_ENABLE_NNAPI_DELEGATE := true
 TFLITE_ENABLE_XNNPACK_DELEGATE := true
+
+# XNNPACK related prebuilt libs are only required for 2.3.0
+ifeq ($(TFLITE_VERSION_MAJOR),2)
+ifeq ($(TFLITE_VERSION_MINOR),3)
+TFLITE_REQUIRE_XNNPACK_PREBUILT_LIBS := true
+endif
+endif
 
 TFLITE_FLAGS += -DTFLITE_INT8=1 -DTFLITE_INT16=1 -DTFLITE_FLOAT16=1 -DTFLITE_COMPLEX64=1
 else
@@ -93,7 +101,7 @@ include $(PREBUILT_STATIC_LIBRARY)
 #------------------------------------------------------
 # Used by XNNPACK (prebuilt static library)
 #------------------------------------------------------
-ifeq ($(TFLITE_ENABLE_XNNPACK_DELEGATE),true)
+ifeq ($(TFLITE_REQUIRE_XNNPACK_PREBUILT_LIBS),true)
 include $(CLEAR_VARS)
 LOCAL_MODULE := xnnpack-lib
 LOCAL_SRC_FILES := $(TF_LITE_LIB_PATH)/libXNNPACK.a
@@ -125,10 +133,10 @@ LOCAL_SRC_FILES := $(NNSTREAMER_FILTER_TFLITE_SRCS)
 LOCAL_CXXFLAGS := -O3 -fPIC -frtti -fexceptions $(NNS_API_FLAGS) $(TFLITE_FLAGS)
 LOCAL_C_INCLUDES := $(TF_LITE_INCLUDES) $(NNSTREAMER_INCLUDES) $(GST_HEADERS_COMMON)
 LOCAL_EXPORT_LDLIBS := $(TFLITE_EXPORT_LDLIBS)
-LOCAL_STATIC_LIBRARIES := tensorflow-lite-lib cpufeatures
+LOCAL_WHOLE_STATIC_LIBRARIES := tensorflow-lite-lib cpufeatures
 
-ifeq ($(TFLITE_ENABLE_XNNPACK_DELEGATE),true)
-LOCAL_WHOLE_STATIC_LIBRARIES := xnnpack-lib cpuinfo-lib pthreadpool-lib clog-lib
+ifeq ($(TFLITE_REQUIRE_XNNPACK_PREBUILT_LIBS),true)
+LOCAL_WHOLE_STATIC_LIBRARIES += xnnpack-lib cpuinfo-lib pthreadpool-lib clog-lib
 endif
 
 include $(BUILD_STATIC_LIBRARY)
