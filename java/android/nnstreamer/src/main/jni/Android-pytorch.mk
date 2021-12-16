@@ -11,11 +11,7 @@ endif
 
 include $(NNSTREAMER_ROOT)/jni/nnstreamer.mk
 
-# To support NNAPI, which is not available in the lastest stable release (1.7.1) of PyTorch,
-# This module use commit ID 5c3788d5d76f64f6708e0b79f40b1cf45276625a for PyTorch
-# (https://github.com/pytorch/pytorch @ 5c3788d5d76f64f6708e0b79f40b1cf45276625a)
-# After a release of PyTorch which includes NNAPI support, this will be updated.
-PYTORCH_VERSION := 1.8.0
+PYTORCH_VERSION := 1.10.1
 
 PYTORCH_FLAGS := \
     -DPYTORCH_VERSION=$(PYTORCH_VERSION) \
@@ -94,4 +90,5 @@ LOCAL_CXXFLAGS := -O3 -fPIC -frtti -fexceptions $(NNS_API_FLAGS) $(PYTORCH_FLAGS
 LOCAL_C_INCLUDES := $(PYTORCH_INCLUDES) $(NNSTREAMER_INCLUDES) $(GST_HEADERS_COMMON)
 LOCAL_WHOLE_STATIC_LIBRARIES := pytorch-libtorch_cpu pytorch-libtorch
 LOCAL_STATIC_LIBRARIES := pytorch-libeigen_blas pytorch-libnnpack pytorch-libpytorch_qnnpack pytorch-libXNNPACK  pytorch-libc10 pytorch-libcpuinfo pytorch-libpthreadpool pytorch-libclog
+
 include $(BUILD_STATIC_LIBRARY)

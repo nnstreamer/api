@@ -54,9 +54,9 @@
 ##@@   --enable_snpe=(yes|no)
 ##@@       'yes'      : build with sub-plugin for SNPE
 ##@@       'no'       : [default]
-##@@   --enable_pytorch=(yes(:(1.8.0))?|no)
+##@@   --enable_pytorch=(yes(:(1.10.1))?|no)
 ##@@       'yes'      : build with sub-plugin for PyTorch. You can optionally specify the version of
-##@@                    PyTorch to use by appending ':version' [1.8.0 is the default].
+##@@                    PyTorch to use by appending ':version' [1.10.1 is the default].
 ##@@       'no'       : [default] build without the sub-plugin for PyTorch
 ##@@   --enable_tflite=(yes(:(1.9|1.13.1|1.15.2|2.3.0|2.7.0))?|no)
 ##@@       'yes'      : [default] you can optionally specify the version of tensorflow-lite to use
@@ -107,9 +107,9 @@ enable_snpe="no"
 # Enable PyTorch
 enable_pytorch="no"
 
-# Set PyTorch version (available: 1.8.0 (unstable))
-pytorch_ver="1.8.0"
-pytorch_vers_support="1.8.0"
+# Set PyTorch version (available: 1.8.0 (unstable) / 1.10.1)
+pytorch_ver="1.10.1"
+pytorch_vers_support="1.8.0 1.10.1"
 
 # Enable tensorflow-lite
 enable_tflite="yes"
@@ -508,7 +508,7 @@ fi
 # Update PyTorch option
 if [[ $enable_pytorch == "yes" ]]; then
     sed -i "s|ENABLE_PYTORCH := false|ENABLE_PYTORCH := true|" nnstreamer/src/main/jni/Android.mk
-    sed -i "s|PYTORCH_VERSION := 1.8.0|PYTORCH_VERSION := $pytorch_ver|" nnstreamer/src/main/jni/Android-pytorch.mk
+    sed -i "s|PYTORCH_VERSION := 1.10.1|PYTORCH_VERSION := $pytorch_ver|" nnstreamer/src/main/jni/Android-pytorch.mk
     tar -xJf ./external/pytorch-$pytorch_ver.tar.xz -C ./nnstreamer/src/main/jni
 fi
 
