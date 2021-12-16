@@ -572,7 +572,7 @@ ml_single_set_inout_tensors_info (GObject * object,
   str_type = gst_tensors_info_get_types_string (&info);
   str_name = gst_tensors_info_get_names_string (&info);
 
-  if (!str_dim || !str_type || !str_name || !str_type_name || !str_name_name) {
+  if (!str_dim || !str_type || !str_name) {
     if (!str_dim)
       _ml_error_report
           ("Cannot fetch specific tensor-info from the given information: cannot fetch tensor dimension information.");
@@ -582,12 +582,6 @@ ml_single_set_inout_tensors_info (GObject * object,
     if (!str_name)
       _ml_error_report
           ("Cannot fetch specific tensor-info from the given information: cannot fetch tensor name information. Even if tensor names are not defined, this should be able to fetch a list of empty strings.");
-    if (!str_type_name)
-      _ml_error_report
-          ("Cannot fetch specific tensor-info from the given information: cannot fetch names of output-type information.");
-    if (!str_name_name)
-      _ml_error_report
-          ("Cannot fetch specific tensor-info from the given information: cannot fetch names of output-name information.");
 
     status = ML_ERROR_INVALID_PARAMETER;
   } else {
@@ -800,10 +794,11 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
   status = _ml_validate_model_file ((const char **) list_models, num_models,
       &nnfw);
   if (status != ML_ERROR_NONE) {
-    g_strfreev (list_models);
-    _ml_error_report_return_continue (status,
-        "Cannot validate the model (1st model: %s. # models: %d). Error code: %d",
+    _ml_error_report_continue
+        ("Cannot validate the model (1st model: %s. # models: %d). Error code: %d",
         list_models[0], num_models, status);
+    g_strfreev (list_models);
+    return status;
   }
 
   g_strfreev (list_models);
