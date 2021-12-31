@@ -298,6 +298,44 @@ __ml_validate_model_file (const char *const *model,
 }
 
 /**
+ * @brief Internal helper function to read the string from specific ini file.
+ */
+static gchar *
+__ml_get_string_from_conf (const gchar * ini_path,
+    const gchar * group, const gchar * key)
+{
+  g_autofree gchar *value = NULL;
+  g_autoptr (GKeyFile) key_file = NULL;
+
+  if (!ini_path || !g_file_test (ini_path, G_FILE_TEST_EXISTS)) {
+    _ml_loge
+        ("The parameter, ini_path, is NULL. It should be a valid path of configuration file.");
+    return NULL;
+  }
+
+  if (!group) {
+    _ml_loge
+        ("The parameter, group, is NULL. It should be a valid string of group name.");
+    return NULL;
+  }
+
+  if (!key) {
+    _ml_loge
+        ("The parameter, key, is NULL. It should be a valid string of key.");
+    return NULL;
+  }
+
+  key_file = g_key_file_new ();
+  g_assert (key_file != NULL);
+
+  if (g_key_file_load_from_file (key_file, ini_path, G_KEY_FILE_NONE, NULL)) {
+    value = g_key_file_get_string (key_file, group, key, NULL);
+  }
+
+  return g_strdup (value);
+}
+
+/**
  * @brief Internal function to get the nnfw type.
  */
 ml_nnfw_type_e
@@ -594,16 +632,27 @@ _ml_check_plugin_availability (const char *plugin_name,
         nnsconf_get_custom_value_bool ("element-restriction",
         "enable_element_restriction", FALSE);
     if (restricted) {
-      gchar *elements;
+      g_autofree gchar *extra_conf = NULL;
+      g_autofree gchar *elements = NULL;
+      g_autofree gchar *main_elements = NULL;
+      g_autofree gchar *extra_elements = NULL;
 
       /* check white-list of available plugins */
-      elements =
+      main_elements =
           nnsconf_get_custom_value_string ("element-restriction",
           "allowed_elements");
-      if (elements) {
+
+      /* check the extra configuration file */
+      extra_conf =
+          nnsconf_get_custom_value_string ("common", "extra_config_path");
+      if (extra_conf)
+        extra_elements =
+            __ml_get_string_from_conf (extra_conf, "common",
+            "allowed_elements");
+
+      elements = g_strjoin (" ", main_elements, extra_elements, NULL);
+      if (elements)
         allowed_elements = g_strsplit_set (elements, " ,;", -1);
-        g_free (elements);
-      }
     }
 
     list_loaded = TRUE;
