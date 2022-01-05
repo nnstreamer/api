@@ -3418,6 +3418,82 @@ TEST (nnstreamer_capi_util, nnfw_name_02_n)
   EXPECT_EQ (_ml_get_nnfw_type_by_subplugin_name (NULL), ML_NNFW_TYPE_ANY);
 }
 
+
+/**
+ * @brief Test to replace string.
+ */
+TEST (nnstreamer_capi_util, replaceStr01)
+{
+  gchar *result;
+  guint changed;
+
+  result = g_strdup ("sourceelement ! parser ! converter ! format ! converter ! format ! converter ! sink");
+
+  result = _ml_replace_string (result, "sourceelement", "src", NULL, &changed);
+  EXPECT_EQ (changed, 1U);
+  EXPECT_STREQ (result, "src ! parser ! converter ! format ! converter ! format ! converter ! sink");
+
+  result = _ml_replace_string (result, "format", "fmt", NULL, &changed);
+  EXPECT_EQ (changed, 2U);
+  EXPECT_STREQ (result, "src ! parser ! converter ! fmt ! converter ! fmt ! converter ! sink");
+
+  result = _ml_replace_string (result, "converter", "conv", NULL, &changed);
+  EXPECT_EQ (changed, 3U);
+  EXPECT_STREQ (result, "src ! parser ! conv ! fmt ! conv ! fmt ! conv ! sink");
+
+  result = _ml_replace_string (result, "invalidname", "invalid", NULL, &changed);
+  EXPECT_EQ (changed, 0U);
+  EXPECT_STREQ (result, "src ! parser ! conv ! fmt ! conv ! fmt ! conv ! sink");
+
+  g_free (result);
+}
+
+/**
+ * @brief Test to replace string.
+ */
+TEST (nnstreamer_capi_util, replaceStr02)
+{
+  gchar *result;
+  guint changed;
+
+  result = g_strdup ("source! parser ! sources ! mysource ! source ! format !source! conv source");
+
+  result = _ml_replace_string (result, "source", "src", " !", &changed);
+  EXPECT_EQ (changed, 4U);
+  EXPECT_STREQ (result, "src! parser ! sources ! mysource ! src ! format !src! conv src");
+
+  result = _ml_replace_string (result, "src", "mysource", "! ", &changed);
+  EXPECT_EQ (changed, 4U);
+  EXPECT_STREQ (result, "mysource! parser ! sources ! mysource ! mysource ! format !mysource! conv mysource");
+
+  result = _ml_replace_string (result, "source", "src", NULL, &changed);
+  EXPECT_EQ (changed, 6U);
+  EXPECT_STREQ (result, "mysrc! parser ! srcs ! mysrc ! mysrc ! format !mysrc! conv mysrc");
+
+  result = _ml_replace_string (result, "mysrc", "src", ";", &changed);
+  EXPECT_EQ (changed, 0U);
+  EXPECT_STREQ (result, "mysrc! parser ! srcs ! mysrc ! mysrc ! format !mysrc! conv mysrc");
+
+  g_free (result);
+}
+
+/**
+ * @brief Test to replace string.
+ */
+TEST (nnstreamer_capi_util, replaceStr03)
+{
+  gchar *result;
+  guint changed;
+
+  result = g_strdup ("source! parser name=source ! sources ! mysource ! source prop=temp ! source. ! filter model=\"source\" ! sink");
+
+  result = _ml_replace_string (result, "source", "CHANGED", " !", &changed);
+  EXPECT_EQ (changed, 2U);
+  EXPECT_STREQ (result, "CHANGED! parser name=source ! sources ! mysource ! CHANGED prop=temp ! source. ! filter model=\"source\" ! sink");
+
+  g_free (result);
+}
+
 /**
  * @brief Test NNStreamer single shot (tensorflow-lite)
  */
