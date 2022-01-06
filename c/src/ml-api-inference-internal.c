@@ -577,7 +577,7 @@ _ml_check_plugin_availability (const char *plugin_name,
     const char *element_name)
 {
   static gboolean list_loaded = FALSE;
-  static gchar **restricted_elements = NULL;
+  static gchar **allowed_elements = NULL;
 
   if (!plugin_name)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -599,9 +599,9 @@ _ml_check_plugin_availability (const char *plugin_name,
       /* check white-list of available plugins */
       elements =
           nnsconf_get_custom_value_string ("element-restriction",
-          "restricted_elements");
+          "allowed_elements");
       if (elements) {
-        restricted_elements = g_strsplit_set (elements, " ,;", -1);
+        allowed_elements = g_strsplit_set (elements, " ,;", -1);
         g_free (elements);
       }
     }
@@ -615,8 +615,8 @@ _ml_check_plugin_availability (const char *plugin_name,
     return ML_ERROR_NONE;
   }
 
-  if (restricted_elements &&
-      find_key_strv ((const gchar **) restricted_elements, element_name) < 0) {
+  if (allowed_elements &&
+      find_key_strv ((const gchar **) allowed_elements, element_name) < 0) {
     _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
         "The element %s is restricted.", element_name);
   }
