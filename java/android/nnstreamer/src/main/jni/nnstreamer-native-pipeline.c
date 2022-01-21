@@ -426,6 +426,7 @@ nns_get_video_sink_data (pipeline_info_s * pipe_info,
   if (item == NULL) {
     ml_pipeline_element_h handle;
     GstElement *vsink;
+    gboolean is_video_sink;
 
     /* get video sink handle and register to table */
     status = ml_pipeline_element_get_handle (pipe, element_name, &handle);
@@ -434,9 +435,11 @@ nns_get_video_sink_data (pipeline_info_s * pipe_info,
       return NULL;
     }
 
-    vsink = ((ml_pipeline_common_elem *) handle)->element->element;
+    vsink = _ml_pipeline_get_gst_element (handle);
+    is_video_sink = GST_IS_VIDEO_OVERLAY (vsink);
+    gst_object_unref (vsink);
 
-    if (!GST_IS_VIDEO_OVERLAY (vsink)) {
+    if (!is_video_sink) {
       nns_loge ("Given element %s cannot set the window on video sink.",
           element_name);
       ml_pipeline_element_release_handle (handle);
@@ -849,7 +852,7 @@ nns_native_pipe_initialize_surface (JNIEnv * env, jobject thiz, jlong handle,
     gboolean set_window = TRUE;
 
     native_win = ANativeWindow_fromSurface (env, surface);
-    vsink = ((ml_pipeline_common_elem *) edata->handle)->element->element;
+    vsink = _ml_pipeline_get_gst_element (edata->handle);
     priv = (pipeline_video_sink_priv_data_s *) edata->priv_data;
 
     if (priv == NULL) {
@@ -881,6 +884,7 @@ nns_native_pipe_initialize_surface (JNIEnv * env, jobject thiz, jlong handle,
           (guintptr) native_win);
     }
 
+    gst_object_unref (vsink);
     res = JNI_TRUE;
   }
 
@@ -911,7 +915,7 @@ nns_native_pipe_finalize_surface (JNIEnv * env, jobject thiz, jlong handle,
     GstElement *vsink;
     pipeline_video_sink_priv_data_s *priv;
 
-    vsink = ((ml_pipeline_common_elem *) edata->handle)->element->element;
+    vsink = _ml_pipeline_get_gst_element (edata->handle);
     priv = (pipeline_video_sink_priv_data_s *) edata->priv_data;
 
     gst_video_overlay_set_window_handle (GST_VIDEO_OVERLAY (vsink),
@@ -922,6 +926,7 @@ nns_native_pipe_finalize_surface (JNIEnv * env, jobject thiz, jlong handle,
       priv->window = NULL;
     }
 
+    gst_object_unref (vsink);
     res = JNI_TRUE;
   }
 
