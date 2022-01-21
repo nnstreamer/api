@@ -103,9 +103,36 @@ typedef enum {
 } ml_pipeline_element_e;
 
 /**
- * @brief Internal private representation of pipeline handle.
+ * @brief Internal data structure for the pipeline state callback.
  */
-typedef struct _ml_pipeline ml_pipeline;
+typedef struct {
+  ml_pipeline_state_cb cb; /**< Callback to notify the change of pipeline state */
+  void *user_data; /**< The user data passed when calling the state change callback */
+} pipeline_state_cb_s;
+
+/**
+ * @brief Internal data structure for the resource.
+ */
+typedef struct {
+  gchar *type; /**< resource type */
+  gpointer handle; /**< pointer to resource handle */
+} pipeline_resource_s;
+
+/**
+ * @brief Internal private representation of pipeline handle.
+ * @details This should not be exposed to applications
+ */
+typedef struct _ml_pipeline {
+  GstElement *element;            /**< The pipeline itself (GstPipeline) */
+  GstBus *bus;                    /**< The bus of the pipeline */
+  gulong signal_msg;              /**< The message signal (connected to bus) */
+  GMutex lock;                    /**< Lock for pipeline operations */
+  gboolean isEOS;                 /**< The pipeline is EOS state */
+  ml_pipeline_state_e pipe_state; /**< The state of pipeline */
+  GHashTable *namednodes;         /**< hash table of "element"s. */
+  GHashTable *resources;          /**< hash table of resources to construct the pipeline */
+  pipeline_state_cb_s state_cb;   /**< Callback to notify the change of pipeline state */
+} ml_pipeline;
 
 /**
  * @brief An element that may be controlled individually in a pipeline.
@@ -133,38 +160,6 @@ typedef struct _ml_pipeline_element {
 } ml_pipeline_element;
 
 /**
- * @brief Internal data structure for the pipeline state callback.
- */
-typedef struct {
-  ml_pipeline_state_cb cb; /**< Callback to notify the change of pipeline state */
-  void *user_data; /**< The user data passed when calling the state change callback */
-} pipeline_state_cb_s;
-
-/**
- * @brief Internal data structure for the resource.
- */
-typedef struct {
-  gchar *type; /**< resource type */
-  gpointer handle; /**< pointer to resource handle */
-} pipeline_resource_s;
-
-/**
- * @brief Internal private representation of pipeline handle.
- * @details This should not be exposed to applications
- */
-struct _ml_pipeline {
-  GstElement *element;            /**< The pipeline itself (GstPipeline) */
-  GstBus *bus;                    /**< The bus of the pipeline */
-  gulong signal_msg;              /**< The message signal (connected to bus) */
-  GMutex lock;                    /**< Lock for pipeline operations */
-  gboolean isEOS;                 /**< The pipeline is EOS state */
-  ml_pipeline_state_e pipe_state; /**< The state of pipeline */
-  GHashTable *namednodes;         /**< hash table of "element"s. */
-  GHashTable *resources;          /**< hash table of resources to construct the pipeline */
-  pipeline_state_cb_s state_cb;   /**< Callback to notify the change of pipeline state */
-};
-
-/**
  * @brief Internal private representation sink callback function for GstTensorSink and GstAppSink
  * @details This represents a single instance of callback registration. This should not be exposed to applications.
  */
@@ -184,7 +179,6 @@ typedef struct _ml_pipeline_common_elem {
   guint32 id;
   callback_info_s *callback_info;   /**< Callback function information. If element is not GstTensorSink or GstAppSink, then it should be NULL. */
 } ml_pipeline_common_elem;
-
 
 /**
  * @brief Macro to check the availability of given NNFW.
