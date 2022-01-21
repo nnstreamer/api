@@ -2254,6 +2254,14 @@ TEST (nnstreamer_capi_util, element_available_01_p)
   /** This not_allowed list is written only for testing. */
   const gchar *not_allowed = "videobox videobalance aasink adder alpha alsasink x264enc ximagesrc webpenc wavescope v4l2sink v4l2radio urisourcebin uridecodebin typefind timeoverlay rtpstreampay rtpsession rtpgstpay queue2 fdsink fdsrc chromium capssetter cairooverlay autovideosink";
   gchar **elements;
+  gboolean restricted;
+
+  restricted = nnsconf_get_custom_value_bool ("element-restriction",
+      "enable_element_restriction", FALSE);
+
+  /* element restriction is disabled */
+  if (!restricted)
+    return;
 
   elements = g_strsplit (allowed, " ", -1);
   n_elems = g_strv_length (elements);
@@ -11083,6 +11091,8 @@ main (int argc, char **argv)
   } catch (...) {
     g_warning ("catch 'testing::internal::<unnamed>::ClassUniqueToAlwaysTrue'");
   }
+
+  _ml_initialize_gstreamer ();
 
   /* ignore tizen feature status while running the testcases */
   set_feature_state (SUPPORTED);
