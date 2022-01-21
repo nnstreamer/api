@@ -940,6 +940,7 @@ main (int argc, char **argv)
   }
 
   g_mutex_init (&g_test_mutex);
+  _ml_initialize_gstreamer ();
 
   /* ignore tizen feature status while running the testcases */
   set_feature_state (SUPPORTED);
