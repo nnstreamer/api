@@ -258,11 +258,19 @@ char* _ml_nnfw_to_str_prop (ml_nnfw_hw_e hw);
 
 /**
  * @brief Gets the element of pipeline itself (GstElement).
- * @details With the returned reference, you can use GStreamer functions to handle the element in pipeline.
+ * @details With the returned reference, you can use GStreamer functions to handle the pipeline.
  *          Note that caller should release the returned reference using gst_object_unref().
  * @return The reference of pipeline itself. Null if the pipeline is not constructed or closed.
  */
-GstElement* _ml_pipeline_get_gst_element (ml_pipeline_h pipe);
+GstElement* _ml_pipeline_get_gst_pipeline (ml_pipeline_h pipe);
+
+/**
+ * @brief Gets the element in pipeline (GstElement).
+ * @details With the returned reference, you can use GStreamer functions to handle the element in pipeline.
+ *          Note that caller should release the returned reference using gst_object_unref().
+ * @return The reference of gst-element in pipeline. Null if the pipeline is not constructed or closed.
+ */
+GstElement* _ml_pipeline_get_gst_element (ml_pipeline_element_h handle);
 
 #if defined (__TIZEN__)
 /****** TIZEN PRIVILEGE CHECK BEGINS ******/

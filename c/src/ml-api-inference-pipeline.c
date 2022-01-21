@@ -2550,7 +2550,7 @@ ml_pipeline_element_get_property_enum (ml_pipeline_element_h elem_h,
  * @brief Gets the element of pipeline itself (GstElement).
  */
 GstElement *
-_ml_pipeline_get_gst_element (ml_pipeline_h pipe)
+_ml_pipeline_get_gst_pipeline (ml_pipeline_h pipe)
 {
   ml_pipeline *p = (ml_pipeline *) pipe;
   GstElement *element = NULL;
@@ -2563,6 +2563,30 @@ _ml_pipeline_get_gst_element (ml_pipeline_h pipe)
       gst_object_ref (element);
 
     g_mutex_unlock (&p->lock);
+  }
+
+  return element;
+}
+
+/**
+ * @brief Gets the element in pipeline (GstElement).
+ */
+GstElement *
+_ml_pipeline_get_gst_element (ml_pipeline_element_h handle)
+{
+  ml_pipeline_common_elem *e = (ml_pipeline_common_elem *) handle;
+  GstElement *element = NULL;
+
+  if (e && e->element) {
+    ml_pipeline_element *elem = e->element;
+
+    g_mutex_lock (&elem->lock);
+
+    element = elem->element;
+    if (element)
+      gst_object_ref (element);
+
+    g_mutex_unlock (&elem->lock);
   }
 
   return element;
