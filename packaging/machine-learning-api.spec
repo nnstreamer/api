@@ -63,7 +63,8 @@ Source0:	machine-learning-api-%{version}.tar
 Source1001:	capi-machine-learning-inference.manifest
 
 ## Define build requirements ##
-Requires:	nnstreamer
+Requires:	capi-machine-learning-inference-single = %{version}-%{release}
+Requires:	capi-machine-learning-inference-pipeline = %{version}-%{release}
 %ifarch aarch64 x86_64
 Provides:	libcapi-nnstreamer.so(64bit)
 %else
@@ -144,6 +145,8 @@ Summary:	Tizen Native API Devel Kit for NNStreamer
 Group:		Machine Learning/ML Framework
 Requires:	capi-machine-learning-inference = %{version}-%{release}
 Requires:	capi-machine-learning-common-devel
+Requires:	capi-machine-learning-inference-single-devel
+Requires:	capi-machine-learning-inference-pipeline-devel
 %description devel
 Developmental kit for Tizen Native NNStreamer API.
 
@@ -157,6 +160,7 @@ Static library of capi-machine-learning-inference-devel package.
 %package -n capi-machine-learning-common
 Summary:	Common utility functions for Tizen Machine Learning API
 Group:		Machine Learning/ML Framework
+Requires:	nnstreamer
 %description -n capi-machine-learning-common
 Tizen ML(Machine Learning) native API's common parts.
 
@@ -173,6 +177,48 @@ Group:		Machine Learning/ML Framework
 Requires:	capi-machine-learning-common-devel = %{version}-%{release}
 %description -n capi-machine-learning-common-devel-static
 Static library of common headers for Tizen Machine Learning API.
+
+%package -n capi-machine-learning-inference-single
+Summary:	Tizen Machine Learning Single-shot API
+Group:		Machine Learning/ML Framework
+Requires:	capi-machine-learning-common = %{version}-%{release}
+%description -n capi-machine-learning-inference-single
+Tizen Machine Learning Single-shot API.
+
+%package -n capi-machine-learning-inference-single-devel
+Summary:	Single-shot headers for Tizen Machine Learning API
+Group:		Machine Learning/ML Framework
+Requires:	capi-machine-learning-inference-single = %{version}-%{release}
+%description -n capi-machine-learning-inference-single-devel
+Single-shot headers for Tizen Machine Learning API.
+
+%package -n capi-machine-learning-inference-single-devel-static
+Summary:	Static library of Tizen Machine Learning Single-shot API
+Group:		Machine Learning/ML Framework
+Requires:	capi-machine-learning-inference-single = %{version}-%{release}
+%description -n capi-machine-learning-inference-single-devel-static
+Static library of Tizen Machine Learning Single-shot API.
+
+%package -n capi-machine-learning-inference-pipeline
+Summary:	Tizen Machine Learning Pipeline API
+Group:		Machine Learning/ML Framework
+Requires:	capi-machine-learning-common = %{version}-%{release}
+%description -n capi-machine-learning-inference-pipeline
+Tizen Machine Learning Pipeline API.
+
+%package -n capi-machine-learning-inference-pipeline-devel
+Summary:	pipeline headers for Tizen Machine Learning API
+Group:		Machine Learning/ML Framework
+Requires:	capi-machine-learning-inference-pipeline = %{version}-%{release}
+%description -n capi-machine-learning-inference-pipeline-devel
+pipeline headers for Tizen Machine Learning API.
+
+%package -n capi-machine-learning-inference-pipeline-devel-static
+Summary:	Static library of Tizen Machine Learning Pipeline API
+Group:		Machine Learning/ML Framework
+Requires:	capi-machine-learning-inference-pipeline = %{version}-%{release}
+%description -n capi-machine-learning-inference-pipeline-devel-static
+Static library of Tizen Machine Learning Pipeline API.
 
 %package -n capi-machine-learning-tizen-internal-devel
 Summary:	Tizen internal headers for Tizen Machine Learning API
@@ -265,6 +311,7 @@ ninja -C build %{?_smp_mflags}
 
 # Run test
 %if 0%{?unit_test}
+bash %{test_script} ./tests/capi/unittest_capi_inference_single
 bash %{test_script} ./tests/capi/unittest_capi_inference
 bash %{test_script} ./tests/capi/unittest_datatype_consistency
 
@@ -321,12 +368,30 @@ cp -r result %{buildroot}%{_datadir}/ml-api/unittest/
 %{_libdir}/libcapi-nnstreamer.so*
 
 %files devel
-%{_includedir}/nnstreamer/nnstreamer.h
-%{_includedir}/nnstreamer/nnstreamer-single.h
 %{_libdir}/pkgconfig/capi-ml-inference.pc
 
 %files devel-static
 %{_libdir}/libcapi-nnstreamer.a
+
+%files single
+%{_libdir}/libcapi-nnstreamer-single.so*
+
+%files single-devel
+%{_includedir}/nnstreamer/nnstreamer-single.h
+%{_libdir}/pkgconfig/capi-ml-inference-single.pc
+
+%files single-devel-static
+%{_libdir}/libcapi-nnstreamer-single.a
+
+%files pipeline
+%{_libdir}/libcapi-nnstreamer-pipeline.so*
+
+%files pipeline-devel
+%{_includedir}/nnstreamer/nnstreamer.h
+%{_libdir}/pkgconfig/capi-ml-inference-pipeline.pc
+
+%files pipeline-devel-static
+%{_libdir}/libcapi-nnstreamer-pipeline.a
 
 %files -n capi-machine-learning-common
 %{_libdir}/libcapi-ml-common.so*

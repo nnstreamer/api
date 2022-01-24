@@ -24,8 +24,9 @@
 #include <nnstreamer.h>
 #include <nnstreamer-tizen-internal.h>
 
-#include "ml-api-inference-internal.h"
 #include "ml-api-internal.h"
+#include "ml-api-inference-internal.h"
+#include "ml-api-inference-pipeline-internal.h"
 
 
 #define handle_init(name, h) \
@@ -716,6 +717,126 @@ process_tensor_if_option (ml_pipeline_element * e)
   }
 
   g_free (cv_option);
+}
+
+/**
+ * @brief Initializes the GStreamer library. This is internal function.
+ */
+int
+_ml_initialize_gstreamer (void)
+{
+  GError *err = NULL;
+
+  if (!gst_init_check (NULL, NULL, &err)) {
+    if (err) {
+      _ml_error_report
+          ("Initrializing ML-API failed: GStreamer has the following error from gst_init_check(): %s",
+          err->message);
+      g_clear_error (&err);
+    } else {
+      _ml_error_report ("Cannot initialize GStreamer. Unknown reason.");
+    }
+
+    return ML_ERROR_STREAMS_PIPE;
+  }
+
+  return ML_ERROR_NONE;
+}
+
+/**
+ * @brief Checks the element is registered and available on the pipeline.
+ */
+int
+ml_check_element_availability (const char *element_name, bool *available)
+{
+  GstElementFactory *factory;
+  int status;
+
+  check_feature_state ();
+
+  if (!element_name)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, element_name, is NULL. It should be a name (string) to be queried if it exists as a GStreamer/NNStreamer element.");
+
+  if (!available)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, available, is NULL. It should be a valid pointer to a bool entry so that the API (ml_check_element_availability) may return the queried result via \"available\" parameter. E.g., bool available; ml_check_element_availability (\"tensor_converter\", &available);");
+
+  _ml_error_report_return_continue_iferr (_ml_initialize_gstreamer (),
+      "Internal error of _ml_initialize_gstreamer(). Check the availability of gstreamer libraries in your system.");
+
+  /* init false */
+  *available = false;
+
+  factory = gst_element_factory_find (element_name);
+  if (factory) {
+    GstPluginFeature *feature = GST_PLUGIN_FEATURE (factory);
+    const gchar *plugin_name = gst_plugin_feature_get_plugin_name (feature);
+
+    /* check restricted element */
+    status = _ml_check_plugin_availability (plugin_name, element_name);
+    if (status == ML_ERROR_NONE)
+      *available = true;
+
+    gst_object_unref (factory);
+  }
+
+  return ML_ERROR_NONE;
+}
+
+/**
+ * @brief Checks the availability of the plugin.
+ */
+int
+_ml_check_plugin_availability (const char *plugin_name,
+    const char *element_name)
+{
+  static gboolean list_loaded = FALSE;
+  static gchar **allowed_elements = NULL;
+
+  if (!plugin_name)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, plugin_name, is NULL. It should be a valid string.");
+
+  if (!element_name)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, element_name, is NULL. It should be a valid string.");
+
+  if (!list_loaded) {
+    gboolean restricted;
+
+    restricted =
+        nnsconf_get_custom_value_bool ("element-restriction",
+        "enable_element_restriction", FALSE);
+    if (restricted) {
+      gchar *elements;
+
+      /* check white-list of available plugins */
+      elements =
+          nnsconf_get_custom_value_string ("element-restriction",
+          "allowed_elements");
+      if (elements) {
+        allowed_elements = g_strsplit_set (elements, " ,;", -1);
+        g_free (elements);
+      }
+    }
+
+    list_loaded = TRUE;
+  }
+
+  /* nnstreamer elements */
+  if (g_str_has_prefix (plugin_name, "nnstreamer") &&
+      g_str_has_prefix (element_name, "tensor_")) {
+    return ML_ERROR_NONE;
+  }
+
+  if (allowed_elements &&
+      find_key_strv ((const gchar **) allowed_elements, element_name) < 0) {
+    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
+        "The element %s is restricted.", element_name);
+  }
+
+  return ML_ERROR_NONE;
 }
 
 /**
