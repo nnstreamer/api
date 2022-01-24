@@ -13,6 +13,7 @@
 #include <nnstreamer-single.h>
 #include <ml-api-internal.h>
 #include <ml-api-inference-internal.h>
+#include <ml-api-inference-pipeline-internal.h>
 
 static GMutex g_test_mutex;
 

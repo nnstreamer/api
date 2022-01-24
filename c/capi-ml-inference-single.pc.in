@@ -1,0 +1,13 @@
+# Package information for pkg-config
+
+prefix=@PREFIX@
+exec_prefix=@PREFIX@
+libdir=@LIB_INSTALL_DIR@
+includedir=@INCLUDE_INSTALL_DIR@
+
+Name: tizen-api-ml-inference-single
+Description: ML inference single-shot API for Tizen
+Version: @VERSION@
+Requires: @ML_INFERENCE_SINGLE_REQUIRE@
+Libs: -L${libdir} -lcapi-nnstreamer-single
+Cflags: -I${includedir}/nnstreamer

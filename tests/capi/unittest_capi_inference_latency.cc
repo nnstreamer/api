@@ -20,6 +20,7 @@
 #include <nnstreamer_plugin_api_filter.h>
 #include <ml-api-internal.h>
 #include <ml-api-inference-internal.h>
+#include <ml-api-inference-pipeline-internal.h>
 
 /**
  * @brief nnstreamer invoke latency testing base class

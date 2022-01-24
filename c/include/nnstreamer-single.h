@@ -16,7 +16,7 @@
 #ifndef __TIZEN_MACHINELEARNING_NNSTREAMER_SINGLE_H__
 #define __TIZEN_MACHINELEARNING_NNSTREAMER_SINGLE_H__
 
-#include <nnstreamer.h>
+#include <ml-api-common.h>
 
 #ifdef __cplusplus
 extern "C" {

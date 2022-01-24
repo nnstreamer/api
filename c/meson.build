@@ -7,12 +7,14 @@ if not get_option('enable-tizen')
   nns_capi_include += include_directories('include/platform')
 endif
 
-nns_capi_srcs = []
 nns_capi_common_srcs = []
-nns_capi_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-inference-pipeline.c')
-nns_capi_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-inference-single.c')
-nns_capi_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-inference-internal.c')
+nns_capi_single_srcs = []
+nns_capi_pipeline_srcs = []
+
 nns_capi_common_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-common.c')
+nns_capi_common_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-inference-internal.c')
+nns_capi_single_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-inference-single.c')
+nns_capi_pipeline_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-inference-pipeline.c')
 
 if get_option('enable-tizen')
   if get_option('enable-tizen-feature-check')
@@ -20,7 +22,7 @@ if get_option('enable-tizen')
   endif
 
   if get_option('enable-tizen-privilege-check')
-    nns_capi_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-inference-tizen-privilege-check.c')
+    nns_capi_common_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-inference-tizen-privilege-check.c')
   endif
 endif
 
@@ -38,8 +40,8 @@ endif
 
 
 # Dependencies
+nns_capi_common_deps = [nnstreamer_dep, glib_dep, gmodule_dep, gst_dep]
 nns_capi_deps = [nnstreamer_dep, glib_dep, gmodule_dep, gst_dep, gst_app_dep]
-nns_capi_common_deps = [glib_dep, gmodule_dep, gst_dep]
 
 if (get_option('enable-tizen'))
   message('C-API is in Tizen mode')
@@ -86,12 +88,15 @@ endif
 nns_capi_common_dep = declare_dependency(link_with: nns_capi_common_lib)
 nns_capi_deps += nns_capi_common_dep
 nns_capi_test_deps = nns_capi_deps
+
 if (get_option('enable-tizen'))
   nns_capi_deps += [dependency('dlog')]
 endif
 
-nns_capi_shared_lib = shared_library ('capi-nnstreamer',
-  nns_capi_srcs,
+
+# Single-shot API.
+nns_capi_single_shared_lib = shared_library ('capi-nnstreamer-single',
+  nns_capi_single_srcs,
   dependencies: nns_capi_deps,
   include_directories: nns_capi_include,
   install: true,
@@ -99,9 +104,55 @@ nns_capi_shared_lib = shared_library ('capi-nnstreamer',
   version: api_version,
 )
 
-nns_capi_static_lib = static_library ('capi-nnstreamer',
-  nns_capi_srcs,
+nns_capi_single_static_lib = static_library ('capi-nnstreamer-single',
+  nns_capi_single_srcs,
   dependencies: nns_capi_deps,
+  include_directories: nns_capi_include,
+  install: true,
+  install_dir: api_install_libdir,
+)
+
+nns_capi_single_lib = nns_capi_single_shared_lib
+if get_option('default_library') == 'static'
+  nns_capi_single_lib = nns_capi_single_static_lib
+endif
+nns_capi_single_dep = declare_dependency(link_with: nns_capi_single_lib)
+
+# Pipeline API.
+nns_capi_pipeline_shared_lib = shared_library ('capi-nnstreamer-pipeline',
+  nns_capi_pipeline_srcs,
+  dependencies: nns_capi_deps,
+  include_directories: nns_capi_include,
+  install: true,
+  install_dir: api_install_libdir,
+  version: api_version,
+)
+
+nns_capi_pipeline_static_lib = static_library ('capi-nnstreamer-pipeline',
+  nns_capi_pipeline_srcs,
+  dependencies: nns_capi_deps,
+  include_directories: nns_capi_include,
+  install: true,
+  install_dir: api_install_libdir,
+)
+
+nns_capi_pipeline_lib = nns_capi_pipeline_shared_lib
+if get_option('default_library') == 'static'
+  nns_capi_pipeline_lib = nns_capi_pipeline_static_lib
+endif
+nns_capi_pipeline_dep = declare_dependency(link_with: nns_capi_pipeline_lib)
+
+# Single-shot and pipeline API.
+nns_capi_shared_lib = shared_library ('capi-nnstreamer',
+  link_with: [nns_capi_single_lib, nns_capi_pipeline_lib],
+  include_directories: nns_capi_include,
+  install: true,
+  install_dir: api_install_libdir,
+  version: api_version,
+)
+
+nns_capi_static_lib = static_library ('capi-nnstreamer',
+  link_with: [nns_capi_single_lib, nns_capi_pipeline_lib],
   include_directories: nns_capi_include,
   install: true,
   install_dir: api_install_libdir,
@@ -113,16 +164,32 @@ if get_option('default_library') == 'static'
 endif
 
 nns_capi_dep = declare_dependency(link_with: nns_capi_lib,
-  dependencies: nns_capi_deps,
+  dependencies: [nns_capi_deps,nns_capi_single_dep, nns_capi_pipeline_dep],
   include_directories: nns_capi_include,
 )
 
 ml_inf_conf = configuration_data()
 ml_inf_conf.merge_from(api_conf)
-ml_inf_conf.set('ML_INFERENCE_REQUIRE', 'capi-ml-common')
+ml_inf_conf.set('ML_INFERENCE_REQUIRE', 'capi-nnstreamer-single capi-nnstreamer-pipeline')
 configure_file(input: 'capi-ml-inference.pc.in', output: 'capi-ml-inference.pc',
   install_dir: join_paths(api_install_libdir, 'pkgconfig'),
   configuration: ml_inf_conf
+)
+
+ml_inf_single_conf = configuration_data()
+ml_inf_single_conf.merge_from(api_conf)
+ml_inf_single_conf.set('ML_INFERENCE_SINGLE_REQUIRE', 'capi-ml-common')
+configure_file(input: 'capi-ml-inference-single.pc.in', output: 'capi-ml-inference-single.pc',
+  install_dir: join_paths(api_install_libdir, 'pkgconfig'),
+  configuration: ml_inf_single_conf
+)
+
+ml_inf_pipe_conf = configuration_data()
+ml_inf_pipe_conf.merge_from(api_conf)
+ml_inf_pipe_conf.set('ML_INFERENCE_PIPE_REQUIRE', 'capi-ml-common')
+configure_file(input: 'capi-ml-inference-pipeline.pc.in', output: 'capi-ml-inference-pipeline.pc',
+  install_dir: join_paths(api_install_libdir, 'pkgconfig'),
+  configuration: ml_inf_pipe_conf
 )
 
 ml_common_api_conf = configuration_data()

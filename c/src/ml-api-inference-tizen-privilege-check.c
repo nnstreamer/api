@@ -22,6 +22,7 @@
 #include <nnstreamer.h>
 #include "ml-api-internal.h"
 #include "ml-api-inference-internal.h"
+#include "ml-api-inference-pipeline-internal.h"
 #if TIZEN5PLUS
 #include <mm_resource_manager.h>
 #endif
