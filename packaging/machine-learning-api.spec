@@ -190,6 +190,15 @@ Requires:	capi-machine-learning-inference = %{version}-%{release}
 Unittests for Tizen Machine Learning API.
 %endif
 
+# To generage gcov package, --define "gcov ON"
+%if 0%{?gcov:1}
+%package gcov
+Summary:    Tizen Machine Learning API gcov objects
+Group:		Machine Learning/ML Framework
+%description gcov
+Tizen Machine Learning API gcov objects.
+%endif
+
 %if 0%{?testcoverage}
 %package -n capi-machine-learning-unittest-coverage
 Summary:	Unittest coverage result for Tizen Machine Learning API
@@ -240,6 +249,11 @@ CXXFLAGS=`echo $CXXFLAGS | sed -e "s|-Wp,-D_FORTIFY_SOURCE=[1-9]||g"`
 %define enable_test_coverage -Db_coverage=false
 %endif
 
+%if 0%{?gcov:1}
+export CFLAGS+=" -fprofile-arcs -ftest-coverage"
+export CXXFLAGS+=" -fprofile-arcs -ftest-coverage"
+%endif
+
 mkdir -p build
 
 meson --buildtype=plain --prefix=%{_prefix} --sysconfdir=%{_sysconfdir} --libdir=%{_libdir} \
@@ -259,8 +273,18 @@ bash %{test_script} ./tests/capi/unittest_capi_inference_nnfw_runtime
 %endif
 %endif # unit_test
 
+%if 0%{?gcov:1}
+mkdir -p gcov-obj
+find . -name '*.gcno' -exec cp '{}' gcov-obj ';'
+%endif
+
 %install
 DESTDIR=%{buildroot} ninja -C build %{?_smp_mflags} install
+
+%if 0%{?gcov:1}
+mkdir -p %{buildroot}%{_datadir}/gcov/obj/%{name}
+install -m 0644 gcov-obj/* %{buildroot}%{_datadir}/gcov/obj/%{name}
+%endif
 
 %if 0%{?testcoverage}
 # 'lcov' generates the date format with UTC time zone by default. Let's replace UTC with KST.
@@ -321,6 +345,11 @@ cp -r result %{buildroot}%{_datadir}/ml-api/unittest/
 %files -n capi-machine-learning-unittests
 %manifest capi-machine-learning-inference.manifest
 %{_bindir}/unittest-ml
+%endif
+
+%if 0%{?gcov:1}
+%files gcov
+%{_datadir}/gcov/obj/*
 %endif
 
 %if 0%{?testcoverage}
