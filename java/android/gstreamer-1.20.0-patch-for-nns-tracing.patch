@@ -1,6 +1,6 @@
 diff -ruN gstreamer_android-1.0.c.in gstreamer_android-1.0.c.in
---- gstreamer_android-1.0.c.in	2021-05-17 14:11:27.568460502 +0900
-+++ gstreamer_android-1.0.c.in	2021-05-17 14:41:41.028432362 +0900
+--- gstreamer_android-1.0.c.in	2022-02-11 14:14:51.606241136 +0900
++++ gstreamer_android-1.0.c.in	2022-02-11 14:14:51.606241136 +0900
 @@ -4,6 +4,8 @@
  #include <android/log.h>
  #include <string.h>
@@ -10,6 +10,15 @@ diff -ruN gstreamer_android-1.0.c.in gstreamer_android-1.0.c.in
  /* XXX: Workaround for Android <21 making signal() an inline function
   * around bsd_signal(), and Android >= 21 not having any bsd_signal()
   * symbol but only signal().
+@@ -133,7 +135,7 @@
+ 
+       pos = p - string->str;
+ 
+-      /* Emit invalid UTF-8 as hex escapes 
++      /* Emit invalid UTF-8 as hex escapes
+        */
+       tmp = g_strdup_printf ("\\x%02x", (guint) (guchar) * p);
+       g_string_erase (string, pos, 1);
 @@ -267,7 +269,7 @@
        android_log_level = ANDROID_LOG_DEBUG;
        break;
@@ -31,16 +40,16 @@ diff -ruN gstreamer_android-1.0.c.in gstreamer_android-1.0.c.in
    g_free (cache_dir);
    g_free (files_dir);
  
-+  /* set env for tracer */
++  /* Set env for tracer */
 +  g_setenv ("GST_DEBUG", "GST_TRACER:7", TRUE);
 +  g_setenv ("GST_TRACERS", "interlatency;proctime", TRUE);
 +
    /* Set GLib print handlers */
    g_set_print_handler (glib_print_handler);
    g_set_printerr_handler (glib_printerr_handler);
-@@ -563,6 +572,9 @@
+@@ -562,6 +571,9 @@
+     return;
    }
-   gst_android_register_static_plugins ();
    gst_android_load_gio_modules ();
 +
 +  _priv_gst_tracing_init ();
@@ -49,11 +58,11 @@ diff -ruN gstreamer_android-1.0.c.in gstreamer_android-1.0.c.in
        "GStreamer initialization complete");
  }
 diff -ruN plugins.mk plugins.mk
---- plugins.mk	2021-05-17 13:52:05.344478537 +0900
-+++ plugins.mk	2021-05-17 14:42:25.268431675 +0900
+--- plugins.mk	2022-02-11 14:14:51.606241136 +0900
++++ plugins.mk	2022-02-11 14:14:51.606241136 +0900
 @@ -1,4 +1,4 @@
 -GSTREAMER_PLUGINS_CORE := coreelements coretracers adder app audioconvert audiomixer audiorate audioresample audiotestsrc compositor gio overlaycomposition pango rawparse typefindfunctions videoconvert videorate videoscale videotestsrc volume autodetect videofilter
 +GSTREAMER_PLUGINS_CORE := coreelements coretracers adder app audioconvert audiomixer audiorate audioresample audiotestsrc compositor gio overlaycomposition pango rawparse typefindfunctions videoconvert videorate videoscale videotestsrc volume autodetect videofilter sharktracers
- GSTREAMER_PLUGINS_CODECS := subparse ogg theora vorbis opus ivorbisdec alaw apetag audioparsers auparse avi dv flac flv flxdec icydemux id3demux isomp4 jpeg lame matroska mpg123 mulaw multipart png speex taglib vpx wavenc wavpack wavparse y4menc adpcmdec adpcmenc bz2 dashdemux dvbsuboverlay dvdspu hls id3tag kate midi mxf openh264 opusparse pcapparse pnm rfbsrc siren smoothstreaming subenc videoparsersbad y4mdec jpegformat gdp rsvg openjpeg spandsp sbc androidmedia
+ GSTREAMER_PLUGINS_CODECS := subparse ogg theora vorbis opus ivorbisdec alaw apetag audioparsers auparse avi dv flac flv flxdec icydemux id3demux isomp4 jpeg lame matroska mpg123 mulaw multipart png speex taglib vpx wavenc wavpack wavparse y4menc adpcmdec adpcmenc assrender bz2 dash dvbsuboverlay dvdspu hls id3tag kate midi mxf openh264 opusparse pcapparse pnm rfbsrc siren smoothstreaming subenc videoparsersbad y4mdec jpegformat gdp rsvg openjpeg spandsp sbc zbar androidmedia
  GSTREAMER_PLUGINS_ENCODING := encoding
- GSTREAMER_PLUGINS_NET := tcp rtsp rtp rtpmanager soup udp dtls netsim sctp sdpelem srtp srt webrtc nice rtspclientsink
+ GSTREAMER_PLUGINS_NET := tcp rtsp rtp rtpmanager soup udp dtls netsim rist rtmp2 rtpmanagerbad sctp sdpelem srtp srt webrtc nice rtspclientsink

@@ -368,14 +368,12 @@ echo "ML API root directory: $ml_api_dir"
 # Patch GStreamer build script
 echo "Patching Gstreamer build script for NNStreamer"
 
-pushd $gstreamer_dir/$target_abi_prefix/share/gst-android/ndk-build/
-patch -N < $ml_api_dir/java/android/gstreamer-1.16.2-patch-for-nns.patch
-
 if [[ $enable_tracing == "yes" ]]; then
+    pushd $gstreamer_dir/$target_abi_prefix/share/gst-android/ndk-build/
     echo "Patching GStreamer build script to enable tracing feature and GstShark"
-    patch -N < $ml_api_dir/java/android/gstreamer-1.16.2-patch-for-nns-tracing.patch
+    patch -N < $ml_api_dir/java/android/gstreamer-1.20.0-patch-for-nns-tracing.patch
+    popd
 fi
-popd
 
 # Build result directory
 if [[ -z "$result_dir" ]]; then
@@ -632,13 +630,11 @@ popd
 # Restore GStreamer build script
 echo "Restoring GStreamer build script"
 
-pushd $gstreamer_dir/$target_abi_prefix/share/gst-android/ndk-build/
-patch -R < $ml_api_dir/java/android/gstreamer-1.16.2-patch-for-nns.patch
-
 if [[ $enable_tracing == "yes" ]]; then
-    patch -R < $ml_api_dir/java/android/gstreamer-1.16.2-patch-for-nns-tracing.patch
+    pushd $gstreamer_dir/$target_abi_prefix/share/gst-android/ndk-build/
+    patch -R < $ml_api_dir/java/android/gstreamer-1.20.0-patch-for-nns-tracing.patch
+    popd
 fi
-popd
 
 # Remove build directory
 rm -rf $build_dir
