@@ -15,7 +15,6 @@
 #include <glib.h>
 #include <gst/gstbuffer.h>
 #include <gst/app/app.h>        /* To push data to pipeline */
-#include <nnstreamer_log.h>
 #include <nnstreamer_plugin_api.h>
 #include <tensor_if.h>
 #include <tensor_typedef.h>

@@ -22,7 +22,6 @@
 #include "nnstreamer.h"
 #include "nnstreamer-single.h"
 #include "nnstreamer-tizen-internal.h"
-#include "nnstreamer_log.h"
 #include "nnstreamer_plugin_api.h"
 #include "nnstreamer_plugin_api_filter.h"
 #include <ml-api-internal.h>

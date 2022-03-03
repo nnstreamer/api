@@ -12,12 +12,11 @@
  * @bug No known bugs except for NYI items
  */
 
+#include <string.h>
 #include <nnstreamer-single.h>
 #include <nnstreamer-tizen-internal.h>  /* Tizen platform header */
 #include <nnstreamer_internal.h>
-#include <nnstreamer_log.h>
 #include <nnstreamer_plugin_api.h>
-#include <nnstreamer_plugin_api_filter.h>
 #include <tensor_filter_single.h>
 
 #include "ml-api-inference-internal.h"

@@ -12,7 +12,6 @@
 
 #include <string.h>
 
-#include <nnstreamer_log.h>
 #include <nnstreamer_plugin_api.h>
 #include <tensor_typedef.h>
 #include "ml-api-inference-internal.h"

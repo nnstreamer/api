@@ -54,7 +54,7 @@ nns_customfilter_priv_set_info (pipeline_info_s * pipe_info, JNIEnv * env,
   if (!ml_tensors_info_is_equal (in_info, priv->in_info)) {
     /* set input info object for fast data conversion */
     if (!nns_convert_tensors_info (pipe_info, env, in_info, &obj_info)) {
-      nns_loge ("Failed to convert tensors info.");
+      _ml_loge ("Failed to convert tensors info.");
       return FALSE;
     }
 
@@ -102,7 +102,7 @@ nns_customfilter_invoke (const ml_tensors_data_h in, ml_tensors_data_h out,
   /* convert to data object */
   if (!nns_convert_tensors_data (pipe_info, env, in, priv->in_info_obj,
           &obj_in_data)) {
-    nns_loge ("Failed to convert input data to data-object.");
+    _ml_loge ("Failed to convert input data to data-object.");
     goto done;
   }
 
@@ -111,7 +111,7 @@ nns_customfilter_invoke (const ml_tensors_data_h in, ml_tensors_data_h out,
       priv->mid_invoke, obj_in_data);
 
   if ((*env)->ExceptionCheck (env)) {
-    nns_loge ("Failed to call the custom-invoke callback.");
+    _ml_loge ("Failed to call the custom-invoke callback.");
     (*env)->ExceptionClear (env);
     goto done;
   }
@@ -123,7 +123,7 @@ nns_customfilter_invoke (const ml_tensors_data_h in, ml_tensors_data_h out,
   }
 
   if (!nns_parse_tensors_data (pipe_info, env, obj_out_data, TRUE, priv->out_info, &out)) {
-    nns_loge ("Failed to parse output data.");
+    _ml_loge ("Failed to parse output data.");
     goto done;
   }
 
@@ -154,12 +154,12 @@ nns_native_custom_initialize (JNIEnv * env, jobject thiz, jstring name,
   int status;
   const char *model_name = (*env)->GetStringUTFChars (env, name, NULL);
 
-  nns_logd ("Try to add custom-filter %s.", model_name);
+  _ml_logd ("Try to add custom-filter %s.", model_name);
   in_info = out_info = NULL;
 
   pipe_info = nns_construct_pipe_info (env, thiz, NULL, NNS_PIPE_TYPE_CUSTOM);
   if (pipe_info == NULL) {
-    nns_loge ("Failed to create pipe info.");
+    _ml_loge ("Failed to create pipe info.");
     goto done;
   }
 
@@ -172,12 +172,12 @@ nns_native_custom_initialize (JNIEnv * env, jobject thiz, jstring name,
   nns_set_priv_data (pipe_info, priv, nns_customfilter_priv_free);
 
   if (!nns_parse_tensors_info (pipe_info, env, in, &in_info)) {
-    nns_loge ("Failed to parse input info.");
+    _ml_loge ("Failed to parse input info.");
     goto done;
   }
 
   if (!nns_parse_tensors_info (pipe_info, env, out, &out_info)) {
-    nns_loge ("Failed to parse output info.");
+    _ml_loge ("Failed to parse output info.");
     goto done;
   }
 
@@ -189,7 +189,7 @@ nns_native_custom_initialize (JNIEnv * env, jobject thiz, jstring name,
   status = ml_pipeline_custom_easy_filter_register (model_name,
       in_info, out_info, nns_customfilter_invoke, pipe_info, &custom);
   if (status != ML_ERROR_NONE) {
-    nns_loge ("Failed to register custom-filter %s.", model_name);
+    _ml_loge ("Failed to register custom-filter %s.", model_name);
     goto done;
   }
 
@@ -242,7 +242,7 @@ nns_native_custom_register_natives (JNIEnv * env)
   if (klass) {
     if ((*env)->RegisterNatives (env, klass, native_methods_customfilter,
             G_N_ELEMENTS (native_methods_customfilter))) {
-      nns_loge ("Failed to register native methods for CustomFilter class.");
+      _ml_loge ("Failed to register native methods for CustomFilter class.");
       return FALSE;
     }
   }
