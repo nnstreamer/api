@@ -86,7 +86,7 @@ nns_attach_current_thread (pipeline_info_s * pipe_info)
 #else
   if ((*jvm)->AttachCurrentThread (jvm, (void **) &env, &args) < 0) {
 #endif
-    nns_loge ("Failed to attach current thread.");
+    _ml_loge ("Failed to attach current thread.");
     return NULL;
   }
 
@@ -145,7 +145,7 @@ nns_free_element_data (gpointer data)
         break;
 #endif
       default:
-        nns_logw ("Given element type %d is unknown.", item->type);
+        _ml_logw ("Given element type %d is unknown.", item->type);
         if (item->handle)
           g_free (item->handle);
         break;
@@ -301,7 +301,7 @@ nns_destroy_pipe_info (pipeline_info_s * pipe_info, JNIEnv * env)
       ml_single_close (pipe_info->pipeline_handle);
       break;
     default:
-      nns_logw ("Given pipe type %d is unknown.", pipe_info->pipeline_type);
+      _ml_logw ("Given pipe type %d is unknown.", pipe_info->pipeline_type);
       if (pipe_info->pipeline_handle)
         g_free (pipe_info->pipeline_handle);
       break;
@@ -422,7 +422,7 @@ nns_create_tensors_data_object (pipeline_info_s * pipe_info, JNIEnv * env,
   obj_data = (*env)->CallStaticObjectMethod (env, dcls_info->cls,
       dcls_info->mid_alloc, obj_info);
   if ((*env)->ExceptionCheck (env) || !obj_data) {
-    nns_loge ("Failed to allocate object for tensors data.");
+    _ml_loge ("Failed to allocate object for tensors data.");
     (*env)->ExceptionClear (env);
 
     if (obj_data)
@@ -519,7 +519,7 @@ nns_parse_tensors_data (pipeline_info_s * pipe_info, JNIEnv * env,
       ml_tensors_info_destroy (_info);
 
     if (status != ML_ERROR_NONE) {
-      nns_loge ("Failed to create handle for tensors data.");
+      _ml_loge ("Failed to create handle for tensors data.");
       return FALSE;
     }
   }
@@ -551,7 +551,7 @@ nns_parse_tensors_data (pipeline_info_s * pipe_info, JNIEnv * env,
 
       (*env)->DeleteLocalRef (env, tensor);
     } else {
-      nns_loge ("Failed to get array element in tensors data object.");
+      _ml_loge ("Failed to get array element in tensors data object.");
       failed = TRUE;
       goto done;
     }
@@ -590,7 +590,7 @@ nns_convert_tensors_info (pipeline_info_s * pipe_info, JNIEnv * env,
 
   obj_info = (*env)->NewObject (env, icls_info->cls, icls_info->mid_init);
   if (!obj_info) {
-    nns_loge ("Failed to allocate object for tensors info.");
+    _ml_loge ("Failed to allocate object for tensors info.");
     goto done;
   }
 
@@ -639,7 +639,7 @@ nns_parse_tensors_info (pipeline_info_s * pipe_info, JNIEnv * env,
   g_return_val_if_fail (info_h, FALSE);
 
   if (ml_tensors_info_create (info_h) != ML_ERROR_NONE) {
-    nns_loge ("Failed to create handle for tensors info.");
+    _ml_loge ("Failed to create handle for tensors info.");
     return FALSE;
   }
 
@@ -717,7 +717,7 @@ nns_get_nnfw_type (jint fw_type, ml_nnfw_type_e * nnfw)
       *nnfw = ML_NNFW_TYPE_PYTORCH;
       break;
     default: /* Unknown */
-      nns_logw ("Unknown NNFW type (%d).", fw_type);
+      _ml_logw ("Unknown NNFW type (%d).", fw_type);
       return FALSE;
   }
 
@@ -734,7 +734,7 @@ nnstreamer_native_initialize (JNIEnv * env, jobject context)
   gchar *gst_ver, *nns_ver;
   static gboolean nns_is_initilaized = FALSE;
 
-  nns_logi ("Called native initialize.");
+  _ml_logi ("Called native initialize.");
 
   G_LOCK (nns_native_lock);
 
@@ -748,13 +748,13 @@ nnstreamer_native_initialize (JNIEnv * env, jobject context)
 #else
     if (_ml_initialize_gstreamer () != ML_ERROR_NONE) {
 #endif
-      nns_loge ("Invalid params, cannot initialize GStreamer.");
+      _ml_loge ("Invalid params, cannot initialize GStreamer.");
       goto done;
     }
   }
 
   if (!gst_is_initialized ()) {
-    nns_loge ("GStreamer is not initialized.");
+    _ml_loge ("GStreamer is not initialized.");
     goto done;
   }
 #endif
@@ -820,7 +820,7 @@ nnstreamer_native_initialize (JNIEnv * env, jobject context)
   gst_ver = gst_version_string ();
   nns_ver = nnstreamer_version_string ();
 
-  nns_logi ("%s %s GLib %d.%d.%d", nns_ver, gst_ver, GLIB_MAJOR_VERSION,
+  _ml_logi ("%s %s GLib %d.%d.%d", nns_ver, gst_ver, GLIB_MAJOR_VERSION,
       GLIB_MINOR_VERSION, GLIB_MICRO_VERSION);
 
   g_free (gst_ver);
@@ -890,7 +890,7 @@ JNI_OnLoad (JavaVM * vm, void *reserved)
   jclass klass;
 
   if ((*vm)->GetEnv (vm, (void **) &env, JNI_VERSION_1_4) != JNI_OK) {
-    nns_loge ("On initializing, failed to get JNIEnv.");
+    _ml_loge ("On initializing, failed to get JNIEnv.");
     return 0;
   }
 
@@ -898,7 +898,7 @@ JNI_OnLoad (JavaVM * vm, void *reserved)
   if (klass) {
     if ((*env)->RegisterNatives (env, klass, native_methods_nnstreamer,
             G_N_ELEMENTS (native_methods_nnstreamer))) {
-      nns_loge ("Failed to register native methods for NNStreamer class.");
+      _ml_loge ("Failed to register native methods for NNStreamer class.");
       return 0;
     }
   }

@@ -55,12 +55,12 @@ nns_singleshot_priv_set_info (pipeline_info_s * pipe_info, JNIEnv * env)
   in_info = out_info = NULL;
 
   if (ml_single_get_input_info (single, &in_info) != ML_ERROR_NONE) {
-    nns_loge ("Failed to get input info.");
+    _ml_loge ("Failed to get input info.");
     goto done;
   }
 
   if (ml_single_get_output_info (single, &out_info) != ML_ERROR_NONE) {
-    nns_loge ("Failed to get output info.");
+    _ml_loge ("Failed to get output info.");
     goto done;
   }
 
@@ -71,7 +71,7 @@ nns_singleshot_priv_set_info (pipeline_info_s * pipe_info, JNIEnv * env)
 
   if (!ml_tensors_info_is_equal (out_info, priv->out_info)) {
     if (!nns_convert_tensors_info (pipe_info, env, out_info, &obj_info)) {
-      nns_loge ("Failed to convert output info.");
+      _ml_loge ("Failed to convert output info.");
       goto done;
     }
 
@@ -107,28 +107,28 @@ nns_native_single_open (JNIEnv * env, jobject thiz,
 
   pipe_info = nns_construct_pipe_info (env, thiz, NULL, NNS_PIPE_TYPE_SINGLE);
   if (pipe_info == NULL) {
-    nns_loge ("Failed to create pipe info.");
+    _ml_loge ("Failed to create pipe info.");
     goto done;
   }
 
   /* parse in/out tensors information */
   if (in) {
     if (!nns_parse_tensors_info (pipe_info, env, in, &info.input_info)) {
-      nns_loge ("Failed to parse input tensor.");
+      _ml_loge ("Failed to parse input tensor.");
       goto done;
     }
   }
 
   if (out) {
     if (!nns_parse_tensors_info (pipe_info, env, out, &info.output_info)) {
-      nns_loge ("Failed to parse output tensor.");
+      _ml_loge ("Failed to parse output tensor.");
       goto done;
     }
   }
 
   /* nnfw type and hw resource */
   if (!nns_get_nnfw_type (fw_type, &info.nnfw)) {
-    nns_loge ("Failed, unsupported framework (%d).", fw_type);
+    _ml_loge ("Failed, unsupported framework (%d).", fw_type);
     goto done;
   }
 
@@ -157,7 +157,7 @@ nns_native_single_open (JNIEnv * env, jobject thiz,
 
     info.models = g_string_free (model_str, FALSE);
   } else {
-    nns_loge ("Failed to get model file.");
+    _ml_loge ("Failed to get model file.");
     goto done;
   }
 
@@ -170,7 +170,7 @@ nns_native_single_open (JNIEnv * env, jobject thiz,
   }
 
   if (ml_single_open_custom (&single, &info) != ML_ERROR_NONE) {
-    nns_loge ("Failed to create the pipeline.");
+    _ml_loge ("Failed to create the pipeline.");
     goto done;
   }
 
@@ -183,7 +183,7 @@ nns_native_single_open (JNIEnv * env, jobject thiz,
   nns_set_priv_data (pipe_info, priv, nns_singleshot_priv_free);
 
   if (!nns_singleshot_priv_set_info (pipe_info, env)) {
-    nns_loge ("Failed to set the metadata.");
+    _ml_loge ("Failed to set the metadata.");
     goto done;
   }
 
@@ -235,7 +235,7 @@ nns_native_single_invoke (JNIEnv * env, jobject thiz, jlong handle, jobject in)
   in_data = out_data = NULL;
 
   if (!nns_parse_tensors_data (pipe_info, env, in, FALSE, priv->in_info, &in_data)) {
-    nns_loge ("Failed to parse input tensors data.");
+    _ml_loge ("Failed to parse input tensors data.");
     failed = TRUE;
     goto done;
   }
@@ -243,13 +243,13 @@ nns_native_single_invoke (JNIEnv * env, jobject thiz, jlong handle, jobject in)
   /* create output object and get the direct buffer address */
   if (!nns_create_tensors_data_object (pipe_info, env, priv->out_info_obj, &result) ||
       !nns_parse_tensors_data (pipe_info, env, result, FALSE, priv->out_info, &out_data)) {
-    nns_loge ("Failed to create output tensors object.");
+    _ml_loge ("Failed to create output tensors object.");
     failed = TRUE;
     goto done;
   }
 
   if (ml_single_invoke_fast (single, in_data, out_data) != ML_ERROR_NONE) {
-    nns_loge ("Failed to invoke the model.");
+    _ml_loge ("Failed to invoke the model.");
     failed = TRUE;
     goto done;
   }
@@ -283,12 +283,12 @@ nns_native_single_get_input_info (JNIEnv * env, jobject thiz, jlong handle)
   single = pipe_info->pipeline_handle;
 
   if (ml_single_get_input_info (single, &info) != ML_ERROR_NONE) {
-    nns_loge ("Failed to get input info.");
+    _ml_loge ("Failed to get input info.");
     goto done;
   }
 
   if (!nns_convert_tensors_info (pipe_info, env, info, &result)) {
-    nns_loge ("Failed to convert input info.");
+    _ml_loge ("Failed to convert input info.");
     result = NULL;
   }
 
@@ -312,12 +312,12 @@ nns_native_single_get_output_info (JNIEnv * env, jobject thiz, jlong handle)
   single = pipe_info->pipeline_handle;
 
   if (ml_single_get_output_info (single, &info) != ML_ERROR_NONE) {
-    nns_loge ("Failed to get output info.");
+    _ml_loge ("Failed to get output info.");
     goto done;
   }
 
   if (!nns_convert_tensors_info (pipe_info, env, info, &result)) {
-    nns_loge ("Failed to convert output info.");
+    _ml_loge ("Failed to convert output info.");
     result = NULL;
   }
 
@@ -348,7 +348,7 @@ nns_native_single_set_prop (JNIEnv * env, jobject thiz, jlong handle,
       nns_singleshot_priv_set_info (pipe_info, env)) {
     ret = JNI_TRUE;
   } else {
-    nns_loge ("Failed to set the property (%s:%s).", prop_name, prop_value);
+    _ml_loge ("Failed to set the property (%s:%s).", prop_name, prop_value);
   }
 
   (*env)->ReleaseStringUTFChars (env, name, prop_name);
@@ -382,7 +382,7 @@ nns_native_single_get_prop (JNIEnv * env, jobject thiz, jlong handle,
     value = (*env)->NewStringUTF (env, prop_value);
     g_free (prop_value);
   } else {
-    nns_loge ("Failed to get the property (%s).", prop_name);
+    _ml_loge ("Failed to get the property (%s).", prop_name);
   }
 
   (*env)->ReleaseStringUTFChars (env, name, prop_name);
@@ -403,11 +403,11 @@ nns_native_single_set_timeout (JNIEnv * env, jobject thiz, jlong handle,
   single = pipe_info->pipeline_handle;
 
   if (ml_single_set_timeout (single, (unsigned int) timeout) != ML_ERROR_NONE) {
-    nns_loge ("Failed to set the timeout.");
+    _ml_loge ("Failed to set the timeout.");
     return JNI_FALSE;
   }
 
-  nns_logi ("Successfully set the timeout, %d milliseconds.", timeout);
+  _ml_logi ("Successfully set the timeout, %d milliseconds.", timeout);
   return JNI_TRUE;
 }
 
@@ -427,7 +427,7 @@ nns_native_single_set_input_info (JNIEnv * env, jobject thiz, jlong handle,
   single = pipe_info->pipeline_handle;
 
   if (!nns_parse_tensors_info (pipe_info, env, in, &in_info)) {
-    nns_loge ("Failed to parse input tensor.");
+    _ml_loge ("Failed to parse input tensor.");
     goto done;
   }
 
@@ -435,7 +435,7 @@ nns_native_single_set_input_info (JNIEnv * env, jobject thiz, jlong handle,
       nns_singleshot_priv_set_info (pipe_info, env)) {
     ret = JNI_TRUE;
   } else {
-    nns_loge ("Failed to set input info.");
+    _ml_loge ("Failed to set input info.");
   }
 
 done:
@@ -479,7 +479,7 @@ nns_native_single_register_natives (JNIEnv * env)
   if (klass) {
     if ((*env)->RegisterNatives (env, klass, native_methods_singleshot,
             G_N_ELEMENTS (native_methods_singleshot))) {
-      nns_loge ("Failed to register native methods for SingleShot class.");
+      _ml_loge ("Failed to register native methods for SingleShot class.");
       return FALSE;
     }
   }

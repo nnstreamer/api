@@ -124,7 +124,7 @@ nns_pipeline_sink_priv_set_out_info (element_data_s * item, JNIEnv * env,
   }
 
   if (!nns_convert_tensors_info (item->pipe_info, env, out_info, &obj_info)) {
-    nns_loge ("Failed to convert output info.");
+    _ml_loge ("Failed to convert output info.");
     return FALSE;
   }
 
@@ -153,7 +153,7 @@ nns_pipeline_state_cb (ml_pipeline_state_e state, void *user_data)
   priv = (pipeline_priv_data_s *) pipe_info->priv_data;
 
   if ((env = nns_get_jni_env (pipe_info)) == NULL) {
-    nns_logw ("Cannot get jni env in the state callback.");
+    _ml_logw ("Cannot get jni env in the state callback.");
     return;
   }
 
@@ -161,7 +161,7 @@ nns_pipeline_state_cb (ml_pipeline_state_e state, void *user_data)
       new_state);
 
   if ((*env)->ExceptionCheck (env)) {
-    nns_loge ("Failed to call the state-change callback method.");
+    _ml_loge ("Failed to call the state-change callback method.");
     (*env)->ExceptionClear (env);
   }
 }
@@ -184,7 +184,7 @@ nns_sink_data_cb (const ml_tensors_data_h data, const ml_tensors_info_h info,
   pipe_info = item->pipe_info;
 
   if ((env = nns_get_jni_env (pipe_info)) == NULL) {
-    nns_logw ("Cannot get jni env in the sink callback.");
+    _ml_logw ("Cannot get jni env in the sink callback.");
     return;
   }
 
@@ -204,14 +204,14 @@ nns_sink_data_cb (const ml_tensors_data_h data, const ml_tensors_info_h info,
         sink_name, obj_data);
 
     if ((*env)->ExceptionCheck (env)) {
-      nns_loge ("Failed to call the new-data callback method.");
+      _ml_loge ("Failed to call the new-data callback method.");
       (*env)->ExceptionClear (env);
     }
 
     (*env)->DeleteLocalRef (env, sink_name);
     (*env)->DeleteLocalRef (env, obj_data);
   } else {
-    nns_loge ("Failed to convert the result to data object.");
+    _ml_loge ("Failed to convert the result to data object.");
   }
 }
 
@@ -236,14 +236,14 @@ nns_get_sink_handle (pipeline_info_s * pipe_info, const gchar * element_name)
     /* get sink handle and register to table */
     item = g_new0 (element_data_s, 1);
     if (item == NULL) {
-      nns_loge ("Failed to allocate memory for sink handle data.");
+      _ml_loge ("Failed to allocate memory for sink handle data.");
       return NULL;
     }
 
     status = ml_pipeline_sink_register (pipe, element_name, nns_sink_data_cb,
         item, &handle);
     if (status != ML_ERROR_NONE) {
-      nns_loge ("Failed to get sink node %s.", element_name);
+      _ml_loge ("Failed to get sink node %s.", element_name);
       g_free (item);
       return NULL;
     }
@@ -254,7 +254,7 @@ nns_get_sink_handle (pipeline_info_s * pipe_info, const gchar * element_name)
     item->pipe_info = pipe_info;
 
     if (!nns_add_element_data (pipe_info, element_name, item)) {
-      nns_loge ("Failed to add sink node %s.", element_name);
+      _ml_loge ("Failed to add sink node %s.", element_name);
       nns_free_element_data (item);
       return NULL;
     }
@@ -284,13 +284,13 @@ nns_get_src_handle (pipeline_info_s * pipe_info, const gchar * element_name)
     /* get src handle and register to table */
     status = ml_pipeline_src_get_handle (pipe, element_name, &handle);
     if (status != ML_ERROR_NONE) {
-      nns_loge ("Failed to get src node %s.", element_name);
+      _ml_loge ("Failed to get src node %s.", element_name);
       return NULL;
     }
 
     item = g_new0 (element_data_s, 1);
     if (item == NULL) {
-      nns_loge ("Failed to allocate memory for src handle data.");
+      _ml_loge ("Failed to allocate memory for src handle data.");
       ml_pipeline_src_release_handle (handle);
       return NULL;
     }
@@ -301,7 +301,7 @@ nns_get_src_handle (pipeline_info_s * pipe_info, const gchar * element_name)
     item->pipe_info = pipe_info;
 
     if (!nns_add_element_data (pipe_info, element_name, item)) {
-      nns_loge ("Failed to add src node %s.", element_name);
+      _ml_loge ("Failed to add src node %s.", element_name);
       nns_free_element_data (item);
       return NULL;
     }
@@ -333,13 +333,13 @@ nns_get_switch_handle (pipeline_info_s * pipe_info, const gchar * element_name)
     status = ml_pipeline_switch_get_handle (pipe, element_name, &switch_type,
         &handle);
     if (status != ML_ERROR_NONE) {
-      nns_loge ("Failed to get switch %s.", element_name);
+      _ml_loge ("Failed to get switch %s.", element_name);
       return NULL;
     }
 
     item = g_new0 (element_data_s, 1);
     if (item == NULL) {
-      nns_loge ("Failed to allocate memory for switch handle data.");
+      _ml_loge ("Failed to allocate memory for switch handle data.");
       ml_pipeline_switch_release_handle (handle);
       return NULL;
     }
@@ -350,7 +350,7 @@ nns_get_switch_handle (pipeline_info_s * pipe_info, const gchar * element_name)
     item->pipe_info = pipe_info;
 
     if (!nns_add_element_data (pipe_info, element_name, item)) {
-      nns_loge ("Failed to add switch %s.", element_name);
+      _ml_loge ("Failed to add switch %s.", element_name);
       nns_free_element_data (item);
       return NULL;
     }
@@ -380,13 +380,13 @@ nns_get_valve_handle (pipeline_info_s * pipe_info, const gchar * element_name)
     /* get valve handle and register to table */
     status = ml_pipeline_valve_get_handle (pipe, element_name, &handle);
     if (status != ML_ERROR_NONE) {
-      nns_loge ("Failed to get valve %s.", element_name);
+      _ml_loge ("Failed to get valve %s.", element_name);
       return NULL;
     }
 
     item = g_new0 (element_data_s, 1);
     if (item == NULL) {
-      nns_loge ("Failed to allocate memory for valve handle data.");
+      _ml_loge ("Failed to allocate memory for valve handle data.");
       ml_pipeline_valve_release_handle (handle);
       return NULL;
     }
@@ -397,7 +397,7 @@ nns_get_valve_handle (pipeline_info_s * pipe_info, const gchar * element_name)
     item->pipe_info = pipe_info;
 
     if (!nns_add_element_data (pipe_info, element_name, item)) {
-      nns_loge ("Failed to add valve %s.", element_name);
+      _ml_loge ("Failed to add valve %s.", element_name);
       nns_free_element_data (item);
       return NULL;
     }
@@ -431,7 +431,7 @@ nns_get_video_sink_data (pipeline_info_s * pipe_info,
     /* get video sink handle and register to table */
     status = ml_pipeline_element_get_handle (pipe, element_name, &handle);
     if (status != ML_ERROR_NONE) {
-      nns_loge ("Failed to get the handle of %s.", element_name);
+      _ml_loge ("Failed to get the handle of %s.", element_name);
       return NULL;
     }
 
@@ -440,7 +440,7 @@ nns_get_video_sink_data (pipeline_info_s * pipe_info,
     gst_object_unref (vsink);
 
     if (!is_video_sink) {
-      nns_loge ("Given element %s cannot set the window on video sink.",
+      _ml_loge ("Given element %s cannot set the window on video sink.",
           element_name);
       ml_pipeline_element_release_handle (handle);
       return NULL;
@@ -453,7 +453,7 @@ nns_get_video_sink_data (pipeline_info_s * pipe_info,
     item->pipe_info = pipe_info;
 
     if (!nns_add_element_data (pipe_info, element_name, item)) {
-      nns_loge ("Failed to add video sink %s.", element_name);
+      _ml_loge ("Failed to add video sink %s.", element_name);
       nns_free_element_data (item);
       return NULL;
     }
@@ -478,7 +478,7 @@ nns_native_pipe_construct (JNIEnv * env, jobject thiz, jstring description,
 
   pipe_info = nns_construct_pipe_info (env, thiz, NULL, NNS_PIPE_TYPE_PIPELINE);
   if (pipe_info == NULL) {
-    nns_loge ("Failed to create pipe info.");
+    _ml_loge ("Failed to create pipe info.");
     goto done;
   }
 
@@ -498,7 +498,7 @@ nns_native_pipe_construct (JNIEnv * env, jobject thiz, jstring description,
     status = ml_pipeline_construct (pipeline, NULL, NULL, &pipe);
 
   if (status != ML_ERROR_NONE) {
-    nns_loge ("Failed to create the pipeline.");
+    _ml_loge ("Failed to create the pipeline.");
     nns_destroy_pipe_info (pipe_info, env);
     pipe_info = NULL;
   } else {
@@ -538,7 +538,7 @@ nns_native_pipe_start (JNIEnv * env, jobject thiz, jlong handle)
 
   status = ml_pipeline_start (pipe);
   if (status != ML_ERROR_NONE) {
-    nns_loge ("Failed to start the pipeline.");
+    _ml_loge ("Failed to start the pipeline.");
     return JNI_FALSE;
   }
 
@@ -560,7 +560,7 @@ nns_native_pipe_stop (JNIEnv * env, jobject thiz, jlong handle)
 
   status = ml_pipeline_stop (pipe);
   if (status != ML_ERROR_NONE) {
-    nns_loge ("Failed to stop the pipeline.");
+    _ml_loge ("Failed to stop the pipeline.");
     return JNI_FALSE;
   }
 
@@ -582,7 +582,7 @@ nns_native_pipe_flush (JNIEnv * env, jobject thiz, jlong handle, jboolean start)
 
   status = ml_pipeline_flush (pipe, (start == JNI_TRUE));
   if (status != ML_ERROR_NONE) {
-    nns_loge ("Failed to flush the pipeline.");
+    _ml_loge ("Failed to flush the pipeline.");
     return JNI_FALSE;
   }
 
@@ -605,7 +605,7 @@ nns_native_pipe_get_state (JNIEnv * env, jobject thiz, jlong handle)
 
   status = ml_pipeline_get_state (pipe, &state);
   if (status != ML_ERROR_NONE) {
-    nns_loge ("Failed to get the pipeline state.");
+    _ml_loge ("Failed to get the pipeline state.");
     state = ML_PIPELINE_STATE_UNKNOWN;
   }
 
@@ -634,14 +634,14 @@ nns_native_pipe_input_data (JNIEnv * env, jobject thiz, jlong handle,
   }
 
   if (!nns_parse_tensors_data (pipe_info, env, in, TRUE, NULL, &in_data)) {
-    nns_loge ("Failed to parse input data.");
+    _ml_loge ("Failed to parse input data.");
     goto done;
   }
 
   status = ml_pipeline_src_input_data (src, in_data,
       ML_PIPELINE_BUF_POLICY_AUTO_FREE);
   if (status != ML_ERROR_NONE) {
-    nns_loge ("Failed to input tensors data to source node %s.", element_name);
+    _ml_loge ("Failed to input tensors data to source node %s.", element_name);
     goto done;
   }
 
@@ -676,7 +676,7 @@ nns_native_pipe_get_switch_pads (JNIEnv * env, jobject thiz, jlong handle,
 
   status = ml_pipeline_switch_get_pad_list (node, &pad_list);
   if (status != ML_ERROR_NONE) {
-    nns_loge ("Failed to get the pad list of switch %s.", element_name);
+    _ml_loge ("Failed to get the pad list of switch %s.", element_name);
     goto done;
   }
 
@@ -688,7 +688,7 @@ nns_native_pipe_get_switch_pads (JNIEnv * env, jobject thiz, jlong handle,
 
     result = (*env)->NewObjectArray (env, total, cls_string, NULL);
     if (result == NULL) {
-      nns_loge ("Failed to allocate string array.");
+      _ml_loge ("Failed to allocate string array.");
       (*env)->DeleteLocalRef (env, cls_string);
       goto done;
     }
@@ -732,7 +732,7 @@ nns_native_pipe_select_switch_pad (JNIEnv * env, jobject thiz, jlong handle,
 
   status = ml_pipeline_switch_select (node, pad_name);
   if (status != ML_ERROR_NONE) {
-    nns_loge ("Failed to select switch pad %s.", pad_name);
+    _ml_loge ("Failed to select switch pad %s.", pad_name);
     goto done;
   }
 
@@ -766,7 +766,7 @@ nns_native_pipe_control_valve (JNIEnv * env, jobject thiz, jlong handle,
 
   status = ml_pipeline_valve_set_open (node, (open == JNI_TRUE));
   if (status != ML_ERROR_NONE) {
-    nns_loge ("Failed to control valve %s.", element_name);
+    _ml_loge ("Failed to control valve %s.", element_name);
     goto done;
   }
 
@@ -997,7 +997,7 @@ nns_native_pipe_register_natives (JNIEnv * env)
   if (klass) {
     if ((*env)->RegisterNatives (env, klass, native_methods_pipeline,
             G_N_ELEMENTS (native_methods_pipeline))) {
-      nns_loge ("Failed to register native methods for Pipeline class.");
+      _ml_loge ("Failed to register native methods for Pipeline class.");
       return FALSE;
     }
   }
