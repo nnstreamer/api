@@ -1,0 +1,13 @@
+# Package information for pkg-config
+
+prefix=@PREFIX@
+exec_prefix=@PREFIX@
+libdir=@LIB_INSTALL_DIR@
+includedir=@INCLUDE_INSTALL_DIR@
+
+Name: tizen-api-ml-service
+Description: ML service API for Tizen
+Version: @VERSION@
+Requires: @ML_INFERENCE_SERVICE_REQUIRE@
+Libs: -L${libdir} -lcapi-ml-service
+Cflags: -I${includedir}/nnstreamer

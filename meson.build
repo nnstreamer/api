@@ -23,6 +23,11 @@ gmodule_dep = dependency('gmodule-2.0')
 gst_dep = dependency('gstreamer-1.0')
 gst_app_dep = dependency('gstreamer-app-1.0')
 nnstreamer_dep = dependency('nnstreamer')
+leveldb_dep = dependency('leveldb', required: false)
+if (not leveldb_dep.found())
+  cpp = meson.get_compiler('cpp')
+  leveldb_dep = cpp.find_library('leveldb', required: true)
+endif
 
 # Set version info
 api_version = meson.project_version()
