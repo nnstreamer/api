@@ -3,12 +3,16 @@ project('ml-api', 'c', 'cpp',
   license: ['Apache-2.0'],
   meson_version: '>=0.50.0',
   default_options: [
+    'b_asneeded=false',
     'werror=true',
     'warning_level=1',
     'c_std=gnu89',
     'cpp_std=c++14'
   ]
 )
+
+add_global_link_arguments('-Wl,--no-as-needed', language: 'c')
+add_global_link_arguments('-Wl,--no-as-needed', language: 'cpp')
 
 cc = meson.get_compiler('c')
 cxx = meson.get_compiler('cpp')

@@ -112,11 +112,11 @@ nns_capi_single_static_lib = static_library ('capi-nnstreamer-single',
   install_dir: api_install_libdir,
 )
 
-nns_capi_single_lib = nns_capi_single_shared_lib
+nns_capi_single_dep = declare_dependency(link_with: nns_capi_single_shared_lib)
 if get_option('default_library') == 'static'
-  nns_capi_single_lib = nns_capi_single_static_lib
+  nns_capi_single_dep = declare_dependency(link_with: nns_capi_single_static_lib)
 endif
-nns_capi_single_dep = declare_dependency(link_with: nns_capi_single_lib)
+
 
 # Pipeline API.
 nns_capi_pipeline_shared_lib = shared_library ('capi-nnstreamer-pipeline',
@@ -136,15 +136,15 @@ nns_capi_pipeline_static_lib = static_library ('capi-nnstreamer-pipeline',
   install_dir: api_install_libdir,
 )
 
-nns_capi_pipeline_lib = nns_capi_pipeline_shared_lib
+nns_capi_pipeline_dep = declare_dependency(link_with: nns_capi_pipeline_shared_lib)
 if get_option('default_library') == 'static'
-  nns_capi_pipeline_lib = nns_capi_pipeline_static_lib
+  nns_capi_pipeline_dep = declare_dependency(link_with: nns_capi_pipeline_static_lib)
 endif
-nns_capi_pipeline_dep = declare_dependency(link_with: nns_capi_pipeline_lib)
+
 
 # Single-shot and pipeline API.
 nns_capi_shared_lib = shared_library ('capi-nnstreamer',
-  link_with: [nns_capi_single_lib, nns_capi_pipeline_lib],
+  link_with: [nns_capi_single_shared_lib, nns_capi_pipeline_shared_lib],
   include_directories: nns_capi_include,
   install: true,
   install_dir: api_install_libdir,
@@ -152,7 +152,7 @@ nns_capi_shared_lib = shared_library ('capi-nnstreamer',
 )
 
 nns_capi_static_lib = static_library ('capi-nnstreamer',
-  link_with: [nns_capi_single_lib, nns_capi_pipeline_lib],
+  link_whole: [nns_capi_single_static_lib, nns_capi_pipeline_static_lib],
   include_directories: nns_capi_include,
   install: true,
   install_dir: api_install_libdir,
