@@ -44,6 +44,14 @@ unittest_capi_datatype_consistency = executable('unittest_capi_datatype_consiste
 )
 test('unittest_capi_datatype_consistency', unittest_capi_datatype_consistency, env: testenv, timeout: 100)
 
+unittest_capi_service = executable('unittest_capi_service',
+  'unittest_capi_service.cc',
+  dependencies: [unittest_common_dep],
+  install: get_option('install-test'),
+  install_dir: unittest_install_dir
+)
+test('unittest_capi_service', unittest_capi_service, env: testenv, timeout: 100)
+
 if nnfw_dep.found()
   unittest_capi_inference_nnfw_runtime = executable('unittest_capi_inference_nnfw_runtime',
     'unittest_capi_inference_nnfw_runtime.cc',
