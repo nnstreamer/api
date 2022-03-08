@@ -1,0 +1,4 @@
+/usr/include/nnstreamer/ml-api-service.h
+/usr/lib/*/pkgconfig/capi-ml-service.pc
+/usr/lib/*/libcapi-ml-service.a
+/usr/lib/*/libcapi-ml-service.so
