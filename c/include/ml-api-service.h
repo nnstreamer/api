@@ -29,6 +29,8 @@
 #ifndef __ML_API_SERVICE_H__
 #define __ML_API_SERVICE_H__
 
+#include <nnstreamer.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
@@ -60,7 +62,7 @@ typedef struct {
       ml_nnfw_type_e nnfw; /**< [Mandatory] The neural network framework used to open the given model */
       ml_nnfw_hw_e hw; /**< [Mandatory] The hardware to be used for the inference. Users may override by not using "ANY" with ml_single_open or tensor_filter's option. */
     } instance; /* instance */
-    struct  {
+    struct {
       ml_custom_easy_invoke_cb func; /**< [Mandatory] The function to be registered */
       void *user_data; /**< [Optional] Additional information fed to the func in run-time */
       ml_tensors_info_h input_info; /**< [Mandatory] the input dimension */
@@ -71,8 +73,8 @@ typedef struct {
       ml_tensors_info_h input_info; /**< [Mandatory] the input dimension */
       ml_tensors_info_h output_info; /**< [Mandatory] the output dimension */
     } series; /* serires */
-  }
-} ml_service_model_description
+  };
+} ml_service_model_description;
 
 /**
  * @brief TBU
