@@ -76,6 +76,7 @@ BuildRequires:	glib2-devel
 BuildRequires:	gstreamer-devel
 BuildRequires:	gst-plugins-base-devel
 BuildRequires:	meson >= 0.50.0
+BuildRequires:  pkgconfig(leveldb)
 
 %if %{with tizen}
 %if 0%{?enable_tizen_privilege}
@@ -220,6 +221,27 @@ Group:		Machine Learning/ML Framework
 Requires:	capi-machine-learning-inference-pipeline = %{version}-%{release}
 %description -n capi-machine-learning-inference-pipeline-devel-static
 Static library of Tizen Machine Learning Pipeline API.
+
+%package -n capi-machine-learning-service
+Summary:	Tizen Machine Learning Service API
+Group:		Machine Learning/ML Framework
+Requires:	capi-machine-learning-common = %{version}-%{release}
+%description -n capi-machine-learning-service
+Tizen Machine Learning Service API.
+
+%package -n capi-machine-learning-service-devel
+Summary:	ML Service headers for Tizen Machine Learning API
+Group:		Machine Learning/ML Framework
+Requires:	capi-machine-learning-service = %{version}-%{release}
+%description -n capi-machine-learning-service-devel
+ML Service headers for Tizen Machine Learning API.
+
+%package -n capi-machine-learning-service-devel-static
+Summary:	Static library of Tizen Machine Learning Service API
+Group:		Machine Learning/ML Framework
+Requires:	capi-machine-learning-service = %{version}-%{release}
+%description -n capi-machine-learning-service-devel-static
+Static library of Tizen Machine Learning Service API.
 
 %package -n capi-machine-learning-tizen-internal-devel
 Summary:	Tizen internal headers for Tizen Machine Learning API
@@ -406,6 +428,16 @@ cp -r result %{buildroot}%{_datadir}/ml-api/unittest/
 
 %files -n capi-machine-learning-tizen-internal-devel
 %{_includedir}/nnstreamer/nnstreamer-tizen-internal.h
+
+%files -n capi-machine-learning-service
+%{_libdir}/libcapi-ml-service.so*
+
+%files -n capi-machine-learning-service-devel
+%{_includedir}/nnstreamer/ml-api-service.h
+%{_libdir}/pkgconfig/capi-ml-service.pc
+
+%files -n capi-machine-learning-service-devel-static
+%{_libdir}/libcapi-ml-service.a
 
 %if 0%{?release_test}
 %files -n capi-machine-learning-unittests

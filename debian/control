@@ -6,7 +6,7 @@ Build-Depends: gcc-9 | gcc-8 | gcc-7 | gcc-6 | gcc-5 (>=5.4),
  ninja-build, meson (>=0.50), debhelper (>=9),
  libgstreamer1.0-dev, libgstreamer-plugins-base1.0-dev, gstreamer1.0-plugins-base,
  nnstreamer, nnstreamer-dev, nnstreamer-dev-internal, openjdk-11-jdk,
- libglib2.0-dev,libgtest-dev, ssat
+ libglib2.0-dev,libgtest-dev, ssat, libleveldb-dev
 Standards-Version: 3.9.6
 Homepage: https://github.com/nnstreamer/api
 
@@ -51,6 +51,20 @@ Multi-Arch: same
 Depends: ml-inference-pipeline-api, ml-api-common-dev, ${shlibs:Depends}, ${misc:Depends}
 Description: Development package for Machine Learning Inference Pipeline API
  This is a development package for Machine Learning Inference Pipeline API.
+
+Package: ml-service-api
+Architecture: any
+Multi-Arch: same
+Depends: ml-inference-single-api, ml-inference-pipeline-api, ${shlibs:Depends}, ${misc:Depends}
+Description: Machine Learning Service API
+ This package provides native API set to use Machine Learning service.
+
+Package: ml-service-api-dev
+Architecture: any
+Multi-Arch: same
+Depends: ml-service-api, ml-inference-api-dev, ${shlibs:Depends}, ${misc:Depends}
+Description: Development package for Machine Learning Service API
+ This is a development package for Machine Learning Service API.
 
 Package: ml-inference-api
 Architecture: any
