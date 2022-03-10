@@ -18,6 +18,41 @@
 #include "ml-api-internal.h"
 
 /**
+ * @brief Convert the type from ml_tensor_type_e to tensor_type.
+ * @note This code is based on the same order between NNS type and ML type.
+ * The index should be the same in case of adding a new type.
+ */
+static tensor_type
+convert_tensor_type_from (ml_tensor_type_e type)
+{
+  if (type < ML_TENSOR_TYPE_INT32 || type > ML_TENSOR_TYPE_UINT64) {
+    _ml_error_report
+        ("Failed to convert the type. Input ml_tensor_type_e %d is invalid.",
+        type);
+    return _NNS_END;
+  }
+
+  return (tensor_type) type;
+}
+
+/**
+ * @brief Convert the type from tensor_type to ml_tensor_type_e.
+ * @note This code is based on the same order between NNS type and ML type.
+ * The index should be the same in case of adding a new type.
+ */
+static ml_tensor_type_e
+convert_ml_tensor_type_from (tensor_type type)
+{
+  if (type < _NNS_INT32 || type > _NNS_UINT64) {
+    _ml_error_report
+        ("Failed to convert the type. Input tensor_type %d is invalid.", type);
+    return ML_TENSOR_TYPE_UNKNOWN;
+  }
+
+  return (ml_tensor_type_e) type;
+}
+
+/**
  * @brief Allocates a tensors information handle from gst info.
  */
 int
@@ -69,42 +104,8 @@ _ml_tensors_info_copy_from_gst (ml_tensors_info_s * ml_info,
       ml_info->info[i].name = g_strdup (gst_info->info[i].name);
     }
 
-    /* Set tensor type */
-    switch (gst_info->info[i].type) {
-      case _NNS_INT32:
-        ml_info->info[i].type = ML_TENSOR_TYPE_INT32;
-        break;
-      case _NNS_UINT32:
-        ml_info->info[i].type = ML_TENSOR_TYPE_UINT32;
-        break;
-      case _NNS_INT16:
-        ml_info->info[i].type = ML_TENSOR_TYPE_INT16;
-        break;
-      case _NNS_UINT16:
-        ml_info->info[i].type = ML_TENSOR_TYPE_UINT16;
-        break;
-      case _NNS_INT8:
-        ml_info->info[i].type = ML_TENSOR_TYPE_INT8;
-        break;
-      case _NNS_UINT8:
-        ml_info->info[i].type = ML_TENSOR_TYPE_UINT8;
-        break;
-      case _NNS_FLOAT64:
-        ml_info->info[i].type = ML_TENSOR_TYPE_FLOAT64;
-        break;
-      case _NNS_FLOAT32:
-        ml_info->info[i].type = ML_TENSOR_TYPE_FLOAT32;
-        break;
-      case _NNS_INT64:
-        ml_info->info[i].type = ML_TENSOR_TYPE_INT64;
-        break;
-      case _NNS_UINT64:
-        ml_info->info[i].type = ML_TENSOR_TYPE_UINT64;
-        break;
-      default:
-        ml_info->info[i].type = ML_TENSOR_TYPE_UNKNOWN;
-        break;
-    }
+    ml_info->info[i].type =
+        convert_ml_tensor_type_from (gst_info->info[i].type);
 
     /* Set dimension */
     for (j = 0; j < max_dim; j++) {
@@ -149,42 +150,7 @@ _ml_tensors_info_copy_from_ml (GstTensorsInfo * gst_info,
       gst_info->info[i].name = g_strdup (ml_info->info[i].name);
     }
 
-    /* Set tensor type */
-    switch (ml_info->info[i].type) {
-      case ML_TENSOR_TYPE_INT32:
-        gst_info->info[i].type = _NNS_INT32;
-        break;
-      case ML_TENSOR_TYPE_UINT32:
-        gst_info->info[i].type = _NNS_UINT32;
-        break;
-      case ML_TENSOR_TYPE_INT16:
-        gst_info->info[i].type = _NNS_INT16;
-        break;
-      case ML_TENSOR_TYPE_UINT16:
-        gst_info->info[i].type = _NNS_UINT16;
-        break;
-      case ML_TENSOR_TYPE_INT8:
-        gst_info->info[i].type = _NNS_INT8;
-        break;
-      case ML_TENSOR_TYPE_UINT8:
-        gst_info->info[i].type = _NNS_UINT8;
-        break;
-      case ML_TENSOR_TYPE_FLOAT64:
-        gst_info->info[i].type = _NNS_FLOAT64;
-        break;
-      case ML_TENSOR_TYPE_FLOAT32:
-        gst_info->info[i].type = _NNS_FLOAT32;
-        break;
-      case ML_TENSOR_TYPE_INT64:
-        gst_info->info[i].type = _NNS_INT64;
-        break;
-      case ML_TENSOR_TYPE_UINT64:
-        gst_info->info[i].type = _NNS_UINT64;
-        break;
-      default:
-        gst_info->info[i].type = _NNS_END;
-        break;
-    }
+    gst_info->info[i].type = convert_tensor_type_from (ml_info->info[i].type);
 
     /* Set dimension */
     for (j = 0; j < max_dim; j++) {
