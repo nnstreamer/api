@@ -525,26 +525,25 @@ static void
 free_element_handle (gpointer data)
 {
   ml_pipeline_common_elem *item = (ml_pipeline_common_elem *) data;
+  ml_pipeline_element *elem;
 
-  if (item) {
-    ml_pipeline_element *elem = item->element;
-
-    /* clear callbacks */
-    if (item->callback_info) {
-      item->callback_info->sink_cb = NULL;
-
-      if (elem->type == ML_PIPELINE_ELEMENT_APP_SRC) {
-        GstAppSrcCallbacks appsrc_cb = { 0, };
-        gst_app_src_set_callbacks (GST_APP_SRC (elem->element), &appsrc_cb,
-            NULL, NULL);
-      }
-
-      g_free (item->callback_info);
-      item->callback_info = NULL;
-    }
-
+  if (!(item && item->callback_info)) {
     g_free (item);
+    return;
   }
+
+  /* clear callbacks */
+  item->callback_info->sink_cb = NULL;
+  elem = item->element;
+  if (elem->type == ML_PIPELINE_ELEMENT_APP_SRC) {
+    GstAppSrcCallbacks appsrc_cb = { 0, };
+    gst_app_src_set_callbacks (GST_APP_SRC (elem->element), &appsrc_cb,
+        NULL, NULL);
+  }
+
+  g_free (item->callback_info);
+  item->callback_info = NULL;
+  g_free (item);
 }
 
 /**
@@ -2735,12 +2734,13 @@ ml_pipeline_custom_filter_unref (ml_custom_easy_filter_h custom)
 {
   ml_custom_filter_s *c = (ml_custom_filter_s *) custom;
 
-  if (c) {
-    g_mutex_lock (&c->lock);
-    if (c->ref_count > 0)
-      c->ref_count--;
-    g_mutex_unlock (&c->lock);
-  }
+  if (!c)
+    return;
+
+  g_mutex_lock (&c->lock);
+  if (c->ref_count > 0)
+    c->ref_count--;
+  g_mutex_unlock (&c->lock);
 }
 
 /**
