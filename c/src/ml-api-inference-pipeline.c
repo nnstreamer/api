@@ -838,6 +838,19 @@ _ml_check_plugin_availability (const char *plugin_name,
 }
 
 /**
+ * @brief Get the ml_pipeline_element_e type from its element name
+ */
+static ml_pipeline_element_e
+get_elem_type_from_name (GHashTable * table, const gchar * name)
+{
+  gpointer value = g_hash_table_lookup (table, name);
+  if (!value)
+    return ML_PIPELINE_ELEMENT_UNKNOWN;
+
+  return GPOINTER_TO_INT (value);
+}
+
+/**
  * @brief Iterate elements and prepare element handle.
  */
 static int
@@ -885,26 +898,8 @@ iterate_element (ml_pipeline * pipe_h, GstElement * pipeline,
 
             name = gst_element_get_name (elem);
             if (name != NULL) {
-              ml_pipeline_element_e element_type = ML_PIPELINE_ELEMENT_UNKNOWN;
-
-              if (g_str_equal (element_name, "tensor_sink")) {
-                element_type = ML_PIPELINE_ELEMENT_SINK;
-              } else if (g_str_equal (element_name, "appsrc")) {
-                element_type = ML_PIPELINE_ELEMENT_APP_SRC;
-              } else if (g_str_equal (element_name, "appsink")) {
-                element_type = ML_PIPELINE_ELEMENT_APP_SINK;
-              } else if (g_str_equal (element_name, "valve")) {
-                element_type = ML_PIPELINE_ELEMENT_VALVE;
-              } else if (g_str_equal (element_name, "input-selector")) {
-                element_type = ML_PIPELINE_ELEMENT_SWITCH_INPUT;
-              } else if (g_str_equal (element_name, "output-selector")) {
-                element_type = ML_PIPELINE_ELEMENT_SWITCH_OUTPUT;
-              } else if (g_str_equal (element_name, "tensor_if") ||
-                  g_str_equal (element_name, "tensor_filter")) {
-                element_type = ML_PIPELINE_ELEMENT_COMMON;
-              } else {
-                /** @todo CRITICAL HANDLE THIS! */
-              }
+              ml_pipeline_element_e element_type =
+                  get_elem_type_from_name (pipe_h->pipe_elm_type, element_name);
 
               /* check 'sync' property in sink element */
               if (element_type == ML_PIPELINE_ELEMENT_SINK ||
@@ -964,6 +959,37 @@ iterate_element (ml_pipeline * pipe_h, GstElement * pipeline,
 }
 
 /**
+ * @brief Internal function to create the hash table for managing internal resources
+ */
+static void
+create_internal_hash (ml_pipeline * pipe_h)
+{
+  pipe_h->namednodes =
+      g_hash_table_new_full (g_str_hash, g_str_equal, g_free, cleanup_node);
+  pipe_h->resources =
+      g_hash_table_new_full (g_str_hash, g_str_equal, g_free, cleanup_resource);
+
+  pipe_h->pipe_elm_type =
+      g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+  g_hash_table_insert (pipe_h->pipe_elm_type, g_strdup ("tensor_sink"),
+      GINT_TO_POINTER (ML_PIPELINE_ELEMENT_SINK));
+  g_hash_table_insert (pipe_h->pipe_elm_type, g_strdup ("appsrc"),
+      GINT_TO_POINTER (ML_PIPELINE_ELEMENT_APP_SRC));
+  g_hash_table_insert (pipe_h->pipe_elm_type, g_strdup ("appsink"),
+      GINT_TO_POINTER (ML_PIPELINE_ELEMENT_APP_SINK));
+  g_hash_table_insert (pipe_h->pipe_elm_type, g_strdup ("valve"),
+      GINT_TO_POINTER (ML_PIPELINE_ELEMENT_VALVE));
+  g_hash_table_insert (pipe_h->pipe_elm_type, g_strdup ("input-selector"),
+      GINT_TO_POINTER (ML_PIPELINE_ELEMENT_SWITCH_INPUT));
+  g_hash_table_insert (pipe_h->pipe_elm_type, g_strdup ("output-selector"),
+      GINT_TO_POINTER (ML_PIPELINE_ELEMENT_SWITCH_OUTPUT));
+  g_hash_table_insert (pipe_h->pipe_elm_type, g_strdup ("tensor_if"),
+      GINT_TO_POINTER (ML_PIPELINE_ELEMENT_COMMON));
+  g_hash_table_insert (pipe_h->pipe_elm_type, g_strdup ("tensor_filter"),
+      GINT_TO_POINTER (ML_PIPELINE_ELEMENT_COMMON));
+}
+
+/**
  * @brief Internal function to construct the pipeline.
  * If is_internal is true, this will ignore the permission in Tizen.
  */
@@ -1005,11 +1031,8 @@ construct_pipeline_internal (const char *pipeline_description,
 
   pipe_h->isEOS = FALSE;
   pipe_h->pipe_state = ML_PIPELINE_STATE_UNKNOWN;
-  pipe_h->namednodes =
-      g_hash_table_new_full (g_str_hash, g_str_equal, g_free, cleanup_node);
 
-  pipe_h->resources =
-      g_hash_table_new_full (g_str_hash, g_str_equal, g_free, cleanup_resource);
+  create_internal_hash (pipe_h);
 
   /* convert predefined element and launch the pipeline */
   status =
@@ -1139,6 +1162,7 @@ ml_pipeline_destroy (ml_pipeline_h pipe)
 
   g_hash_table_remove_all (p->namednodes);
   g_hash_table_remove_all (p->resources);
+  g_hash_table_remove_all (p->pipe_elm_type);
 
   if (p->element) {
     /* Pause the pipeline if it's playing */
@@ -1186,7 +1210,8 @@ ml_pipeline_destroy (ml_pipeline_h pipe)
   /* Destroy registered callback handles and resources */
   g_hash_table_destroy (p->namednodes);
   g_hash_table_destroy (p->resources);
-  p->namednodes = p->resources = NULL;
+  g_hash_table_destroy (p->pipe_elm_type);
+  p->namednodes = p->resources = p->pipe_elm_type = NULL;
 
   g_mutex_unlock (&p->lock);
   g_mutex_clear (&p->lock);

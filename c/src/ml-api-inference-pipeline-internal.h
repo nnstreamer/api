@@ -128,6 +128,7 @@ typedef struct _ml_pipeline {
   ml_pipeline_state_e pipe_state; /**< The state of pipeline */
   GHashTable *namednodes;         /**< hash table of "element"s. */
   GHashTable *resources;          /**< hash table of resources to construct the pipeline */
+  GHashTable *pipe_elm_type;      /**< hash table for type of pipeline element */
   pipeline_state_cb_s state_cb;   /**< Callback to notify the change of pipeline state */
 } ml_pipeline;
 
