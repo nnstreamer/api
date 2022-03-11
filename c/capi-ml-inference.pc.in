@@ -9,5 +9,5 @@ Name: tizen-api-ml-inference
 Description: ML inference API for Tizen
 Version: @VERSION@
 Requires: @ML_INFERENCE_REQUIRE@
-Libs: -L${libdir} -lcapi-nnstreamer -lcapi-nnstreamer-single -lcapi-nnstreamer-pipeline
+Libs: -L${libdir} -lcapi-nnstreamer
 Cflags: -I${includedir}/nnstreamer
