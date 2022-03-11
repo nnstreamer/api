@@ -170,7 +170,7 @@ nns_capi_dep = declare_dependency(link_with: nns_capi_lib,
 
 ml_inf_conf = configuration_data()
 ml_inf_conf.merge_from(api_conf)
-ml_inf_conf.set('ML_INFERENCE_REQUIRE', 'capi-nnstreamer-single capi-nnstreamer-pipeline')
+ml_inf_conf.set('ML_INFERENCE_REQUIRE', 'capi-ml-inference-single capi-ml-inference-pipeline')
 configure_file(input: 'capi-ml-inference.pc.in', output: 'capi-ml-inference.pc',
   install_dir: join_paths(api_install_libdir, 'pkgconfig'),
   configuration: ml_inf_conf

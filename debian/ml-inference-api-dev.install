@@ -1,5 +1,7 @@
 /usr/include/nnstreamer/nnstreamer.h
 /usr/include/nnstreamer/nnstreamer-single.h
 /usr/lib/*/pkgconfig/capi-ml-inference.pc
+/usr/lib/*/pkgconfig/capi-ml-inference-single.pc
+/usr/lib/*/pkgconfig/capi-ml-inference-pipeline.pc
 /usr/lib/*/libcapi-*.a
 /usr/lib/*/libcapi-*.so
