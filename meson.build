@@ -11,8 +11,8 @@ project('ml-api', 'c', 'cpp',
   ]
 )
 
-add_global_link_arguments('-Wl,--no-as-needed', language: 'c')
-add_global_link_arguments('-Wl,--no-as-needed', language: 'cpp')
+add_project_link_arguments('-Wl,--no-as-needed', language: 'c')
+add_project_link_arguments('-Wl,--no-as-needed', language: 'cpp')
 
 cc = meson.get_compiler('c')
 cxx = meson.get_compiler('cpp')
