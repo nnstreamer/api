@@ -96,6 +96,9 @@ if get_option('enable-tizen')
   endif
 endif
 
+serviceDBPath = get_option('service-db-path')
+add_project_arguments('-DSYS_DB_DIR="' + serviceDBPath + '"', language: ['c', 'cpp'])
+
 # Check neural network framework
 # TODO: add frameworks required to build and run test
 # tendorflow
