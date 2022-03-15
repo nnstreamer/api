@@ -90,6 +90,7 @@ BuildRequires:	pkgconfig(mm-resource-manager)
 BuildRequires:	pkgconfig(capi-system-info)
 BuildRequires:	pkgconfig(capi-base-common)
 BuildRequires:	pkgconfig(dlog)
+BuildRequires:	pkgconfig(libtzplatform-config)
 %endif # tizen
 
 # For test
@@ -279,6 +280,7 @@ HTML pages of lcov results of ML API generated during rpm build
 %define enable_tizen -Denable-tizen=false
 %define enable_tizen_privilege_check -Denable-tizen-privilege-check=false
 %define enable_tizen_feature_check -Denable-tizen-feature-check=false
+%define service_db_path ""
 
 %if %{with tizen}
 %define enable_tizen -Denable-tizen=true -Dtizen-version-major=0%{?tizen_version_major} -Dtizen-version-minor=0%{?tizen_version_minor}
@@ -290,6 +292,7 @@ HTML pages of lcov results of ML API generated during rpm build
 %if 0%{?enable_tizen_feature}
 %define enable_tizen_feature_check -Denable-tizen-feature-check=true
 %endif
+%define service_db_path -Dservice-db-path=%{TZ_SYS_GLOBALUSER_DB}
 %endif # tizen
 
 %if 0%{?release_test}
@@ -328,6 +331,7 @@ mkdir -p build
 meson --buildtype=plain --prefix=%{_prefix} --sysconfdir=%{_sysconfdir} --libdir=%{_libdir} \
 	--bindir=%{_bindir} --includedir=%{_includedir} %{install_test} %{enable_test_coverage} \
 	%{enable_tizen} %{enable_tizen_privilege_check} %{enable_tizen_feature_check} \
+	%{service_db_path} \
 	build
 
 ninja -C build %{?_smp_mflags}

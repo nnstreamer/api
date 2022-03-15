@@ -17,8 +17,6 @@
 #include "ml-api-inference-internal.h"
 #include "ml-api-service.h"
 
-/* TODO: Need to set when configuration */
-#define SYS_DB_DIR            "./"
 #define ML_DATABASE_PATH      SYS_DB_DIR"/.ml-service-leveldb"
 
 static leveldb_t *ml_service_db;
