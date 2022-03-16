@@ -77,12 +77,20 @@ typedef struct {
 } ml_service_model_description;
 
 /**
- * @brief TBU
+ * @brief Stores the pipeline description with a given name.
+ * @since_tizen 7.0
+ * @param[in] name Unique name to retrieve the associated pipeline description.
+ * @param[in] pipeline_desc The pipeline description to be stored
+ * @return @c 0 on success. Otherwise a negative error value.
  */
 int ml_service_pipeline_add (const char *name, const char * pipeline_desc);
 
 /**
- * @brief TBU
+ * @brief Get the pipeline description with a given name.
+ * @since_tizen 7.0
+ * @param[in] name The unique name to retrieve.
+ * @param[out] pipeline_desc The pipeline corresponding with the given name.
+ * @return @c 0 on success. Otherwise a negative error value.
  */
 int ml_service_pipeline_get (const char *name, char **pipeline_desc);
 
