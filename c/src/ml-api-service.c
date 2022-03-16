@@ -26,6 +26,9 @@ static leveldb_writeoptions_t *db_woptions;
 
 static int service_init_db (void);
 
+/**
+ * @brief Stores the pipeline description with a given name.
+ */
 int
 ml_service_pipeline_add (const char *name, const char *pipeline_desc)
 {
@@ -59,6 +62,9 @@ ml_service_pipeline_add (const char *name, const char *pipeline_desc)
   return ML_ERROR_NONE;
 }
 
+/**
+ * @brief Get the pipeline description with a given name.
+ */
 int
 ml_service_pipeline_get (const char *name, char **pipeline_desc)
 {
@@ -102,6 +108,9 @@ ml_service_pipeline_get (const char *name, char **pipeline_desc)
   return ML_ERROR_NONE;
 }
 
+/**
+ * @brief Opens the database and sets required options.
+ */
 static int
 service_init_db (void)
 {
@@ -124,17 +133,3 @@ service_init_db (void)
 
   return ML_ERROR_NONE;
 }
-
-/*
- * TODO: when is the DB closed? At Exit?
-static int
-service_finalize_db (void)
-{
-  if (ml_service_db) {
-    leveldb_close(ml_service_db);
-    ml_service_db = NULL;
-  }
-
-  return 0;
-}
-*/
