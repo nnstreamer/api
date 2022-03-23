@@ -10,6 +10,12 @@ Build-Depends: gcc-9 | gcc-8 | gcc-7 | gcc-6 | gcc-5 (>=5.4),
 Standards-Version: 3.9.6
 Homepage: https://github.com/nnstreamer/api
 
+Package: ml-api-common
+Architecture: any
+Multi-Arch: same
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Common utility functions for Machine Learning API
+
 Package: ml-api-common-dev
 Architecture: any
 Multi-Arch: same
@@ -18,17 +24,45 @@ Description: Machine Learning API common
  Provides headers commonly used across API, such as error definitions.
  This is a development package for ML API.
 
+Package: ml-inference-single-api
+Architecture: any
+Multi-Arch: same
+Depends: nnstreamer-single, ml-api-common, ${shlibs:Depends}, ${misc:Depends}
+Description: Machine Learning Inference Single API
+ This package provides native API invoke individual input frame with NNStreamer.
+
+Package: ml-inference-single-api-dev
+Architecture: any
+Multi-Arch: same
+Depends: ml-inference-single-api, ml-api-common-dev, ${shlibs:Depends}, ${misc:Depends}
+Description: Development package for Machine Learning Inference API
+ This is a development package for Machine Learning Inference Single API.
+
+Package: ml-inference-pipeline-api
+Architecture: any
+Multi-Arch: same
+Depends: nnstreamer, ml-api-common, ${shlibs:Depends}, ${misc:Depends}
+Description: Machine Learning Inference Pipeline API
+ This package provides native API set to easily construct a data stream pipeline with neural networks.
+
+Package: ml-inference-pipeline-api-dev
+Architecture: any
+Multi-Arch: same
+Depends: ml-inference-pipeline-api, ml-api-common-dev, ${shlibs:Depends}, ${misc:Depends}
+Description: Development package for Machine Learning Inference Pipeline API
+ This is a development package for Machine Learning Inference Pipeline API.
+
 Package: ml-inference-api
 Architecture: any
 Multi-Arch: same
-Depends: nnstreamer, ${shlibs:Depends}, ${misc:Depends}
+Depends: ml-inference-single-api, ml-inference-pipeline-api, ${shlibs:Depends}, ${misc:Depends}
 Description: Machine Learning Inference API
  This package provides native API set to easily construct a data stream pipeline with neural networks.
 
 Package: ml-inference-api-dev
 Architecture: any
 Multi-Arch: same
-Depends: ml-inference-api, ml-api-common-dev, ${shlibs:Depends}, ${misc:Depends}
+Depends: ml-inference-api, ml-inference-single-api-dev, ml-inference-pipeline-api-dev, ${shlibs:Depends}, ${misc:Depends}
 Description: Development package for Machine Learning Inference API
  This is a development package for Machine Learning Inference API.
 
