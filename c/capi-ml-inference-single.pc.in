@@ -9,5 +9,5 @@ Name: tizen-api-ml-inference-single
 Description: ML inference single-shot API for Tizen
 Version: @VERSION@
 Requires: @ML_INFERENCE_SINGLE_REQUIRE@
-Libs: -L${libdir} -lcapi-nnstreamer-single
+Libs: -L${libdir} -lcapi-ml-inference-single
 Cflags: -I${includedir}/nnstreamer

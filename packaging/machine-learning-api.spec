@@ -144,7 +144,6 @@ You can construct a data stream pipeline with neural networks easily.
 Summary:	Tizen Native API Devel Kit for NNStreamer
 Group:		Machine Learning/ML Framework
 Requires:	capi-machine-learning-inference = %{version}-%{release}
-Requires:	capi-machine-learning-common-devel
 Requires:	capi-machine-learning-inference-single-devel
 Requires:	capi-machine-learning-inference-pipeline-devel
 %description devel
@@ -189,6 +188,7 @@ Tizen Machine Learning Single-shot API.
 Summary:	Single-shot headers for Tizen Machine Learning API
 Group:		Machine Learning/ML Framework
 Requires:	capi-machine-learning-inference-single = %{version}-%{release}
+Requires:	capi-machine-learning-common-devel = %{version}-%{release}
 %description -n capi-machine-learning-inference-single-devel
 Single-shot headers for Tizen Machine Learning API.
 
@@ -210,6 +210,7 @@ Tizen Machine Learning Pipeline API.
 Summary:	pipeline headers for Tizen Machine Learning API
 Group:		Machine Learning/ML Framework
 Requires:	capi-machine-learning-inference-pipeline = %{version}-%{release}
+Requires:	capi-machine-learning-common-devel = %{version}-%{release}
 %description -n capi-machine-learning-inference-pipeline-devel
 pipeline headers for Tizen Machine Learning API.
 
@@ -374,24 +375,24 @@ cp -r result %{buildroot}%{_datadir}/ml-api/unittest/
 %{_libdir}/libcapi-nnstreamer.a
 
 %files single
-%{_libdir}/libcapi-nnstreamer-single.so*
+%{_libdir}/libcapi-ml-inference-single.so*
 
 %files single-devel
 %{_includedir}/nnstreamer/nnstreamer-single.h
 %{_libdir}/pkgconfig/capi-ml-inference-single.pc
 
 %files single-devel-static
-%{_libdir}/libcapi-nnstreamer-single.a
+%{_libdir}/libcapi-ml-inference-single.a
 
 %files pipeline
-%{_libdir}/libcapi-nnstreamer-pipeline.so*
+%{_libdir}/libcapi-ml-inference-pipeline.so*
 
 %files pipeline-devel
 %{_includedir}/nnstreamer/nnstreamer.h
 %{_libdir}/pkgconfig/capi-ml-inference-pipeline.pc
 
 %files pipeline-devel-static
-%{_libdir}/libcapi-nnstreamer-pipeline.a
+%{_libdir}/libcapi-ml-inference-pipeline.a
 
 %files -n capi-machine-learning-common
 %{_libdir}/libcapi-ml-common.so*

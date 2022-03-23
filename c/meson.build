@@ -73,6 +73,7 @@ nns_capi_common_shared_lib = shared_library ('capi-ml-common',
   include_directories: nns_capi_include,
   install: true,
   install_dir: api_install_libdir,
+  version: api_version,
 )
 nns_capi_common_static_lib = static_library ('capi-ml-common',
   nns_capi_common_srcs,
@@ -95,7 +96,7 @@ endif
 
 
 # Single-shot API.
-nns_capi_single_shared_lib = shared_library ('capi-nnstreamer-single',
+nns_capi_single_shared_lib = shared_library ('capi-ml-inference-single',
   nns_capi_single_srcs,
   dependencies: nns_capi_deps,
   include_directories: nns_capi_include,
@@ -104,7 +105,7 @@ nns_capi_single_shared_lib = shared_library ('capi-nnstreamer-single',
   version: api_version,
 )
 
-nns_capi_single_static_lib = static_library ('capi-nnstreamer-single',
+nns_capi_single_static_lib = static_library ('capi-ml-inference-single',
   nns_capi_single_srcs,
   dependencies: nns_capi_deps,
   include_directories: nns_capi_include,
@@ -119,7 +120,7 @@ endif
 
 
 # Pipeline API.
-nns_capi_pipeline_shared_lib = shared_library ('capi-nnstreamer-pipeline',
+nns_capi_pipeline_shared_lib = shared_library ('capi-ml-inference-pipeline',
   nns_capi_pipeline_srcs,
   dependencies: nns_capi_deps,
   include_directories: nns_capi_include,
@@ -128,7 +129,7 @@ nns_capi_pipeline_shared_lib = shared_library ('capi-nnstreamer-pipeline',
   version: api_version,
 )
 
-nns_capi_pipeline_static_lib = static_library ('capi-nnstreamer-pipeline',
+nns_capi_pipeline_static_lib = static_library ('capi-ml-inference-pipeline',
   nns_capi_pipeline_srcs,
   dependencies: nns_capi_deps,
   include_directories: nns_capi_include,
@@ -140,7 +141,6 @@ nns_capi_pipeline_dep = declare_dependency(link_with: nns_capi_pipeline_shared_l
 if get_option('default_library') == 'static'
   nns_capi_pipeline_dep = declare_dependency(link_with: nns_capi_pipeline_static_lib)
 endif
-
 
 # Single-shot and pipeline API.
 nns_capi_shared_lib = shared_library ('capi-nnstreamer',
