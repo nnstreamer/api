@@ -45,6 +45,7 @@ typedef enum {
   ML_ERROR_NOT_SUPPORTED        = TIZEN_ERROR_NOT_SUPPORTED, /**< The feature is not supported */
   ML_ERROR_PERMISSION_DENIED    = TIZEN_ERROR_PERMISSION_DENIED, /**< Permission denied */
   ML_ERROR_OUT_OF_MEMORY        = TIZEN_ERROR_OUT_OF_MEMORY, /**< Out of memory (Since 6.0) */
+  ML_ERROR_IO_ERROR             = TIZEN_ERROR_IO_ERROR, /**< I/O error for database and filesystem (Since 7.0) */
 } ml_error_e;
 
 /**
