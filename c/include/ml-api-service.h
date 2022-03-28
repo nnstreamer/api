@@ -77,13 +77,18 @@ typedef struct {
 } ml_service_model_description;
 
 /**
- * @brief Stores the pipeline description with a given name.
+ * @brief Set the pipeline description with a given name.
  * @since_tizen 7.0
  * @param[in] name Unique name to retrieve the associated pipeline description.
  * @param[in] pipeline_desc The pipeline description to be stored
  * @return @c 0 on success. Otherwise a negative error value.
+ * @note If the name already exists, the pipeline description is overwritten.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
+ * @retval #ML_ERROR_IO_ERROR The operation of DB or filesystem is failed.
  */
-int ml_service_pipeline_add (const char *name, const char * pipeline_desc);
+int ml_service_set_pipeline (const char *name, const char * pipeline_desc);
 
 /**
  * @brief Get the pipeline description with a given name.
@@ -91,8 +96,25 @@ int ml_service_pipeline_add (const char *name, const char * pipeline_desc);
  * @param[in] name The unique name to retrieve.
  * @param[out] pipeline_desc The pipeline corresponding with the given name.
  * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
+ * @retval #ML_ERROR_IO_ERROR The operation of DB or filesystem is failed.
  */
-int ml_service_pipeline_get (const char *name, char **pipeline_desc);
+int ml_service_get_pipeline (const char *name, char **pipeline_desc);
+
+/**
+ * @brief Delete the pipeline description with a given name.
+ * @since_tizen 7.0
+ * @param[in] name The unique name to delete.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @note If the name did not exist in the database, this function returns ML_ERROR_NONE without any errors.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
+ * @retval #ML_ERROR_IO_ERROR The operation of DB or filesystem is failed.
+ */
+int ml_service_delete_pipeline (const char *name);
 
 /**
  * @brief TBU
