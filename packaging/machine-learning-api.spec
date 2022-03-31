@@ -63,6 +63,7 @@ Source0:	machine-learning-api-%{version}.tar
 Source1001:	capi-machine-learning-inference.manifest
 
 ## Define build requirements ##
+Requires:	capi-machine-learning-common = %{version}-%{release}
 Requires:	capi-machine-learning-inference-single = %{version}-%{release}
 Requires:	capi-machine-learning-inference-pipeline = %{version}-%{release}
 %ifarch aarch64 x86_64
@@ -146,6 +147,7 @@ You can construct a data stream pipeline with neural networks easily.
 Summary:	Tizen Native API Devel Kit for NNStreamer
 Group:		Machine Learning/ML Framework
 Requires:	capi-machine-learning-inference = %{version}-%{release}
+Requires:	capi-machine-learning-common-devel
 Requires:	capi-machine-learning-inference-single-devel
 Requires:	capi-machine-learning-inference-pipeline-devel
 %description devel
