@@ -12,60 +12,62 @@
 #include <ml-api-service.h>
 
 /**
- * @brief Set the pipeline description with given name
+ * @brief Test base class for Database of ML Service API.
  */
-TEST (nnstreamer_capi_service, set_pipeline_description_0_p)
+class MLServiceDBTest : public::testing::Test
 {
-  int ret = 0;
-  gchar *pipeline, *test_model;
-  const gchar *key = "ServiceName";
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+protected:
+  const gchar *root_path;
+  const gchar *key;
+  gchar *test_model;
+  gchar *pipeline;
 
-  /* supposed to run test in build directory */
-  if (root_path == NULL)
-    root_path = "..";
+public:
+  /**
+   * @brief Setup method for each test case.
+   */
+  void SetUp() override
+  {
+    /* supposed to run test in build directory */
+    root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+    if (root_path == NULL)
+      root_path = "..";
 
-  test_model =
-      g_build_filename (root_path, "tests", "test_models", "models",
-      "add.tflite", NULL);
-  EXPECT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
+    key = "ServiceName";
+    test_model =
+        g_build_filename (root_path, "tests", "test_models", "models",
+        "add.tflite", NULL);
+    pipeline = g_strdup_printf ("appsrc name=appsrc ! "
+        "other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! "
+        "tensor_filter name=filter_h framework=tensorflow-lite model=%s ! tensor_sink name=tensor_sink",
+        test_model);
+  }
 
-  pipeline = g_strdup_printf ("appsrc name=appsrc ! "
-      "other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! "
-      "tensor_filter name=filter_h framework=tensorflow-lite model=%s ! tensor_sink name=tensor_sink",
-      test_model);
+  /**
+   * @brief Teardown method for each test case.
+   */
+  void TearDown() override
+  {
+    g_free (pipeline);
+    g_free (test_model);
+  }
+};
 
-  /* Test */
-  ret = ml_service_set_pipeline (key, pipeline);
+/**
+ * @brief Set the pipeline description with given name.
+ */
+TEST_F (MLServiceDBTest, set_pipeline_description_0_p)
+{
+  int ret = ml_service_set_pipeline (key, pipeline);
   EXPECT_EQ (ML_ERROR_NONE, ret);
-
-  g_free (pipeline);
-  g_free (test_model);
 }
 
 /**
- * @brief Set the pipeline description with wrong parameters
+ * @brief Set the pipeline description with wrong parameters.
  */
-TEST (nnstreamer_capi_service, set_pipeline_description_1_n)
+TEST_F (MLServiceDBTest, set_pipeline_description_1_n)
 {
   int ret = 0;
-  const gchar *key = "ServiceName";
-  gchar *pipeline, *test_model;
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
-
-  /* supposed to run test in build directory */
-  if (root_path == NULL)
-    root_path = "..";
-
-  test_model =
-      g_build_filename (root_path, "tests", "test_models", "models",
-      "add.tflite", NULL);
-  EXPECT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
-
-  pipeline = g_strdup_printf ("appsrc name=appsrc ! "
-      "other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! "
-      "tensor_filter name=filter_h framework=tensorflow-lite model=%s ! tensor_sink name=tensor_sink",
-      test_model);
 
   /* Test */
   ret = ml_service_set_pipeline (NULL, pipeline);
@@ -73,82 +75,38 @@ TEST (nnstreamer_capi_service, set_pipeline_description_1_n)
 
   ret = ml_service_set_pipeline (key, NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, ret);
-
-  g_free (pipeline);
-  g_free (test_model);
 }
 
 /**
- * @brief Update the pipeline description with the same name
+ * @brief Update the pipeline description with the same name.
  */
-TEST (nnstreamer_capi_service, set_pipeline_description_2_p)
+TEST_F (MLServiceDBTest, set_pipeline_description_2_p)
 {
   int ret = 0;
-  const gchar *key = "ServiceName";
-  gchar *pipeline, *test_model;
-  gchar *pipeline2;
-  gchar *ret_pipeline;
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
-
-  /* supposed to run test in build directory */
-  if (root_path == NULL)
-    root_path = "..";
-
-  test_model =
-      g_build_filename (root_path, "tests", "test_models", "models",
-      "add.tflite", NULL);
-  EXPECT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
-
-  pipeline = g_strdup_printf ("appsrc name=appsrc ! "
-      "other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! "
-      "tensor_filter name=filter_h framework=tensorflow-lite model=%s ! tensor_sink name=tensor_sink",
-      test_model);
+  g_autofree gchar *ret_pipeline = NULL;
+  g_autofree gchar *pipeline_new = g_strdup_printf (
+      "v4l2src ! videoconvert ! videoscale ! video/x-raw,format=RGB,width=640,height=480,framerate=5/1 ! "
+      "mqttsink pub-topic=example/objectDetection");
 
   ret = ml_service_set_pipeline (key, pipeline);
   EXPECT_EQ (ML_ERROR_NONE, ret);
 
-  pipeline2 =
-      g_strdup_printf
-      ("v4l2src ! videoconvert ! videoscale ! video/x-raw,format=RGB,width=640,height=480,framerate=5/1 ! "
-      "mqttsink pub-topic=example/objectDetection");
-  ret = ml_service_set_pipeline (key, pipeline2);
+  /* Test */
+  ret = ml_service_set_pipeline (key, pipeline_new);
   EXPECT_EQ (ML_ERROR_NONE, ret);
 
-  /* Test */
   ret = ml_service_get_pipeline (key, &ret_pipeline);
   EXPECT_EQ (ML_ERROR_NONE, ret);
-  EXPECT_STREQ (pipeline2, ret_pipeline);
-
-  g_free (pipeline);
-  g_free (pipeline2);
-  g_free (ret_pipeline);
-  g_free (test_model);
+  EXPECT_STREQ (pipeline_new, ret_pipeline);
 }
 
 /**
- * @brief Update the pipeline description with the same name
+ * @brief Update the pipeline description with the same name.
  */
-TEST (nnstreamer_capi_service, set_pipeline_description_3_n)
+TEST_F (MLServiceDBTest, set_pipeline_description_3_n)
 {
   int ret = 0;
-  const gchar *key = "ServiceName";
-  gchar *pipeline, *test_model;
-  gchar *ret_pipeline;
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
-
-  /* supposed to run test in build directory */
-  if (root_path == NULL)
-    root_path = "..";
-
-  test_model =
-      g_build_filename (root_path, "tests", "test_models", "models",
-      "add.tflite", NULL);
-  EXPECT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
-
-  pipeline = g_strdup_printf ("appsrc name=appsrc ! "
-      "other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! "
-      "tensor_filter name=filter_h framework=tensorflow-lite model=%s ! tensor_sink name=tensor_sink",
-      test_model);
+  g_autofree gchar *ret_pipeline;
 
   ret = ml_service_set_pipeline (key, pipeline);
   EXPECT_EQ (ML_ERROR_NONE, ret);
@@ -160,36 +118,15 @@ TEST (nnstreamer_capi_service, set_pipeline_description_3_n)
   ret = ml_service_get_pipeline (key, &ret_pipeline);
   EXPECT_EQ (ML_ERROR_NONE, ret);
   EXPECT_STREQ (pipeline, ret_pipeline);
-
-  g_free (pipeline);
-  g_free (ret_pipeline);
-  g_free (test_model);
 }
 
 /**
- * @brief Get the pipeline description with given name
+ * @brief Get the pipeline description with given name.
  */
-TEST (nnstreamer_capi_service, get_pipeline_description_0_p)
+TEST_F (MLServiceDBTest, get_pipeline_description_0_p)
 {
   int ret = 0;
-  gchar *pipeline, *test_model;
-  gchar *ret_pipeline;
-  const gchar *key = "ServiceName";
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
-
-  /* supposed to run test in build directory */
-  if (root_path == NULL)
-    root_path = "..";
-
-  test_model =
-      g_build_filename (root_path, "tests", "test_models", "models",
-      "add.tflite", NULL);
-  EXPECT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
-
-  pipeline = g_strdup_printf ("appsrc name=appsrc ! "
-      "other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! "
-      "tensor_filter name=filter_h framework=tensorflow-lite model=%s ! tensor_sink name=tensor_sink",
-      test_model);
+  g_autofree gchar *ret_pipeline;
 
   ret = ml_service_set_pipeline (key, pipeline);
   EXPECT_EQ (ML_ERROR_NONE, ret);
@@ -198,36 +135,15 @@ TEST (nnstreamer_capi_service, get_pipeline_description_0_p)
   ret = ml_service_get_pipeline (key, &ret_pipeline);
   EXPECT_EQ (ML_ERROR_NONE, ret);
   EXPECT_STREQ (pipeline, ret_pipeline);
-
-  g_free (pipeline);
-  g_free (ret_pipeline);
-  g_free (test_model);
 }
 
 /**
- * @brief Get the pipeline description with wrong parameters
+ * @brief Get the pipeline description with wrong parameters.
  */
-TEST (nnstreamer_capi_service, get_pipeline_description_1_n)
+TEST_F (MLServiceDBTest, get_pipeline_description_1_n)
 {
   int ret = 0;
-  gchar *pipeline, *test_model;
-  gchar *ret_pipeline = NULL;
-  const gchar *key = "ServiceName";
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
-
-  /* supposed to run test in build directory */
-  if (root_path == NULL)
-    root_path = "..";
-
-  test_model =
-      g_build_filename (root_path, "tests", "test_models", "models",
-      "add.tflite", NULL);
-  EXPECT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
-
-  pipeline = g_strdup_printf ("appsrc name=appsrc ! "
-      "other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! "
-      "tensor_filter name=filter_h framework=tensorflow-lite model=%s ! tensor_sink name=tensor_sink",
-      test_model);
+  g_autofree gchar *ret_pipeline = NULL;
 
   ret = ml_service_set_pipeline (key, pipeline);
   EXPECT_EQ (ML_ERROR_NONE, ret);
@@ -238,42 +154,23 @@ TEST (nnstreamer_capi_service, get_pipeline_description_1_n)
 
   ret = ml_service_get_pipeline (key, NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, ret);
-
-  g_free (pipeline);
-  g_free (ret_pipeline);
-  g_free (test_model);
 }
 
 /**
- * @brief Delete the pipeline description with given name
+ * @brief Delete the pipeline description with given name.
  */
-TEST (nnstreamer_capi_service, del_pipeline_description_0_p)
+TEST_F (MLServiceDBTest, del_pipeline_description_0_p)
 {
   int ret = 0;
-  gchar *pipeline, *test_model;
   gchar *ret_pipeline = NULL;
-  const gchar *key = "ServiceName";
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
-
-  /* supposed to run test in build directory */
-  if (root_path == NULL)
-    root_path = "..";
-
-  test_model =
-      g_build_filename (root_path, "tests", "test_models", "models",
-      "add.tflite", NULL);
-  EXPECT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
-
-  pipeline = g_strdup_printf ("appsrc name=appsrc ! "
-      "other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! "
-      "tensor_filter name=filter_h framework=tensorflow-lite model=%s ! tensor_sink name=tensor_sink",
-      test_model);
 
   ret = ml_service_set_pipeline (key, pipeline);
   EXPECT_EQ (ML_ERROR_NONE, ret);
 
   ret = ml_service_get_pipeline (key, &ret_pipeline);
   EXPECT_EQ (ML_ERROR_NONE, ret);
+  g_free (ret_pipeline);
+  ret_pipeline = NULL;
 
   /* Test */
   ret = ml_service_delete_pipeline (key);
@@ -281,37 +178,15 @@ TEST (nnstreamer_capi_service, del_pipeline_description_0_p)
 
   ret = ml_service_get_pipeline (key, &ret_pipeline);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, ret);
-
-  g_free (pipeline);
-  g_free (ret_pipeline);
-  g_free (test_model);
 }
 
 /**
- * @brief Delete the pipeline description with wrong parameters
+ * @brief Delete the pipeline description with wrong parameters.
  */
-TEST (nnstreamer_capi_service, del_pipeline_description_1_n)
+TEST_F (MLServiceDBTest, del_pipeline_description_1_n)
 {
   int ret = 0;
-  gchar *pipeline, *test_model;
-  gchar *ret_pipeline = NULL;
-  const gchar *key = "ServiceName";
   const gchar *key_invalid = "InvalidName";
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
-
-  /* supposed to run test in build directory */
-  if (root_path == NULL)
-    root_path = "..";
-
-  test_model =
-      g_build_filename (root_path, "tests", "test_models", "models",
-      "add.tflite", NULL);
-  EXPECT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
-
-  pipeline = g_strdup_printf ("appsrc name=appsrc ! "
-      "other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! "
-      "tensor_filter name=filter_h framework=tensorflow-lite model=%s ! tensor_sink name=tensor_sink",
-      test_model);
 
   ret = ml_service_set_pipeline (key, pipeline);
   EXPECT_EQ (ML_ERROR_NONE, ret);
@@ -322,10 +197,6 @@ TEST (nnstreamer_capi_service, del_pipeline_description_1_n)
 
   ret = ml_service_delete_pipeline (key_invalid);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, ret);
-
-  g_free (pipeline);
-  g_free (ret_pipeline);
-  g_free (test_model);
 }
 
 /**
