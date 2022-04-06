@@ -38,24 +38,10 @@ Depends: ml-inference-single-api, ml-api-common-dev, ${shlibs:Depends}, ${misc:D
 Description: Development package for Machine Learning Inference API
  This is a development package for Machine Learning Inference Single API.
 
-Package: ml-inference-pipeline-api
-Architecture: any
-Multi-Arch: same
-Depends: nnstreamer, ml-api-common, ${shlibs:Depends}, ${misc:Depends}
-Description: Machine Learning Inference Pipeline API
- This package provides native API set to easily construct a data stream pipeline with neural networks.
-
-Package: ml-inference-pipeline-api-dev
-Architecture: any
-Multi-Arch: same
-Depends: ml-inference-pipeline-api, ml-api-common-dev, ${shlibs:Depends}, ${misc:Depends}
-Description: Development package for Machine Learning Inference Pipeline API
- This is a development package for Machine Learning Inference Pipeline API.
-
 Package: ml-service-api
 Architecture: any
 Multi-Arch: same
-Depends: ml-inference-single-api, ml-inference-pipeline-api, ${shlibs:Depends}, ${misc:Depends}
+Depends: ml-inference-single-api, ${shlibs:Depends}, ${misc:Depends}
 Description: Machine Learning Service API
  This package provides native API set to use Machine Learning service.
 
@@ -69,14 +55,14 @@ Description: Development package for Machine Learning Service API
 Package: ml-inference-api
 Architecture: any
 Multi-Arch: same
-Depends: ml-inference-single-api, ml-inference-pipeline-api, ${shlibs:Depends}, ${misc:Depends}
+Depends: ml-inference-single-api, ${shlibs:Depends}, ${misc:Depends}
 Description: Machine Learning Inference API
  This package provides native API set to easily construct a data stream pipeline with neural networks.
 
 Package: ml-inference-api-dev
 Architecture: any
 Multi-Arch: same
-Depends: ml-inference-api, ml-inference-single-api-dev, ml-inference-pipeline-api-dev, ${shlibs:Depends}, ${misc:Depends}
+Depends: ml-inference-api, ml-inference-single-api-dev, ${shlibs:Depends}, ${misc:Depends}
 Description: Development package for Machine Learning Inference API
  This is a development package for Machine Learning Inference API.
 

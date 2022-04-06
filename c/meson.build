@@ -122,28 +122,33 @@ if get_option('default_library') == 'static'
 endif
 
 
-# Pipeline API.
-nns_capi_pipeline_shared_lib = shared_library ('capi-ml-inference-pipeline',
+# Pipeline API. (including single-shot API)
+nns_capi_shared_lib = shared_library ('capi-nnstreamer',
   nns_capi_pipeline_srcs,
-  dependencies: nns_capi_deps,
+  dependencies: [nns_capi_deps, nns_capi_single_dep],
   include_directories: nns_capi_include,
   install: true,
   install_dir: api_install_libdir,
   version: api_version,
 )
 
-nns_capi_pipeline_static_lib = static_library ('capi-ml-inference-pipeline',
+nns_capi_static_lib = static_library ('capi-nnstreamer',
   nns_capi_pipeline_srcs,
-  dependencies: nns_capi_deps,
+  dependencies: [nns_capi_deps, nns_capi_single_dep],
   include_directories: nns_capi_include,
   install: true,
   install_dir: api_install_libdir,
 )
 
-nns_capi_pipeline_dep = declare_dependency(link_with: nns_capi_pipeline_shared_lib)
+nns_capi_lib = nns_capi_shared_lib
 if get_option('default_library') == 'static'
-  nns_capi_pipeline_dep = declare_dependency(link_with: nns_capi_pipeline_static_lib)
+  nns_capi_lib = nns_capi_static_lib
 endif
+
+nns_capi_dep = declare_dependency(link_with: nns_capi_lib,
+  dependencies: [nns_capi_deps, nns_capi_single_dep],
+  include_directories: nns_capi_include,
+)
 
 # Service API
 nns_capi_service_shared_lib = shared_library ('capi-ml-service',
@@ -168,35 +173,9 @@ if get_option('default_library') == 'static'
   nns_capi_service_dep = declare_dependency(link_with: nns_capi_service_static_lib)
 endif
 
-# Single-shot and pipeline API.
-nns_capi_shared_lib = shared_library ('capi-nnstreamer',
-  link_with: [nns_capi_single_shared_lib, nns_capi_pipeline_shared_lib],
-  include_directories: nns_capi_include,
-  install: true,
-  install_dir: api_install_libdir,
-  version: api_version,
-)
-
-nns_capi_static_lib = static_library ('capi-nnstreamer',
-  link_whole: [nns_capi_single_static_lib, nns_capi_pipeline_static_lib],
-  include_directories: nns_capi_include,
-  install: true,
-  install_dir: api_install_libdir,
-)
-
-nns_capi_lib = nns_capi_shared_lib
-if get_option('default_library') == 'static'
-  nns_capi_lib = nns_capi_static_lib
-endif
-
-nns_capi_dep = declare_dependency(link_with: nns_capi_lib,
-  dependencies: [nns_capi_deps,nns_capi_single_dep, nns_capi_pipeline_dep, nns_capi_service_dep],
-  include_directories: nns_capi_include,
-)
-
 ml_inf_conf = configuration_data()
 ml_inf_conf.merge_from(api_conf)
-ml_inf_conf.set('ML_INFERENCE_REQUIRE', 'capi-ml-inference-single capi-ml-inference-pipeline')
+ml_inf_conf.set('ML_INFERENCE_REQUIRE', 'capi-ml-inference-single')
 configure_file(input: 'capi-ml-inference.pc.in', output: 'capi-ml-inference.pc',
   install_dir: join_paths(api_install_libdir, 'pkgconfig'),
   configuration: ml_inf_conf
@@ -210,17 +189,9 @@ configure_file(input: 'capi-ml-inference-single.pc.in', output: 'capi-ml-inferen
   configuration: ml_inf_single_conf
 )
 
-ml_inf_pipe_conf = configuration_data()
-ml_inf_pipe_conf.merge_from(api_conf)
-ml_inf_pipe_conf.set('ML_INFERENCE_PIPE_REQUIRE', 'capi-ml-common')
-configure_file(input: 'capi-ml-inference-pipeline.pc.in', output: 'capi-ml-inference-pipeline.pc',
-  install_dir: join_paths(api_install_libdir, 'pkgconfig'),
-  configuration: ml_inf_pipe_conf
-)
-
 ml_inf_service_conf = configuration_data()
 ml_inf_service_conf.merge_from(api_conf)
-ml_inf_service_conf.set('ML_INFERENCE_SERVICE_REQUIRE', 'capi-ml-inference-single capi-ml-inference-pipeline')
+ml_inf_service_conf.set('ML_INFERENCE_SERVICE_REQUIRE', 'capi-nnstreamer')
 configure_file(input: 'capi-ml-service.pc.in', output: 'capi-ml-service.pc',
   install_dir: join_paths(api_install_libdir, 'pkgconfig'),
   configuration: ml_inf_service_conf

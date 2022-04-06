@@ -46,7 +46,7 @@ test('unittest_capi_datatype_consistency', unittest_capi_datatype_consistency, e
 
 unittest_capi_service = executable('unittest_capi_service',
   'unittest_capi_service.cc',
-  dependencies: [unittest_common_dep],
+  dependencies: [unittest_common_dep, nns_capi_service_dep],
   install: get_option('install-test'),
   install_dir: unittest_install_dir
 )
