@@ -338,7 +338,7 @@ main (int argc, char **argv)
 
   try {
     testing::InitGoogleTest (&argc, argv);
-  } catch ( ...) {
+  } catch (...) {
     g_warning ("catch 'testing::internal::<unnamed>::ClassUniqueToAlwaysTrue'");
   }
 
