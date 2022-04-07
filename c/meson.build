@@ -201,6 +201,8 @@ ml_common_api_conf = configuration_data()
 ml_common_api_conf.merge_from(api_conf)
 if get_option('enable-tizen')
   ml_common_api_conf.set('ML_COMMON_REQUIRE', 'capi-base-common')
+else
+  ml_common_api_conf.set('ML_COMMON_REQUIRE', '')
 endif
 configure_file(input: 'capi-ml-common.pc.in', output: 'capi-ml-common.pc',
   install_dir: join_paths(api_install_libdir, 'pkgconfig'),

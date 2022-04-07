@@ -380,7 +380,6 @@ int ml_tensors_data_get_tensor_data (ml_tensors_data_h data, unsigned int index,
  */
 int ml_tensors_data_set_tensor_data (ml_tensors_data_h data, unsigned int index, const void *raw_data, const size_t data_size);
 
-
 /**
  * @brief Returns a human-readable string describing the last error.
  * @details This returns a human-readable, null-terminated string describing
@@ -394,7 +393,7 @@ int ml_tensors_data_set_tensor_data (ml_tensors_data_h data, unsigned int index,
 const char * ml_error (void);
 
 /**
- * @brief Returns a human-readable string describing for a error code
+ * @brief Returns a human-readable string describing for a error code.
  * @details This returns a human-readable, null-terminated string describing
  *         the error code of machine learning APIs.
  *         The returned string should *not* be freed or

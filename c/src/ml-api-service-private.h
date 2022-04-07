@@ -4,7 +4,7 @@
  * Copyright (C) 2021 MyungJoo Ham <myungjoo.ham@samsung.com>
  */
 /**
- * @file    ml-api-service-internal.h
+ * @file    ml-api-service-private.h
  * @date    03 Nov 2021
  * @brief   ML-API Private Data Structure Header
  * @see     https://github.com/nnstreamer/api
