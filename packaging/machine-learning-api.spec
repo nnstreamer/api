@@ -100,7 +100,8 @@ BuildRequires:	lcov
 %endif
 
 %if 0%{?unit_test}
-BuildRequires:	gtest-devel
+BuildRequires:  pkgconfig(gtest)
+BuildRequires:  pkgconfig(gmock)
 
 %if 0%{?tensorflow_support}
 BuildRequires:	tensorflow
@@ -320,6 +321,9 @@ bash %{test_script} ./tests/capi/unittest_capi_inference_single
 bash %{test_script} ./tests/capi/unittest_capi_inference
 bash %{test_script} ./tests/capi/unittest_datatype_consistency
 bash %{test_script} ./tests/capi/unittest_capi_service
+
+bash %{test_script} ./tests/capi/unittest_capi_service
+bash %{test_script} ./tests/capi/unittest_capi_service_db_mock
 
 %if 0%{?nnfw_support}
 bash %{test_script} ./tests/capi/unittest_capi_inference_nnfw_runtime
