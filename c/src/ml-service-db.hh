@@ -28,6 +28,7 @@ public:
   {
   };
   virtual void connectDB () = 0;
+  virtual void disconnectDB () = 0;
   virtual void setPipelineDescription (const std::string name,
       const std::string pipeline_description) = 0;
   virtual void getPipelineDescription (const std::string name,

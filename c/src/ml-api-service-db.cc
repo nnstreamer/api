@@ -32,6 +32,7 @@ public:
   MLServiceLevelDB & operator= (MLServiceLevelDB &&) = delete;
 
   virtual void connectDB () override;
+  virtual void disconnectDB () override;
   virtual void setPipelineDescription (const std::string name,
       const std::string pipeline_description) override;
   virtual void getPipelineDescription (std::string name,
@@ -58,7 +59,6 @@ IMLServiceDB & MLServiceLevelDB::getInstance (void)
 {
   static MLServiceLevelDB
   instance (ML_DATABASE_PATH);
-  instance.connectDB ();
 
   return instance;
 }
@@ -70,6 +70,9 @@ IMLServiceDB & MLServiceLevelDB::getInstance (void)
 MLServiceLevelDB::MLServiceLevelDB (std::string path)
 :  path (path), db_obj (nullptr), db_roptions (nullptr), db_woptions (nullptr)
 {
+  db_roptions = leveldb_readoptions_create ();
+  db_woptions = leveldb_writeoptions_create ();
+  leveldb_writeoptions_set_sync (db_woptions, 1);
 }
 
 /**
@@ -77,7 +80,6 @@ MLServiceLevelDB::MLServiceLevelDB (std::string path)
  */
 MLServiceLevelDB::~MLServiceLevelDB ()
 {
-  leveldb_close (db_obj);
   leveldb_readoptions_destroy (db_roptions);
   leveldb_writeoptions_destroy (db_woptions);
 }
@@ -88,11 +90,10 @@ MLServiceLevelDB::~MLServiceLevelDB ()
 void
 MLServiceLevelDB::connectDB ()
 {
-  static bool isConnected = false;
   char *err = nullptr;
   leveldb_options_t *db_options;
 
-  if (isConnected)
+  if (db_obj)
     return;
 
   db_options = leveldb_options_create ();
@@ -101,19 +102,26 @@ MLServiceLevelDB::connectDB ()
   db_obj = leveldb_open (db_options, path.c_str (), &err);
   leveldb_options_destroy (db_options);
   if (err != nullptr) {
-    _ml_loge
-        ("Error! Failed to open database located at '%s': leveldb_open () has returned an error: %s",
+    _ml_loge ("Error! Failed to open database located at '%s': leveldb_open() has returned an error: %s",
         path.c_str (), err);
     leveldb_free (err);
     throw std::runtime_error ("Failed to connectDB()!");
   }
-
-  db_roptions = leveldb_readoptions_create ();
-  db_woptions = leveldb_writeoptions_create ();
-  leveldb_writeoptions_set_sync (db_woptions, 1);
-
-  isConnected = true;
   return;
+}
+
+/**
+ * @brief Disconnect the level DB 
+ * @note LevelDB does not support multi-process and it might cause 
+ * the IO exception when multiple clients write the key simultaneously.
+ */
+void
+MLServiceLevelDB::disconnectDB ()
+{
+  if (db_obj) {
+    leveldb_close (db_obj);
+    db_obj = nullptr;
+  }
 }
 
 /**
@@ -156,13 +164,6 @@ MLServiceLevelDB::getPipelineDescription (const std::string name,
 
   value = leveldb_get (db_obj, db_roptions, name.c_str (), name.size (),
       &read_len, &err);
-  if (!value) {
-    _ml_loge
-        ("Failed to find the key %s. The key should be set before reading it",
-        name.c_str ());
-    throw std::invalid_argument ("Fail to find the key");
-  }
-
   if (err != nullptr) {
     _ml_loge
         ("Failed to call leveldb_get() for the name %s. Error message is %s.",
@@ -170,6 +171,13 @@ MLServiceLevelDB::getPipelineDescription (const std::string name,
     leveldb_free (err);
     leveldb_free (value);
     throw std::runtime_error ("Failed to getPipelineDescription()!");
+  }
+
+  if (!value) {
+    _ml_loge
+        ("Failed to find the key %s. The key should be set before reading it",
+        name.c_str ());
+    throw std::invalid_argument ("Fail to find the key");
   }
 
   pipeline_description = std::string (value, read_len);
@@ -216,25 +224,28 @@ ml_service_set_pipeline (const char *name, const char *pipeline_desc)
 {
   check_feature_state (ML_FEATURE_SERVICE);
 
+  int ret = ML_ERROR_NONE;
   if (!name || !pipeline_desc) {
     _ml_loge ("Error! name and pipeline_desc should not be NULL");
     return ML_ERROR_INVALID_PARAMETER;
   }
 
+  IMLServiceDB & db = MLServiceLevelDB::getInstance ();
   try {
-    IMLServiceDB & db = MLServiceLevelDB::getInstance ();
+    db.connectDB();
     db.setPipelineDescription (name, std::string (pipeline_desc));
   }
   catch (const std::runtime_error & e)
   {
-    return ML_ERROR_IO_ERROR;
+    ret = ML_ERROR_IO_ERROR;
   }
   catch (const std::exception & e)
   {
-    return ML_ERROR_IO_ERROR;
+    ret = ML_ERROR_IO_ERROR;
   }
 
-  return ML_ERROR_NONE;
+  db.disconnectDB ();
+  return ret;
 }
 
 /**
@@ -255,26 +266,32 @@ ml_service_get_pipeline (const char *name, char **pipeline_desc)
     return ML_ERROR_INVALID_PARAMETER;
   }
 
+  int ret = ML_ERROR_NONE;
   IMLServiceDB & db = MLServiceLevelDB::getInstance ();
   std::string ret_pipeline;
   try {
+    db.connectDB ();
     db.getPipelineDescription (name, ret_pipeline);
   }
   catch (const std::invalid_argument & e)
   {
-    return ML_ERROR_INVALID_PARAMETER;
+    ret = ML_ERROR_INVALID_PARAMETER;
   }
   catch (const std::runtime_error & e)
   {
-    return ML_ERROR_IO_ERROR;
+    ret = ML_ERROR_IO_ERROR;
   }
   catch (const std::exception & e)
   {
-    return ML_ERROR_IO_ERROR;
+    ret = ML_ERROR_IO_ERROR;
   }
 
-  *pipeline_desc = strdup (ret_pipeline.c_str ());
-  return ML_ERROR_NONE;
+  if (ret == ML_ERROR_NONE) {
+    *pipeline_desc = strdup (ret_pipeline.c_str ());
+  }
+
+  db.disconnectDB ();
+  return ret;
 }
 
 /**
@@ -290,22 +307,25 @@ ml_service_delete_pipeline (const char *name)
     return ML_ERROR_INVALID_PARAMETER;
   }
 
+  int ret = ML_ERROR_NONE;
   IMLServiceDB & db = MLServiceLevelDB::getInstance ();
   try {
+    db.connectDB ();
     db.delPipelineDescription (name);
   }
   catch (const std::invalid_argument & e)
   {
-    return ML_ERROR_INVALID_PARAMETER;
+    ret = ML_ERROR_INVALID_PARAMETER;
   }
   catch (const std::runtime_error & e)
   {
-    return ML_ERROR_IO_ERROR;
+    ret = ML_ERROR_IO_ERROR;
   }
   catch (const std::exception & e)
   {
-    return ML_ERROR_IO_ERROR;
+    ret = ML_ERROR_IO_ERROR;
   }
 
-  return ML_ERROR_NONE;
+  db.disconnectDB ();
+  return ret;
 }
