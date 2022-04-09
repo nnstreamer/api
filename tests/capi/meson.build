@@ -52,6 +52,17 @@ unittest_capi_service = executable('unittest_capi_service',
 )
 test('unittest_capi_service', unittest_capi_service, env: testenv, timeout: 100)
 
+gmock_dep = dependency('gmock', required: false)
+if get_option('enable-tizen') and gmock_dep.found()
+  unittest_capi_service_db_mock = executable('unittest_capi_service_db_mock',
+    'unittest_capi_service_db_mock.cc',
+    dependencies: [unittest_common_dep, nns_capi_service_dep, gmock_dep],
+    install: get_option('install-test'),
+    install_dir: unittest_install_dir
+  )
+  test('unittest_capi_service_db_mock', unittest_capi_service_db_mock, env: testenv, timeout: 100)
+endif
+
 if nnfw_dep.found()
   unittest_capi_inference_nnfw_runtime = executable('unittest_capi_inference_nnfw_runtime',
     'unittest_capi_inference_nnfw_runtime.cc',
