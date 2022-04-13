@@ -454,7 +454,9 @@ ml_tensors_info_set_tensor_dimension (ml_tensors_info_h info,
 
   if (tensors_info->num_tensors <= index) {
     G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
-    return ML_ERROR_INVALID_PARAMETER;
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The number of tensors in 'info' parameter is %u, which is not larger than the given 'index' %u. Thus, we cannot get %u'th tensor from 'info'. Please set the number of tensors of 'info' correctly or check the value of the given 'index'.",
+        tensors_info->num_tensors, index, index);
   }
 
   for (i = 0; i < ML_TENSOR_RANK_LIMIT; i++) {
