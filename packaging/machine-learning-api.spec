@@ -370,19 +370,24 @@ cp -r result %{buildroot}%{_datadir}/ml-api/unittest/
 %manifest capi-machine-learning-inference.manifest
 %defattr(-,root,root,-)
 %license LICENSE
-%{_libdir}/libcapi-nnstreamer.so*
+%{_libdir}/libcapi-nnstreamer.so.*
 
 %files devel
+%manifest capi-machine-learning-inference.manifest
 %{_libdir}/pkgconfig/capi-ml-inference.pc
 %{_includedir}/nnstreamer/nnstreamer.h
+%{_libdir}/libcapi-nnstreamer.so
 
 %files devel-static
 %{_libdir}/libcapi-nnstreamer.a
 
 %files single
-%{_libdir}/libcapi-ml-inference-single.so*
+%manifest capi-machine-learning-inference.manifest
+%{_libdir}/libcapi-ml-inference-single.so.*
 
 %files single-devel
+%manifest capi-machine-learning-inference.manifest
+%{_libdir}/libcapi-ml-inference-single.so
 %{_includedir}/nnstreamer/nnstreamer-single.h
 %{_libdir}/pkgconfig/capi-ml-inference-single.pc
 
@@ -390,9 +395,12 @@ cp -r result %{buildroot}%{_datadir}/ml-api/unittest/
 %{_libdir}/libcapi-ml-inference-single.a
 
 %files -n capi-machine-learning-common
-%{_libdir}/libcapi-ml-common.so*
+%manifest capi-machine-learning-inference.manifest
+%{_libdir}/libcapi-ml-common.so.*
 
 %files -n capi-machine-learning-common-devel
+%manifest capi-machine-learning-inference.manifest
+%{_libdir}/libcapi-ml-common.so
 %{_includedir}/nnstreamer/ml-api-common.h
 %{_libdir}/pkgconfig/capi-ml-common.pc
 
@@ -403,9 +411,12 @@ cp -r result %{buildroot}%{_datadir}/ml-api/unittest/
 %{_includedir}/nnstreamer/nnstreamer-tizen-internal.h
 
 %files -n capi-machine-learning-service
-%{_libdir}/libcapi-ml-service.so*
+%manifest capi-machine-learning-inference.manifest
+%{_libdir}/libcapi-ml-service.so.*
 
 %files -n capi-machine-learning-service-devel
+%manifest capi-machine-learning-inference.manifest
+%{_libdir}/libcapi-ml-service.so
 %{_includedir}/nnstreamer/ml-api-service.h
 %{_libdir}/pkgconfig/capi-ml-service.pc
 
