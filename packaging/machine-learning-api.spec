@@ -319,6 +319,7 @@ ninja -C build %{?_smp_mflags}
 bash %{test_script} ./tests/capi/unittest_capi_inference_single
 bash %{test_script} ./tests/capi/unittest_capi_inference
 bash %{test_script} ./tests/capi/unittest_datatype_consistency
+bash %{test_script} ./tests/capi/unittest_capi_service
 
 %if 0%{?nnfw_support}
 bash %{test_script} ./tests/capi/unittest_capi_inference_nnfw_runtime

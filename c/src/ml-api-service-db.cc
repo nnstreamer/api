@@ -18,7 +18,7 @@
 #include "ml-service-db.hh"
 #include "ml-api-service.h"
 
-#define ML_DATABASE_PATH      SYS_DB_DIR"/.ml-service-leveldb"
+#define ML_DATABASE_PATH      "/tmp/.ml-service-leveldb"
 
 /**
  * @brief Class for implementation of IMLServiceDB
