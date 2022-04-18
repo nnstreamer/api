@@ -1879,6 +1879,7 @@ _ml_validate_model_file (const char *const *model,
     case ML_NNFW_TYPE_VD_AIFW:
       if (!g_str_equal (file_ext[0], ".nb") &&
           !g_str_equal (file_ext[0], ".ncp") &&
+          !g_str_equal (file_ext[0], ".tvn") &&
           !g_str_equal (file_ext[0], ".bin")) {
         status = ML_ERROR_INVALID_PARAMETER;
       }
