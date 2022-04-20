@@ -33,7 +33,7 @@
   ml_pipeline *p; \
   ml_pipeline_element *elem; \
   int ret = ML_ERROR_NONE; \
-  check_feature_state (); \
+  check_feature_state (ML_FEATURE_INFERENCE); \
   if ((h) == NULL) { \
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER, \
         "The parameter, %s, (handle) is invalid (NULL). Please provide a valid handle.", \
@@ -750,7 +750,7 @@ ml_check_element_availability (const char *element_name, bool *available)
   GstElementFactory *factory;
   int status;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE_INFERENCE);
 
   if (!element_name)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -1005,7 +1005,7 @@ construct_pipeline_internal (const char *pipeline_description,
 
   ml_pipeline *pipe_h;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE_INFERENCE);
 
   if (!pipe)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -1149,7 +1149,7 @@ ml_pipeline_destroy (ml_pipeline_h pipe)
   GstState state;
   guint check_paused_cnt = 0;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE_INFERENCE);
 
   if (p == NULL)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -1230,7 +1230,7 @@ ml_pipeline_get_state (ml_pipeline_h pipe, ml_pipeline_state_e * state)
   GstState _state;
   GstStateChangeReturn scret;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE_INFERENCE);
 
   if (p == NULL)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -1266,7 +1266,7 @@ ml_pipeline_start (ml_pipeline_h pipe)
   GstStateChangeReturn scret;
   int status = ML_ERROR_NONE;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE_INFERENCE);
 
   if (p == NULL)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -1315,7 +1315,7 @@ ml_pipeline_stop (ml_pipeline_h pipe)
   ml_pipeline *p = pipe;
   GstStateChangeReturn scret;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE_INFERENCE);
 
   if (p == NULL)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -1341,7 +1341,7 @@ ml_pipeline_flush (ml_pipeline_h pipe, bool start)
   ml_pipeline *p = pipe;
   int status = ML_ERROR_NONE;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE_INFERENCE);
 
   if (p == NULL)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -1385,7 +1385,7 @@ ml_pipeline_sink_register (ml_pipeline_h pipe, const char *sink_name,
   ml_pipeline_common_elem *sink;
   int ret = ML_ERROR_NONE;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE_INFERENCE);
 
   if (h == NULL)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -1587,7 +1587,7 @@ ml_pipeline_src_get_handle (ml_pipeline_h pipe, const char *src_name,
   ml_pipeline_common_elem *src;
   int ret = ML_ERROR_NONE;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE_INFERENCE);
 
   if (h == NULL)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -1951,7 +1951,7 @@ ml_pipeline_switch_get_handle (ml_pipeline_h pipe, const char *switch_name,
   ml_pipeline_common_elem *swtc;
   int ret = ML_ERROR_NONE;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE_INFERENCE);
 
   if (h == NULL)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -2196,7 +2196,7 @@ ml_pipeline_valve_get_handle (ml_pipeline_h pipe, const char *valve_name,
   ml_pipeline_common_elem *valve;
   int ret = ML_ERROR_NONE;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE_INFERENCE);
 
   if (h == NULL)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -2857,7 +2857,7 @@ ml_pipeline_custom_easy_filter_register (const char *name,
   ml_custom_filter_s *c;
   GstTensorsInfo in_info, out_info;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE_INFERENCE);
 
   if (!name)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -2953,7 +2953,7 @@ ml_pipeline_custom_easy_filter_unregister (ml_custom_easy_filter_h custom)
   ml_custom_filter_s *c;
   int status = ML_ERROR_NONE;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE_INFERENCE);
 
   if (!custom)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -3109,7 +3109,7 @@ ml_pipeline_tensor_if_custom_register (const char *name,
   int status = ML_ERROR_NONE;
   ml_if_custom_s *c;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE_INFERENCE);
 
   if (!name)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -3177,7 +3177,7 @@ ml_pipeline_tensor_if_custom_unregister (ml_pipeline_if_h if_custom)
   ml_if_custom_s *c;
   int status = ML_ERROR_NONE;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE_INFERENCE);
 
   if (!if_custom)
     return ML_ERROR_INVALID_PARAMETER;

@@ -69,24 +69,33 @@ typedef enum
   SUPPORTED = 1
 } feature_state_t;
 
+/**
+ * @brief Enumeration for machine_learning feature.
+ */
+typedef enum {
+  ML_FEATURE  = 0,
+  ML_FEATURE_INFERENCE,
+  ML_FEATURE_TRAINING,
+  ML_FEATURE_SERVICE,
+
+  ML_FEATURE_UNKNOWN
+} ml_feature_e;
+
 #if defined (__FEATURE_CHECK_SUPPORT__)
-#define check_feature_state() \
+#define check_feature_state(ml_feature) \
   do { \
-    int feature_ret = _ml_tizen_get_feature_enabled (); \
+    int feature_ret = _ml_tizen_get_feature_enabled (ml_feature); \
     if (ML_ERROR_NONE != feature_ret) { \
-      if (ML_ERROR_NOT_SUPPORTED == feature_ret) \
-        _ml_error_report_return (feature_ret, \
-            "Tizen MachineLearning.Inference feature is not enabled. Enable the feature before calling ML.Inference APIs."); \
       _ml_error_report_return (feature_ret, \
-          "_ml_tizen_get_feature_enabled() has returned an error. (%d)", \
-          feature_ret); \
-      return feature_ret; \
+          "Failed to get feature: %s with an error: %d. " \
+          "Please check the feature is enabled.", \
+          _ml_tizen_get_feature_path(ml_feature), feature_ret); \
     } \
   } while (0);
 
 #define set_feature_state(...) _ml_tizen_set_feature_state(__VA_ARGS__)
 #else /* __FEATURE_CHECK_SUPPORT__ */
-#define check_feature_state()
+#define check_feature_state(...)
 #define set_feature_state(...)
 #endif  /* __FEATURE_CHECK_SUPPORT__ */
 
@@ -98,7 +107,7 @@ typedef enum
 #endif
 
 #else /* __TIZEN__ */
-#define check_feature_state()
+#define check_feature_state(...)
 #define set_feature_state(...)
 #endif  /* __TIZEN__ */
 
@@ -298,9 +307,14 @@ int _ml_tensors_data_create_no_alloc (const ml_tensors_info_h info, ml_tensors_d
 #if defined (__TIZEN__)
 /****** TIZEN CHECK FEATURE BEGINS *****/
 /**
+ * @brief Get machine learning feature path.
+ */
+const char* _ml_tizen_get_feature_path (ml_feature_e ml_feature);
+
+/**
  * @brief Checks whether machine_learning.inference feature is enabled or not.
  */
-int _ml_tizen_get_feature_enabled (void);
+int _ml_tizen_get_feature_enabled (ml_feature_e ml_feature);
 
 /**
  * @brief Set the feature status of machine_learning.inference.

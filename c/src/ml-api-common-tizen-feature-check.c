@@ -22,7 +22,13 @@
 /**
  * @brief Tizen ML feature.
  */
-#define ML_INF_FEATURE_PATH "tizen.org/feature/machine_learning.inference"
+static const gchar *ML_FEATURES[] = {
+  [ML_FEATURE] = "tizen.org/feature/machine_learning",
+  [ML_FEATURE_INFERENCE] = "tizen.org/feature/machine_learning.inference",
+  [ML_FEATURE_TRAINING] = "tizen.org/feature/machine_learning.training",
+  [ML_FEATURE_SERVICE] = "tizen.org/feature/machine_learning.service",
+  NULL
+};
 
 /**
  * @brief Internal struct to control tizen feature support (machine_learning.inference).
@@ -71,10 +77,19 @@ _ml_tizen_set_feature_state (int state)
 }
 
 /**
+ * @brief Get machine learning feature path.
+ */
+const char *
+_ml_tizen_get_feature_path (ml_feature_e ml_feature)
+{
+  return ML_FEATURES[ml_feature];
+}
+
+/**
  * @brief Checks whether machine_learning.inference feature is enabled or not.
  */
 int
-_ml_tizen_get_feature_enabled (void)
+_ml_tizen_get_feature_enabled (ml_feature_e ml_feature)
 {
   int ret;
   int feature_enabled;
@@ -90,11 +105,12 @@ _ml_tizen_get_feature_enabled (void)
     return ML_ERROR_NOT_SUPPORTED;
   } else if (NOT_CHECKED_YET == feature_enabled) {
     bool ml_inf_supported = false;
-    ret =
-        system_info_get_platform_bool (ML_INF_FEATURE_PATH, &ml_inf_supported);
+    ret = system_info_get_platform_bool (ML_FEATURES[ml_feature],
+        &ml_inf_supported);
     if (0 == ret) {
       if (false == ml_inf_supported) {
-        _ml_loge ("machine_learning.inference NOT supported");
+        _ml_loge ("%s feature NOT supported! Enable the feature before "
+            "calling ML.Inference APIs.", ML_FEATURES[ml_feature]);
         _ml_tizen_set_feature_state (NOT_SUPPORTED);
         return ML_ERROR_NOT_SUPPORTED;
       }
