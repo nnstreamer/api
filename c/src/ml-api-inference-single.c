@@ -224,7 +224,7 @@ ml_check_nnfw_availability_full (ml_nnfw_type_e nnfw, ml_nnfw_hw_e hw,
 {
   const char *fw_name = NULL;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE_INFERENCE);
 
   if (!available)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -890,7 +890,7 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
   guint num_models;
   char *hw_name;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE_INFERENCE);
 
   /* Validate the params */
   _ml_error_report_return_continue_iferr
@@ -1126,7 +1126,7 @@ ml_single_close (ml_single_h single)
   ml_single *single_h;
   gboolean invoking;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE_INFERENCE);
 
   if (!single)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -1252,7 +1252,7 @@ _ml_single_invoke_internal (ml_single_h single,
   gint64 end_time;
   int status = ML_ERROR_NONE;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE_INFERENCE);
 
   if (G_UNLIKELY (!single))
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -1406,7 +1406,7 @@ ml_single_get_tensors_info (ml_single_h single, gboolean is_input,
   int status = ML_ERROR_NONE;
   ml_tensors_info_s *input_info;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE_INFERENCE);
 
   if (!single)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -1473,7 +1473,7 @@ ml_single_set_timeout (ml_single_h single, unsigned int timeout)
 {
   ml_single *single_h;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE_INFERENCE);
 
   if (!single)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -1496,7 +1496,7 @@ ml_single_set_input_info (ml_single_h single, const ml_tensors_info_h info)
   ml_single *single_h;
   int status = ML_ERROR_NONE;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE_INFERENCE);
 
   if (!single)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -1602,7 +1602,7 @@ ml_single_set_property (ml_single_h single, const char *name, const char *value)
   int status = ML_ERROR_NONE;
   char *old_value = NULL;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE_INFERENCE);
 
   if (!single)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -1704,7 +1704,7 @@ ml_single_get_property (ml_single_h single, const char *name, char **value)
   ml_single *single_h;
   int status = ML_ERROR_NONE;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE_INFERENCE);
 
   if (!single)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,

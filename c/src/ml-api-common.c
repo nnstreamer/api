@@ -26,7 +26,7 @@ ml_tensors_info_create (ml_tensors_info_h * info)
 {
   ml_tensors_info_s *tensors_info;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE);
 
   if (!info)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -51,7 +51,7 @@ ml_tensors_info_destroy (ml_tensors_info_h info)
 {
   ml_tensors_info_s *tensors_info;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE);
 
   tensors_info = (ml_tensors_info_s *) info;
 
@@ -180,7 +180,7 @@ ml_tensors_info_validate (const ml_tensors_info_h info, bool *valid)
   ml_tensors_info_s *tensors_info;
   int ret = ML_ERROR_NONE;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE);
 
   if (!valid)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -210,7 +210,7 @@ _ml_tensors_info_compare (const ml_tensors_info_h info1,
   ml_tensors_info_s *i1, *i2;
   guint i;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE);
 
   if (info1 == NULL)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -254,7 +254,7 @@ ml_tensors_info_set_count (ml_tensors_info_h info, unsigned int count)
 {
   ml_tensors_info_s *tensors_info;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE);
 
   if (!info)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -280,7 +280,7 @@ ml_tensors_info_get_count (ml_tensors_info_h info, unsigned int *count)
 {
   ml_tensors_info_s *tensors_info;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE);
 
   if (!info)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -305,7 +305,7 @@ ml_tensors_info_set_tensor_name (ml_tensors_info_h info,
 {
   ml_tensors_info_s *tensors_info;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE);
 
   if (!info)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -342,7 +342,7 @@ ml_tensors_info_get_tensor_name (ml_tensors_info_h info,
 {
   ml_tensors_info_s *tensors_info;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE);
 
   if (!info)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -376,7 +376,7 @@ ml_tensors_info_set_tensor_type (ml_tensors_info_h info,
 {
   ml_tensors_info_s *tensors_info;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE);
 
   if (!info)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -410,7 +410,7 @@ ml_tensors_info_get_tensor_type (ml_tensors_info_h info,
 {
   ml_tensors_info_s *tensors_info;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE);
 
   if (!info)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -443,7 +443,7 @@ ml_tensors_info_set_tensor_dimension (ml_tensors_info_h info,
   ml_tensors_info_s *tensors_info;
   guint i;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE);
 
   if (!info)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -477,7 +477,7 @@ ml_tensors_info_get_tensor_dimension (ml_tensors_info_h info,
   ml_tensors_info_s *tensors_info;
   guint i;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE);
 
   if (!info)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -551,7 +551,7 @@ ml_tensors_info_get_tensor_size (ml_tensors_info_h info,
 {
   ml_tensors_info_s *tensors_info;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE);
 
   if (!info)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -663,7 +663,7 @@ int
 ml_tensors_data_destroy (ml_tensors_data_h data)
 {
   int ret;
-  check_feature_state ();
+  check_feature_state (ML_FEATURE);
   ret = _ml_tensors_data_destroy_internal (data, TRUE);
   if (ret != ML_ERROR_NONE)
     _ml_error_report_return_continue (ret,
@@ -683,7 +683,7 @@ _ml_tensors_data_create_no_alloc (const ml_tensors_info_h info,
   ml_tensors_info_s *_info;
   gint i;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE);
 
   if (data == NULL)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -728,7 +728,7 @@ _ml_tensors_data_clone_no_alloc (const ml_tensors_data_s * data_src,
   int status;
   ml_tensors_data_s *_data;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE);
 
   if (data == NULL)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -766,7 +766,7 @@ ml_tensors_data_create (const ml_tensors_info_h info, ml_tensors_data_h * data)
   gint i;
   bool valid;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE);
 
   if (info == NULL)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -822,7 +822,7 @@ ml_tensors_data_get_tensor_data (ml_tensors_data_h data, unsigned int index,
   ml_tensors_data_s *_data;
   int status = ML_ERROR_NONE;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE);
 
   if (data == NULL)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -863,7 +863,7 @@ ml_tensors_data_set_tensor_data (ml_tensors_data_h data, unsigned int index,
   ml_tensors_data_s *_data;
   int status = ML_ERROR_NONE;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE);
 
   if (data == NULL)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -911,7 +911,7 @@ ml_tensors_info_clone (ml_tensors_info_h dest, const ml_tensors_info_h src)
   bool valid;
   int status = ML_ERROR_NONE;
 
-  check_feature_state ();
+  check_feature_state (ML_FEATURE);
 
   dest_info = (ml_tensors_info_s *) dest;
   src_info = (ml_tensors_info_s *) src;

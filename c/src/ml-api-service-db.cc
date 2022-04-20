@@ -211,6 +211,8 @@ MLServiceLevelDB::delPipelineDescription (const std::string name)
 extern "C" int
 ml_service_set_pipeline (const char *name, const char *pipeline_desc)
 {
+  check_feature_state (ML_FEATURE_SERVICE);
+
   if (!name || !pipeline_desc) {
     _ml_loge ("Error! name and pipeline_desc should not be NULL");
     return ML_ERROR_INVALID_PARAMETER;
@@ -238,6 +240,8 @@ ml_service_set_pipeline (const char *name, const char *pipeline_desc)
 extern "C" int
 ml_service_get_pipeline (const char *name, char **pipeline_desc)
 {
+  check_feature_state (ML_FEATURE_SERVICE);
+
   if (!name) {
     _ml_loge ("Error! name should not be NULL");
     return ML_ERROR_INVALID_PARAMETER;
@@ -276,6 +280,8 @@ ml_service_get_pipeline (const char *name, char **pipeline_desc)
 extern "C" int
 ml_service_delete_pipeline (const char *name)
 {
+  check_feature_state (ML_FEATURE_SERVICE);
+
   if (!name) {
     _ml_loge ("Error! name should not be NULL");
     return ML_ERROR_INVALID_PARAMETER;
