@@ -27,7 +27,7 @@ static const gchar *ML_FEATURES[] = {
   [ML_FEATURE_INFERENCE] = "tizen.org/feature/machine_learning.inference",
   [ML_FEATURE_TRAINING] = "tizen.org/feature/machine_learning.training",
   [ML_FEATURE_SERVICE] = "tizen.org/feature/machine_learning.service",
-  NULL
+  [ML_FEATURE_MAX] = NULL
 };
 
 /**
@@ -37,7 +37,7 @@ static const gchar *ML_FEATURES[] = {
 typedef struct
 {
   GMutex mutex;
-  feature_state_t feature_state;
+  feature_state_t feature_state[ML_FEATURE_MAX];
 } feature_info_s;
 
 static feature_info_s *feature_info = NULL;
@@ -48,12 +48,15 @@ static feature_info_s *feature_info = NULL;
 static void
 ml_tizen_initialize_feature_state (void)
 {
+  int i;
+
   if (feature_info == NULL) {
     feature_info = g_new0 (feature_info_s, 1);
     g_assert (feature_info);
 
     g_mutex_init (&feature_info->mutex);
-    feature_info->feature_state = NOT_CHECKED_YET;
+    for (i = 0; i < ML_FEATURE_MAX; i++)
+      feature_info->feature_state[i] = NOT_CHECKED_YET;
   }
 }
 
@@ -61,7 +64,7 @@ ml_tizen_initialize_feature_state (void)
  * @brief Set the feature status of machine_learning.inference.
  */
 int
-_ml_tizen_set_feature_state (int state)
+_ml_tizen_set_feature_state (ml_feature_e ml_feature, int state)
 {
   ml_tizen_initialize_feature_state ();
   g_mutex_lock (&feature_info->mutex);
@@ -70,7 +73,7 @@ _ml_tizen_set_feature_state (int state)
    * Update feature status
    * -1: Not checked yet, 0: Not supported, 1: Supported
    */
-  feature_info->feature_state = state;
+  feature_info->feature_state[ml_feature] = state;
 
   g_mutex_unlock (&feature_info->mutex);
   return ML_ERROR_NONE;
@@ -97,46 +100,51 @@ _ml_tizen_get_feature_enabled (ml_feature_e ml_feature)
   ml_tizen_initialize_feature_state ();
 
   g_mutex_lock (&feature_info->mutex);
-  feature_enabled = feature_info->feature_state;
+  feature_enabled = feature_info->feature_state[ml_feature];
   g_mutex_unlock (&feature_info->mutex);
 
   if (NOT_SUPPORTED == feature_enabled) {
-    _ml_loge ("machine_learning.inference NOT supported");
+    _ml_loge
+        ("Tizen machine learning feature (%s) is NOT supported. Please check if your application has properly requested the feature and the device has the feature installed.",
+        ML_FEATURES[ml_feature]);
     return ML_ERROR_NOT_SUPPORTED;
   } else if (NOT_CHECKED_YET == feature_enabled) {
-    bool ml_inf_supported = false;
+    bool ml_feature_supported = false;
     ret = system_info_get_platform_bool (ML_FEATURES[ml_feature],
-        &ml_inf_supported);
+        &ml_feature_supported);
     if (0 == ret) {
-      if (false == ml_inf_supported) {
-        _ml_loge ("%s feature NOT supported! Enable the feature before "
-            "calling ML.Inference APIs.", ML_FEATURES[ml_feature]);
-        _ml_tizen_set_feature_state (NOT_SUPPORTED);
+      if (false == ml_feature_supported) {
+        _ml_loge
+            ("Tizen machine learning feature (%s) is NOT supported! Enable the feature before calling ML APIs.",
+            ML_FEATURES[ml_feature]);
+        _ml_tizen_set_feature_state (ml_feature, NOT_SUPPORTED);
         return ML_ERROR_NOT_SUPPORTED;
       }
 
-      _ml_tizen_set_feature_state (SUPPORTED);
+      _ml_tizen_set_feature_state (ml_feature, SUPPORTED);
     } else {
       switch (ret) {
         case SYSTEM_INFO_ERROR_INVALID_PARAMETER:
           _ml_loge
-              ("failed to get feature value because feature key is not vaild");
+              ("Failed to get feature value because feature key %s is not vaild.",
+              ML_FEATURES[ml_feature]);
           ret = ML_ERROR_NOT_SUPPORTED;
           break;
 
         case SYSTEM_INFO_ERROR_IO_ERROR:
           _ml_loge
-              ("failed to get feature value because of input/output error");
+              ("Failed to get feature value because of input/output error.");
           ret = ML_ERROR_NOT_SUPPORTED;
           break;
 
         case SYSTEM_INFO_ERROR_PERMISSION_DENIED:
-          _ml_loge ("failed to get feature value because of permission denied");
+          _ml_loge
+              ("Failed to get feature value because of permission denied.");
           ret = ML_ERROR_PERMISSION_DENIED;
           break;
 
         default:
-          _ml_loge ("failed to get feature value because of unknown error");
+          _ml_loge ("Failed to get feature value because of unknown error.");
           ret = ML_ERROR_NOT_SUPPORTED;
           break;
       }

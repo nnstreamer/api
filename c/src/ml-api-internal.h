@@ -71,14 +71,15 @@ typedef enum
 
 /**
  * @brief Enumeration for machine_learning feature.
+ * @note DO NOT export this enumeration. This is internal value to validate Tizen feature state.
  */
 typedef enum {
-  ML_FEATURE  = 0,
+  ML_FEATURE = 0,
   ML_FEATURE_INFERENCE,
   ML_FEATURE_TRAINING,
   ML_FEATURE_SERVICE,
 
-  ML_FEATURE_UNKNOWN
+  ML_FEATURE_MAX
 } ml_feature_e;
 
 #if defined (__FEATURE_CHECK_SUPPORT__)
@@ -320,7 +321,7 @@ int _ml_tizen_get_feature_enabled (ml_feature_e ml_feature);
  * @brief Set the feature status of machine_learning.inference.
  * This is only used for Unit test.
  */
-int _ml_tizen_set_feature_state (int state);
+int _ml_tizen_set_feature_state (ml_feature_e ml_feature, int state);
 /****** TIZEN CHECK FEATURE ENDS *****/
 #endif /* __TIZEN__ */
 
