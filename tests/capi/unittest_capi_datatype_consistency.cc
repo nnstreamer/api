@@ -108,7 +108,7 @@ main (int argc, char **argv)
   }
 
   /* ignore tizen feature status while running the testcases */
-  set_feature_state (SUPPORTED);
+  set_feature_state (ML_FEATURE, SUPPORTED);
 
   try {
     result = RUN_ALL_TESTS ();
@@ -116,7 +116,7 @@ main (int argc, char **argv)
     g_warning ("catch `testing::internal::GoogleTestFailureException`");
   }
 
-  set_feature_state (NOT_CHECKED_YET);
+  set_feature_state (ML_FEATURE, NOT_CHECKED_YET);
 
   return result;
 }
