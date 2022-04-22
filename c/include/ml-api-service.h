@@ -34,6 +34,10 @@
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
+/**
+ * @addtogroup CAPI_ML_NNSTREAMER_SERVICE_MODULE
+ * @{
+ */
 
 /**
  * @brief Sets the pipeline description with a given name.
@@ -111,6 +115,9 @@ int ml_service_get_pipeline (const char *name, char **pipeline_desc);
  */
 int ml_service_delete_pipeline (const char *name);
 
+/**
+ * @}
+ */
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

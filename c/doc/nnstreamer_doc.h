@@ -97,5 +97,27 @@
  * </a>
  */
 
+/**
+ * @ingroup  CAPI_ML_FRAMEWORK
+ * @defgroup CAPI_ML_NNSTREAMER_SERVICE_MODULE Service
+ * @addtogroup CAPI_ML_NNSTREAMER_SERVICE_MODULE
+ * @brief The NNStreamer Service API provides interfaces to store and fetch the pipeline description for AI application developers.
+ * @section CAPI_ML_NNSTREAMER_SERVICE_HEADER Required Header
+ *   \#include <nnstreamer/ml-api-service.h>\n
+ *
+ * @section CAPI_ML_NNSTREAMER_SERVICE_OVERVIEW Overview
+ * The NNStreamer Service API provides utility interfaces for AI application developers.
+ *
+ * This function allows the following operations with NNStreamer:
+ * - Set and get the pipeline description with a given name.
+ * - Delete the pipeline description with a given name.
+ *
+ * Note that this function set is supposed to be thread-safe.
+ *
+ * @section CAPI_ML_NNSTREAMER_SERVICE_FEATURE Related Features
+ * This function is related with the following features:\n
+ *  - %http://tizen.org/feature/machine_learning\n
+ *  - %http://tizen.org/feature/machine_learning.service\n
+ */
 
 #endif /* __TIZEN_MACHINELEARNING_NNSTREAMER_DOC_H__ */
