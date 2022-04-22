@@ -99,6 +99,7 @@ MLServiceLevelDB::connectDB ()
   leveldb_options_set_create_if_missing (db_options, 1);
 
   db_obj = leveldb_open (db_options, path.c_str (), &err);
+  leveldb_options_destroy (db_options);
   if (err != nullptr) {
     _ml_loge
         ("Error! Failed to open database located at '%s': leveldb_open () has returned an error: %s",
@@ -167,10 +168,12 @@ MLServiceLevelDB::getPipelineDescription (const std::string name,
         ("Failed to call leveldb_get() for the name %s. Error message is %s.",
         name.c_str (), err);
     leveldb_free (err);
+    leveldb_free (value);
     throw std::runtime_error ("Failed to getPipelineDescription()!");
   }
 
   pipeline_description = std::string (value, read_len);
+  leveldb_free (value);
   return;
 }
 
