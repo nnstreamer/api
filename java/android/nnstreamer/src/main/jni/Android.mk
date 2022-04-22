@@ -25,7 +25,7 @@ $(error Target arch ABI not supported: $(TARGET_ARCH_ABI))
 endif
 
 # Set ML API Version
-ML_API_VERSION  := 1.8.0
+ML_API_VERSION  := 1.8.1
 ML_API_VERSION_MAJOR := $(word 1,$(subst ., ,${ML_API_VERSION}))
 ML_API_VERSION_MINOR := $(word 2,$(subst ., ,${ML_API_VERSION}))
 ML_API_VERSION_MICRO := $(word 3,$(subst ., ,${ML_API_VERSION}))
