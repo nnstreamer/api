@@ -317,6 +317,8 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
     return;
   }
 
+  g_mutex_lock (&elem->lock);
+
   _data->num_tensors = num_mems;
   for (i = 0; i < num_mems; i++) {
     mem[i] = gst_buffer_peek_memory (b, i);
@@ -333,8 +335,6 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
 
     total_size += map[i].size;
   }
-
-  g_mutex_lock (&elem->lock);
 
   /** @todo This assumes that padcap is static */
   if (elem->sink == NULL) {
@@ -569,8 +569,8 @@ cleanup_node (gpointer data)
   if (e->type == ML_PIPELINE_ELEMENT_APP_SRC && !e->pipe->isEOS) {
     int eos_check_cnt = 0;
 
-    /** to push EOS event, the pipeline should be in PLAYING state */
-    gst_element_set_state (e->pipe->element, GST_STATE_PLAYING);
+    /** to push EOS event, the pipeline should be in PAUSED state */
+    gst_element_set_state (e->pipe->element, GST_STATE_PAUSED);
 
     if (gst_app_src_end_of_stream (GST_APP_SRC (e->element)) != GST_FLOW_OK) {
       _ml_logw (_ml_detail
@@ -1160,9 +1160,11 @@ ml_pipeline_destroy (ml_pipeline_h pipe)
   /* Before changing the state, remove all callbacks. */
   p->state_cb.cb = NULL;
 
-  g_hash_table_remove_all (p->namednodes);
-  g_hash_table_remove_all (p->resources);
-  g_hash_table_remove_all (p->pipe_elm_type);
+  /* Destroy registered callback handles and resources */
+  g_hash_table_destroy (p->namednodes);
+  g_hash_table_destroy (p->resources);
+  g_hash_table_destroy (p->pipe_elm_type);
+  p->namednodes = p->resources = p->pipe_elm_type = NULL;
 
   if (p->element) {
     /* Pause the pipeline if it's playing */
@@ -1173,7 +1175,6 @@ ml_pipeline_destroy (ml_pipeline_h pipe)
         g_mutex_unlock (&p->lock);
         _ml_error_report_return (ML_ERROR_STREAMS_PIPE,
             "gst_element_get_state() has failed to wait until state changed from PLAYING to PAUSED and returned GST_STATE_CHANGE_FAILURE. For the detail, please check the GStreamer log messages (or dlog messages in Tizen). It is possible that there is a filter or neural network that is taking too much time to finish.");
-        return ML_ERROR_STREAMS_PIPE;
       }
     }
 
@@ -1206,12 +1207,6 @@ ml_pipeline_destroy (ml_pipeline_h pipe)
     gst_object_unref (p->element);
     p->element = NULL;
   }
-
-  /* Destroy registered callback handles and resources */
-  g_hash_table_destroy (p->namednodes);
-  g_hash_table_destroy (p->resources);
-  g_hash_table_destroy (p->pipe_elm_type);
-  p->namednodes = p->resources = p->pipe_elm_type = NULL;
 
   g_mutex_unlock (&p->lock);
   g_mutex_clear (&p->lock);
@@ -1803,18 +1798,21 @@ _pipe_src_cb_need_data (GstAppSrc * src, guint length, gpointer user_data)
   ml_pipeline_common_elem *src_h;
   ml_pipeline_element *elem;
   ml_pipeline_src_callbacks_s *src_cb = NULL;
+  void *pdata = NULL;
 
   src_h = (ml_pipeline_common_elem *) user_data;
   if (src_h) {
     elem = src_h->element;
 
     g_mutex_lock (&elem->lock);
-    if (src_h->callback_info)
+    if (src_h->callback_info) {
       src_cb = &src_h->callback_info->src_cb;
+      pdata = src_h->callback_info->pdata;
+    }
     g_mutex_unlock (&elem->lock);
 
     if (src_cb && src_cb->need_data)
-      src_cb->need_data (src_h, length, src_h->callback_info->pdata);
+      src_cb->need_data (src_h, length, pdata);
   }
 }
 
@@ -1827,18 +1825,21 @@ _pipe_src_cb_enough_data (GstAppSrc * src, gpointer user_data)
   ml_pipeline_common_elem *src_h;
   ml_pipeline_element *elem;
   ml_pipeline_src_callbacks_s *src_cb = NULL;
+  void *pdata = NULL;
 
   src_h = (ml_pipeline_common_elem *) user_data;
   if (src_h) {
     elem = src_h->element;
 
     g_mutex_lock (&elem->lock);
-    if (src_h->callback_info)
+    if (src_h->callback_info) {
       src_cb = &src_h->callback_info->src_cb;
+      pdata = src_h->callback_info->pdata;
+    }
     g_mutex_unlock (&elem->lock);
 
     if (src_cb && src_cb->enough_data)
-      src_cb->enough_data (src_h, src_h->callback_info->pdata);
+      src_cb->enough_data (src_h, pdata);
   }
 }
 
@@ -1851,18 +1852,21 @@ _pipe_src_cb_seek_data (GstAppSrc * src, guint64 offset, gpointer user_data)
   ml_pipeline_common_elem *src_h;
   ml_pipeline_element *elem;
   ml_pipeline_src_callbacks_s *src_cb = NULL;
+  void *pdata = NULL;
 
   src_h = (ml_pipeline_common_elem *) user_data;
   if (src_h) {
     elem = src_h->element;
 
     g_mutex_lock (&elem->lock);
-    if (src_h->callback_info)
+    if (src_h->callback_info) {
       src_cb = &src_h->callback_info->src_cb;
+      pdata = src_h->callback_info->pdata;
+    }
     g_mutex_unlock (&elem->lock);
 
     if (src_cb && src_cb->seek_data)
-      src_cb->seek_data (src_h, offset, src_h->callback_info->pdata);
+      src_cb->seek_data (src_h, offset, pdata);
   }
 
   return TRUE;
