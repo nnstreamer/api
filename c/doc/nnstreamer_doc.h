@@ -16,7 +16,6 @@
 /**
  * @ingroup  CAPI_ML_FRAMEWORK
  * @defgroup CAPI_ML_NNSTREAMER_PIPELINE_MODULE Pipeline
- * @addtogroup CAPI_ML_NNSTREAMER_PIPELINE_MODULE
  * @brief The NNStreamer function provides interfaces to create and execute stream pipelines with neural networks and sensors.
  * @section CAPI_ML_NNSTREAMER_PIPELINE_HEADER Required Header
  *   \#include <nnstreamer/nnstreamer.h>\n
@@ -59,7 +58,6 @@
 /**
  * @ingroup  CAPI_ML_FRAMEWORK
  * @defgroup CAPI_ML_NNSTREAMER_SINGLE_MODULE Single
- * @addtogroup CAPI_ML_NNSTREAMER_SINGLE_MODULE
  * @brief The NNStreamer Single API provides interfaces to invoke a neural network model with a single instance of input data.
  * @section CAPI_ML_NNSTREAMER_SINGLE_HEADER Required Header
  *   \#include <nnstreamer/nnstreamer-single.h>\n
@@ -100,7 +98,6 @@
 /**
  * @ingroup  CAPI_ML_FRAMEWORK
  * @defgroup CAPI_ML_NNSTREAMER_SERVICE_MODULE Service
- * @addtogroup CAPI_ML_NNSTREAMER_SERVICE_MODULE
  * @brief The NNStreamer Service API provides interfaces to store and fetch the pipeline description for AI application developers.
  * @section CAPI_ML_NNSTREAMER_SERVICE_HEADER Required Header
  *   \#include <nnstreamer/ml-api-service.h>\n
