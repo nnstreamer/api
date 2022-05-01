@@ -431,6 +431,10 @@ if [[ $enable_mqtt == "yes" ]]; then
     wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/paho-mqtt-c-${paho_mqtt_c_ver}.tar.xz
 fi
 
+echo "Get MXNet shared library"
+wget --load-cookies ~/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies ~/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1DDWCVNUQx56M_P00UqFV-AvZ2OFnIPjj' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1DDWCVNUQx56M_P00UqFV-AvZ2OFnIPjj" -O ./$build_dir/external/mxnet-1.9.x.tar.xz && rm -rf ~/cookies.txt
+
+
 pushd ./$build_dir
 
 # Update target ABI
@@ -509,6 +513,10 @@ if [[ $enable_pytorch == "yes" ]]; then
     sed -i "s|PYTORCH_VERSION := 1.10.1|PYTORCH_VERSION := $pytorch_ver|" nnstreamer/src/main/jni/Android-pytorch.mk
     tar -xJf ./external/pytorch-$pytorch_ver.tar.xz -C ./nnstreamer/src/main/jni
 fi
+
+# Update MXNet
+echo "Extract MXNet shared library"
+tar -xJf ./external/mxnet-1.9.x.tar.xz -C ./nnstreamer/src/main/jni
 
 # Update tf-lite option
 if [[ $enable_tflite == "yes" ]]; then
