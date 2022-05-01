@@ -54,6 +54,8 @@ extern void init_filter_snpe (JNIEnv * env, jobject context);
 extern void init_filter_torch (void);
 #endif
 
+extern void init_filter_mxnet (void);
+
 /**
  * @brief External function from GStreamer Android.
  */
@@ -810,6 +812,7 @@ nnstreamer_native_initialize (JNIEnv * env, jobject context)
 #if defined (ENABLE_PYTORCH)
     init_filter_torch ();
 #endif
+  init_filter_mxnet() ;
 #endif /* __ANDROID__ */
     nns_is_initilaized = TRUE;
   }
