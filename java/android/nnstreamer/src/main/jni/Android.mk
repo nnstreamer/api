@@ -79,6 +79,12 @@ include $(LOCAL_PATH)/Android-nnstreamer.mk
 #------------------------------------------------------
 # external libs and sub-plugins
 #------------------------------------------------------
+
+# MXNET
+NNS_SUBPLUGINS += mxnet-subplugin
+include $(LOCAL_PATH)/Android-mxnet.mk
+
+
 ifeq ($(ENABLE_TF_LITE),true)
 NNS_API_FLAGS += -DENABLE_TENSORFLOW_LITE=1
 NNS_SUBPLUGINS += tensorflow-lite-subplugin
