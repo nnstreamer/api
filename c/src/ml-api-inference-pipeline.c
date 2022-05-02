@@ -1514,60 +1514,54 @@ ml_pipeline_sink_unregister (ml_pipeline_sink_h h)
 static int
 ml_pipeline_src_parse_tensors_info (ml_pipeline_element * elem)
 {
-  int ret = ML_ERROR_NONE;
+  GstCaps *caps = NULL;
+  guint i;
+  gboolean found = FALSE, flexible = FALSE;
   ml_tensors_info_s *_info = &elem->tensors_info;
 
   if (elem->src == NULL) {
     elem->src = gst_element_get_static_pad (elem->element, "src");
     elem->size = 0;
-
-    if (elem->src == NULL) {
-      _ml_error_report
-          ("Failed to get the src pad of the element[%s]. The designated source element does not have available src pad? For the detail, please check the GStreamer log messages.",
-          elem->name);
-      ret = ML_ERROR_STREAMS_PIPE;
-    } else {
-      GstCaps *caps = gst_pad_get_allowed_caps (elem->src);
-      guint i;
-      gboolean found, flexible;
-      size_t sz;
-
-      found = flexible = FALSE;
-      if (caps) {
-        found = get_tensors_info_from_caps (caps, _info, &flexible);
-
-        if (!found && gst_caps_is_fixed (caps)) {
-          GstStructure *st = gst_caps_get_structure (caps, 0);
-
-          if (!gst_structure_is_tensor_stream (st))
-            elem->is_media_stream = TRUE;
-        } else if (found && flexible) {
-          /* flexible tensor, cannot get exact info from caps. */
-          elem->is_flexible_tensor = TRUE;
-        }
-
-        gst_caps_unref (caps);
-      }
-
-      if (found && !flexible) {
-        for (i = 0; i < _info->num_tensors; i++) {
-          sz = _ml_tensor_info_get_size (&_info->info[i]);
-          elem->size += sz;
-        }
-      } else {
-        if (!elem->is_media_stream && !elem->is_flexible_tensor) {
-          _ml_logw
-              ("Cannot find caps. The pipeline is not yet negotiated for src element [%s].",
-              elem->name);
-          gst_object_unref (elem->src);
-          elem->src = NULL;
-          ret = ML_ERROR_TRY_AGAIN;
-        }
-      }
-    }
   }
 
-  return ret;
+  if (elem->src == NULL) {
+    _ml_error_report
+        ("Failed to get the src pad of the element[%s]. The designated source element does not have available src pad? For the detail, please check the GStreamer log messages.",
+        elem->name);
+    return ML_ERROR_STREAMS_PIPE;
+  }
+
+  caps = gst_pad_get_allowed_caps (elem->src);
+  if (!caps) {
+    _ml_logw
+        ("Cannot find caps. The pipeline is not yet negotiated for src element [%s].",
+        elem->name);
+    gst_object_unref (elem->src);
+    elem->src = NULL;
+    return ML_ERROR_TRY_AGAIN;
+  }
+
+  found = get_tensors_info_from_caps (caps, _info, &flexible);
+
+  if (found && flexible) {
+    /* flexible tensor, cannot get exact info from caps. */
+    elem->is_flexible_tensor = TRUE;
+  }
+
+  if (!found && gst_caps_is_fixed (caps)) {
+    GstStructure *st = gst_caps_get_structure (caps, 0);
+    if (!gst_structure_is_tensor_stream (st))
+      elem->is_media_stream = TRUE;
+  }
+
+  gst_caps_unref (caps);
+
+  if (found && !flexible) {
+    for (i = 0; i < _info->num_tensors; i++) {
+      elem->size += _ml_tensor_info_get_size (&_info->info[i]);
+    }
+  }
+  return ML_ERROR_NONE;
 }
 
 /**
