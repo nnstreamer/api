@@ -1543,24 +1543,21 @@ ml_pipeline_src_parse_tensors_info (ml_pipeline_element * elem)
 
   found = get_tensors_info_from_caps (caps, _info, &flexible);
 
-  if (found && flexible) {
-    /* flexible tensor, cannot get exact info from caps. */
-    elem->is_flexible_tensor = TRUE;
-  }
-
-  if (!found && gst_caps_is_fixed (caps)) {
-    GstStructure *st = gst_caps_get_structure (caps, 0);
-    if (!gst_structure_is_tensor_stream (st))
-      elem->is_media_stream = TRUE;
+  if (found) {
+    elem->is_flexible_tensor = flexible;
+    if (!flexible) {
+      for (i = 0; i < _info->num_tensors; i++) {
+        elem->size += _ml_tensor_info_get_size (&_info->info[i]);
+      }
+    }
+  } else {
+    if (gst_caps_is_fixed (caps)) {
+      GstStructure *st = gst_caps_get_structure (caps, 0);
+      elem->is_media_stream = !gst_structure_is_tensor_stream (st);
+    }
   }
 
   gst_caps_unref (caps);
-
-  if (found && !flexible) {
-    for (i = 0; i < _info->num_tensors; i++) {
-      elem->size += _ml_tensor_info_get_size (&_info->info[i]);
-    }
-  }
   return ML_ERROR_NONE;
 }
 
@@ -1784,30 +1781,42 @@ dont_destroy_data:
 }
 
 /**
+ * @brief Internal function to fetch ml_pipeline_src_callbacks_s pointer
+ */
+static ml_pipeline_src_callbacks_s *
+get_app_src_callback (ml_pipeline_common_elem * src_h, void **data)
+{
+  ml_pipeline_src_callbacks_s *src_cb = NULL;
+  ml_pipeline_element *elem;
+
+  elem = src_h->element;
+  g_mutex_lock (&elem->lock);
+  if (src_h->callback_info) {
+    src_cb = &src_h->callback_info->src_cb;
+    *data = src_h->callback_info->pdata;
+  }
+  g_mutex_unlock (&elem->lock);
+
+  return src_cb;
+}
+
+/**
  * @brief Internal function for appsrc callback - need_data.
  */
 static void
 _pipe_src_cb_need_data (GstAppSrc * src, guint length, gpointer user_data)
 {
   ml_pipeline_common_elem *src_h;
-  ml_pipeline_element *elem;
   ml_pipeline_src_callbacks_s *src_cb = NULL;
   void *pdata = NULL;
 
   src_h = (ml_pipeline_common_elem *) user_data;
-  if (src_h) {
-    elem = src_h->element;
+  if (!src_h)
+    return;
 
-    g_mutex_lock (&elem->lock);
-    if (src_h->callback_info) {
-      src_cb = &src_h->callback_info->src_cb;
-      pdata = src_h->callback_info->pdata;
-    }
-    g_mutex_unlock (&elem->lock);
-
-    if (src_cb && src_cb->need_data)
-      src_cb->need_data (src_h, length, pdata);
-  }
+  src_cb = get_app_src_callback (src_h, &pdata);
+  if (src_cb && src_cb->need_data)
+    src_cb->need_data (src_h, length, pdata);
 }
 
 /**
@@ -1817,24 +1826,16 @@ static void
 _pipe_src_cb_enough_data (GstAppSrc * src, gpointer user_data)
 {
   ml_pipeline_common_elem *src_h;
-  ml_pipeline_element *elem;
   ml_pipeline_src_callbacks_s *src_cb = NULL;
   void *pdata = NULL;
 
   src_h = (ml_pipeline_common_elem *) user_data;
-  if (src_h) {
-    elem = src_h->element;
+  if (!src_h)
+    return;
 
-    g_mutex_lock (&elem->lock);
-    if (src_h->callback_info) {
-      src_cb = &src_h->callback_info->src_cb;
-      pdata = src_h->callback_info->pdata;
-    }
-    g_mutex_unlock (&elem->lock);
-
-    if (src_cb && src_cb->enough_data)
-      src_cb->enough_data (src_h, pdata);
-  }
+  src_cb = get_app_src_callback (src_h, &pdata);
+  if (src_cb && src_cb->enough_data)
+    src_cb->enough_data (src_h, pdata);
 }
 
 /**
@@ -1844,24 +1845,16 @@ static gboolean
 _pipe_src_cb_seek_data (GstAppSrc * src, guint64 offset, gpointer user_data)
 {
   ml_pipeline_common_elem *src_h;
-  ml_pipeline_element *elem;
   ml_pipeline_src_callbacks_s *src_cb = NULL;
   void *pdata = NULL;
 
   src_h = (ml_pipeline_common_elem *) user_data;
-  if (src_h) {
-    elem = src_h->element;
+  if (!src_h)
+    return TRUE;
 
-    g_mutex_lock (&elem->lock);
-    if (src_h->callback_info) {
-      src_cb = &src_h->callback_info->src_cb;
-      pdata = src_h->callback_info->pdata;
-    }
-    g_mutex_unlock (&elem->lock);
-
-    if (src_cb && src_cb->seek_data)
-      src_cb->seek_data (src_h, offset, pdata);
-  }
+  src_cb = get_app_src_callback (src_h, &pdata);
+  if (src_cb && src_cb->seek_data)
+    src_cb->seek_data (src_h, offset, pdata);
 
   return TRUE;
 }
