@@ -603,7 +603,6 @@ _ml_tensors_info_free (ml_tensors_info_s * info)
   for (i = 0; i < ML_TENSOR_SIZE_LIMIT; i++) {
     if (info->info[i].name) {
       g_free (info->info[i].name);
-      info->info[i].name = NULL;
     }
   }
 
