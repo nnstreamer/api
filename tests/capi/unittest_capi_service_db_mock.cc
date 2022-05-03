@@ -56,7 +56,7 @@ public:
       const char* key, size_t keylen, char** errptr) = 0;
 
   /**
-   * @brief Interface for closing a LevleDB object
+   * @brief Interface for closing a LevelDB object
    */
   virtual void leveldb_close (leveldb_t* db) = 0;
 };
@@ -66,7 +66,7 @@ public:
  */
 class LevelDBMock : public ILevelDB {
 public:
-  MOCK_METHOD (leveldb_t*, leveldb_open, 
+  MOCK_METHOD (leveldb_t*, leveldb_open,
     (const leveldb_options_t* options, const char* name, char** errptr));
   MOCK_METHOD (void, leveldb_put,
     (leveldb_t* db, const leveldb_writeoptions_t* options, const char* key, size_t keylen,

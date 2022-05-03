@@ -235,7 +235,7 @@ ml_check_nnfw_availability_full (ml_nnfw_type_e nnfw, ml_nnfw_hw_e hw,
 
   if (nnfw == ML_NNFW_TYPE_ANY)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, nnfw (ml_nnfw_type_e), is ML_NNFW_TYPE_ANY. It should specify the franework to be probed for the hardware availability.");
+        "The parameter, nnfw (ml_nnfw_type_e), is ML_NNFW_TYPE_ANY. It should specify the framework to be probed for the hardware availability.");
 
   fw_name = _ml_get_nnfw_subplugin_name (nnfw);
 
@@ -345,7 +345,7 @@ ml_single_destroy_notify_cb (void *handle, void *user_data)
   if (G_UNLIKELY (!single_h->filter)) {
     status = ML_ERROR_INVALID_PARAMETER;
     _ml_error_report
-        ("Failed to destroy the data buffer. The handle instance (single_h) is invalid. It appears to be an internal error of ML-API of the user threa has touched private data structure.");
+        ("Failed to destroy the data buffer. The handle instance (single_h) is invalid. It appears to be an internal error of ML-API of the user thread has touched private data structure.");
     goto exit;
   }
 
@@ -1063,7 +1063,7 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
 
   if (!ml_single_set_info_in_handle (single_h, FALSE, out_tensors_info)) {
     _ml_error_report
-        ("The output tensors info is invalid. Cannot configure single_h ahndle with the given output tensors info.");
+        ("The output tensors info is invalid. Cannot configure single_h handle with the given output tensors info.");
     status = ML_ERROR_INVALID_PARAMETER;
     goto error;
   }
@@ -1264,13 +1264,13 @@ _ml_single_invoke_internal (ml_single_h single,
 
   if (G_UNLIKELY (!output))
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "(internal functino) The parameter, output (ml_tensros_data_h *), is NULL. It should be a valid poitner to an instance of ml_tensors_data_h to store the inference results.");
+        "(internal functino) The parameter, output (ml_tensors_data_h *), is NULL. It should be a valid pointer to an instance of ml_tensors_data_h to store the inference results.");
 
   ML_SINGLE_GET_VALID_HANDLE_LOCKED (single_h, single, 0);
 
   if (G_UNLIKELY (!single_h->filter)) {
     _ml_error_report
-        ("The tensor_filter element of this single handle (single_h) is not valid. It appears that the handle (ml_single_h single) is not appropriately created by ml_single_open(), user thread has tourched its internal data, or the handle is already closed or freed by user.");
+        ("The tensor_filter element of this single handle (single_h) is not valid. It appears that the handle (ml_single_h single) is not appropriately created by ml_single_open(), user thread has touched its internal data, or the handle is already closed or freed by user.");
     status = ML_ERROR_INVALID_PARAMETER;
     goto exit;
   }
@@ -1737,7 +1737,7 @@ ml_single_get_property (ml_single_h single, const char *name, char **value)
     *value = (bool_value) ? g_strdup ("true") : g_strdup ("false");
   } else {
     _ml_error_report
-        ("The property key, '%s', is not available for get_property and not recognized by the API. It should be one of {input, inputtype, inputname, inputlayout, output, outputtype, outputname, outputlayout, accelerator, custom, is-updatble}.",
+        ("The property key, '%s', is not available for get_property and not recognized by the API. It should be one of {input, inputtype, inputname, inputlayout, output, outputtype, outputname, outputlayout, accelerator, custom, is-updatable}.",
         name);
     status = ML_ERROR_NOT_SUPPORTED;
   }
@@ -1897,7 +1897,7 @@ _ml_validate_model_file (const char *const *model,
           !g_str_equal (file_ext[0], ".pb") &&
           !g_str_equal (file_ext[0], ".prototxt")) {
         _ml_error_report
-            ("ARMNN accepts .caffemodel, .tflite, .pb, and .probotxt files only. Please support correct file extension. You have specified: \"%s\"",
+            ("ARMNN accepts .caffemodel, .tflite, .pb, and .prototxt files only. Please support correct file extension. You have specified: \"%s\"",
             file_ext[0]);
         status = ML_ERROR_INVALID_PARAMETER;
       }

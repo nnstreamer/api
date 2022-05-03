@@ -57,8 +57,7 @@ private:
  */
 IMLServiceDB & MLServiceLevelDB::getInstance (void)
 {
-  static MLServiceLevelDB
-  instance (ML_DATABASE_PATH);
+  static MLServiceLevelDB instance (ML_DATABASE_PATH);
 
   return instance;
 }
@@ -111,8 +110,8 @@ MLServiceLevelDB::connectDB ()
 }
 
 /**
- * @brief Disconnect the level DB 
- * @note LevelDB does not support multi-process and it might cause 
+ * @brief Disconnect the level DB
+ * @note LevelDB does not support multi-process and it might cause
  * the IO exception when multiple clients write the key simultaneously.
  */
 void
@@ -140,7 +139,7 @@ MLServiceLevelDB::setPipelineDescription (const std::string name,
       pipeline_description.c_str (), pipeline_description.size (), &err);
   if (err != nullptr) {
     _ml_loge
-        ("Failed to call leveldb_put () for the name, '%s' of the pipeline description (size: %zu bytes / decription: '%.40s')",
+        ("Failed to call leveldb_put () for the name, '%s' of the pipeline description (size: %zu bytes / description: '%.40s')",
         name.c_str (), pipeline_description.size (),
         pipeline_description.c_str ());
     _ml_loge ("leveldb_put () has returned an error: %s", err);

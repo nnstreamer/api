@@ -126,7 +126,7 @@ _ml_tizen_get_feature_enabled (ml_feature_e ml_feature)
       switch (ret) {
         case SYSTEM_INFO_ERROR_INVALID_PARAMETER:
           _ml_loge
-              ("Failed to get feature value because feature key %s is not vaild.",
+              ("Failed to get feature value because feature key %s is not valid.",
               ML_FEATURES[ml_feature]);
           ret = ML_ERROR_NOT_SUPPORTED;
           break;
