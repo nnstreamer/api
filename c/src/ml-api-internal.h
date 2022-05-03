@@ -410,31 +410,6 @@ void _ml_error_report_continue_ (const char *fmt, ...);
 
 /***** End: Error reporting internal interfaces *****/
 
-/**
- * @brief Returns a human-readable string describing the last error.
- * @details This returns a human-readable, null-terminated string describing
- *         the most recent error that occured from a call to one of the
- *         funcctions in the Machine Learning API since the last call to
- *         ml_error(). The returned string should *not* be freed or
- *         overwritten by the caller.
- * @since_tizen 7.0
- * @todo Release M2
- * @return @c Null if no error to be reported. Otherwise the error description.
- */
-const char * ml_error (void);
-
-/**
- * @brief Returns a human-readable string describing for a error code.
- * @details This returns a human-readable, null-terminated string describing
- *         the error code of machine learning APIs.
- *         The returned string should *not* be freed or
- *         overwritten by the caller.
- * @since_tizen 7.0
- * @todo Release M2
- * @return @c Null for invalid error code. Otherwise the error description.
- */
-const char * ml_strerror (int errnum);
-
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
