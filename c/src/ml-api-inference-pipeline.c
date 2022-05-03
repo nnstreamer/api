@@ -656,7 +656,7 @@ convert_element (ml_pipeline_h pipe, const gchar * description, gchar ** result,
   } else {
     g_free (converted);
     _ml_error_report_continue
-        ("Failed to convert element: convert_tizen_elemt() returned %d",
+        ("Failed to convert element: convert_tizen_element() returned %d",
         status);
   }
 
@@ -1454,7 +1454,7 @@ ml_pipeline_sink_register (ml_pipeline_h pipe, const char *sink_name,
   sink = g_new0 (ml_pipeline_common_elem, 1);
   if (sink == NULL) {
     _ml_error_report
-        ("Failed to allocate memoery for the sink handle of %s. Out of memory?",
+        ("Failed to allocate memory for the sink handle of %s. Out of memory?",
         sink_name);
     ret = ML_ERROR_OUT_OF_MEMORY;
     goto unlock_return;
@@ -1613,7 +1613,7 @@ ml_pipeline_src_get_handle (ml_pipeline_h pipe, const char *src_name,
 
   if (elem->type != ML_PIPELINE_ELEMENT_APP_SRC) {
     _ml_error_report
-        ("The element deisngated by '%s' is not a source element (appsrc). Please provide a name of source element for ml_pipeline_src_get_handle API.",
+        ("The element designated by '%s' is not a source element (appsrc). Please provide a name of source element for ml_pipeline_src_get_handle API.",
         src_name);
     ret = ML_ERROR_INVALID_PARAMETER;
     goto unlock_return;
@@ -1933,7 +1933,7 @@ ml_pipeline_src_get_tensors_info (ml_pipeline_src_h h, ml_tensors_info_h * info)
     ml_tensors_info_clone (*info, &elem->tensors_info);
   } else {
     _ml_error_report_continue
-        ("ml_pipeline_src_parse_tensors_info () has returned error; it cannot fetch input tensor info (metadata of input stream) for the given ml_pipeline_src_h handle (h). ml_pipeline_src_get_tensors_info () cannot conitnue.");
+        ("ml_pipeline_src_parse_tensors_info () has returned error; it cannot fetch input tensor info (metadata of input stream) for the given ml_pipeline_src_h handle (h). ml_pipeline_src_get_tensors_info () cannot continue.");
   }
 
   handle_exit (h);
@@ -1966,11 +1966,11 @@ ml_pipeline_switch_get_handle (ml_pipeline_h pipe, const char *switch_name,
 
   if (pipe == NULL)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, pipe (ml_pipeline_h), is NULL. It should be a valid ml_pipeline_h piepline instance, which is usually created by ml_pipeline_construct().");
+        "The parameter, pipe (ml_pipeline_h), is NULL. It should be a valid ml_pipeline_h pipeline instance, which is usually created by ml_pipeline_construct().");
 
   if (switch_name == NULL)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, switch_name, is NULL. It should be a valid straing of the corresponding name of a switch element.");
+        "The parameter, switch_name, is NULL. It should be a valid string of the corresponding name of a switch element.");
 
   g_mutex_lock (&p->lock);
   elem = g_hash_table_lookup (p->namednodes, switch_name);
@@ -1991,7 +1991,7 @@ ml_pipeline_switch_get_handle (ml_pipeline_h pipe, const char *switch_name,
       *type = ML_PIPELINE_SWITCH_OUTPUT_SELECTOR;
   } else {
     _ml_error_report
-        ("An element with the given name, '%s', is found; however, it is not a 'switch' eleent. A switch-handle cannot be fetched from a non-switch element. It should be either input-selector or output-selector.",
+        ("An element with the given name, '%s', is found; however, it is not a 'switch' element. A switch-handle cannot be fetched from a non-switch element. It should be either input-selector or output-selector.",
         switch_name);
     ret = ML_ERROR_INVALID_PARAMETER;
     goto unlock_return;

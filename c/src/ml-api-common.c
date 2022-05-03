@@ -384,7 +384,7 @@ ml_tensors_info_set_tensor_type (ml_tensors_info_h info,
 
   if (type >= ML_TENSOR_TYPE_UNKNOWN || type < 0)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, type, ML_TENSOR_TYPE_UNKNOWN or out of bound. The valud of type should be between 0 and ML_TENSOR_TYPE_UNKNOWN - 1. type = %d, ML_TENSOR_TYPE_UNKNOWN = %d.",
+        "The parameter, type, ML_TENSOR_TYPE_UNKNOWN or out of bound. The value of type should be between 0 and ML_TENSOR_TYPE_UNKNOWN - 1. type = %d, ML_TENSOR_TYPE_UNKNOWN = %d.",
         type, ML_TENSOR_TYPE_UNKNOWN);
 
   tensors_info = (ml_tensors_info_s *) info;
@@ -781,7 +781,7 @@ ml_tensors_data_create (const ml_tensors_info_h info, ml_tensors_data_h * data)
         "_ml_error_report_return_continue has reported that the parameter, info, is not NULL, but its contents are not valid. The user must provide a valid tensor information with it.");
   if (valid == FALSE)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, info, is not NULL, but its contents are not valid. The user must provide a valid tensor information with it. Probably, there is an entry that is not allocated or dimention/type infomration not available. The given info should have valid number of tensors, entries of every tensor along with its type and dimension info.");
+        "The parameter, info, is not NULL, but its contents are not valid. The user must provide a valid tensor information with it. Probably, there is an entry that is not allocated or dimension/type information not available. The given info should have valid number of tensors, entries of every tensor along with its type and dimension info.");
 
   status =
       _ml_tensors_data_create_no_alloc (info, (ml_tensors_data_h *) & _data);
@@ -832,7 +832,7 @@ ml_tensors_data_get_tensor_data (ml_tensors_data_h data, unsigned int index,
         "The parameter, raw_data, is NULL. It should be a valid, non-NULL, void ** pointer, which is supposed to point to the raw data of tensors[index] after the call.");
   if (data_size == NULL)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, data_size, is NULL. It should be a valid, non-NULL, size_t * pointer, which is suppsoed to point to the size of returning raw_data after the call.");
+        "The parameter, data_size, is NULL. It should be a valid, non-NULL, size_t * pointer, which is supposed to point to the size of returning raw_data after the call.");
 
   _data = (ml_tensors_data_s *) data;
   G_LOCK_UNLESS_NOLOCK (*_data);

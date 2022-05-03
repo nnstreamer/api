@@ -119,7 +119,7 @@ typedef struct
 } tizen_mm_handle_s;
 
 /**
- * @brief Tizen resouce type for multimedia.
+ * @brief Tizen resource type for multimedia.
  */
 #define TIZEN_RES_MM "tizen_res_mm"
 
@@ -890,7 +890,7 @@ _ml_tizen_convert_element (ml_pipeline_h pipe, gchar ** result,
 {
   int status;
 
-  /* convert predefined element of mulitmedia fw */
+  /* convert predefined element of multimedia fw */
   status = ml_tizen_mm_convert_element (pipe, result, is_internal);
 
   return status;

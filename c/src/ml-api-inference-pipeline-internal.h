@@ -74,7 +74,7 @@ typedef struct {
 } ml_custom_filter_s;
 
 /**
- * @brief Internal private representation of tensor_if custom conditon.
+ * @brief Internal private representation of tensor_if custom condition.
  * @since_tizen 6.5
  */
 typedef struct {
