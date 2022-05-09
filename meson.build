@@ -19,9 +19,11 @@ cxx = meson.get_compiler('cpp')
 
 # Dependencies
 glib_dep = dependency('glib-2.0')
+gobject_dep = dependency('gobject-2.0')
 gmodule_dep = dependency('gmodule-2.0')
 gst_dep = dependency('gstreamer-1.0')
 gst_app_dep = dependency('gstreamer-app-1.0')
+nnstreamer_single_dep = dependency('nnstreamer-single')
 nnstreamer_dep = dependency('nnstreamer')
 leveldb_dep = dependency('leveldb', required: false)
 if (not leveldb_dep.found())

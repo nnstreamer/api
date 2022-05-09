@@ -15,7 +15,6 @@
 #define __ML_API_INF_SINGLE_INTERNAL_H__
 
 #include <glib.h>
-#include <gst/gst.h>
 
 #include "ml-api-internal.h"
 

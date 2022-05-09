@@ -16,7 +16,7 @@
 #include <nnstreamer-single.h>
 #include <nnstreamer-tizen-internal.h>  /* Tizen platform header */
 #include <nnstreamer_internal.h>
-#include <nnstreamer_plugin_api.h>
+#include <nnstreamer_plugin_api_util.h>
 #include <tensor_filter_single.h>
 
 #include "ml-api-inference-internal.h"
@@ -154,7 +154,7 @@ _ml_get_nnfw_type_by_subplugin_name (const char *name)
       nnfw_type = ML_NNFW_TYPE_SNAP;
     else
       _ml_error_report ("Cannot find nnfw, %s is an invalid name.",
-          GST_STR_NULL (name));
+          _STR_NULL (name));
   } else {
     nnfw_type = (ml_nnfw_type_e) idx;
   }
@@ -1163,7 +1163,7 @@ ml_single_close (ml_single_h single)
     if (single_h->klass)
       single_h->klass->stop (single_h->filter);
 
-    gst_object_unref (single_h->filter);
+    g_object_unref (single_h->filter);
     single_h->filter = NULL;
   }
 
@@ -1771,7 +1771,7 @@ __ml_validate_model_file (const char *const *model,
     if (!model[i] || !g_file_test (model[i], G_FILE_TEST_IS_REGULAR)) {
       _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
           "The given param, model path [%d] = \"%s\" is invalid or the file is not found or accessible.",
-          i, GST_STR_NULL (model[i]));
+          i, _STR_NULL (model[i]));
     }
   }
 

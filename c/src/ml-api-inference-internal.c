@@ -12,7 +12,7 @@
 
 #include <string.h>
 
-#include <nnstreamer_plugin_api.h>
+#include <nnstreamer_plugin_api_util.h>
 #include <tensor_typedef.h>
 #include "ml-api-inference-internal.h"
 #include "ml-api-internal.h"
