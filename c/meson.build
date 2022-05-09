@@ -43,7 +43,7 @@ endif
 
 
 # Dependencies
-nns_capi_common_deps = [nnstreamer_dep, glib_dep, gmodule_dep, gst_dep]
+nns_capi_common_deps = [glib_dep, gmodule_dep, nnstreamer_single_dep]
 nns_capi_deps = [nnstreamer_dep, glib_dep, gmodule_dep, gst_dep, gst_app_dep, leveldb_dep]
 
 if (get_option('enable-tizen'))
@@ -90,6 +90,7 @@ if get_option('default_library') == 'static'
   nns_capi_common_lib = nns_capi_common_static_lib
 endif
 nns_capi_common_dep = declare_dependency(link_with: nns_capi_common_lib)
+nns_capi_common_deps += nns_capi_common_dep
 nns_capi_deps += nns_capi_common_dep
 nns_capi_test_deps = nns_capi_deps
 
@@ -101,7 +102,7 @@ endif
 # Single-shot API.
 nns_capi_single_shared_lib = shared_library ('capi-ml-inference-single',
   nns_capi_single_srcs,
-  dependencies: nns_capi_deps,
+  dependencies: [nns_capi_common_deps, gobject_dep],
   include_directories: nns_capi_include,
   install: true,
   install_dir: api_install_libdir,
@@ -110,7 +111,7 @@ nns_capi_single_shared_lib = shared_library ('capi-ml-inference-single',
 
 nns_capi_single_static_lib = static_library ('capi-ml-inference-single',
   nns_capi_single_srcs,
-  dependencies: nns_capi_deps,
+  dependencies: [nns_capi_common_deps, gobject_dep],
   include_directories: nns_capi_include,
   install: true,
   install_dir: api_install_libdir,

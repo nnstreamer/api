@@ -15,7 +15,6 @@
 #define __ML_API_INTERNAL_NNSTREAMER_H__
 
 #include <glib.h>
-#include <gst/gst.h>
 #include <nnstreamer_plugin_api_filter.h>
 
 #include "ml-api-internal.h"
