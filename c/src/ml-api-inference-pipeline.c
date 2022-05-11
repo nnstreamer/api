@@ -1531,7 +1531,12 @@ ml_pipeline_src_parse_tensors_info (ml_pipeline_element * elem)
     return ML_ERROR_STREAMS_PIPE;
   }
 
-  caps = gst_pad_get_allowed_caps (elem->src);
+  /* If caps is given, use it. e.g. Use cap "image/png" when the pipeline is */
+  /* given as "appsrc caps=image/png ! pngdec ! ... " */
+  caps = gst_pad_get_current_caps (elem->src);
+  if (!caps)
+    caps = gst_pad_get_allowed_caps (elem->src);
+
   if (!caps) {
     _ml_logw
         ("Cannot find caps. The pipeline is not yet negotiated for src element [%s].",
