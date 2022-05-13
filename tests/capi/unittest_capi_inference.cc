@@ -1438,6 +1438,154 @@ TEST (nnstreamer_capi_src, callback_invalid_param_02_n)
 }
 
 /**
+ * @brief Check decoded orange.png with raw data.
+ */
+static void
+check_orange_output (const ml_tensors_data_h data, const ml_tensors_info_h info, void *user_data)
+{
+  int status;
+  size_t data_size;
+  uint8_t *raw_content;
+  gsize raw_content_len;
+  gchar *orange_raw_file;
+
+  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  /* supposed to run test in build directory */
+  if (root_path == NULL)
+    root_path = "..";
+
+  orange_raw_file = g_build_filename (
+      root_path, "tests", "test_models", "data", "orange.raw", NULL);
+  ASSERT_TRUE (g_file_test (orange_raw_file, G_FILE_TEST_EXISTS));
+
+  EXPECT_TRUE (g_file_get_contents (orange_raw_file, (gchar **) &raw_content, &raw_content_len, NULL));
+
+  status = ml_tensors_data_get_tensor_data (data, 0, (void **) &data, &data_size);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  EXPECT_EQ (raw_content_len, data_size);
+
+  status = 0;
+  for (size_t i = 0; i < data_size; ++i) {
+    if (*(((uint8_t *) data) + i) != *(raw_content + i)) {
+      status = 1;
+      break;
+    }
+  }
+
+  EXPECT_EQ (status, 0);
+
+  g_free (raw_content);
+  g_free (orange_raw_file);
+}
+
+/**
+ * @brief Test NNStreamer pipeline src (appsrc with png file)
+ */
+TEST (nnstreamer_capi_src, pngfile)
+{
+  int status;
+
+  ml_pipeline_h handle;
+  ml_pipeline_sink_h sinkhandle;
+  ml_pipeline_src_h srchandle;
+  ml_pipeline_state_e state;
+
+  ml_tensors_info_h in_info;
+  ml_tensor_dimension in_dim;
+  ml_tensors_data_h input = NULL;
+
+  gchar *orange_png_file, *pipeline;
+  uint8_t *content;
+  gsize content_len;
+  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  /* supposed to run test in build directory */
+  if (root_path == NULL)
+    root_path = "..";
+
+  /* start pipeline test with valid model file */
+  orange_png_file = g_build_filename (
+      root_path, "tests", "test_models", "data", "orange.png", NULL);
+  ASSERT_TRUE (g_file_test (orange_png_file, G_FILE_TEST_EXISTS));
+
+  pipeline = g_strdup_printf (
+    "appsrc name=srcx caps=image/png ! pngdec ! videoconvert ! videoscale ! video/x-raw,format=RGB,width=224,height=224,framerate=0/1 ! tensor_converter ! tensor_sink name=sinkx sync=false async=false"
+  );
+
+  /* construct pipeline */
+  status = ml_pipeline_construct (pipeline, NULL, NULL, &handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  /* set sink callback */
+  status = ml_pipeline_sink_register (handle, "sinkx", check_orange_output, NULL, &sinkhandle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  /* set src_handle */
+  status = ml_pipeline_src_get_handle (handle, "srcx", &srchandle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  /* get the data of input png file */
+  EXPECT_TRUE (g_file_get_contents (orange_png_file, (gchar **) &content, &content_len, NULL));
+
+  /* set ml_tensors_info */
+  ml_tensors_info_create (&in_info);
+  in_dim[0] = content_len;
+  in_dim[1] = 1;
+  in_dim[2] = 1;
+  in_dim[3] = 1;
+
+  ml_tensors_info_set_count (in_info, 1);
+  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_UINT8);
+  ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
+
+  status = ml_tensors_data_create (in_info, &input);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  EXPECT_TRUE (input != NULL);
+
+  status = ml_pipeline_start (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_get_state (handle, &state);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  wait_for_start (handle, state, status);
+  EXPECT_EQ (state, ML_PIPELINE_STATE_PLAYING);
+
+  status = ml_tensors_data_set_tensor_data (input, 0, content, content_len);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_src_input_data (srchandle, input, ML_PIPELINE_BUF_POLICY_DO_NOT_FREE);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  g_usleep (1000 * 1000);
+
+  status = ml_pipeline_stop (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  g_usleep (1000 * 1000);
+
+  status = ml_pipeline_get_state (handle, &state);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  EXPECT_EQ (state, ML_PIPELINE_STATE_PAUSED);
+
+  /* release handles and allocated memory */
+  status = ml_pipeline_src_release_handle (srchandle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_sink_unregister (sinkhandle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_destroy (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  ml_tensors_data_destroy (input);
+  ml_tensors_info_destroy (in_info);
+  g_free (content);
+  g_free (orange_png_file);
+  g_free (pipeline);
+}
+
+/**
  * @brief Test NNStreamer pipeline switch
  */
 TEST (nnstreamer_capi_switch, dummy_01)
