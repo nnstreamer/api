@@ -102,6 +102,10 @@ BuildRequires:	lcov
 %if 0%{?unit_test}
 BuildRequires:  pkgconfig(gtest)
 BuildRequires:  pkgconfig(gmock)
+BuildRequires:	gst-plugins-good
+%if 0%{tizen_version_major} >= 5
+BuildRequires:	gst-plugins-good-extra
+%endif
 
 %if 0%{?tensorflow_support}
 BuildRequires:	tensorflow

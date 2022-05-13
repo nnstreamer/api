@@ -13,6 +13,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -2311,6 +2312,71 @@ public class APITestPipeline {
             /* check received data from sink */
             assertFalse(mInvalidState);
             assertEquals(10, mReceived);
+        } catch (Exception e) {
+            fail();
+        }
+    }
+
+    @Test
+    public void testAppsrcPng() {
+        String root = Environment.getExternalStorageDirectory().getAbsolutePath();
+        String png_path = root + "/nnstreamer/test/orange.png";
+
+        String pipeline_desc = "appsrc name=srcx caps=image/png ! pngdec ! videoconvert ! videoscale ! video/x-raw,format=RGB,width=224,height=224,framerate=0/1 ! " +
+                "tensor_converter ! tensor_sink name=sinkx";
+        try (Pipeline pipe = new Pipeline(pipeline_desc)) {
+            /* register sink callback */
+            pipe.registerSinkCallback("sinkx", new Pipeline.NewDataCallback() {
+                @Override
+                public void onNewDataReceived(TensorsData data) {
+                    if (data == null || data.getTensorsCount() != 1) {
+                        mInvalidState = true;
+                        return;
+                    }
+                    ByteBuffer buffer = data.getTensorData(0);
+                    ByteBuffer bufferOri = APITestCommon.readRawImageData().getTensorData(0);
+                    bufferOri.rewind();
+
+                    /* check with original input data */
+                    if (!buffer.equals(bufferOri)) {
+                       mInvalidState = true;
+                    }
+                    mReceived++;
+                }
+            });
+
+            /* start pipeline */
+            pipe.start();
+
+            /* push input buffer */
+            File raw = new File(png_path);
+
+            TensorsInfo info = new TensorsInfo();
+            info.addTensorInfo(NNStreamer.TensorType.UINT8, new int[]{(int) raw.length(), 1, 1, 1});
+
+            int size = info.getTensorSize(0);
+            TensorsData data = TensorsData.allocate(info);
+
+            byte[] content = Files.readAllBytes(raw.toPath());
+            if (content.length != size) {
+                fail();
+            }
+
+            ByteBuffer buffer = TensorsData.allocateByteBuffer(size);
+            buffer.put(content);
+            data.setTensorData(0, buffer);
+
+            pipe.inputData("srcx", data);
+
+            /* sleep 100ms to invoke */
+            Thread.sleep(100);
+
+            /* stop pipeline */
+            pipe.stop();
+
+            /* check received data from sink */
+            assertFalse(mInvalidState);
+            assertEquals(1, mReceived);
         } catch (Exception e) {
             fail();
         }
