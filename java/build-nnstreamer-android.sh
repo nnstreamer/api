@@ -62,6 +62,9 @@
 ##@@       'yes'      : [default] you can optionally specify the version of tensorflow-lite to use
 ##@@                    by appending ':version' [2.3.0 is the default].
 ##@@       'no'       : build without the sub-plugin for tensorflow-lite
+##@@   --enable_mxnet=(yes|no)
+##@@       'yes'      : build with sub-plugin for MXNet. Currently, mxnet 1.9.1 version supported.
+##@@       'no'       : [default] build without the sub-plugin for MXNet
 ##@@ 
 ##@@ options for tensor converter/decoder sub-plugins:
 ##@@   --enable_flatbuf=(yes|no)
@@ -113,6 +116,9 @@ pytorch_vers_support="1.8.0 1.10.1"
 
 # Enable tensorflow-lite
 enable_tflite="yes"
+
+# Enable MXNet
+enable_mxnet="no"
 
 # Enable the flatbuffer converter/decoder by default
 enable_flatbuf="yes"
@@ -225,6 +231,9 @@ for arg in "$@"; do
                 fi
             fi
             ;;
+        --enable_mxnet=*)
+            enable_mxnet=${arg#*=}
+            ;;
         --enable_flatbuf=*)
             enable_flatbuf=${arg#*=}
             ;;
@@ -248,6 +257,7 @@ elif [[ $build_type == "internal" ]]; then
     enable_snpe="no"
     enable_pytorch="no"
     enable_tflite="no"
+    enable_mxnet="no"
 
     target_abi="arm64-v8a"
 elif [[ $build_type != "all" ]]; then
@@ -302,6 +312,10 @@ fi
 
 if [[ $enable_tflite == "yes" ]]; then
     echo "Build with tensorflow-lite $tf_lite_ver"
+fi
+
+if [[ $enable_mxnet == "yes" ]]; then
+    echo "Build with MXNet 1.9.1"
 fi
 
 if [[ $enable_flatbuf == "yes" ]]; then
@@ -423,6 +437,10 @@ if [[ $enable_pytorch == "yes" ]]; then
     wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/pytorch-$pytorch_ver.tar.xz
 fi
 
+if [[ $enable_mxnet == "yes" ]]; then
+    wget --load-cookies ~/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies ~/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1BVYRmkVsTJ8SMZr0qRbYVQvFyiGPAgpF' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1BVYRmkVsTJ8SMZr0qRbYVQvFyiGPAgpF" -O ./$build_dir/external/mxnet-1.9.1.tar.xz && rm -rf ~/cookies.txt
+fi
+
 if [[ $enable_flatbuf == "yes" ]]; then
     wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/flatbuffers-${flatbuf_ver}.tar.xz
 fi
@@ -431,8 +449,6 @@ if [[ $enable_mqtt == "yes" ]]; then
     wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/paho-mqtt-c-${paho_mqtt_c_ver}.tar.xz
 fi
 
-echo "Get MXNet shared library"
-wget --load-cookies ~/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies ~/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1BVYRmkVsTJ8SMZr0qRbYVQvFyiGPAgpF' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1BVYRmkVsTJ8SMZr0qRbYVQvFyiGPAgpF" -O ./$build_dir/external/mxnet-1.9.1.tar.xz && rm -rf ~/cookies.txt
 
 
 pushd ./$build_dir
@@ -514,9 +530,11 @@ if [[ $enable_pytorch == "yes" ]]; then
     tar -xJf ./external/pytorch-$pytorch_ver.tar.xz -C ./nnstreamer/src/main/jni
 fi
 
-# Update MXNet
-echo "Extract MXNet shared library"
-tar -xJf ./external/mxnet-1.9.1.tar.xz -C ./nnstreamer/src/main/jni
+# Update MXNet option
+if [[ $enable_mxnet == "yes" ]]; then
+    sed -i "s|ENABLE_MXNET := false|ENABLE_MXNET := true|" nnstreamer/src/main/jni/Android.mk
+    tar -xJf ./external/mxnet-1.9.1.tar.xz -C ./nnstreamer/src/main/jni
+fi
 
 # Update tf-lite option
 if [[ $enable_tflite == "yes" ]]; then
