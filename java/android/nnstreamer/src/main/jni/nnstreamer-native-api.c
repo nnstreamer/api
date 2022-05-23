@@ -719,6 +719,9 @@ nns_get_nnfw_type (jint fw_type, ml_nnfw_type_e * nnfw)
     case 4: /* NNFWType.PYTORCH */
       *nnfw = ML_NNFW_TYPE_PYTORCH;
       break;
+    case 5: /* NNFWType.MXNET */
+      *nnfw = ML_NNFW_TYPE_MXNET;
+      break;
     default: /* Unknown */
       _ml_logw ("Unknown NNFW type (%d).", fw_type);
       return FALSE;

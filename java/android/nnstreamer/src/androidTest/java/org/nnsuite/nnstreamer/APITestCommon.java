@@ -508,6 +508,7 @@ public class APITestCommon {
         assertEquals(NNStreamer.NNFWType.NNFW, NNStreamer.NNFWType.valueOf("NNFW"));
         assertEquals(NNStreamer.NNFWType.SNPE, NNStreamer.NNFWType.valueOf("SNPE"));
         assertEquals(NNStreamer.NNFWType.PYTORCH, NNStreamer.NNFWType.valueOf("PYTORCH"));
+        assertEquals(NNStreamer.NNFWType.MXNET, NNStreamer.NNFWType.valueOf("MXNET"));
         assertEquals(NNStreamer.NNFWType.UNKNOWN, NNStreamer.NNFWType.valueOf("UNKNOWN"));
     }
 }

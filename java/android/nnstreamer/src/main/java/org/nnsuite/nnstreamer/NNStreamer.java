@@ -81,6 +81,11 @@ public final class NNStreamer {
          */
         PYTORCH,
         /**
+         * <a href="https://github.com/apache/incubator-mxnet">Apache MXNet</a>
+         * is a deep learning framework designed for both efficiency and flexibility.
+         */
+        MXNET,
+        /**
          * Unknown framework (usually error)
          */
         UNKNOWN
