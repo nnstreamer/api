@@ -432,7 +432,7 @@ if [[ $enable_mqtt == "yes" ]]; then
 fi
 
 echo "Get MXNet shared library"
-wget --load-cookies ~/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies ~/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1DDWCVNUQx56M_P00UqFV-AvZ2OFnIPjj' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1DDWCVNUQx56M_P00UqFV-AvZ2OFnIPjj" -O ./$build_dir/external/mxnet-1.9.x.tar.xz && rm -rf ~/cookies.txt
+wget --load-cookies ~/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies ~/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1BVYRmkVsTJ8SMZr0qRbYVQvFyiGPAgpF' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1BVYRmkVsTJ8SMZr0qRbYVQvFyiGPAgpF" -O ./$build_dir/external/mxnet-1.9.1.tar.xz && rm -rf ~/cookies.txt
 
 
 pushd ./$build_dir
@@ -516,7 +516,7 @@ fi
 
 # Update MXNet
 echo "Extract MXNet shared library"
-tar -xJf ./external/mxnet-1.9.x.tar.xz -C ./nnstreamer/src/main/jni
+tar -xJf ./external/mxnet-1.9.1.tar.xz -C ./nnstreamer/src/main/jni
 
 # Update tf-lite option
 if [[ $enable_tflite == "yes" ]]; then
