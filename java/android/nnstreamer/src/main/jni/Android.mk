@@ -52,6 +52,9 @@ ENABLE_SNPE := false
 # PyTorch
 ENABLE_PYTORCH := false
 
+# MXNet
+ENABLE_MXNET := false
+
 # Converter/decoder sub-plugin for flatbuffers support
 ENABLE_FLATBUF := false
 
@@ -79,11 +82,6 @@ include $(LOCAL_PATH)/Android-nnstreamer.mk
 #------------------------------------------------------
 # external libs and sub-plugins
 #------------------------------------------------------
-
-# MXNET
-NNS_SUBPLUGINS += mxnet-subplugin
-include $(LOCAL_PATH)/Android-mxnet.mk
-
 
 ifeq ($(ENABLE_TF_LITE),true)
 NNS_API_FLAGS += -DENABLE_TENSORFLOW_LITE=1
@@ -118,6 +116,13 @@ NNS_API_FLAGS += -DENABLE_PYTORCH=1
 NNS_SUBPLUGINS += pytorch-subplugin
 
 include $(LOCAL_PATH)/Android-pytorch.mk
+endif
+
+ifeq ($(ENABLE_MXNET), true)
+NNS_API_FLAGS += -DENABLE_MXNET=1
+NNS_SUBPLUGINS += mxnet-subplugin
+
+include $(LOCAL_PATH)/Android-mxnet.mk
 endif
 
 ifneq ($(NNSTREAMER_API_OPTION),single)
