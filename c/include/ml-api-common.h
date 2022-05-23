@@ -384,7 +384,7 @@ int ml_tensors_data_set_tensor_data (ml_tensors_data_h data, unsigned int index,
  * @brief Returns a human-readable string describing the last error.
  * @details This returns a human-readable, null-terminated string describing
  *         the most recent error that occured from a call to one of the
- *         funcctions in the Machine Learning API since the last call to
+ *         functions in the Machine Learning API since the last call to
  *         ml_error(). The returned string should *not* be freed or
  *         overwritten by the caller.
  * @since_tizen 7.0
