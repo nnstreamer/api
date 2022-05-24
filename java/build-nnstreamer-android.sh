@@ -449,8 +449,6 @@ if [[ $enable_mqtt == "yes" ]]; then
     wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/paho-mqtt-c-${paho_mqtt_c_ver}.tar.xz
 fi
 
-
-
 pushd ./$build_dir
 
 # Update target ABI
