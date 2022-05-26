@@ -36,6 +36,7 @@ typedef struct {
   ml_nnfw_hw_e hw;               /**< The type of hardware resource. */
   char *models;                  /**< Comma separated neural network model files. */
   char *custom_option;           /**< Custom option string for neural network framework. */
+  char *fw_name;                 /**< The explicit framework name given by user */
 } ml_single_preset;
 
 /**
