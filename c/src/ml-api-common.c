@@ -1158,3 +1158,124 @@ ml_strerror (int errnum)
     return NULL;
   return strerrors[errnum];
 }
+
+/**
+ * @brief Internal function for destroy value of option table
+ */
+static void
+_ml_option_value_free (gpointer data)
+{
+  ml_option_value_s *_value;
+
+  _value = (ml_option_value_s *) data;
+  if (_value) {
+    if (_value->destroy)
+      _value->destroy (_value->value);
+    g_free (_value);
+  }
+}
+
+/**
+ * @brief Creates an option and returns the instance a handle.
+ */
+int
+ml_option_create (ml_option_h * option)
+{
+  ml_option_s *_option;
+
+  check_feature_state (ML_FEATURE);
+
+  if (!option) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'option' is NULL. It should be a valid ml_option_h");
+  }
+
+  _option = g_new0 (ml_option_s, 1);
+  if (_option == NULL)
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Failed to allocate memory for the option handle. Out of memory?");
+
+  _option->option_table =
+      g_hash_table_new_full (g_str_hash, g_str_equal, g_free,
+      _ml_option_value_free);
+  if (_option->option_table == NULL) {
+    _ml_error_report
+        ("Failed to create a new table for ml_option. Out of memory?");
+    g_free (_option);
+    return ML_ERROR_OUT_OF_MEMORY;
+  }
+
+  *option = (ml_option_h *) _option;
+  return ML_ERROR_NONE;
+}
+
+/**
+ * @brief Frees the given handle of a ml_option.
+ */
+int
+ml_option_destroy (ml_option_h option)
+{
+  ml_option_s *_option;
+
+  check_feature_state (ML_FEATURE);
+
+  if (!option) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'option' is NULL. It should be a valid ml_option_h, which should be created by ml_option_create().");
+  }
+
+  _option = (ml_option_s *) option;
+  g_hash_table_destroy (_option->option_table);
+  g_free (_option);
+
+  return ML_ERROR_NONE;
+}
+
+/**
+ * @brief Set key-value pair in given option handle. Note that if duplicated key is given, the value is updated with the new one.
+ * If some options are changed or there are newly added options, please modify below description.
+ * The list of valid key-values are:
+ *
+ * key (char *)     || value (expected type (pointer))
+ * ---------------------------------------------------------
+ * "framework_name" ||  explicit name of framework (char *)
+ * ...
+ */
+int
+ml_option_set (ml_option_h option, const char *key, void *value,
+    ml_data_destroy_cb destroy)
+{
+  ml_option_s *_option;
+  ml_option_value_s *_option_value;
+
+  check_feature_state (ML_FEATURE);
+
+  if (!option) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'option' is NULL. It should be a valid ml_option_h, which should be created by ml_option_create().");
+  }
+
+  if (!key) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'key' is NULL. It should be a valid const char*");
+  }
+
+  if (!value) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'value' is NULL. It should be a valid void*");
+  }
+
+  _option = (ml_option_s *) option;
+
+  _option_value = g_new0 (ml_option_value_s, 1);
+  if (_option_value == NULL)
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Failed to allocate memory for the option_value structure. Out of memory?");
+
+  _option_value->value = value;
+  _option_value->destroy = destroy;
+  g_hash_table_insert (_option->option_table, g_strdup (key),
+      (gpointer) _option_value);
+
+  return ML_ERROR_NONE;
+}

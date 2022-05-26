@@ -144,6 +144,25 @@ typedef struct {
 } ml_tensors_info_s;
 
 /**
+ * @brief Data structure for value of ml_option.
+ * @since_tizen 7.0
+ */
+typedef struct
+{
+  void *value; /**< The data given by user. */
+  ml_data_destroy_cb destroy; /**< The destroy func given by user. */
+} ml_option_value_s;
+
+/**
+ * @brief Data structure for ml_option.
+ * @since_tizen 7.0
+ */
+typedef struct
+{
+  GHashTable *option_table; /**< hash table used by ml_option. */
+} ml_option_s;
+
+/**
  * @brief Macro to control private lock with nolock condition (lock)
  * @param sname The name of struct (ml_tensors_info_s or ml_tensors_data_s)
  */

@@ -144,6 +144,13 @@ typedef enum _ml_tensor_type_e
 } ml_tensor_type_e;
 
 /**
+ * @brief The function to be called when destroying the data in machine learning API.
+ * @since_tizen 7.0
+ * @param[in] user_data The user data passed from the callback registration function.
+ */
+typedef void (*ml_data_destroy_cb) (void *user_data);
+
+/**
  * @brief Callback to execute the custom-easy filter in NNStreamer pipelines.
  * @details Note that if ml_custom_easy_invoke_cb() returns negative error values, the constructed pipeline does not work properly anymore.
  *          So developers should release the pipeline handle and recreate it again.
@@ -405,6 +412,56 @@ const char * ml_error (void);
  * @return @c Null for invalid error code. Otherwise the error description.
  */
 const char * ml_strerror (int errnum);
+
+/*************
+ * ML OPTION *
+ *************/
+
+/**
+ * @brief A handle of a ml-option instance.
+ * @since_tizen 7.0
+ */
+typedef void *ml_option_h;
+
+/**
+ * @brief Creates ml-option instance.
+ * @since_tizen 7.0
+ * @remarks The @a option should be released using ml_option_destroy().
+ * @param[out] option Newly created option handle is returned.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
+ * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
+ */
+int ml_option_create (ml_option_h *option);
+
+/**
+ * @brief Destroys the ml-option instance.
+ * @details Note that, user should free the allocated values of ml-option in the case that destroy function is not given.
+ * @since_tizen 7.0
+ * @param[in] option The option handle to be destroyed.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
+ */
+int ml_option_destroy (ml_option_h option);
+
+/**
+ * @brief Sets a new key-value in ml-option instance.
+ * @details Note that the @a value should be valid during single task and be freed after destroying the ml-option instance unless proper @a destroy function is given. When duplicated @a key is given, the corresponding @a value is updated with the new one.
+ * @since_tizen 7.0
+ * @param[in] option The handle of ml-option.
+ * @param[in] key The key to be set.
+ * @param[in] value The value to be set.
+ * @param[in] destroy The function to destroy the value. It is called when the ml-option instance is destroyed.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
+ */
+int ml_option_set (ml_option_h option, const char* key, void *value, ml_data_destroy_cb destroy);
 
 /**
  * @}
