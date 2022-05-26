@@ -3515,6 +3515,299 @@ skip_test:
 }
 
 /**
+ * @brief Test ml_option
+ */
+TEST (nnstreamer_capi_ml_option, test00)
+{
+  int status;
+  ml_option_h option;
+
+  status = ml_option_create (&option);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  gchar *value0 = g_strdup ("value0");
+  status = ml_option_set (option, "key0", value0, g_free);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  gchar *value1 = g_strdup ("value1");
+  status = ml_option_set (option, "key1", value1, g_free);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  gchar *value2 = g_strdup ("value2");
+  status = ml_option_set (option, "key0", value2, g_free);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  gchar *some_long_value = g_strdup ("SOME LONG STR VALUE");
+  status = ml_option_set (option, "extra", some_long_value, g_free);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_option_destroy (option);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+}
+
+/**
+ * @brief Test ml_option
+ */
+TEST (nnstreamer_capi_ml_option, test01_n)
+{
+  int status;
+
+  status = ml_option_create (NULL);
+  EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
+
+  status = ml_option_destroy (NULL);
+  EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
+}
+
+/**
+ * @brief Test ml_option
+ */
+TEST (nnstreamer_capi_ml_option, test02_n)
+{
+  int status;
+  ml_single_h single;
+
+  status = ml_single_open_with_option (&single, NULL);
+  EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
+}
+
+/**
+ * @brief Test ml_option
+ */
+TEST (nnstreamer_capi_ml_option, test03_n)
+{
+  int status;
+  ml_option_h option;
+
+  status = ml_option_create (&option);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  gchar *value = g_strdup ("value");
+  status = ml_option_set (option, NULL, value, NULL);
+  EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
+  g_free (value);
+
+  status = ml_option_set (option, "key", NULL, NULL);
+  EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
+
+  status = ml_option_destroy (option);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+}
+
+/**
+ * @brief Test ml_option
+ */
+TEST (nnstreamer_capi_ml_option, test04_n)
+{
+  int status;
+  ml_single_h single;
+  ml_option_h option;
+
+  status = ml_option_create (&option);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_single_open_with_option (&single, option);
+  EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
+
+  status = ml_option_destroy (option);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+}
+
+/**
+ * @brief Test ml_option with tensorflow-lite
+ */
+TEST (nnstreamer_capi_ml_option, tensorflow_lite)
+{
+  int status;
+  ml_option_h option;
+  ml_tensors_info_h in_info, out_info;
+  ml_tensor_dimension in_dim, out_dim;
+  ml_tensors_data_h input, output;
+
+  status = ml_option_create (&option);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  gchar *test_model;
+
+  /* supposed to run test in build directory */
+  if (root_path == NULL)
+    root_path = "..";
+
+  test_model = g_build_filename (root_path, "tests", "test_models", "models",
+      "mobilenet_v1_1.0_224_quant.tflite", NULL);
+  ASSERT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
+
+  ml_tensors_info_create (&in_info);
+  ml_tensors_info_create (&out_info);
+
+  in_dim[0] = 3;
+  in_dim[1] = 224;
+  in_dim[2] = 224;
+  in_dim[3] = 1;
+  ml_tensors_info_set_count (in_info, 1);
+  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_UINT8);
+  ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
+
+  out_dim[0] = 1001;
+  out_dim[1] = 1;
+  out_dim[2] = 1;
+  out_dim[3] = 1;
+  ml_tensors_info_set_count (out_info, 1);
+  ml_tensors_info_set_tensor_type (out_info, 0, ML_TENSOR_TYPE_UINT8);
+  ml_tensors_info_set_tensor_dimension (out_info, 0, out_dim);
+
+  status = ml_option_set (option, "input_info", in_info, NULL);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  status = ml_option_set (option, "output_info", out_info, NULL);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_option_set (option, "models", test_model, NULL);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  ml_nnfw_type_e nnfw_type = ML_NNFW_TYPE_TENSORFLOW_LITE;
+  status = ml_option_set (option, "nnfw", &nnfw_type, NULL);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  ml_single_h single;
+  status = ml_single_open_with_option (&single, option);
+  if (is_enabled_tensorflow_lite) {
+    EXPECT_EQ (status, ML_ERROR_NONE);
+  } else {
+    EXPECT_NE (status, ML_ERROR_NONE);
+    goto skip_test;
+  }
+
+  /* invoke */
+  input = output = NULL;
+
+  /* generate dummy data */
+  status = ml_tensors_data_create (in_info, &input);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  EXPECT_TRUE (input != NULL);
+
+  status = ml_single_set_timeout (single, SINGLE_DEF_TIMEOUT_MSEC);
+  EXPECT_TRUE (status == ML_ERROR_NOT_SUPPORTED || status == ML_ERROR_NONE);
+
+  status = ml_single_invoke (single, input, &output);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  EXPECT_TRUE (output != NULL);
+
+  status = ml_single_close (single);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  ml_tensors_data_destroy (output);
+  ml_tensors_data_destroy (input);
+  /* invoke finished */
+
+skip_test:
+  ml_tensors_info_destroy (in_info);
+  ml_tensors_info_destroy (out_info);
+
+  status = ml_option_destroy (option);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  g_free (test_model);
+}
+
+#if defined (ENABLE_TENSORFLOW_LITE) && defined (ENABLE_TENSORFLOW2_LITE)
+/**
+ * @brief Test ml_option with tensorflow1-lite (manually set by ml_option_se, NULLt)
+ */
+TEST (nnstreamer_capi_ml_option, tensorflow1_lite)
+{
+  int status;
+  ml_option_h option;
+  ml_tensors_info_h in_info, out_info;
+  ml_tensor_dimension in_dim, out_dim;
+  ml_tensors_data_h input, output;
+
+  status = ml_option_create (&option);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  gchar *test_model;
+
+  /* supposed to run test in build directory */
+  if (root_path == NULL)
+    root_path = "..";
+
+  test_model = g_build_filename (root_path, "tests", "test_models", "models",
+      "mobilenet_v1_1.0_224_quant.tflite", NULL);
+  ASSERT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
+
+  ml_tensors_info_create (&in_info);
+  ml_tensors_info_create (&out_info);
+
+  in_dim[0] = 3;
+  in_dim[1] = 224;
+  in_dim[2] = 224;
+  in_dim[3] = 1;
+  ml_tensors_info_set_count (in_info, 1);
+  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_UINT8);
+  ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
+
+  out_dim[0] = 1001;
+  out_dim[1] = 1;
+  out_dim[2] = 1;
+  out_dim[3] = 1;
+  ml_tensors_info_set_count (out_info, 1);
+  ml_tensors_info_set_tensor_type (out_info, 0, ML_TENSOR_TYPE_UINT8);
+  ml_tensors_info_set_tensor_dimension (out_info, 0, out_dim);
+
+  status = ml_option_set (option, "input_info", in_info, NULL);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  status = ml_option_set (option, "output_info", out_info, NULL);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_option_set (option, "models", test_model, NULL);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  ml_nnfw_type_e nnfw_type = ML_NNFW_TYPE_TENSORFLOW_LITE;
+  status = ml_option_set (option, "nnfw", &nnfw_type, NULL);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  gchar *fw_name = g_strdup ("tensorflow1-lite");
+  status = ml_option_set (option, "framework_name", fw_name, g_free);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  ml_single_h single;
+  status = ml_single_open_with_option (&single, option);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  /* invoke */
+  input = output = NULL;
+
+  /* generate dummy data */
+  status = ml_tensors_data_create (in_info, &input);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  EXPECT_TRUE (input != NULL);
+
+  status = ml_single_set_timeout (single, SINGLE_DEF_TIMEOUT_MSEC);
+  EXPECT_TRUE (status == ML_ERROR_NOT_SUPPORTED || status == ML_ERROR_NONE);
+
+  status = ml_single_invoke (single, input, &output);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  EXPECT_TRUE (output != NULL);
+
+  status = ml_single_close (single);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  ml_tensors_data_destroy (output);
+  ml_tensors_data_destroy (input);
+  /* invoke finished */
+
+  ml_tensors_info_destroy (in_info);
+  ml_tensors_info_destroy (out_info);
+
+  status = ml_option_destroy (option);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  g_free (test_model);
+}
+#endif
+
+/**
  * @brief Test utility functions (private)
  * @details check sub-plugin type and name
  */
