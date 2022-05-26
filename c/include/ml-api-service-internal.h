@@ -13,7 +13,7 @@
  *
  * @details
  *      This provides interfaces of ML Service APIs for
- *    platform packages (with "root" or "OS" priveleges).
+ *    platform packages (with "root" or "OS" privileges).
  *      Application developers should use ml-api-service.h
  *    instead.
  *      However, whether to mandate this or not can be decided by
@@ -107,7 +107,7 @@ int ml_service_model_add (const char *name, const ml_service_model_description *
  * as an AI service as a pair of tensor-query-server-*.
  *
  * Mode 2.
- * Reigster a pipeline, a model, or a series of models
+ * Register a pipeline, a model, or a series of models
  * as an AI service, streaming out with mqtt-sink.
  ***************************************************/
 typedef void *ml_service_server_h;

@@ -930,7 +930,7 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
    */
   if (!_ml_nnfw_is_available (nnfw, hw)) {
     _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
-        "The given nnfw, '%s', is not supported. There is no corresponding tens-r-filter subplugin available or the given hardware requirement is not supported for the given nnfw.",
+        "The given nnfw, '%s', is not supported. There is no corresponding tensor-filter subplugin available or the given hardware requirement is not supported for the given nnfw.",
         fw_name);
   }
 
