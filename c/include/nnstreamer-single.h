@@ -260,6 +260,23 @@ int ml_single_set_property (ml_single_h single, const char *name, const char *va
 int ml_single_get_property (ml_single_h single, const char *name, char **value);
 
 /**
+ * @brief Makes a single instance with given ml-option.
+ * @since_tizen 7.0
+ * @remarks %http://tizen.org/privilege/mediastorage is needed if @a option is relevant to media storage.
+ * @remarks %http://tizen.org/privilege/externalstorage is needed if @a option is relevant to external storage.
+ * @param[out] single This is the model handle opened. Users are required to close
+ *                   the given instance with ml_single_close().
+ * @param[in] option The handle of ml-option.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_PERMISSION_DENIED The application does not have the privilege to access to the media storage or external storage.
+ * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
+ * @retval #ML_ERROR_STREAMS_PIPE Failed to start the pipeline.
+ * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
+ */
+int ml_single_open_with_option (ml_single_h *single, const ml_option_h option);
+/**
  * @}
  */
 #ifdef __cplusplus
