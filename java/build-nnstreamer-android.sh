@@ -438,7 +438,11 @@ if [[ $enable_pytorch == "yes" ]]; then
 fi
 
 if [[ $enable_mxnet == "yes" ]]; then
-    wget --load-cookies ~/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies ~/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1BVYRmkVsTJ8SMZr0qRbYVQvFyiGPAgpF' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1BVYRmkVsTJ8SMZr0qRbYVQvFyiGPAgpF" -O ./$build_dir/external/mxnet-1.9.1.tar.xz && rm -rf ~/cookies.txt
+    wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/mxnet/mxnet-1.9.1.tar.xz_aa
+    wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/mxnet/mxnet-1.9.1.tar.xz_ab
+    wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/mxnet/mxnet-1.9.1.tar.xz_ac
+    wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/mxnet/mxnet-1.9.1.tar.xz_ad
+    cat ./$build_dir/external/mxnet-1.9.1.tar.xz_* > ./$build_dir/external/mxnet-1.9.1.tar.xz
 fi
 
 if [[ $enable_flatbuf == "yes" ]]; then
