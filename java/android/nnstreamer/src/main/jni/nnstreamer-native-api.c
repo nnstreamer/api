@@ -816,8 +816,8 @@ nnstreamer_native_initialize (JNIEnv * env, jobject context)
 #if defined (ENABLE_PYTORCH)
     init_filter_torch ();
 #endif
-# if defined (ENABLE_MXNET)
-  init_filter_mxnet() ;
+#if defined (ENABLE_MXNET)
+    init_filter_mxnet ();
 #endif
 #endif /* __ANDROID__ */
     nns_is_initilaized = TRUE;
