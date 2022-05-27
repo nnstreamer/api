@@ -64,7 +64,7 @@ typedef enum {
   ML_NNFW_TYPE_VIVANTE = 7,           /**< VeriSilicon's Vivante. (Since 6.0) */
   ML_NNFW_TYPE_EDGE_TPU = 8,          /**< Google Coral Edge TPU (USB). (Since 6.0) */
   ML_NNFW_TYPE_ARMNN = 9,             /**< Arm Neural Network framework (support for caffe and tensorflow-lite). (Since 6.0) */
-  ML_NNFW_TYPE_SNPE = 10,             /**< Qualcomm SNPE (Snapdgragon Neural Processing Engine (.dlc). (Since 6.0) */
+  ML_NNFW_TYPE_SNPE = 10,             /**< Qualcomm SNPE (Snapdragon Neural Processing Engine (.dlc). (Since 6.0) */
   ML_NNFW_TYPE_PYTORCH = 11,          /**< PyTorch (.pt). (Since 6.5) */
   ML_NNFW_TYPE_NNTR_INF = 12,         /**< Inference supported from NNTrainer, SR On-device Training Framework (Since 6.5) */
   ML_NNFW_TYPE_VD_AIFW = 13,          /**< Inference framework for Samsung Tizen TV (Since 6.5) */
@@ -384,7 +384,7 @@ int ml_tensors_data_set_tensor_data (ml_tensors_data_h data, unsigned int index,
 /**
  * @brief Returns a human-readable string describing the last error.
  * @details This returns a human-readable, null-terminated string describing
- *         the most recent error that occured from a call to one of the
+ *         the most recent error that occurred from a call to one of the
  *         functions in the Machine Learning API since the last call to
  *         ml_error(). The returned string should *not* be freed or
  *         overwritten by the caller.
