@@ -106,6 +106,8 @@ static const char *ml_nnfw_subplugin_name[] = {
   [ML_NNFW_TYPE_NNTR_INF] = "nntrainer",
   [ML_NNFW_TYPE_VD_AIFW] = "vd_aifw",
   [ML_NNFW_TYPE_TRIX_ENGINE] = "trix-engine",
+  [ML_NNFW_TYPE_MXNET] = "mxnet",
+  [ML_NNFW_TYPE_TVM] = "tvm",
   NULL
 };
 
@@ -1859,6 +1861,7 @@ _ml_validate_model_file (const char *const *model,
   /** @todo Make sure num_models is correct for each nnfw type */
   switch (*nnfw) {
     case ML_NNFW_TYPE_NNFW:
+    case ML_NNFW_TYPE_TVM:
       /**
        * We cannot check the file ext with NNFW.
        * NNFW itself will validate metadata and model file.
@@ -1899,6 +1902,12 @@ _ml_validate_model_file (const char *const *model,
         _ml_error_report
             ("ARMNN accepts .caffemodel, .tflite, .pb, and .prototxt files only. Please support correct file extension. You have specified: \"%s\"",
             file_ext[0]);
+        status = ML_ERROR_INVALID_PARAMETER;
+      }
+      break;
+    case ML_NNFW_TYPE_MXNET:
+      if (!g_str_equal (file_ext[0], ".params") &&
+          !g_str_equal (file_ext[0], ".json")) {
         status = ML_ERROR_INVALID_PARAMETER;
       }
       break;
