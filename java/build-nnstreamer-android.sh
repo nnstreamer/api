@@ -119,6 +119,7 @@ enable_tflite="yes"
 
 # Enable MXNet
 enable_mxnet="no"
+mxnet_ver="1.9.1"
 
 # Enable the flatbuffer converter/decoder by default
 enable_flatbuf="yes"
@@ -315,7 +316,7 @@ if [[ $enable_tflite == "yes" ]]; then
 fi
 
 if [[ $enable_mxnet == "yes" ]]; then
-    echo "Build with MXNet 1.9.1"
+    echo "Build with MXNet $mxnet_ver"
 fi
 
 if [[ $enable_flatbuf == "yes" ]]; then
@@ -438,11 +439,11 @@ if [[ $enable_pytorch == "yes" ]]; then
 fi
 
 if [[ $enable_mxnet == "yes" ]]; then
-    wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/mxnet/mxnet-1.9.1.tar.xz_aa
-    wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/mxnet/mxnet-1.9.1.tar.xz_ab
-    wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/mxnet/mxnet-1.9.1.tar.xz_ac
-    wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/mxnet/mxnet-1.9.1.tar.xz_ad
-    cat ./$build_dir/external/mxnet-1.9.1.tar.xz_* > ./$build_dir/external/mxnet-1.9.1.tar.xz
+    wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/mxnet/mxnet-$mxnet_ver.tar.xz_aa
+    wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/mxnet/mxnet-$mxnet_ver.tar.xz_ab
+    wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/mxnet/mxnet-$mxnet_ver.tar.xz_ac
+    wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/mxnet/mxnet-$mxnet_ver.tar.xz_ad
+    cat ./$build_dir/external/mxnet-$mxnet_ver.tar.xz_* > ./$build_dir/external/mxnet-$mxnet_ver.tar.xz
 fi
 
 if [[ $enable_flatbuf == "yes" ]]; then
@@ -534,8 +535,9 @@ fi
 
 # Update MXNet option
 if [[ $enable_mxnet == "yes" ]]; then
+    sed -i "s|ENABLE_MXNET := false|ENABLE_MXNET := true|" nnstreamer/src/main/jni/Android-nnstreamer-prebuilt.mk
     sed -i "s|ENABLE_MXNET := false|ENABLE_MXNET := true|" nnstreamer/src/main/jni/Android.mk
-    tar -xJf ./external/mxnet-1.9.1.tar.xz -C ./nnstreamer/src/main/jni
+    tar -xJf ./external/mxnet-$mxnet_ver.tar.xz -C ./nnstreamer/src/main/jni
 fi
 
 # Update tf-lite option

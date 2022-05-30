@@ -2319,6 +2319,11 @@ public class APITestPipeline {
 
     @Test
     public void testAppsrcPng() {
+        if (!Pipeline.isElementAvailable("pngdec")) {
+            /* cannot run the test */
+            return;
+        }
+
         String root = Environment.getExternalStorageDirectory().getAbsolutePath();
         String png_path = root + "/nnstreamer/test/orange.png";
 
