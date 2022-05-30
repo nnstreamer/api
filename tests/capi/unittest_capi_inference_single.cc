@@ -3530,6 +3530,10 @@ TEST (nnstreamer_capi_util, nnfw_name_01_p)
   EXPECT_EQ (_ml_get_nnfw_type_by_subplugin_name ("vivante"), ML_NNFW_TYPE_VIVANTE);
   EXPECT_STREQ (_ml_get_nnfw_subplugin_name (ML_NNFW_TYPE_SNAP), "snap");
   EXPECT_EQ (_ml_get_nnfw_type_by_subplugin_name ("snap"), ML_NNFW_TYPE_SNAP);
+  EXPECT_STREQ (_ml_get_nnfw_subplugin_name (ML_NNFW_TYPE_MXNET), "mxnet");
+  EXPECT_EQ (_ml_get_nnfw_type_by_subplugin_name ("mxnet"), ML_NNFW_TYPE_MXNET);
+  EXPECT_STREQ (_ml_get_nnfw_subplugin_name (ML_NNFW_TYPE_TVM), "tvm");
+  EXPECT_EQ (_ml_get_nnfw_type_by_subplugin_name ("tvm"), ML_NNFW_TYPE_TVM);
 }
 
 /**
