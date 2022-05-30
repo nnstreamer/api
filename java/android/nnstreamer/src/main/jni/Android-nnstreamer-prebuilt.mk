@@ -16,6 +16,7 @@ ENABLE_TF_LITE := false
 ENABLE_SNAP := false
 ENABLE_NNFW := false
 ENABLE_SNPE := false
+ENABLE_MXNET := false
 
 #------------------------------------------------------
 # define required libraries for nnstreamer
@@ -74,6 +75,16 @@ SNPE_LIB_PATH := $(NNSTREAMER_LIB_PATH)
 include $(LOCAL_PATH)/Android-snpe-prebuilt.mk
 
 NNSTREAMER_LIBS += $(SNPE_PREBUILT_LIBS)
+endif
+
+#------------------------------------------------------
+# MXNet
+#------------------------------------------------------
+ifeq ($(ENABLE_MXNET),true)
+MXNET_LIB_PATH := $(NNSTREAMER_LIB_PATH)
+include $(LOCAL_PATH)/Android-mxnet-prebuilt.mk
+
+NNSTREAMER_LIBS += $(MXNET_PREBUILT_LIBS)
 endif
 
 # Remove any duplicates.
