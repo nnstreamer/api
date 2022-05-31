@@ -97,7 +97,7 @@ int ml_single_open (ml_single_h *single, const char *model, const ml_tensors_inf
  * @retval #ML_ERROR_STREAMS_PIPE Failed to start the pipeline.
  * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
  */
-int ml_single_open_full (ml_single_h * single, const char *model, const ml_tensors_info_h input_info, const ml_tensors_info_h output_info, ml_nnfw_type_e nnfw, ml_nnfw_hw_e hw, const char *custom_option);
+int ml_single_open_full (ml_single_h *single, const char *model, const ml_tensors_info_h input_info, const ml_tensors_info_h output_info, ml_nnfw_type_e nnfw, ml_nnfw_hw_e hw, const char *custom_option);
 
 /**
  * @brief Closes the opened model handle.

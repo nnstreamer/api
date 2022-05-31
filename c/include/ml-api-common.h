@@ -395,12 +395,12 @@ const char * ml_error (void);
 
 /**
  * @brief Returns a human-readable string describing for a error code.
- * @param[in] errnum The error code.
  * @details This returns a human-readable, null-terminated string describing
  *         the error code of machine learning APIs.
  *         The returned string should *not* be freed or
  *         overwritten by the caller.
  * @since_tizen 7.0
+ * @param[in] errnum The error code.
  * @return @c Null for invalid error code. Otherwise the error description.
  */
 const char * ml_strerror (int errnum);
