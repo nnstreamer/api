@@ -394,7 +394,7 @@ int ml_tensors_data_set_tensor_data (ml_tensors_data_h data, unsigned int index,
 const char * ml_error (void);
 
 /**
- * @brief Returns a human-readable string describing for a error code.
+ * @brief Returns a human-readable string describing an error code.
  * @details This returns a human-readable, null-terminated string describing
  *         the error code of machine learning APIs.
  *         The returned string should *not* be freed or
