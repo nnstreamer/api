@@ -146,9 +146,9 @@ typedef enum _ml_tensor_type_e
 /**
  * @brief The function to be called when destroying the data in machine learning API.
  * @since_tizen 7.0
- * @param[in] user_data The user data passed from the callback registration function.
+ * @param[in] data The data to be destroyed.
  */
-typedef void (*ml_data_destroy_cb) (void *user_data);
+typedef void (*ml_data_destroy_cb) (void *data);
 
 /**
  * @brief Callback to execute the custom-easy filter in NNStreamer pipelines.
@@ -397,21 +397,21 @@ int ml_tensors_data_set_tensor_data (ml_tensors_data_h data, unsigned int index,
  *         ml_error(). The returned string should *not* be freed or
  *         overwritten by the caller.
  * @since_tizen 7.0
- * @return @c Null if no error to be reported. Otherwise the error description.
+ * @return @c NULL if no error to be reported. Otherwise the error description.
  */
 const char * ml_error (void);
 
 /**
  * @brief Returns a human-readable string describing an error code.
  * @details This returns a human-readable, null-terminated string describing
- *         the error code of machine learning APIs.
+ *         the error code of machine learning API.
  *         The returned string should *not* be freed or
  *         overwritten by the caller.
  * @since_tizen 7.0
- * @param[in] errnum The error code.
- * @return @c Null for invalid error code. Otherwise the error description.
+ * @param[in] error_code The error code of machine learning API.
+ * @return @c NULL for invalid error code. Otherwise the error description.
  */
-const char * ml_strerror (int errnum);
+const char * ml_strerror (int error_code);
 
 /*************
  * ML OPTION *
