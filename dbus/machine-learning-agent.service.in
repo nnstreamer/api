@@ -1,0 +1,7 @@
+[Unit]
+Description=Machine Learning Agent Daemon
+
+[Service]
+Type=simple
+SmackProcessLabel=System
+ExecStart=/usr/bin/machine-learning-agent

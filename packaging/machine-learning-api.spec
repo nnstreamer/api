@@ -4,6 +4,7 @@
 # touch these values for your needs.
 %define		enable_tizen_privilege 1
 %define		enable_tizen_feature 1
+%define		enable_machine_learning_agent 1
 
 # Below features are used for unittest.
 # Do not add neural network dependency in API source.
@@ -61,6 +62,7 @@ Packager:	MyungJoo Ham <myungjoo.ham@samsung.com>
 License:	Apache-2.0
 Source0:	machine-learning-api-%{version}.tar
 Source1001:	capi-machine-learning-inference.manifest
+Source1002:	machine-learning-agent.manifest
 
 ## Define build requirements ##
 Requires:	capi-machine-learning-common = %{version}-%{release}
@@ -142,6 +144,10 @@ BuildRequires:	libarmcl
 BuildConflicts:	libarmcl-release
 %endif
 %endif # unit_test
+
+%if 0%{?enable_machine_learning_agent}
+BuildRequires:  pkgconfig(libsystemd)
+%endif
 
 %description
 Tizen ML(Machine Learning) native API for NNStreamer.
@@ -234,6 +240,15 @@ Requires:	capi-machine-learning-inference-devel = %{version}-%{release}
 %description -n capi-machine-learning-tizen-internal-devel
 Tizen internal headers for Tizen Machine Learning API.
 
+%if 0%{?enable_machine_learning_agent}
+%package -n machine-learning-agent
+Summary:    AI Service Daemon
+Group:		Machine Learning/ML Framework
+Requires:	capi-machine-learning-service = %{version}-%{release}
+%description -n machine-learning-agent
+AI Service Daemon
+%endif
+
 %if 0%{?release_test}
 %package -n capi-machine-learning-unittests
 Summary:	Unittests for Tizen Machine Learning API
@@ -263,6 +278,7 @@ HTML pages of lcov results of ML API generated during rpm build
 %define enable_tizen -Denable-tizen=false
 %define enable_tizen_privilege_check -Denable-tizen-privilege-check=false
 %define enable_tizen_feature_check -Denable-tizen-feature-check=false
+%define machine_learning_agent_check -Denable-machine-learning-agent=false
 %define service_db_path ""
 
 %if %{with tizen}
@@ -276,6 +292,10 @@ HTML pages of lcov results of ML API generated during rpm build
 %define enable_tizen_feature_check -Denable-tizen-feature-check=true
 %endif
 %define service_db_path -Dservice-db-path=%{TZ_SYS_GLOBALUSER_DB}
+
+%if 0%{?enable_machine_learning_agent}
+%define machine_learning_agent_check -Denable-machine-learning-agent=true
+%endif
 %endif # tizen
 
 %if 0%{?release_test}
@@ -287,6 +307,10 @@ HTML pages of lcov results of ML API generated during rpm build
 %prep
 %setup -q
 cp %{SOURCE1001} .
+
+%if 0%{?enable_machine_learning_agent}
+cp %{SOURCE1002} .
+%endif
 
 %build
 # Remove compiler flags for meson to decide the cpp version
@@ -314,7 +338,7 @@ mkdir -p build
 meson --buildtype=plain --prefix=%{_prefix} --sysconfdir=%{_sysconfdir} --libdir=%{_libdir} \
 	--bindir=%{_bindir} --includedir=%{_includedir} %{install_test} %{enable_test_coverage} \
 	%{enable_tizen} %{enable_tizen_privilege_check} %{enable_tizen_feature_check} \
-	%{service_db_path} \
+	%{service_db_path} %{machine_learning_agent_check} \
 	build
 
 ninja -C build %{?_smp_mflags}
@@ -429,6 +453,15 @@ cp -r result %{buildroot}%{_datadir}/ml-api/unittest/
 
 %files -n capi-machine-learning-service-devel-static
 %{_libdir}/libcapi-ml-service.a
+
+%if 0%{?enable_machine_learning_agent}
+%files -n machine-learning-agent
+%manifest machine-learning-agent.manifest
+%{_bindir}/machine-learning-agent
+%{_unitdir}/machine-learning-agent.service
+%config %{_sysconfdir}/dbus-1/system.d/machine-learning-agent.conf
+%attr(0644,root,root) %{_datadir}/dbus-1/system-services/org.tizen.machinelearning.service.service
+%endif
 
 %if 0%{?release_test}
 %files -n capi-machine-learning-unittests

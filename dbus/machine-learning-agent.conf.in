@@ -1,0 +1,17 @@
+<!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-BUS Bus Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+<busconfig>
+    <policy user="root">
+        <allow send_destination="org.tizen.machinelearning.service"
+		send_interface="org.tizen.machinelearning.service.process"/>
+    </policy>
+    <policy user="system_fw">
+        <allow own="org.tizen.machinelearning.service"/>
+    </policy>
+    <policy context="default">
+        <allow own="org.tizen.machinelearning.service"/>
+        <allow send_destination="org.tizen.machinelearning.service" send_type="method_call"/>
+        <allow own="org.tizen.machinelearning.service"/>
+        <allow send_destination="org.tizen.machinelearning.service.process" send_type="method_call"/>
+    </policy>
+</busconfig>

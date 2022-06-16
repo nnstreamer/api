@@ -21,6 +21,8 @@ cxx = meson.get_compiler('cpp')
 glib_dep = dependency('glib-2.0')
 gobject_dep = dependency('gobject-2.0')
 gmodule_dep = dependency('gmodule-2.0')
+gio_dep = dependency('gio-2.0')
+gio_unix_dep = dependency('gio-unix-2.0')
 gst_dep = dependency('gstreamer-1.0')
 gst_app_dep = dependency('gstreamer-app-1.0')
 nnstreamer_single_dep = dependency('nnstreamer-single')
@@ -141,6 +143,9 @@ api_install_libdir = join_paths(api_install_prefix, get_option('libdir'))
 api_install_bindir = join_paths(api_install_prefix, get_option('bindir'))
 api_install_includedir = join_paths(api_install_prefix, get_option('includedir'))
 api_install_inidir = get_option('sysconfdir')
+dbus_policy_dir = join_paths(get_option('sysconfdir'), 'dbus-1', 'system.d')
+dbus_system_service_dir = join_paths(api_install_prefix, 'share', 'dbus-1', 'system-services')
+systemd_service_dir = join_paths(api_install_prefix, 'lib', 'systemd', 'system')
 
 # Set default configuration
 api_conf = configuration_data()
@@ -152,6 +157,10 @@ api_conf.set('INCLUDE_INSTALL_DIR', api_install_includedir)
 
 # Build C-API
 subdir('c')
+
+if get_option('enable-machine-learning-agent')
+  subdir('daemon')
+endif
 
 # Build JNI wrapper when developer sets java-home
 # (e.g., -Djava-home=$JAVA_HOME from environment variables)
