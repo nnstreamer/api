@@ -25,7 +25,7 @@
 static tensor_type
 convert_tensor_type_from (ml_tensor_type_e type)
 {
-  if (type < ML_TENSOR_TYPE_INT32 || type > ML_TENSOR_TYPE_UINT64) {
+  if (type < ML_TENSOR_TYPE_INT32 || type >= ML_TENSOR_TYPE_UNKNOWN) {
     _ml_error_report
         ("Failed to convert the type. Input ml_tensor_type_e %d is invalid.",
         type);
@@ -43,7 +43,7 @@ convert_tensor_type_from (ml_tensor_type_e type)
 static ml_tensor_type_e
 convert_ml_tensor_type_from (tensor_type type)
 {
-  if (type < _NNS_INT32 || type > _NNS_UINT64) {
+  if (type < _NNS_INT32 || type >= _NNS_END) {
     _ml_error_report
         ("Failed to convert the type. Input tensor_type %d is invalid.", type);
     return ML_TENSOR_TYPE_UNKNOWN;
