@@ -387,6 +387,13 @@ ml_tensors_info_set_tensor_type (ml_tensors_info_h info,
         "The parameter, type, ML_TENSOR_TYPE_UNKNOWN or out of bound. The value of type should be between 0 and ML_TENSOR_TYPE_UNKNOWN - 1. type = %d, ML_TENSOR_TYPE_UNKNOWN = %d.",
         type, ML_TENSOR_TYPE_UNKNOWN);
 
+#ifndef SUPPORT_FLOAT16
+  if (type == ML_TENSOR_TYPE_FLOAT16)
+    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
+        "Float16 (IEEE 754) is not supported by the machine (or the compiler or your build configuration). You cannot configure ml_tensors_info instance with Float16 type.");
+#endif
+ /** @todo add BFLOAT16 when nnstreamer is ready for it. */
+
   tensors_info = (ml_tensors_info_s *) info;
   G_LOCK_UNLESS_NOLOCK (*tensors_info);
 

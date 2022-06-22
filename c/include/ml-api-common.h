@@ -140,6 +140,7 @@ typedef enum _ml_tensor_type_e
   ML_TENSOR_TYPE_FLOAT32,        /**< Float 32bit */
   ML_TENSOR_TYPE_INT64,          /**< Integer 64bit */
   ML_TENSOR_TYPE_UINT64,         /**< Unsigned integer 64bit */
+  ML_TENSOR_TYPE_FLOAT16,        /**< FP16, IEEE 754. Note that this type is supported only in aarch64/arm devices. (Since 7.0) */
   ML_TENSOR_TYPE_UNKNOWN         /**< Unknown type */
 } ml_tensor_type_e;
 
@@ -274,7 +275,7 @@ int ml_tensors_info_get_tensor_name (ml_tensors_info_h info, unsigned int index,
  * @param[in] type The tensor type to be set.
  * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
- * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported. E.g., in a machine without fp16 support, trying FLOAT16 is not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
  */
 int ml_tensors_info_set_tensor_type (ml_tensors_info_h info, unsigned int index, const ml_tensor_type_e type);
