@@ -155,12 +155,12 @@ api_conf.set('EXEC_PREFIX', api_install_bindir)
 api_conf.set('LIB_INSTALL_DIR', api_install_libdir)
 api_conf.set('INCLUDE_INSTALL_DIR', api_install_includedir)
 
-# Build C-API
-subdir('c')
-
 if get_option('enable-machine-learning-agent')
   subdir('daemon')
 endif
+
+# Build C-API
+subdir('c')
 
 # Build JNI wrapper when developer sets java-home
 # (e.g., -Djava-home=$JAVA_HOME from environment variables)

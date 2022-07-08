@@ -17,6 +17,10 @@ nns_capi_common_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-in
 nns_capi_single_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-inference-single.c')
 nns_capi_pipeline_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-inference-pipeline.c')
 
+if get_option('enable-machine-learning-agent')
+  nns_capi_service_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-service-agent-client.c')
+endif
+
 if get_option('enable-tizen')
   if get_option('enable-tizen-feature-check')
     nns_capi_common_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-common-tizen-feature-check.c')
@@ -43,7 +47,7 @@ endif
 
 # Dependencies
 nns_capi_common_deps = [glib_dep, gmodule_dep, nnstreamer_single_dep]
-nns_capi_deps = [nnstreamer_dep, glib_dep, gmodule_dep, gst_dep, gst_app_dep, leveldb_dep]
+nns_capi_deps = [nnstreamer_dep, glib_dep, gmodule_dep, gio_dep, gst_dep, gst_app_dep, leveldb_dep]
 
 if (get_option('enable-tizen'))
   message('C-API is in Tizen mode')
@@ -97,6 +101,9 @@ if (get_option('enable-tizen'))
   nns_capi_deps += [dependency('dlog')]
 endif
 
+if (get_option('enable-machine-learning-agent'))
+  nns_capi_deps += [gio_unix_dep, gdbus_gen_header_dep]
+endif
 
 # Single-shot API.
 nns_capi_single_shared_lib = shared_library ('capi-ml-inference-single',
