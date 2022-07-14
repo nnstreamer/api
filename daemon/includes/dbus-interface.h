@@ -22,4 +22,12 @@
 #define DBUS_ML_BUS_NAME                "org.tizen.machinelearning.service"
 #define DBUS_ML_PATH                    "/Org/Tizen/MachineLearning/Service"
 
+/* Pipeline Interface */
+#define DBUS_PIPELINE_INTERFACE         "org.tizen.machinelearning.service.pipeline"
+#define DBUS_PIPELINE_PATH              "/Org/Tizen/MachineLearning/Service/Pipeline"
+
+#define DBUS_PIPELINE_HANDLER_SET       "handle_set"
+#define DBUS_PIPELINE_HANDLER_GET       "handle_get"
+#define DBUS_PIPELINE_HANDLER_DELETE    "handle_delete"
+
 #endif /* __GDBUS_INTERFACE_H__ */

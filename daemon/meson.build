@@ -17,6 +17,7 @@ if get_option('enable-machine-learning-agent')
   nns_ml_agent_srcs += join_paths('main.c')
   nns_ml_agent_srcs += join_paths('modules.c')
   nns_ml_agent_srcs += join_paths('gdbus-util.c')
+  nns_ml_agent_srcs += join_paths('pipeline-module.c')
 
   gdbus_gen_header_dep = declare_dependency(sources : gdbus_gen_src)
   dlog_dep = dependency('dlog')
