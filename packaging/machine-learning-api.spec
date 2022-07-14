@@ -78,7 +78,6 @@ BuildRequires:	glib2-devel
 BuildRequires:	gstreamer-devel
 BuildRequires:	gst-plugins-base-devel
 BuildRequires:	meson >= 0.50.0
-BuildRequires:  pkgconfig(leveldb)
 
 %if %{with tizen}
 %if 0%{?enable_tizen_privilege}
@@ -147,6 +146,8 @@ BuildConflicts:	libarmcl-release
 
 %if 0%{?enable_machine_learning_agent}
 BuildRequires:  pkgconfig(libsystemd)
+BuildRequires:  pkgconfig(leveldb)
+Requires: dbus
 %endif
 
 %description
