@@ -147,6 +147,7 @@ BuildConflicts:	libarmcl-release
 
 %if 0%{?enable_machine_learning_agent}
 BuildRequires:  pkgconfig(libsystemd)
+BuildRequires:  dbus
 %endif
 
 %description
