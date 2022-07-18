@@ -10,6 +10,9 @@ testenv.set('NNSTREAMER_BUILD_ROOT_PATH', meson.build_root())
 gtest_dep = dependency('gtest', required: false)
 if gtest_dep.found()
   subdir('capi')
+  if get_option('enable-machine-learning-agent')
+    subdir('services')
+  endif
 else
   warning('You should install google-test on your machine.')
 endif
