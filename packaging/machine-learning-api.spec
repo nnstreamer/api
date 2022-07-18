@@ -351,6 +351,10 @@ bash %{test_script} ./tests/capi/unittest_datatype_consistency
 bash %{test_script} ./tests/capi/unittest_capi_service
 bash %{test_script} ./tests/capi/unittest_capi_service_db_mock
 
+%if 0%{?enable_machine_learning_agent}
+bash %{test_script} ./tests/daemon/unittest_ml_agent
+%endif
+
 %if 0%{?nnfw_support}
 bash %{test_script} ./tests/capi/unittest_capi_inference_nnfw_runtime
 %endif
