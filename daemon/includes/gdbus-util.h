@@ -86,10 +86,11 @@ MachinelearningServicePipeline *gdbus_get_instance_pipeline (void);
 void gdbus_put_instance_pipeline (MachinelearningServicePipeline ** instance);
 
 /**
- * @brief Connect to the DBus message bus, which type is SYSTEM.
+ * @brief Connect to the DBus message bus
+ * @param is_session Ture is DBus Bus type is session.
  * @return @c 0 on success. Otherwise a negative error value.
  */
-int gdbus_get_system_connection (void);
+int gdbus_get_system_connection (gboolean is_session);
 
 /**
  * @brief Disconnect the DBus message bus.
