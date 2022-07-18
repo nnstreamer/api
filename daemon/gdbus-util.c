@@ -146,13 +146,15 @@ gdbus_put_instance_pipeline (MachinelearningServicePipeline ** instance)
  * @brief Connect to the DBus message bus, which type is SYSTEM.
  */
 int
-gdbus_get_system_connection (void)
+gdbus_get_system_connection (gboolean is_session)
 {
   GError *error = NULL;
+  GBusType bus_type = is_session ? G_BUS_TYPE_SESSION : G_BUS_TYPE_SYSTEM;
 
-  g_dbus_sys_conn = g_bus_get_sync (G_BUS_TYPE_SYSTEM, NULL, &error);
+  g_dbus_sys_conn = g_bus_get_sync (bus_type, NULL, &error);
   if (g_dbus_sys_conn == NULL) {
     _E ("cannot connect to the system message bus: %s\n", error->message);
+    g_clear_error(&error);
     return -ENOSYS;
   }
 
