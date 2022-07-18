@@ -12,6 +12,7 @@ if gtest_dep.found()
   subdir('capi')
   if get_option('enable-machine-learning-agent')
     subdir('services')
+    subdir('daemon')
   endif
 else
   warning('You should install google-test on your machine.')
