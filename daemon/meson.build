@@ -1,6 +1,7 @@
 # Machine Learing Agent
 if get_option('enable-machine-learning-agent')
   nns_ml_agent_srcs = []
+  nns_ml_agent_gen_srcs = []
   nns_ml_agent_incs = include_directories('includes')
 
   # Generate GDbus header and code
@@ -13,12 +14,23 @@ if get_option('enable-machine-learning-agent')
               '--output-directory', meson.current_build_dir(),
               '@INPUT@'])
 
-  nns_ml_agent_srcs += gdbus_gen_src[0]
+  nns_ml_agent_gen_srcs += gdbus_gen_src
+
   nns_ml_agent_srcs += join_paths('main.c')
   nns_ml_agent_srcs += join_paths('modules.c')
   nns_ml_agent_srcs += join_paths('gdbus-util.c')
 
-  gdbus_gen_header_dep = declare_dependency(sources : gdbus_gen_src)
+  # Enable ML Agent Test
+  gdbus_gen_test_src = custom_target('gdbus-gencode-test',
+    input : '../dbus/test-dbus.xml',
+    output : ['test-dbus.h', 'test-dbus.c'],
+    command : [gdbus_prog, '--interface-prefix', 'org.tizen',
+              '--generate-c-code', 'test-dbus',
+              '--output-directory', meson.current_build_dir(),
+              '@INPUT@'])
+
+  gdbus_gen_header_dep = declare_dependency(sources : nns_ml_agent_gen_srcs)
+  gdbus_gen_header_test_dep = declare_dependency(sources : [nns_ml_agent_gen_srcs, gdbus_gen_test_src])
   dlog_dep = dependency('dlog')
   libsystemd_dep = dependency('libsystemd')
   ai_service_daemon_deps = [
@@ -26,6 +38,7 @@ if get_option('enable-machine-learning-agent')
     glib_dep,
     gio_dep,
     gio_unix_dep,
+    gst_dep,
     dlog_dep,
     libsystemd_dep
   ]
@@ -36,6 +49,14 @@ if get_option('enable-machine-learning-agent')
     include_directories: nns_ml_agent_incs,
     install: true,
     install_dir: api_install_bindir,
+  )
+
+  # For unit test
+  nns_ml_agent_srcs += join_paths('test-dbus-impl.c')
+  ai_service_daemon = executable('machine-learning-agent-test',
+    nns_ml_agent_srcs,
+    dependencies : [ai_service_daemon_deps, gdbus_gen_header_test_dep],
+    include_directories: nns_ml_agent_incs
   )
 
   # DBus Policy configuration
