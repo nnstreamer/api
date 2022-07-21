@@ -3,7 +3,7 @@
 <busconfig>
     <policy user="root">
         <allow send_destination="org.tizen.machinelearning.service"
-		send_interface="org.tizen.machinelearning.service.process"/>
+		send_interface="org.tizen.machinelearning.service.pipeline"/>
     </policy>
     <policy user="system_fw">
         <allow own="org.tizen.machinelearning.service"/>
@@ -12,6 +12,6 @@
         <allow own="org.tizen.machinelearning.service"/>
         <allow send_destination="org.tizen.machinelearning.service" send_type="method_call"/>
         <allow own="org.tizen.machinelearning.service"/>
-        <allow send_destination="org.tizen.machinelearning.service.process" send_type="method_call"/>
+        <allow send_destination="org.tizen.machinelearning.service.pipeline" send_type="method_call"/>
     </policy>
 </busconfig>
