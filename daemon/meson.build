@@ -19,6 +19,7 @@ if get_option('enable-machine-learning-agent')
   nns_ml_agent_srcs += join_paths('main.c')
   nns_ml_agent_srcs += join_paths('modules.c')
   nns_ml_agent_srcs += join_paths('gdbus-util.c')
+  nns_ml_agent_srcs += join_paths('pipeline-module.c')
 
   # Enable ML Agent Test
   gdbus_gen_test_src = custom_target('gdbus-gencode-test',
