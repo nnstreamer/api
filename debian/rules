@@ -27,15 +27,13 @@ override_dh_auto_clean:
 override_dh_auto_configure:
 	mkdir -p ${BUILDDIR}
 	meson --buildtype=plain --prefix=/usr --sysconfdir=/etc --libdir=lib/$(DEB_HOST_MULTIARCH) --bindir=lib/nnstreamer/bin --includedir=include \
-	-Djava-home=${JAVA_DIR} \
-	${BUILDDIR}
+	-Djava-home=${JAVA_DIR} -Denable-tizen=false -Denable-test=true -Dinstall-test=true ${BUILDDIR}
 
 override_dh_auto_build:
 	ninja -C ${BUILDDIR}
 
 override_dh_auto_test:
-	# TODO add testcases
-	#./packaging/run_unittests_binaries.sh ./tests
+	./packaging/run_unittests.sh ./tests
 
 override_dh_auto_install:
 	DESTDIR=$(CURDIR)/debian/tmp ninja -C ${BUILDDIR} install
