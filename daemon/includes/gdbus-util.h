@@ -24,6 +24,10 @@
 
 #include "pipeline-dbus.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 /**
  * @brief DBus signal handler information to connect
  */
@@ -96,4 +100,8 @@ int gdbus_get_system_connection (gboolean is_session);
  * @brief Disconnect the DBus message bus.
  */
 void gdbus_put_system_connection (void);
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 #endif /* __GDBUS_UTIL_H__ */
