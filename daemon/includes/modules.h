@@ -18,6 +18,10 @@
 #ifndef __MODULES_H__
 #define __MODULES_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 /**
  * @brief Data structure contains the name and callback functions for a specific DBus interface.
  */
@@ -65,4 +69,8 @@ void add_module (const struct module_ops *module);
  * @param[in] module DBus interface information.
  */
 void remove_module (const struct module_ops *module);
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 #endif /* __MODULES_H__ */

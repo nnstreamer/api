@@ -22,6 +22,7 @@
 #define DBUS_ML_BUS_NAME                "org.tizen.machinelearning.service"
 #define DBUS_ML_PATH                    "/Org/Tizen/MachineLearning/Service"
 
+/* Pipeline Interface */
 #define DBUS_PIPELINE_INTERFACE          "org.tizen.machinelearning.service.pipeline"
 #define DBUS_PIPELINE_PATH               "/Org/Tizen/MachineLearning/Service/Pipeline"
 
@@ -32,5 +33,13 @@
 
 #define DBUS_PIPELINE_I_GET_STATE_HANDLER       "handle_get_state"
 #define DBUS_PIPELINE_I_GET_DESCRIPTION_HANDLER "handle_get_description"
+
+/* Model Interface */
+#define DBUS_MODEL_INTERFACE            "org.tizen.machinelearning.service.model"
+#define DBUS_MODEL_PATH                 "/Org/Tizen/MachineLearning/Service/Model"
+
+#define DBUS_MODEL_I_HANDLER_SET_PATH     "handle_set_path"
+#define DBUS_MODEL_I_HANDLER_GET_PATH     "handle_get_path"
+#define DBUS_MODEL_I_HANDLER_DELETE       "handle_delete"
 
 #endif /* __GDBUS_INTERFACE_H__ */
