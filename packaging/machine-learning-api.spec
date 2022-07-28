@@ -354,6 +354,7 @@ bash %{test_script} ./tests/capi/unittest_capi_service_db_mock
 
 %if 0%{?enable_machine_learning_agent}
 bash %{test_script} ./tests/daemon/unittest_ml_agent
+bash %{test_script} ./tests/daemon/unittest_dbus_model
 %endif
 
 %if 0%{?nnfw_support}

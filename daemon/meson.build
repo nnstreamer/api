@@ -44,12 +44,15 @@ if get_option('enable-machine-learning-agent')
     libsystemd_dep
   ]
 
+  serviceDBPath = get_option('service-db-path')
   ai_service_daemon = executable('machine-learning-agent',
     nns_ml_agent_srcs,
     dependencies : [ai_service_daemon_deps],
     include_directories: nns_ml_agent_incs,
     install: true,
     install_dir: api_install_bindir,
+    cpp_args : '-DDB_PATH="' + serviceDBPath + '"'
+
   )
 
   # For unit test
@@ -57,7 +60,8 @@ if get_option('enable-machine-learning-agent')
   ai_service_daemon = executable('machine-learning-agent-test',
     nns_ml_agent_srcs,
     dependencies : [ai_service_daemon_deps, gdbus_gen_header_test_dep],
-    include_directories: nns_ml_agent_incs
+    include_directories: nns_ml_agent_incs,
+    cpp_args : '-DDB_PATH="."'
   )
 
   # DBus Policy configuration
