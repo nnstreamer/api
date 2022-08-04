@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <node name="/Org/Tizen/MachineLearning/Service">
   <interface name="org.tizen.machinelearning.service.pipeline">
-    <method name="register_pipeline">
-      <arg type="s" name="pipeline" direction="in" />
+    <method name="launch_pipeline">
+      <arg type="s" name="service_name" direction="in" />
       <arg type="i" name="result" direction="out" />
       <arg type="x" name="id" direction="out" />
     </method>
