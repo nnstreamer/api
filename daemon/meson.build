@@ -11,7 +11,7 @@ if get_option('enable-machine-learning-agent')
   nns_ml_agent_srcs += join_paths('modules.c')
   nns_ml_agent_srcs += join_paths('gdbus-util.c')
   nns_ml_agent_srcs += join_paths('service-db.cc')
-  nns_ml_agent_srcs += join_paths('pipeline-module.c')
+  nns_ml_agent_srcs += join_paths('pipeline-module.cc')
   nns_ml_agent_srcs += join_paths('model-dbus-impl.cc')
 
   # Generate GDbus header and code
