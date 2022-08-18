@@ -39,6 +39,100 @@ _get_proxy_new_for_bus_sync (void)
       "/Org/Tizen/MachineLearning/Service/Pipeline", NULL, NULL);
 }
 
+/**
+ * @brief Set the pipeline description with a given name.
+ */
+int
+ml_service_set_pipeline (const char *name, const char *pipeline_desc)
+{
+  int ret = ML_ERROR_NONE;
+  gint out_return_code;
+  MachinelearningServicePipeline *mlsp;
+
+  check_feature_state (ML_FEATURE_SERVICE);
+
+  if (!name) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'name' is NULL. It should be a valid string.");
+  }
+
+  if (!pipeline_desc) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'pipeline_desc' is NULL. It should be a valid string.");
+  }
+
+  mlsp = _get_proxy_new_for_bus_sync ();
+  machinelearning_service_pipeline_call_set_pipeline_sync (mlsp, name,
+      pipeline_desc, &out_return_code, NULL, NULL);
+
+  ret = out_return_code;
+
+  g_object_unref (mlsp);
+
+  return ret;
+}
+
+/**
+ * @brief Get the pipeline description with a given name.
+ */
+int
+ml_service_get_pipeline (const char *name, char **pipeline_desc)
+{
+  int ret = ML_ERROR_NONE;
+  gint out_return_code;
+  MachinelearningServicePipeline *mlsp;
+
+  check_feature_state (ML_FEATURE_SERVICE);
+
+  if (!name) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'name' is NULL, It should be a valid string");
+  }
+
+  if (!pipeline_desc) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter 'pipeline_desc'. It should be a valid char**");
+  }
+
+  mlsp = _get_proxy_new_for_bus_sync ();
+  machinelearning_service_pipeline_call_get_pipeline_sync (mlsp, name,
+      &out_return_code, pipeline_desc, NULL, NULL);
+
+  ret = out_return_code;
+
+  g_object_unref (mlsp);
+
+  return ret;
+}
+
+/**
+ * @brief Delete the pipeline description with a given name.
+ */
+int
+ml_service_delete_pipeline (const char *name)
+{
+  int ret = ML_ERROR_NONE;
+  gint out_return_code;
+  MachinelearningServicePipeline *mlsp;
+
+  check_feature_state (ML_FEATURE_SERVICE);
+
+  if (!name) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'name' is NULL, It should be a valid string");
+  }
+
+  mlsp = _get_proxy_new_for_bus_sync ();
+  machinelearning_service_pipeline_call_delete_pipeline_sync (mlsp, name,
+      &out_return_code, NULL, NULL);
+
+  ret = out_return_code;
+
+  g_object_unref (mlsp);
+
+  return ret;
+}
+
 int
 ml_service_launch_pipeline (const char *name, ml_service_h * h)
 {
