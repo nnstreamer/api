@@ -26,6 +26,10 @@
 #define DBUS_PIPELINE_INTERFACE          "org.tizen.machinelearning.service.pipeline"
 #define DBUS_PIPELINE_PATH               "/Org/Tizen/MachineLearning/Service/Pipeline"
 
+#define DBUS_PIPELINE_I_SET_HANDLER             "handle_set_pipeline"
+#define DBUS_PIPELINE_I_GET_HANDLER             "handle_get_pipeline"
+#define DBUS_PIPELINE_I_DELETE_HANDLER          "handle_delete_pipeline"
+
 #define DBUS_PIPELINE_I_LAUNCH_HANDLER          "handle_launch_pipeline"
 #define DBUS_PIPELINE_I_START_HANDLER           "handle_start_pipeline"
 #define DBUS_PIPELINE_I_STOP_HANDLER            "handle_stop_pipeline"
