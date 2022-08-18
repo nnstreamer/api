@@ -74,6 +74,115 @@ static void _pipeline_free (gpointer data)
 }
 
 /**
+ * @brief Set the service with given description. Return the call result.
+ */
+static gboolean dbus_cb_core_set_pipeline (MachinelearningServicePipeline *obj,
+        GDBusMethodInvocation *invoc, const gchar *service_name, const gchar *pipeline_desc, gpointer user_data)
+{
+  gint result = 0;
+  IMLServiceDB &db = MLServiceLevelDB::getInstance ();
+
+  try {
+    db.connectDB ();
+    db.put (service_name, pipeline_desc);
+  } catch (const std::invalid_argument &e) {
+    _E ("An exception occurred during write to the DB. Error message: %s", e.what ());
+    result = -EINVAL;
+  } catch (const std::runtime_error &e) {
+    _E ("An exception occurred during write to the DB. Error message: %s", e.what ());
+    result = -EIO;
+  } catch (const std::exception &e) {
+    _E ("An exception occurred during write to the DB. Error message: %s", e.what ());
+    result = -EIO;
+  }
+
+  db.disconnectDB ();
+
+  if (result) {
+    _E ("Failed to set pipeline description of %s", service_name);
+    machinelearning_service_pipeline_complete_set_pipeline (obj, invoc, result);
+    return FALSE;
+  }
+
+  machinelearning_service_pipeline_complete_set_pipeline (obj, invoc, result);
+
+  return TRUE;
+}
+
+/**
+ * @brief Get the pipeline description of the given service. Return the call result and the pipeline description.
+ */
+static gboolean dbus_cb_core_get_pipeline (MachinelearningServicePipeline *obj,
+        GDBusMethodInvocation *invoc, const gchar *service_name, gpointer user_data)
+{
+  gint result = 0;
+  std::string stored_pipeline_description;
+  IMLServiceDB &db = MLServiceLevelDB::getInstance ();
+
+  try {
+    db.connectDB ();
+    db.get (service_name, stored_pipeline_description);
+  } catch (const std::invalid_argument &e) {
+    _E ("An exception occurred during read the DB. Error message: %s", e.what ());
+    result = -EINVAL;
+  } catch (const std::runtime_error &e) {
+    _E ("An exception occurred during read the DB. Error message: %s", e.what ());
+    result = -EIO;
+  } catch (const std::exception &e) {
+    _E ("An exception occurred during read the DB. Error message: %s", e.what ());
+    result = -EIO;
+  }
+
+  db.disconnectDB ();
+
+  if (result) {
+    _E ("Failed to get pipeline description of %s", service_name);
+    machinelearning_service_pipeline_complete_get_pipeline (obj, invoc, result, NULL);
+    return FALSE;
+  }
+
+  machinelearning_service_pipeline_complete_get_pipeline (obj, invoc, result, stored_pipeline_description.c_str ());
+
+  return TRUE;
+}
+
+/**
+ * @brief Delete the pipeline description of the given service. Return the call result.
+ */
+static gboolean dbus_cb_core_delete_pipeline (MachinelearningServicePipeline *obj,
+        GDBusMethodInvocation *invoc, const gchar *service_name, gpointer user_data)
+{
+  gint result = 0;
+  IMLServiceDB &db = MLServiceLevelDB::getInstance ();
+
+  try {
+    db.connectDB ();
+    db.del (service_name);
+  } catch (const std::invalid_argument &e) {
+    _E ("An exception occurred during delete an item in the DB. Error message: %s", e.what ());
+    result = -EINVAL;
+  } catch (const std::runtime_error &e) {
+    _E ("An exception occurred during delete an item in the DB. Error message: %s", e.what ());
+    result = -EIO;
+  } catch (const std::exception &e) {
+    _E ("An exception occurred during delete an item in the DB. Error message: %s", e.what ());
+    result = -EIO;
+  }
+
+  db.disconnectDB ();
+
+  if (result) {
+    _E ("Failed to delete the pipeline description of %s", service_name);
+    machinelearning_service_pipeline_complete_delete_pipeline (obj, invoc, result);
+    return FALSE;
+  }
+
+  machinelearning_service_pipeline_complete_delete_pipeline (obj, invoc, result);
+
+  return TRUE;
+}
+
+/**
  * @brief Launch the pipeline with given description. Return the call result and its id.
  */
 static gboolean dbus_cb_core_launch_pipeline (MachinelearningServicePipeline *obj,
@@ -328,6 +437,21 @@ static gboolean dbus_cb_core_get_description (MachinelearningServicePipeline *ob
 
 static struct gdbus_signal_info handler_infos[] = {
   {
+    .signal_name = DBUS_PIPELINE_I_SET_HANDLER,
+    .cb = G_CALLBACK (dbus_cb_core_set_pipeline),
+    .cb_data = NULL,
+    .handler_id = 0,
+  }, {
+    .signal_name = DBUS_PIPELINE_I_GET_HANDLER,
+    .cb = G_CALLBACK (dbus_cb_core_get_pipeline),
+    .cb_data = NULL,
+    .handler_id = 0,
+  }, {
+    .signal_name = DBUS_PIPELINE_I_DELETE_HANDLER,
+    .cb = G_CALLBACK (dbus_cb_core_delete_pipeline),
+    .cb_data = NULL,
+    .handler_id = 0,
+  }, {
     .signal_name = DBUS_PIPELINE_I_LAUNCH_HANDLER,
     .cb = G_CALLBACK (dbus_cb_core_launch_pipeline),
     .cb_data = NULL,
