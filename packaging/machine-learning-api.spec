@@ -103,7 +103,6 @@ BuildRequires:	lcov
 
 %if 0%{?unit_test}
 BuildRequires:  pkgconfig(gtest)
-BuildRequires:  pkgconfig(gmock)
 BuildRequires:	gst-plugins-good
 %if 0%{tizen_version_major} >= 5
 BuildRequires:	gst-plugins-good-extra
@@ -349,8 +348,6 @@ ninja -C build %{?_smp_mflags}
 bash %{test_script} ./tests/capi/unittest_capi_inference_single
 bash %{test_script} ./tests/capi/unittest_capi_inference
 bash %{test_script} ./tests/capi/unittest_datatype_consistency
-bash %{test_script} ./tests/capi/unittest_capi_service
-bash %{test_script} ./tests/capi/unittest_capi_service_db_mock
 
 %if 0%{?enable_machine_learning_agent}
 bash %{test_script} ./tests/daemon/unittest_ml_agent
