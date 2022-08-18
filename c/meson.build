@@ -16,7 +16,6 @@ nns_capi_common_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-co
 nns_capi_common_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-inference-internal.c')
 nns_capi_single_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-inference-single.c')
 nns_capi_pipeline_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-inference-pipeline.c')
-nns_capi_service_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-service-db.cc')
 
 if get_option('enable-tizen')
   if get_option('enable-tizen-feature-check')
