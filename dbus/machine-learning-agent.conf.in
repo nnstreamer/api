@@ -5,13 +5,13 @@
         <allow send_destination="org.tizen.machinelearning.service"
 		send_interface="org.tizen.machinelearning.service.pipeline"/>
     </policy>
-    <policy user="system_fw">
+    <policy user="service_fw">
         <allow own="org.tizen.machinelearning.service"/>
     </policy>
     <policy context="default">
-        <allow own="org.tizen.machinelearning.service"/>
-        <allow send_destination="org.tizen.machinelearning.service" send_type="method_call"/>
-        <allow own="org.tizen.machinelearning.service"/>
-        <allow send_destination="org.tizen.machinelearning.service.pipeline" send_type="method_call"/>
+	<deny own="org.tizen.machinelearning.service"/>
+	<deny send_destination="org.tizen.machinelearning.service"/>
+
+	<allow send_destination="org.tizen.machinelearning.service"/>
     </policy>
 </busconfig>
