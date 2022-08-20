@@ -64,8 +64,8 @@ if get_option('enable-machine-learning-agent')
     include_directories: nns_ml_agent_incs,
     install: true,
     install_dir: api_install_bindir,
-    cpp_args : '-DDB_PATH="' + serviceDBPath + '"'
-
+    cpp_args : '-DDB_PATH="' + serviceDBPath + '"',
+    pie : true
   )
 
   # For unit test
