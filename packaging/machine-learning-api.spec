@@ -464,9 +464,9 @@ cp -r result %{buildroot}%{_datadir}/ml-api/unittest/
 %if 0%{?enable_machine_learning_agent}
 %files -n machine-learning-agent
 %manifest machine-learning-agent.manifest
-%{_bindir}/machine-learning-agent
-%{_unitdir}/machine-learning-agent.service
-%config %{_sysconfdir}/dbus-1/system.d/machine-learning-agent.conf
+%attr(0755,root,root) %{_bindir}/machine-learning-agent
+%attr(0644,root,root) %{_unitdir}/machine-learning-agent.service
+%attr(0644,root,root) %config %{_sysconfdir}/dbus-1/system.d/machine-learning-agent.conf
 %attr(0644,root,root) %{_datadir}/dbus-1/system-services/org.tizen.machinelearning.service.service
 %endif
 
