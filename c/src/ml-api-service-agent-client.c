@@ -31,12 +31,24 @@ typedef struct
 static MachinelearningServicePipeline *
 _get_proxy_new_for_bus_sync (void)
 {
+  MachinelearningServicePipeline *mlsp;
+
   /** @todo deal with GError */
-  return
-      machinelearning_service_pipeline_proxy_new_for_bus_sync
+  mlsp = machinelearning_service_pipeline_proxy_new_for_bus_sync
+      (G_BUS_TYPE_SYSTEM, G_DBUS_PROXY_FLAGS_NONE,
+      "org.tizen.machinelearning.service",
+      "/Org/Tizen/MachineLearning/Service/Pipeline", NULL, NULL);
+
+  if (mlsp)
+    return mlsp;
+
+  /** Try with session type */
+  mlsp = machinelearning_service_pipeline_proxy_new_for_bus_sync
       (G_BUS_TYPE_SESSION, G_DBUS_PROXY_FLAGS_NONE,
       "org.tizen.machinelearning.service",
       "/Org/Tizen/MachineLearning/Service/Pipeline", NULL, NULL);
+
+  return mlsp;
 }
 
 /**
