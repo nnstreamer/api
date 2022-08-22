@@ -145,6 +145,9 @@ ml_service_delete_pipeline (const char *name)
   return ret;
 }
 
+/**
+ * @brief Launch the pipeline of given service.
+ */
 int
 ml_service_launch_pipeline (const char *name, ml_service_h * h)
 {
