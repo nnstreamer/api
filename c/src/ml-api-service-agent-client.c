@@ -260,7 +260,7 @@ ml_service_stop_pipeline (ml_service_h h)
  * @brief Destroy the pipeline of given ml_service_h
  */
 int
-ml_service_destroy_pipeline (ml_service_h h)
+ml_service_destroy (ml_service_h h)
 {
   int ret = ML_ERROR_NONE;
   ml_service_s *server = (ml_service_s *) h;
@@ -292,7 +292,7 @@ ml_service_destroy_pipeline (ml_service_h h)
  * @brief Return state of given ml_service_h
  */
 int
-ml_service_getstate_pipeline (ml_service_h h, ml_pipeline_state_e * state)
+ml_service_get_pipeline_state (ml_service_h h, ml_pipeline_state_e * state)
 {
   int ret = ML_ERROR_NONE;
   gint _state;

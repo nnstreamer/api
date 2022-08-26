@@ -130,13 +130,13 @@ TEST_F (MLServiceAgentTest, usecase_00)
   status = ml_service_launch_pipeline (service_name, &service);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_service_getstate_pipeline (service, &state);
+  status = ml_service_get_pipeline_state (service, &state);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_EQ (ML_PIPELINE_STATE_PAUSED, state);
 
   status = ml_service_start_pipeline (service);
   EXPECT_EQ (ML_ERROR_NONE, status);
-  status = ml_service_getstate_pipeline (service, &state);
+  status = ml_service_get_pipeline_state (service, &state);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_EQ (ML_PIPELINE_STATE_PLAYING, state);
 
@@ -163,7 +163,7 @@ TEST_F (MLServiceAgentTest, usecase_00)
 
   g_usleep (1 * 1000 * 1000);
 
-  status = ml_service_destroy_pipeline (client);
+  status = ml_service_destroy (client);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   g_usleep (1 * 1000 * 1000);
@@ -173,12 +173,12 @@ TEST_F (MLServiceAgentTest, usecase_00)
 
   g_usleep (1 * 1000 * 1000);
 
-  status = ml_service_getstate_pipeline (service, &state);
+  status = ml_service_get_pipeline_state (service, &state);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_EQ (ML_PIPELINE_STATE_PAUSED, state);
 
   /** destroy the pipeline */
-  status = ml_service_destroy_pipeline (service);
+  status = ml_service_destroy (service);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   /** delete finished service */
@@ -223,13 +223,13 @@ TEST_F (MLServiceAgentTest, usecase_01)
   status = ml_service_launch_pipeline (service_name, &service);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_service_getstate_pipeline (service, &state);
+  status = ml_service_get_pipeline_state (service, &state);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_EQ (ML_PIPELINE_STATE_PAUSED, state);
 
   status = ml_service_start_pipeline (service);
   EXPECT_EQ (ML_ERROR_NONE, status);
-  status = ml_service_getstate_pipeline (service, &state);
+  status = ml_service_get_pipeline_state (service, &state);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_EQ (ML_PIPELINE_STATE_PLAYING, state);
 
@@ -263,12 +263,12 @@ TEST_F (MLServiceAgentTest, usecase_01)
 
   g_usleep (1 * 1000 * 1000);
 
-  status = ml_service_getstate_pipeline (service, &state);
+  status = ml_service_get_pipeline_state (service, &state);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_EQ (ML_PIPELINE_STATE_PAUSED, state);
 
   /** destroy the pipeline */
-  status = ml_service_destroy_pipeline (service);
+  status = ml_service_destroy (service);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   /** delete finished service */
@@ -305,12 +305,12 @@ TEST_F (MLServiceAgentTest, stop_pipeline_00_n)
 }
 
 /**
- * @brief Test ml_service_destroy_pipeline with invalid param.
+ * @brief Test ml_service_destroy with invalid param.
  */
 TEST_F (MLServiceAgentTest, close_pipeline_00_n)
 {
   int status;
-  status = ml_service_destroy_pipeline (NULL);
+  status = ml_service_destroy (NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 }
 
