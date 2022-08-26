@@ -175,7 +175,7 @@ int ml_service_stop_pipeline (ml_service_h handle);
  * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
  * @retval #ML_ERROR_STREAMS_PIPE Failed to access the pipeline state.
  */
-int ml_service_destroy_pipeline (ml_service_h handle);
+int ml_service_destroy (ml_service_h handle);
 
 /**
  * @brief Gets the state of given handle's pipeline.
@@ -188,7 +188,7 @@ int ml_service_destroy_pipeline (ml_service_h handle);
  * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
  * @retval #ML_ERROR_STREAMS_PIPE Failed to access the pipeline state.
  */
-int ml_service_getstate_pipeline (ml_service_h handle, ml_pipeline_state_e *state);
+int ml_service_get_pipeline_state (ml_service_h handle, ml_pipeline_state_e *state);
 
 /**
  * @}
