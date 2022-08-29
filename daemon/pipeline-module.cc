@@ -406,35 +406,6 @@ static gboolean dbus_cb_core_get_state (MachinelearningServicePipeline *obj,
   return TRUE;
 }
 
-/**
- * @brief Get the description of pipeline with given id. Return the call result and its description.
- */
-static gboolean dbus_cb_core_get_description (MachinelearningServicePipeline *obj,
-        GDBusMethodInvocation *invoc, gint64 id, gpointer user_data)
-{
-  gint result = 0;
-  pipeline_s *p = NULL;
-  gchar *description = NULL;
-
-  G_LOCK (pipeline_table_lock);
-  p = (pipeline_s *) g_hash_table_lookup (pipeline_table, GINT_TO_POINTER (id));
-  G_UNLOCK (pipeline_table_lock);
-
-  if (!p) {
-    _E ("there is no pipeline with id: %" G_GINT64_FORMAT, id);
-    result = -EINVAL;
-    machinelearning_service_pipeline_complete_get_description (obj, invoc, result, NULL);
-    return FALSE;
-  }
-
-  description = g_strdup (p->description);
-
-  machinelearning_service_pipeline_complete_get_description (obj, invoc, result, description);
-
-  g_free (description);
-  return TRUE;
-}
-
 static struct gdbus_signal_info handler_infos[] = {
   {
     .signal_name = DBUS_PIPELINE_I_SET_HANDLER,
@@ -474,11 +445,6 @@ static struct gdbus_signal_info handler_infos[] = {
   }, {
     .signal_name = DBUS_PIPELINE_I_GET_STATE_HANDLER,
     .cb = G_CALLBACK (dbus_cb_core_get_state),
-    .cb_data = NULL,
-    .handler_id = 0,
-  }, {
-    .signal_name = DBUS_PIPELINE_I_GET_DESCRIPTION_HANDLER,
-    .cb = G_CALLBACK (dbus_cb_core_get_description),
     .cb_data = NULL,
     .handler_id = 0,
   },

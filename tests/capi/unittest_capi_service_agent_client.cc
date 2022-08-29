@@ -95,9 +95,6 @@ TEST_F (MLServiceAgentTest, usecase_00)
   status = ml_service_launch_pipeline (service_name, &service);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_service_getdesc_pipeline (service, &ret_pipeline);
-  EXPECT_STREQ (pipeline_desc, ret_pipeline);
-
   status = ml_service_getstate_pipeline (service, &state);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_EQ (ML_PIPELINE_STATE_PAUSED, state);
@@ -187,9 +184,6 @@ TEST_F (MLServiceAgentTest, usecase_01)
   ml_pipeline_state_e state;
   status = ml_service_launch_pipeline (service_name, &service);
   EXPECT_EQ (ML_ERROR_NONE, status);
-
-  status = ml_service_getdesc_pipeline (service, &ret_pipeline);
-  EXPECT_STREQ (pipeline_desc, ret_pipeline);
 
   status = ml_service_getstate_pipeline (service, &state);
   EXPECT_EQ (ML_ERROR_NONE, status);
