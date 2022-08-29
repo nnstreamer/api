@@ -126,7 +126,6 @@ int ml_service_start_pipeline (ml_service_h handle);
 int ml_service_stop_pipeline (ml_service_h handle);
 int ml_service_destroy_pipeline (ml_service_h handle);
 int ml_service_getstate_pipeline (ml_service_h handle, ml_pipeline_state_e *state);
-int ml_service_getdesc_pipeline (ml_service_h handle, char **desc);
 
 /**
  * @}

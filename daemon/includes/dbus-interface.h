@@ -34,9 +34,7 @@
 #define DBUS_PIPELINE_I_START_HANDLER           "handle_start_pipeline"
 #define DBUS_PIPELINE_I_STOP_HANDLER            "handle_stop_pipeline"
 #define DBUS_PIPELINE_I_DESTROY_HANDLER         "handle_destroy_pipeline"
-
 #define DBUS_PIPELINE_I_GET_STATE_HANDLER       "handle_get_state"
-#define DBUS_PIPELINE_I_GET_DESCRIPTION_HANDLER "handle_get_description"
 
 /* Model Interface */
 #define DBUS_MODEL_INTERFACE            "org.tizen.machinelearning.service.model"

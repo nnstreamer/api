@@ -37,10 +37,5 @@
       <arg type="i" name="result" direction="out" />
       <arg type="i" name="state" direction="out" />
     </method>
-    <method name="get_description">
-      <arg type="x" name="id" direction="in" />
-      <arg type="i" name="result" direction="out" />
-      <arg type="s" name="description" direction="out" />
-    </method>
   </interface>
 </node>
