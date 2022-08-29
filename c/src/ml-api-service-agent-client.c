@@ -293,28 +293,3 @@ ml_service_getstate_pipeline (ml_service_h h, ml_pipeline_state_e * state)
 
   return ML_ERROR_NONE;
 }
-
-/**
- * @brief Return the pipeline description of given ml_service_h
- */
-int
-ml_service_getdesc_pipeline (ml_service_h h, char **desc)
-{
-  gint out_result;
-  ml_service_s *server = (ml_service_s *) h;
-  MachinelearningServicePipeline *mlsp;
-
-  check_feature_state (ML_FEATURE_SERVICE);
-
-  if (!h)
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'h' is NULL. It should be a valid ml_service_h");
-
-  mlsp = _get_proxy_new_for_bus_sync ();
-  machinelearning_service_pipeline_call_get_description_sync (mlsp, server->id,
-      &out_result, desc, NULL, NULL);
-
-  g_object_unref (mlsp);
-
-  return ML_ERROR_NONE;
-}
