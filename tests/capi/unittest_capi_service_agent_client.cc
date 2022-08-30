@@ -12,6 +12,9 @@
 #include <ml-api-internal.h>
 #include <ml-api-service.h>
 
+#include <netinet/tcp.h>
+#include <netinet/in.h>
+
 /**
  * @brief Test base class for Database of ML Service API.
  */
@@ -66,6 +69,36 @@ public:
       g_object_unref (dbus);
     }
   }
+
+  /**
+   * @brief Get available port number.
+   */
+  static guint _get_available_port (void)
+  {
+    struct sockaddr_in sin;
+    guint port = 0;
+    gint sock;
+    socklen_t len = sizeof (struct sockaddr);
+
+    sin.sin_family = AF_INET;
+    sin.sin_addr.s_addr = INADDR_ANY;
+    sin.sin_port = htons(0);
+
+    sock = socket (AF_INET, SOCK_STREAM, 0);
+    EXPECT_TRUE (sock > 0);
+    if (sock < 0)
+      return 0;
+
+    if (bind (sock, (struct sockaddr *) &sin, sizeof (struct sockaddr)) == 0) {
+      if (getsockname (sock, (struct sockaddr *) &sin, &len) == 0) {
+        port = ntohs (sin.sin_port);
+      }
+    }
+    close (sock);
+
+    EXPECT_TRUE (port > 0);
+    return port;
+  }
 };
 
 /**
@@ -78,8 +111,10 @@ TEST_F (MLServiceAgentTest, usecase_00)
   const gchar *service_name = "simple_query_server_for_test";
   gchar *pipeline_desc;
 
+  guint port = _get_available_port ();
+
   /* create server pipeline */
-  pipeline_desc = g_strdup_printf ("tensor_query_serversrc num-buffers=10 ! other/tensors,num_tensors=1,dimensions=3:4:4:1,types=uint8,format=static,framerate=0/1 ! tensor_query_serversink async=false");
+  pipeline_desc = g_strdup_printf ("tensor_query_serversrc port=%u num-buffers=10 ! other/tensors,num_tensors=1,dimensions=3:4:4:1,types=uint8,format=static,framerate=0/1 ! tensor_query_serversink async=false", port);
 
   status = ml_service_set_pipeline (service_name, pipeline_desc);
   EXPECT_EQ (ML_ERROR_NONE, status);
@@ -109,7 +144,8 @@ TEST_F (MLServiceAgentTest, usecase_00)
   EXPECT_EQ (ML_PIPELINE_STATE_PLAYING, state);
 
   /* create client pipeline */
-  gchar *client_pipeline_desc = g_strdup_printf ("videotestsrc num-buffers=10 ! videoconvert ! videoscale ! video/x-raw,width=4,height=4,format=RGB,framerate=10/1 ! tensor_converter ! other/tensors,num_tensors=1,format=static ! tensor_query_client ! fakesink sync=true");
+  guint sink_port = _get_available_port ();
+  gchar *client_pipeline_desc = g_strdup_printf ("videotestsrc num-buffers=10 ! videoconvert ! videoscale ! video/x-raw,width=4,height=4,format=RGB,framerate=10/1 ! tensor_converter ! other/tensors,num_tensors=1,format=static ! tensor_query_client dest-port=%u port=%u ! fakesink sync=true", port, sink_port);
 
   status = ml_service_set_pipeline ("client", client_pipeline_desc);
   EXPECT_EQ (ML_ERROR_NONE, status);
@@ -171,8 +207,10 @@ TEST_F (MLServiceAgentTest, usecase_01)
   const gchar *service_name = "simple_query_server_for_test";
   gchar *pipeline_desc;
 
+  guint port = _get_available_port ();
+
   /* create server pipeline */
-  pipeline_desc = g_strdup_printf ("tensor_query_serversrc num-buffers=10 ! other/tensors,num_tensors=1,dimensions=3:4:4:1,types=uint8,format=static,framerate=0/1 ! tensor_query_serversink async=false");
+  pipeline_desc = g_strdup_printf ("tensor_query_serversrc port=%u num-buffers=10 ! other/tensors,num_tensors=1,dimensions=3:4:4:1,types=uint8,format=static,framerate=0/1 ! tensor_query_serversink async=false", port);
 
   status = ml_service_set_pipeline (service_name, pipeline_desc);
   EXPECT_EQ (ML_ERROR_NONE, status);
@@ -202,7 +240,8 @@ TEST_F (MLServiceAgentTest, usecase_01)
   EXPECT_EQ (ML_PIPELINE_STATE_PLAYING, state);
 
   /* create client pipeline */
-  gchar *client_pipeline_desc = g_strdup_printf ("videotestsrc num-buffers=10 ! videoconvert ! videoscale ! video/x-raw,width=4,height=4,format=RGB,framerate=10/1 ! tensor_converter ! other/tensors,num_tensors=1,format=static ! tensor_query_client ! fakesink sync=true");
+  guint sink_port = _get_available_port ();
+  gchar *client_pipeline_desc = g_strdup_printf ("videotestsrc num-buffers=10 ! videoconvert ! videoscale ! video/x-raw,width=4,height=4,format=RGB,framerate=10/1 ! tensor_converter ! other/tensors,num_tensors=1,format=static ! tensor_query_client dest-port=%u port=%u ! fakesink sync=true", port, sink_port);
 
   ml_pipeline_h client;
   status = ml_pipeline_construct (client_pipeline_desc, NULL, NULL, &client);
