@@ -26,6 +26,7 @@ extern "C" {
 typedef enum {
   ML_SERVICE_TYPE = 0,
   ML_SERVICE_TYPE_SERVER_PIPELINE,
+  ML_SERVICE_TYPE_CLIENT_QUERY,
 
   ML_SERVICE_TYPE_MAX
 } ml_service_type_e;
@@ -48,6 +49,21 @@ typedef struct
   gint64 id;
   gchar *service_name;
 } _ml_service_server_s;
+
+/**
+ * @brief Structure for ml_service_query
+ */
+typedef struct
+{
+  ml_pipeline_h pipe_h;
+  ml_pipeline_src_h src_h;
+  ml_pipeline_sink_h sink_h;
+
+  gchar *caps;
+  guint timeout; /**< in ms unit */
+  GAsyncQueue *out_data_queue;
+} _ml_service_query_s;
+
 
 /**
  * @brief Internal function to get proxy of the pipeline d-bus interface

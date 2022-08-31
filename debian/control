@@ -41,7 +41,7 @@ Description: Development package for Machine Learning Inference API
 Package: ml-service-api
 Architecture: any
 Multi-Arch: same
-Depends: ml-inference-single-api, ${shlibs:Depends}, ${misc:Depends}
+Depends: ml-inference-api, ${shlibs:Depends}, ${misc:Depends}
 Description: Machine Learning Service API
  This package provides native API set to use Machine Learning service.
 

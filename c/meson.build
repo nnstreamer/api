@@ -20,6 +20,7 @@ nns_capi_pipeline_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-
 if get_option('enable-machine-learning-agent')
   nns_capi_service_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-service-common.c')
   nns_capi_service_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-service-agent-client.c')
+  nns_capi_service_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-service-query-client.c')
 endif
 
 if get_option('enable-tizen')
@@ -161,7 +162,7 @@ nns_capi_dep = declare_dependency(link_with: nns_capi_lib,
 # Service API
 nns_capi_service_shared_lib = shared_library ('capi-ml-service',
   nns_capi_service_srcs,
-  dependencies: nns_capi_deps,
+  dependencies: nns_capi_dep,
   include_directories: nns_capi_include,
   install: true,
   install_dir: api_install_libdir,
@@ -170,7 +171,7 @@ nns_capi_service_shared_lib = shared_library ('capi-ml-service',
 
 nns_capi_service_static_lib = static_library ('capi-ml-service',
   nns_capi_service_srcs,
-  dependencies: nns_capi_deps,
+  dependencies: nns_capi_dep,
   include_directories: nns_capi_include,
   install: true,
   install_dir: api_install_libdir,
