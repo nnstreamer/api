@@ -191,6 +191,39 @@ int ml_service_destroy (ml_service_h handle);
 int ml_service_get_pipeline_state (ml_service_h handle, ml_pipeline_state_e *state);
 
 /**
+ * @brief Creates query service handle with given ml-option handle.
+ * @since_tizen 7.0
+ * @remarks The @a handle should be destroyed using ml_service_destroy().
+ * @param[in] option The option used for creating query service.
+ * @param[out] handle Newly created query service handle is returned.
+ * @return @c 0 on Success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
+ * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
+ * @retval #ML_ERROR_STREAMS_PIPE Failed to launch the pipeline.
+ * @retval #ML_ERROR_TRY_AGAIN The pipeline is not ready yet.
+ */
+int ml_service_query_create (ml_option_h option, ml_service_h *handle);
+
+/**
+ * @brief Requests the query service to process the @a input and produce an @a output.
+ * @since_tizen 7.0
+ * @param[in] handle The query service handle created by ml_service_query_create().
+ * @param[in] input The handle of input tensors.
+ * @param[out] output The handle of output tensors. The caller is responsible for freeing the allocated data with ml_tensors_data_destroy().
+ * @return 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
+ * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
+ * @retval #ML_ERROR_STREAMS_PIPE The input is incompatible with the pipeline.
+ * @retval #ML_ERROR_TRY_AGAIN The pipeline is not ready yet.
+ * @retval #ML_ERROR_TIMED_OUT Failed to get output from the query service.
+ */
+int ml_service_query_request (ml_service_h handle, const ml_tensors_data_h input, ml_tensors_data_h *output);
+
+/**
  * @}
  */
 #ifdef __cplusplus
