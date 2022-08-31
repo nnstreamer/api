@@ -58,7 +58,6 @@ int
 ml_service_set_pipeline (const char *name, const char *pipeline_desc)
 {
   int ret = ML_ERROR_NONE;
-  gint out_return_code;
   MachinelearningServicePipeline *mlsp;
 
   check_feature_state (ML_FEATURE_SERVICE);
@@ -74,10 +73,13 @@ ml_service_set_pipeline (const char *name, const char *pipeline_desc)
   }
 
   mlsp = _get_proxy_new_for_bus_sync ();
-  machinelearning_service_pipeline_call_set_pipeline_sync (mlsp, name,
-      pipeline_desc, &out_return_code, NULL, NULL);
+  if (!mlsp) {
+    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
+        "Failed to get dbus proxy.");
+  }
 
-  ret = out_return_code;
+  machinelearning_service_pipeline_call_set_pipeline_sync (mlsp, name,
+      pipeline_desc, &ret, NULL, NULL);
 
   g_object_unref (mlsp);
 
@@ -91,7 +93,6 @@ int
 ml_service_get_pipeline (const char *name, char **pipeline_desc)
 {
   int ret = ML_ERROR_NONE;
-  gint out_return_code;
   MachinelearningServicePipeline *mlsp;
 
   check_feature_state (ML_FEATURE_SERVICE);
@@ -107,10 +108,13 @@ ml_service_get_pipeline (const char *name, char **pipeline_desc)
   }
 
   mlsp = _get_proxy_new_for_bus_sync ();
-  machinelearning_service_pipeline_call_get_pipeline_sync (mlsp, name,
-      &out_return_code, pipeline_desc, NULL, NULL);
+  if (!mlsp) {
+    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
+        "Failed to get dbus proxy.");
+  }
 
-  ret = out_return_code;
+  machinelearning_service_pipeline_call_get_pipeline_sync (mlsp, name,
+      &ret, pipeline_desc, NULL, NULL);
 
   g_object_unref (mlsp);
 
@@ -124,7 +128,6 @@ int
 ml_service_delete_pipeline (const char *name)
 {
   int ret = ML_ERROR_NONE;
-  gint out_return_code;
   MachinelearningServicePipeline *mlsp;
 
   check_feature_state (ML_FEATURE_SERVICE);
@@ -135,10 +138,13 @@ ml_service_delete_pipeline (const char *name)
   }
 
   mlsp = _get_proxy_new_for_bus_sync ();
-  machinelearning_service_pipeline_call_delete_pipeline_sync (mlsp, name,
-      &out_return_code, NULL, NULL);
+  if (!mlsp) {
+    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
+        "Failed to get dbus proxy.");
+  }
 
-  ret = out_return_code;
+  machinelearning_service_pipeline_call_delete_pipeline_sync (mlsp, name,
+      &ret, NULL, NULL);
 
   g_object_unref (mlsp);
 
@@ -151,8 +157,8 @@ ml_service_delete_pipeline (const char *name)
 int
 ml_service_launch_pipeline (const char *name, ml_service_h * h)
 {
+  int ret = ML_ERROR_NONE;
   ml_service_s *server;
-  gint out_return_code;
   gint64 out_id;
   MachinelearningServicePipeline *mlsp;
 
@@ -162,31 +168,32 @@ ml_service_launch_pipeline (const char *name, ml_service_h * h)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'h' is NULL. It should be a valid ml_service_h");
 
-  server = g_new0 (ml_service_s, 1);
+  mlsp = _get_proxy_new_for_bus_sync ();
+  if (!mlsp) {
+    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
+        "Failed to get dbus proxy.");
+  }
 
+  machinelearning_service_pipeline_call_launch_pipeline_sync (mlsp, name,
+      &ret, &out_id, NULL, NULL);
+
+  g_object_unref (mlsp);
+
+  if (0 != ret) {
+    _ml_error_report_return (ret,
+        "Failed to launch pipeline, please check its integrity.");
+  }
+
+  server = g_new0 (ml_service_s, 1);
   if (server == NULL)
     _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
         "Failed to allocate memory for the service_server. Out of memory?");
-
-
-  mlsp = _get_proxy_new_for_bus_sync ();
-  machinelearning_service_pipeline_call_launch_pipeline_sync (mlsp, name,
-      &out_return_code, &out_id, NULL, NULL);
-
-  if (out_return_code != 0) {
-    g_free (server);
-    g_object_unref (mlsp);
-    _ml_error_report_return (out_return_code,
-        "Failed to launch pipeline, please check its integrity.");
-  }
 
   server->id = out_id;
   server->service_name = g_strdup (name);
   *h = (ml_service_h *) server;
 
-  g_object_unref (mlsp);
-
-  return ML_ERROR_NONE;
+  return ret;
 }
 
 /**
@@ -195,7 +202,7 @@ ml_service_launch_pipeline (const char *name, ml_service_h * h)
 int
 ml_service_start_pipeline (ml_service_h h)
 {
-  gint out_result;
+  int ret = ML_ERROR_NONE;
   ml_service_s *server = (ml_service_s *) h;
   MachinelearningServicePipeline *mlsp;
 
@@ -206,12 +213,17 @@ ml_service_start_pipeline (ml_service_h h)
         "The parameter, 'h' is NULL. It should be a valid ml_service_h");
 
   mlsp = _get_proxy_new_for_bus_sync ();
+  if (!mlsp) {
+    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
+        "Failed to get dbus proxy.");
+  }
+
   machinelearning_service_pipeline_call_start_pipeline_sync (mlsp, server->id,
-      &out_result, NULL, NULL);
+      &ret, NULL, NULL);
 
   g_object_unref (mlsp);
 
-  return ML_ERROR_NONE;
+  return ret;
 }
 
 /**
@@ -220,7 +232,7 @@ ml_service_start_pipeline (ml_service_h h)
 int
 ml_service_stop_pipeline (ml_service_h h)
 {
-  gint out_result;
+  int ret = ML_ERROR_NONE;
   ml_service_s *server = (ml_service_s *) h;
   MachinelearningServicePipeline *mlsp;
 
@@ -231,21 +243,26 @@ ml_service_stop_pipeline (ml_service_h h)
         "The parameter, 'h' is NULL. It should be a valid ml_service_h");
 
   mlsp = _get_proxy_new_for_bus_sync ();
+  if (!mlsp) {
+    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
+        "Failed to get dbus proxy.");
+  }
+
   machinelearning_service_pipeline_call_stop_pipeline_sync (mlsp, server->id,
-      &out_result, NULL, NULL);
+      &ret, NULL, NULL);
 
   g_object_unref (mlsp);
 
-  return ML_ERROR_NONE;
+  return ret;
 }
 
 /**
  * @brief Destroy the pipeline of given ml_service_h
  */
 int
-ml_service_destroy_pipeline (ml_service_h h)
+ml_service_destroy (ml_service_h h)
 {
-  gint out_result;
+  int ret = ML_ERROR_NONE;
   ml_service_s *server = (ml_service_s *) h;
   MachinelearningServicePipeline *mlsp;
 
@@ -256,23 +273,28 @@ ml_service_destroy_pipeline (ml_service_h h)
         "The parameter, 'h' is NULL. It should be a valid ml_service_h");
 
   mlsp = _get_proxy_new_for_bus_sync ();
+  if (!mlsp) {
+    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
+        "Failed to get dbus proxy.");
+  }
+
   machinelearning_service_pipeline_call_destroy_pipeline_sync (mlsp, server->id,
-      &out_result, NULL, NULL);
+      &ret, NULL, NULL);
 
   g_object_unref (mlsp);
 
   g_free (server->service_name);
   g_free (server);
-  return ML_ERROR_NONE;
+  return ret;
 }
 
 /**
  * @brief Return state of given ml_service_h
  */
 int
-ml_service_getstate_pipeline (ml_service_h h, ml_pipeline_state_e * state)
+ml_service_get_pipeline_state (ml_service_h h, ml_pipeline_state_e * state)
 {
-  gint out_result;
+  int ret = ML_ERROR_NONE;
   gint _state;
   ml_service_s *server = (ml_service_s *) h;
   MachinelearningServicePipeline *mlsp;
@@ -284,12 +306,17 @@ ml_service_getstate_pipeline (ml_service_h h, ml_pipeline_state_e * state)
         "The parameter, 'h' is NULL. It should be a valid ml_service_h");
 
   mlsp = _get_proxy_new_for_bus_sync ();
+  if (!mlsp) {
+    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
+        "Failed to get dbus proxy.");
+  }
+
   machinelearning_service_pipeline_call_get_state_sync (mlsp, server->id,
-      &out_result, &_state, NULL, NULL);
+      &ret, &_state, NULL, NULL);
 
   *state = (ml_pipeline_state_e) _state;
 
   g_object_unref (mlsp);
 
-  return ML_ERROR_NONE;
+  return ret;
 }

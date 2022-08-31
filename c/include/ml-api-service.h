@@ -116,16 +116,79 @@ int ml_service_get_pipeline (const char *name, char **pipeline_desc);
 int ml_service_delete_pipeline (const char *name);
 
 /**
- * @brief handle for ml_service. To support multiple instance for a single service, user should mangage pipeline with this handle.
+ * @brief A handle for ml-service instance.
+ * @since_tizen 7.0
  */
 typedef void *ml_service_h;
 
-/** @todo Add description and decide final API name */
+/**
+ * @brief Launches the pipeline of given service and gets the service handle.
+ * @details This requests machine learning agent daemon to launch a new pipeline of given service. The pipeline of service @a name should be set.
+ * @since_tizen 7.0
+ * @remarks The @a handle should be destroyed using ml_service_destroy().
+ * @param[in] name The service name.
+ * @param[out] handle Newly created service handle is returned.
+ * @return @c 0 on Success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
+ * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
+ * @retval #ML_ERROR_IO_ERROR The operation of DB or filesystem has failed.
+ * @retval #ML_ERROR_STREAMS_PIPE Failed to launch the pipeline.
+ */
 int ml_service_launch_pipeline (const char *name, ml_service_h *handle);
+
+/**
+ * @brief Starts the pipeline of given service handle.
+ * @details This requests machine learning agent daemon to start the pipeline.
+ * @since_tizen 7.0
+ * @param[in] handle The service handle.
+ * @return @c 0 on Success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
+ * @retval #ML_ERROR_STREAMS_PIPE Failed to start the pipeline.
+ */
 int ml_service_start_pipeline (ml_service_h handle);
+
+/**
+ * @brief Stops the pipeline of given service handle.
+ * @details This requests machine learning agent daemon to stop the pipeline.
+ * @since_tizen 7.0
+ * @param[in] handle The service handle.
+ * @return @c 0 on Success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
+ * @retval #ML_ERROR_STREAMS_PIPE Failed to stop the pipeline.
+ */
 int ml_service_stop_pipeline (ml_service_h handle);
-int ml_service_destroy_pipeline (ml_service_h handle);
-int ml_service_getstate_pipeline (ml_service_h handle, ml_pipeline_state_e *state);
+
+/**
+ * @brief Destroys the given service handle.
+ * @details If given service handle is created by ml_service_launch_pipeline(), this requests machine learning agent daemon to destroy the pipeline.
+ * @since_tizen 7.0
+ * @param[in] handle The service handle.
+ * @return @c 0 on Success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
+ * @retval #ML_ERROR_STREAMS_PIPE Failed to access the pipeline state.
+ */
+int ml_service_destroy (ml_service_h handle);
+
+/**
+ * @brief Gets the state of given handle's pipeline.
+ * @since_tizen 7.0
+ * @param[in] handle The service handle.
+ * @param[out] state The pipeline state.
+ * @return @c 0 on Success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
+ * @retval #ML_ERROR_STREAMS_PIPE Failed to access the pipeline state.
+ */
+int ml_service_get_pipeline_state (ml_service_h handle, ml_pipeline_state_e *state);
 
 /**
  * @}
