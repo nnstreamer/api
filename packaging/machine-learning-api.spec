@@ -215,7 +215,7 @@ Static library of Tizen Machine Learning Single-shot API.
 %package -n capi-machine-learning-service
 Summary:	Tizen Machine Learning Service API
 Group:		Machine Learning/ML Framework
-Requires:	capi-machine-learning-common = %{version}-%{release}
+Requires:	capi-machine-learning-inference = %{version}-%{release}
 %description -n capi-machine-learning-service
 Tizen Machine Learning Service API.
 

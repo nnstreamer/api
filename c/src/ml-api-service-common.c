@@ -48,7 +48,6 @@ ml_service_destroy (ml_service_h h)
 {
   int ret = ML_ERROR_NONE;
   ml_service_s *mls = (ml_service_s *) h;
-  MachinelearningServicePipeline *mlsp;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
@@ -57,6 +56,7 @@ ml_service_destroy (ml_service_h h)
         "The parameter, 'h' is NULL. It should be a valid ml_service_h.");
 
   if (ML_SERVICE_TYPE_SERVER_PIPELINE == mls->type) {
+    MachinelearningServicePipeline *mlsp;
     _ml_service_server_s *server = (_ml_service_server_s *) mls->priv;
 
     mlsp = _get_proxy_new_for_bus_sync ();
@@ -66,13 +66,32 @@ ml_service_destroy (ml_service_h h)
       goto exit;
     }
 
-    machinelearning_service_pipeline_call_destroy_pipeline_sync (mlsp, server->id,
-        &ret, NULL, NULL);
+    machinelearning_service_pipeline_call_destroy_pipeline_sync (mlsp,
+        server->id, &ret, NULL, NULL);
 
     g_object_unref (mlsp);
 
     g_free (server->service_name);
     g_free (server);
+  } else if (ML_SERVICE_TYPE_CLIENT_QUERY == mls->type) {
+    _ml_service_query_s *query = (_ml_service_query_s *) mls->priv;
+    ml_tensors_data_h data_h;
+
+    if (ml_pipeline_src_release_handle (query->src_h))
+      _ml_error_report ("Failed to release src handle");
+
+    if (ml_pipeline_sink_unregister (query->sink_h))
+      _ml_error_report ("Failed to unregister sink handle");
+
+    if (ml_pipeline_destroy (query->pipe_h))
+      _ml_error_report ("Failed to destroy pipeline");
+
+    while ((data_h = g_async_queue_try_pop (query->out_data_queue))) {
+      ml_tensors_data_destroy (data_h);
+    }
+
+    g_async_queue_unref (query->out_data_queue);
+    g_free (query->caps);
   } else {
     _ml_error_report ("Invalid type of ml_service_h.");
     ret = ML_ERROR_INVALID_PARAMETER;
