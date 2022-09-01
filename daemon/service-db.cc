@@ -15,6 +15,7 @@
 #include "service-db.hh"
 
 #define ML_DATABASE_PATH      DB_PATH"/.ml-service-leveldb"
+#define DB_KEY_PREFIX         MESON_KEY_PREFIX
 
 /**
  * @brief Get an instance of IMLServiceDB, which is created only once at runtime.
@@ -103,8 +104,11 @@ MLServiceLevelDB::put (const std::string name,
   if (name.empty() || value.empty())
     throw std::invalid_argument ("Invalid name or value parameters!");
 
-  leveldb_put (db_obj, db_woptions, name.c_str (), name.size (),
-      value.c_str (), value.size (), &err);
+  std::string key_with_prefix = DB_KEY_PREFIX;
+  key_with_prefix += name;
+
+  leveldb_put (db_obj, db_woptions, key_with_prefix.c_str (),
+      key_with_prefix.size (), value.c_str (), value.size (), &err);
   if (err != nullptr) {
     g_warning
         ("Failed to call leveldb_put () for the name, '%s' of the pipeline description (size: %zu bytes / description: '%.40s')",
@@ -132,8 +136,11 @@ MLServiceLevelDB::get (const std::string name,
   if (name.empty())
     throw std::invalid_argument ("Invalid name parameters!");
 
-  value = leveldb_get (db_obj, db_roptions, name.c_str (), name.size (),
-      &read_len, &err);
+  std::string key_with_prefix = DB_KEY_PREFIX;
+  key_with_prefix += name;
+
+  value = leveldb_get (db_obj, db_roptions, key_with_prefix.c_str (),
+      key_with_prefix.size (), &read_len, &err);
   if (err != nullptr) {
     g_warning
         ("Failed to call leveldb_get() for the name %s. Error message is %s.",
@@ -169,9 +176,12 @@ MLServiceLevelDB::del (const std::string name)
   if (name.empty())
     throw std::invalid_argument ("Invalid name parameters!");
 
+  std::string key_with_prefix = DB_KEY_PREFIX;
+  key_with_prefix += name;
+
   /* Check whether the key exists or not. */
-  value = leveldb_get (db_obj, db_roptions, name.c_str (), name.size (),
-      &read_len, &err);
+  value = leveldb_get (db_obj, db_roptions, key_with_prefix.c_str (),
+      key_with_prefix.size (), &read_len, &err);
   if (!value) {
     g_warning
         ("Failed to find the key %s. The key should be set before reading it",
@@ -180,7 +190,8 @@ MLServiceLevelDB::del (const std::string name)
   }
   leveldb_free (value);
 
-  leveldb_delete (db_obj, db_woptions, name.c_str (), name.size (), &err);
+  leveldb_delete (db_obj, db_woptions, key_with_prefix.c_str (),
+      key_with_prefix.size (), &err);
   if (err != nullptr) {
     g_warning ("Failed to delete the key %s. Error message is %s", name.c_str (),
         err);

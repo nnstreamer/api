@@ -60,13 +60,18 @@ if get_option('enable-machine-learning-agent')
   endif
 
   serviceDBPath = get_option('service-db-path')
+  daemon_cpp_db_path_arg = '-DDB_PATH="' + serviceDBPath + '"'
+
+  serviceDBKeyPrefix = get_option('service-db-key-prefix')
+  daemon_cpp_db_key_prefix_arg = '-DMESON_KEY_PREFIX="' + serviceDBKeyPrefix + '"'
+
   ai_service_daemon = executable('machine-learning-agent',
     nns_ml_agent_srcs,
     dependencies : [ai_service_daemon_deps],
     include_directories: nns_ml_agent_incs,
     install: true,
     install_dir: api_install_bindir,
-    cpp_args : '-DDB_PATH="' + serviceDBPath + '"',
+    cpp_args : [daemon_cpp_db_path_arg, daemon_cpp_db_key_prefix_arg],
     pie : true
   )
 
@@ -76,7 +81,7 @@ if get_option('enable-machine-learning-agent')
     nns_ml_agent_srcs,
     dependencies : [ai_service_daemon_deps, gdbus_gen_header_test_dep],
     include_directories: nns_ml_agent_incs,
-    cpp_args : '-DDB_PATH="."'
+    cpp_args : [daemon_cpp_db_key_prefix_arg, '-DDB_PATH="."']
   )
 
   # DBus Policy configuration

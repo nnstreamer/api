@@ -282,6 +282,10 @@ HTML pages of lcov results of ML API generated during rpm build
 %define enable_tizen_feature_check -Denable-tizen-feature-check=false
 %define machine_learning_agent_check -Denable-machine-learning-agent=false
 %define service_db_path ""
+%define service_db_key_prefix %{nil}
+
+# To set prefix, use this line
+### define service_db_key_prefix -Dservice-db-key-prefix='some-prefix'
 
 %if %{with tizen}
 %define enable_tizen -Denable-tizen=true -Dtizen-version-major=0%{?tizen_version_major} -Dtizen-version-minor=0%{?tizen_version_minor}
@@ -349,7 +353,7 @@ meson --buildtype=plain --prefix=%{_prefix} --sysconfdir=%{_sysconfdir} --libdir
 	--bindir=%{_bindir} --includedir=%{_includedir} \
 	%{enable_test} %{install_test} %{enable_test_coverage} \
 	%{enable_tizen} %{enable_tizen_privilege_check} %{enable_tizen_feature_check} \
-	%{service_db_path} %{machine_learning_agent_check} \
+	%{service_db_path} %{service_db_key_prefix} %{machine_learning_agent_check} \
 	build
 
 ninja -C build %{?_smp_mflags}
