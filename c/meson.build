@@ -18,6 +18,7 @@ nns_capi_single_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-in
 nns_capi_pipeline_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-inference-pipeline.c')
 
 if get_option('enable-machine-learning-agent')
+  nns_capi_service_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-service-common.c')
   nns_capi_service_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-service-agent-client.c')
 endif
 

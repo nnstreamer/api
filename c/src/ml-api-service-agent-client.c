@@ -14,42 +14,7 @@
 
 #include "ml-api-internal.h"
 #include "ml-api-service.h"
-#include "pipeline-dbus.h"
-
-/**
- * @brief Structure for ml_service_h
- */
-typedef struct
-{
-  gint64 id;
-  gchar *service_name;
-} ml_service_s;
-
-/**
- * @brief Internal function to get proxy of the pipeline d-bus interface
- */
-static MachinelearningServicePipeline *
-_get_proxy_new_for_bus_sync (void)
-{
-  MachinelearningServicePipeline *mlsp;
-
-  /** @todo deal with GError */
-  mlsp = machinelearning_service_pipeline_proxy_new_for_bus_sync
-      (G_BUS_TYPE_SYSTEM, G_DBUS_PROXY_FLAGS_NONE,
-      "org.tizen.machinelearning.service",
-      "/Org/Tizen/MachineLearning/Service/Pipeline", NULL, NULL);
-
-  if (mlsp)
-    return mlsp;
-
-  /** Try with session type */
-  mlsp = machinelearning_service_pipeline_proxy_new_for_bus_sync
-      (G_BUS_TYPE_SESSION, G_DBUS_PROXY_FLAGS_NONE,
-      "org.tizen.machinelearning.service",
-      "/Org/Tizen/MachineLearning/Service/Pipeline", NULL, NULL);
-
-  return mlsp;
-}
+#include "ml-api-service-private.h"
 
 /**
  * @brief Set the pipeline description with a given name.
@@ -158,7 +123,8 @@ int
 ml_service_launch_pipeline (const char *name, ml_service_h * h)
 {
   int ret = ML_ERROR_NONE;
-  ml_service_s *server;
+  ml_service_s *mls;
+  _ml_service_server_s *server;
   gint64 out_id;
   MachinelearningServicePipeline *mlsp;
 
@@ -184,14 +150,18 @@ ml_service_launch_pipeline (const char *name, ml_service_h * h)
         "Failed to launch pipeline, please check its integrity.");
   }
 
-  server = g_new0 (ml_service_s, 1);
+  server = g_new0 (_ml_service_server_s, 1);
   if (server == NULL)
     _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
         "Failed to allocate memory for the service_server. Out of memory?");
 
   server->id = out_id;
   server->service_name = g_strdup (name);
-  *h = (ml_service_h *) server;
+
+  mls = g_new0 (ml_service_s, 1);
+  mls->type = ML_SERVICE_TYPE_SERVER_PIPELINE;
+  mls->priv = server;
+  *h = (ml_service_h *) mls;
 
   return ret;
 }
@@ -203,7 +173,8 @@ int
 ml_service_start_pipeline (ml_service_h h)
 {
   int ret = ML_ERROR_NONE;
-  ml_service_s *server = (ml_service_s *) h;
+  ml_service_s *mls = (ml_service_s *) h;
+  _ml_service_server_s *server;
   MachinelearningServicePipeline *mlsp;
 
   check_feature_state (ML_FEATURE_SERVICE);
@@ -218,6 +189,7 @@ ml_service_start_pipeline (ml_service_h h)
         "Failed to get dbus proxy.");
   }
 
+  server = (_ml_service_server_s *) mls->priv;
   machinelearning_service_pipeline_call_start_pipeline_sync (mlsp, server->id,
       &ret, NULL, NULL);
 
@@ -233,7 +205,8 @@ int
 ml_service_stop_pipeline (ml_service_h h)
 {
   int ret = ML_ERROR_NONE;
-  ml_service_s *server = (ml_service_s *) h;
+  ml_service_s *mls = (ml_service_s *) h;
+  _ml_service_server_s *server;
   MachinelearningServicePipeline *mlsp;
 
   check_feature_state (ML_FEATURE_SERVICE);
@@ -248,43 +221,12 @@ ml_service_stop_pipeline (ml_service_h h)
         "Failed to get dbus proxy.");
   }
 
+  server = (_ml_service_server_s *) mls->priv;
   machinelearning_service_pipeline_call_stop_pipeline_sync (mlsp, server->id,
       &ret, NULL, NULL);
 
   g_object_unref (mlsp);
 
-  return ret;
-}
-
-/**
- * @brief Destroy the pipeline of given ml_service_h
- */
-int
-ml_service_destroy (ml_service_h h)
-{
-  int ret = ML_ERROR_NONE;
-  ml_service_s *server = (ml_service_s *) h;
-  MachinelearningServicePipeline *mlsp;
-
-  check_feature_state (ML_FEATURE_SERVICE);
-
-  if (!h)
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'h' is NULL. It should be a valid ml_service_h");
-
-  mlsp = _get_proxy_new_for_bus_sync ();
-  if (!mlsp) {
-    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
-        "Failed to get dbus proxy.");
-  }
-
-  machinelearning_service_pipeline_call_destroy_pipeline_sync (mlsp, server->id,
-      &ret, NULL, NULL);
-
-  g_object_unref (mlsp);
-
-  g_free (server->service_name);
-  g_free (server);
   return ret;
 }
 
@@ -296,7 +238,8 @@ ml_service_get_pipeline_state (ml_service_h h, ml_pipeline_state_e * state)
 {
   int ret = ML_ERROR_NONE;
   gint _state;
-  ml_service_s *server = (ml_service_s *) h;
+  ml_service_s *mls = (ml_service_s *) h;
+  _ml_service_server_s *server;
   MachinelearningServicePipeline *mlsp;
 
   check_feature_state (ML_FEATURE_SERVICE);
@@ -311,6 +254,7 @@ ml_service_get_pipeline_state (ml_service_h h, ml_pipeline_state_e * state)
         "Failed to get dbus proxy.");
   }
 
+  server = (_ml_service_server_s *) mls->priv;
   machinelearning_service_pipeline_call_get_state_sync (mlsp, server->id,
       &ret, &_state, NULL, NULL);
 
