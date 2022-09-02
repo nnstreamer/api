@@ -106,9 +106,10 @@ MLServiceLevelDB::put (const std::string name,
 
   std::string key_with_prefix = DB_KEY_PREFIX;
   key_with_prefix += name;
+  std::size_t hash[2] = { std::hash<std::string>{}(key_with_prefix), 0U };
 
-  leveldb_put (db_obj, db_woptions, key_with_prefix.c_str (),
-      key_with_prefix.size (), value.c_str (), value.size (), &err);
+  leveldb_put (db_obj, db_woptions, (char *) hash, sizeof (std::size_t) * 2,
+      value.c_str (), value.size (), &err);
   if (err != nullptr) {
     g_warning
         ("Failed to call leveldb_put () for the name, '%s' of the pipeline description (size: %zu bytes / description: '%.40s')",
@@ -138,9 +139,10 @@ MLServiceLevelDB::get (const std::string name,
 
   std::string key_with_prefix = DB_KEY_PREFIX;
   key_with_prefix += name;
+  std::size_t hash[2] = { std::hash<std::string>{}(key_with_prefix), 0U };
 
-  value = leveldb_get (db_obj, db_roptions, key_with_prefix.c_str (),
-      key_with_prefix.size (), &read_len, &err);
+  value = leveldb_get (db_obj, db_roptions, (char *) hash, sizeof (std::size_t) * 2,
+      &read_len, &err);
   if (err != nullptr) {
     g_warning
         ("Failed to call leveldb_get() for the name %s. Error message is %s.",
@@ -178,10 +180,11 @@ MLServiceLevelDB::del (const std::string name)
 
   std::string key_with_prefix = DB_KEY_PREFIX;
   key_with_prefix += name;
+  std::size_t hash[2] = { std::hash<std::string>{}(key_with_prefix), 0U };
 
   /* Check whether the key exists or not. */
-  value = leveldb_get (db_obj, db_roptions, key_with_prefix.c_str (),
-      key_with_prefix.size (), &read_len, &err);
+  value = leveldb_get (db_obj, db_roptions, (char *) hash, sizeof (std::size_t) * 2,
+      &read_len, &err);
   if (!value) {
     g_warning
         ("Failed to find the key %s. The key should be set before reading it",
@@ -190,8 +193,7 @@ MLServiceLevelDB::del (const std::string name)
   }
   leveldb_free (value);
 
-  leveldb_delete (db_obj, db_woptions, key_with_prefix.c_str (),
-      key_with_prefix.size (), &err);
+  leveldb_delete (db_obj, db_woptions, (char *) hash, sizeof (std::size_t) * 2, &err);
   if (err != nullptr) {
     g_warning ("Failed to delete the key %s. Error message is %s", name.c_str (),
         err);
