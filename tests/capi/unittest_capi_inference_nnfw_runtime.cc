@@ -169,16 +169,16 @@ protected:
    */
   static void
   wait_for_sink (guint* call_cnt, const guint expected_cnt)
-  //wait_for_sink (const guint expected_cnt)
   {
-    guint waiting_time = 0;
+    guint waiting_time = 0U;
+    guint unit_time = 1000U * 1000; /* 1 second */
     gboolean done = FALSE;
 
-    while (!done && waiting_time < 10000000U) {
+    while (!done && waiting_time < unit_time * 10) {
       done = (*call_cnt >= expected_cnt);
-      waiting_time += 10000U;
+      waiting_time += unit_time;
       if (!done)
-        g_usleep (10000U);
+        g_usleep (unit_time);
     }
     ASSERT_TRUE (done);
   }
@@ -643,7 +643,8 @@ TEST_F (MLAPIInferenceNNFW, multimodel_01_p)
   ml_pipeline_state_e state;
 
   g_autofree gchar *pipeline = nullptr;
-  guint call_cnt = 0;
+  guint call_cnt1 = 0;
+  guint call_cnt2 = 0;
   float *data;
   size_t data_size;
   int status;
@@ -664,10 +665,10 @@ TEST_F (MLAPIInferenceNNFW, multimodel_01_p)
 
   /* register call back function when new data is arrived on sink pad */
   status = ml_pipeline_sink_register (
-      pipeline_h, "tensor_sink_0", MLAPIInferenceNNFW::cb_new_data, &call_cnt, &sink_handle_0);
+      pipeline_h, "tensor_sink_0", MLAPIInferenceNNFW::cb_new_data, &call_cnt1, &sink_handle_0);
   EXPECT_EQ (status, ML_ERROR_NONE);
   status = ml_pipeline_sink_register (
-      pipeline_h, "tensor_sink_1", MLAPIInferenceNNFW::cb_new_data, &call_cnt, &sink_handle_1);
+      pipeline_h, "tensor_sink_1", MLAPIInferenceNNFW::cb_new_data, &call_cnt2, &sink_handle_1);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   ml_tensors_info_set_count (in_info, 1);
@@ -699,7 +700,8 @@ TEST_F (MLAPIInferenceNNFW, multimodel_01_p)
   status = ml_pipeline_src_input_data (src_handle, input, ML_PIPELINE_BUF_POLICY_DO_NOT_FREE);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  MLAPIInferenceNNFW::wait_for_sink (&call_cnt, 2);
+  MLAPIInferenceNNFW::wait_for_sink (&call_cnt1, 1);
+  MLAPIInferenceNNFW::wait_for_sink (&call_cnt2, 1);
 }
 
 #ifdef ENABLE_TENSORFLOW_LITE
@@ -714,7 +716,8 @@ TEST_F (MLAPIInferenceNNFW, multimodel_02_p)
   ml_pipeline_state_e state;
 
   g_autofree gchar *pipeline = nullptr;
-  guint call_cnt = 0;
+  guint call_cnt1 = 0;
+  guint call_cnt2 = 0;
   float *data;
   size_t data_size;
   int status;
@@ -735,10 +738,10 @@ TEST_F (MLAPIInferenceNNFW, multimodel_02_p)
 
   /* register call back function when new data is arrived on sink pad */
   status = ml_pipeline_sink_register (
-      pipeline_h, "tensor_sink_0", MLAPIInferenceNNFW::cb_new_data, &call_cnt, &sink_handle_0);
+      pipeline_h, "tensor_sink_0", MLAPIInferenceNNFW::cb_new_data, &call_cnt1, &sink_handle_0);
   EXPECT_EQ (status, ML_ERROR_NONE);
   status = ml_pipeline_sink_register (
-      pipeline_h, "tensor_sink_1", MLAPIInferenceNNFW::cb_new_data, &call_cnt, &sink_handle_1);
+      pipeline_h, "tensor_sink_1", MLAPIInferenceNNFW::cb_new_data, &call_cnt2, &sink_handle_1);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   ml_tensors_info_set_count (in_info, 1);
@@ -770,7 +773,8 @@ TEST_F (MLAPIInferenceNNFW, multimodel_02_p)
   status = ml_pipeline_src_input_data (src_handle, input, ML_PIPELINE_BUF_POLICY_DO_NOT_FREE);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  MLAPIInferenceNNFW::wait_for_sink (&call_cnt, 2);
+  MLAPIInferenceNNFW::wait_for_sink (&call_cnt1, 1);
+  MLAPIInferenceNNFW::wait_for_sink (&call_cnt2, 1);
 }
 #endif /* ENABLE_TENSORFLOW_LITE */
 
