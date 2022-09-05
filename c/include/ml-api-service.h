@@ -42,7 +42,7 @@ extern "C" {
 /**
  * @brief Sets the pipeline description with a given name.
  * @since_tizen 7.0
- * @remarks If the name already exists, the pipeline description is overwritten.
+ * @remarks If the name already exists, the pipeline description is overwritten. Overwriting an existing description is restricted to APP/service that set it. However, users should keep their @a name unexposed to prevent unexpected overwriting.
  * @param[in] name Unique name to retrieve the associated pipeline description.
  * @param[in] pipeline_desc The pipeline description to be stored.
  * @return @c 0 on success. Otherwise a negative error value.
