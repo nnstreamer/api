@@ -2155,6 +2155,7 @@ ml_pipeline_switch_get_pad_list (ml_pipeline_switch_h h, char ***list)
       _ml_error_report
           ("Failed to allocate memory for pad list (parameter list). Out of memory?");
       ret = ML_ERROR_OUT_OF_MEMORY;
+      g_list_free_full (dllist, g_free);
       goto unlock_return;
     }
 
