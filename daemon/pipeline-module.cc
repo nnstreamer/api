@@ -375,7 +375,7 @@ static gboolean dbus_cb_core_get_state (MachinelearningServicePipeline *obj,
 {
   gint result = 0;
   GstStateChangeReturn sc_ret;
-  GstState state;
+  GstState state = GST_STATE_NULL;
   pipeline_s *p = NULL;
 
   G_LOCK (pipeline_table_lock);
