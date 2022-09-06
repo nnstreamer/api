@@ -96,16 +96,16 @@ BuildRequires:	pkgconfig(libtzplatform-config)
 %endif # tizen
 
 # For test
-%if 0%{?testcoverage}
-# to be compatible with gcc-9, lcov should have a higher version than 1.14.1
-BuildRequires:	lcov
-%endif
-
 %if 0%{?unit_test}
 BuildRequires:  pkgconfig(gtest)
 BuildRequires:	gst-plugins-good
 %if 0%{tizen_version_major} >= 5
 BuildRequires:	gst-plugins-good-extra
+%endif
+
+%if 0%{?testcoverage}
+# to be compatible with gcc-9, lcov should have a higher version than 1.14.1
+BuildRequires:	lcov
 %endif
 
 %if 0%{?tensorflow_support}
@@ -249,6 +249,7 @@ Requires:	capi-machine-learning-service = %{version}-%{release}
 AI Service Daemon
 %endif
 
+%if 0%{?unit_test}
 %if 0%{?release_test}
 %package -n capi-machine-learning-unittests
 Summary:	Unittests for Tizen Machine Learning API
@@ -273,6 +274,7 @@ Summary:	Unittest coverage result for Tizen Machine Learning API
 %description -n capi-machine-learning-unittest-coverage
 HTML pages of lcov results of ML API generated during rpm build
 %endif
+%endif # unit_test
 ###########################################################################
 # Define build options
 %define enable_tizen -Denable-tizen=false
@@ -298,12 +300,6 @@ HTML pages of lcov results of ML API generated during rpm build
 %endif
 %endif # tizen
 
-%if 0%{?release_test}
-%define install_test -Dinstall-test=true
-%else
-%define install_test -Dinstall-test=false
-%endif
-
 %prep
 %setup -q
 cp %{SOURCE1001} .
@@ -315,6 +311,15 @@ cp %{SOURCE1002} .
 %build
 # Remove compiler flags for meson to decide the cpp version
 CXXFLAGS=`echo $CXXFLAGS | sed -e "s|-std=gnu++11||"`
+
+%if 0%{?unit_test}
+%define enable_test -Denable-test=true
+
+%if 0%{?release_test}
+%define install_test -Dinstall-test=true
+%else
+%define install_test -Dinstall-test=false
+%endif
 
 %if 0%{?testcoverage}
 # To test coverage, disable optimizations (and should unset _FORTIFY_SOURCE to use -O0)
@@ -332,11 +337,17 @@ CXXFLAGS=`echo $CXXFLAGS | sed -e "s|-Wp,-D_FORTIFY_SOURCE=[1-9]||g"`
 export CFLAGS+=" -fprofile-arcs -ftest-coverage"
 export CXXFLAGS+=" -fprofile-arcs -ftest-coverage"
 %endif
+%else # unit_test
+%define enable_test -Denable-test=false
+%define install_test -Dinstall-test=false
+%define enable_test_coverage -Db_coverage=false
+%endif # unit_test
 
 mkdir -p build
 
 meson --buildtype=plain --prefix=%{_prefix} --sysconfdir=%{_sysconfdir} --libdir=%{_libdir} \
-	--bindir=%{_bindir} --includedir=%{_includedir} %{install_test} %{enable_test_coverage} \
+	--bindir=%{_bindir} --includedir=%{_includedir} \
+	%{enable_test} %{install_test} %{enable_test_coverage} \
 	%{enable_tizen} %{enable_tizen_privilege_check} %{enable_tizen_feature_check} \
 	%{service_db_path} %{machine_learning_agent_check} \
 	build
@@ -358,16 +369,17 @@ bash %{test_script} ./tests/capi/unittest_capi_service_agent_client
 %if 0%{?nnfw_support}
 bash %{test_script} ./tests/capi/unittest_capi_inference_nnfw_runtime
 %endif
-%endif # unit_test
 
 %if 0%{?gcov:1}
 mkdir -p gcov-obj
 find . -name '*.gcno' -exec cp '{}' gcov-obj ';'
 %endif
+%endif # unit_test
 
 %install
 DESTDIR=%{buildroot} ninja -C build %{?_smp_mflags} install
 
+%if 0%{?unit_test}
 %if 0%{?gcov:1}
 mkdir -p %{buildroot}%{_datadir}/gcov/obj/%{name}
 install -m 0644 gcov-obj/* %{buildroot}%{_datadir}/gcov/obj/%{name}
@@ -400,6 +412,7 @@ genhtml -o result unittest-filtered.info -t "ML API %{version}-%{release} ${VCS}
 mkdir -p %{buildroot}%{_datadir}/ml-api/unittest/
 cp -r result %{buildroot}%{_datadir}/ml-api/unittest/
 %endif # test coverage
+%endif # unit_test
 
 %post -p /sbin/ldconfig
 %postun -p /sbin/ldconfig
@@ -470,6 +483,7 @@ cp -r result %{buildroot}%{_datadir}/ml-api/unittest/
 %attr(0644,root,root) %{_datadir}/dbus-1/system-services/org.tizen.machinelearning.service.service
 %endif
 
+%if 0%{?unit_test}
 %if 0%{?release_test}
 %files -n capi-machine-learning-unittests
 %manifest capi-machine-learning-inference.manifest
@@ -485,6 +499,7 @@ cp -r result %{buildroot}%{_datadir}/ml-api/unittest/
 %files -n capi-machine-learning-unittest-coverage
 %{_datadir}/ml-api/unittest/*
 %endif
+%endif #unit_test
 
 %changelog
 * Fri Apr 22 2022 MyungJoo Ham <myungjoo.ham@samsung.com>
