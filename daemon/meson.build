@@ -4,7 +4,6 @@ if get_option('enable-machine-learning-agent')
   nns_ml_agent_gen_srcs = []
   nns_ml_agent_incs = include_directories('includes')
 
-  dlog_dep = dependency('dlog')
   libsystemd_dep = dependency('libsystemd')
 
   nns_ml_agent_srcs += join_paths('main.c')
@@ -52,10 +51,13 @@ if get_option('enable-machine-learning-agent')
     gio_dep,
     gio_unix_dep,
     gst_dep,
-    dlog_dep,
     leveldb_dep,
     libsystemd_dep
   ]
+
+  if (get_option('enable-tizen'))
+    ai_service_daemon_deps += dependency('dlog')
+  endif
 
   serviceDBPath = get_option('service-db-path')
   ai_service_daemon = executable('machine-learning-agent',
