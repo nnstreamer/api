@@ -14,6 +14,7 @@
 #include <fcntl.h>
 #include <glib.h>
 #include <gio/gio.h>
+#include <errno.h>
 
 #include "common.h"
 #include "modules.h"
