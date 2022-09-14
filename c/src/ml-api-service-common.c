@@ -91,7 +91,6 @@ ml_service_destroy (ml_service_h h)
     }
 
     g_async_queue_unref (query->out_data_queue);
-    g_free (query->caps);
   } else {
     _ml_error_report ("Invalid type of ml_service_h.");
     ret = ML_ERROR_INVALID_PARAMETER;
