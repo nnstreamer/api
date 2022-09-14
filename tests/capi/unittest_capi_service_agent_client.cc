@@ -473,6 +473,22 @@ TEST_F (MLServiceAgentTest, query_create_00_n)
 }
 
 /**
+ * @brief Test ml_service_query_create with invalid param. caps must be set.
+ */
+TEST_F (MLServiceAgentTest, query_create_01_n)
+{
+  int status;
+  ml_service_h client = NULL;
+  ml_option_h invalid_option = NULL;
+
+  status = ml_option_create (&invalid_option);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_service_query_create (invalid_option, &client);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+}
+
+/**
  * @brief Test ml_service_query_request with invalid param.
  */
 TEST_F (MLServiceAgentTest, query_request_00_n)
