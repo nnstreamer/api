@@ -120,6 +120,7 @@ ml_service_query_create (ml_option_h option, ml_service_h * h)
   }
 
   if (!caps) {
+    g_string_free (tensor_query_client_prop, TRUE);
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The option 'caps' must be set before call ml_service_query_create.");
   }
@@ -148,21 +149,17 @@ ml_service_query_create (ml_option_h option, ml_service_h * h)
 
   status = ml_pipeline_src_get_handle (pipe_h, "srcx", &src_h);
   if (status) {
-    _ml_error_report ("Failed to get src handle");
     ml_pipeline_destroy (pipe_h);
-    return status;
+    _ml_error_report_return (status, "Failed to get src handle");
   }
 
   query_s = g_new0 (_ml_service_query_s, 1);
-  query_s->out_data_queue = g_async_queue_new ();
   status = ml_pipeline_sink_register (pipe_h, "sinkx",
       _sink_callback_for_query_client, query_s, &sink_h);
   if (status) {
-    _ml_error_report ("Failed to register sink handle");
     ml_pipeline_destroy (pipe_h);
-    ml_pipeline_src_release_handle (src_h);
     g_free (query_s);
-    return status;
+    _ml_error_report_return (status, "Failed to register sink handle");
   }
 
   query_s->timeout = timeout;
