@@ -31,7 +31,7 @@ _sink_callback_for_query_client (const ml_tensors_data_h data,
   ml_tensors_data_h copied_data = NULL;
   ml_tensors_data_s *_copied_data_s;
 
-  guint i, count;
+  guint i, count = 0U;
 
   ml_tensors_data_create (info, &copied_data);
   _copied_data_s = (ml_tensors_data_s *) copied_data;
@@ -119,26 +119,31 @@ ml_service_query_create (ml_option_h option, ml_service_h * h)
     }
   }
 
+  if (!caps) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The option 'caps' must be set before call ml_service_query_create.");
+  }
+
   prop = g_string_free (tensor_query_client_prop, FALSE);
   description =
       g_strdup_printf
       ("appsrc name=srcx ! %s ! tensor_query_client %s name=qcx ! tensor_sink name=sinkx async=false sync=false",
       caps, prop);
 
-  status = ml_pipeline_construct (description, NULL, NULL, &pipe_h);
-  if (status) {
-    _ml_error_report ("failed to construct pipeline");
-    g_free (prop);
-    g_free (description);
-    return status;
-  }
-
+  g_free (caps);
   g_free (prop);
+
+  status = ml_pipeline_construct (description, NULL, NULL, &pipe_h);
   g_free (description);
+  if (status) {
+    _ml_error_report_return (status, "Failed to construct pipeline");
+  }
 
   status = ml_pipeline_start (pipe_h);
   if (status) {
-    _ml_error_report_return (status, "Failed to start pipeline");
+    _ml_error_report ("Failed to start pipeline");
+    ml_pipeline_destroy (pipe_h);
+    return status;
   }
 
   status = ml_pipeline_src_get_handle (pipe_h, "srcx", &src_h);
@@ -161,7 +166,6 @@ ml_service_query_create (ml_option_h option, ml_service_h * h)
   }
 
   query_s->timeout = timeout;
-  query_s->caps = caps;
   query_s->pipe_h = pipe_h;
   query_s->src_h = src_h;
   query_s->sink_h = sink_h;
