@@ -10,18 +10,11 @@ endif
 nns_capi_common_srcs = []
 nns_capi_single_srcs = []
 nns_capi_pipeline_srcs = []
-nns_capi_service_srcs = []
 
 nns_capi_common_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-common.c')
 nns_capi_common_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-inference-internal.c')
 nns_capi_single_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-inference-single.c')
 nns_capi_pipeline_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-inference-pipeline.c')
-
-if get_option('enable-machine-learning-agent')
-  nns_capi_service_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-service-common.c')
-  nns_capi_service_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-service-agent-client.c')
-  nns_capi_service_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-service-query-client.c')
-endif
 
 if get_option('enable-tizen')
   if get_option('enable-tizen-feature-check')
@@ -37,7 +30,6 @@ nns_capi_headers = []
 nns_capi_headers += join_paths(meson.current_source_dir(), 'include', 'nnstreamer.h')
 nns_capi_headers += join_paths(meson.current_source_dir(), 'include', 'nnstreamer-single.h')
 nns_capi_headers += join_paths(meson.current_source_dir(), 'include', 'ml-api-common.h')
-nns_capi_headers += join_paths(meson.current_source_dir(), 'include', 'ml-api-service.h')
 
 if get_option('enable-tizen')
   # header for Tizen internal API
@@ -49,7 +41,7 @@ endif
 
 # Dependencies
 nns_capi_common_deps = [glib_dep, gmodule_dep, nnstreamer_single_dep]
-nns_capi_deps = [nnstreamer_dep, glib_dep, gmodule_dep, gio_dep, gst_dep, gst_app_dep, leveldb_dep]
+nns_capi_deps = [nnstreamer_dep, glib_dep, gmodule_dep, gio_dep, gst_dep, gst_app_dep]
 
 if (get_option('enable-tizen'))
   message('C-API is in Tizen mode')
@@ -101,10 +93,6 @@ nns_capi_test_deps = nns_capi_deps
 
 if (get_option('enable-tizen'))
   nns_capi_deps += [dependency('dlog')]
-endif
-
-if (get_option('enable-machine-learning-agent'))
-  nns_capi_deps += [gio_unix_dep, gdbus_gen_header_dep]
 endif
 
 # Single-shot API.
@@ -160,26 +148,40 @@ nns_capi_dep = declare_dependency(link_with: nns_capi_lib,
 )
 
 # Service API
-nns_capi_service_shared_lib = shared_library ('capi-ml-service',
-  nns_capi_service_srcs,
-  dependencies: nns_capi_dep,
-  include_directories: nns_capi_include,
-  install: true,
-  install_dir: api_install_libdir,
-  version: api_version,
-)
+if get_option('enable-ml-service')
+  nns_capi_service_srcs = []
+  nns_capi_service_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-service-common.c')
+  nns_capi_service_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-service-agent-client.c')
+  nns_capi_service_srcs += join_paths(meson.current_source_dir(), 'src', 'ml-api-service-query-client.c')
 
-nns_capi_service_static_lib = static_library ('capi-ml-service',
-  nns_capi_service_srcs,
-  dependencies: nns_capi_dep,
-  include_directories: nns_capi_include,
-  install: true,
-  install_dir: api_install_libdir,
-)
+  nns_capi_service_headers = []
+  nns_capi_service_headers += join_paths(meson.current_source_dir(), 'include', 'ml-api-service.h')
 
-nns_capi_service_dep = declare_dependency(link_with: nns_capi_service_shared_lib)
-if get_option('default_library') == 'static'
-  nns_capi_service_dep = declare_dependency(link_with: nns_capi_service_static_lib)
+  nns_capi_service_shared_lib = shared_library ('capi-ml-service',
+    nns_capi_service_srcs,
+    dependencies: [nns_capi_dep, ai_service_daemon_deps],
+    include_directories: nns_capi_include,
+    install: true,
+    install_dir: api_install_libdir,
+    version: api_version,
+  )
+
+  nns_capi_service_static_lib = static_library ('capi-ml-service',
+    nns_capi_service_srcs,
+    dependencies: [nns_capi_dep, ai_service_daemon_deps],
+    include_directories: nns_capi_include,
+    install: true,
+    install_dir: api_install_libdir,
+  )
+
+  nns_capi_service_dep = declare_dependency(link_with: nns_capi_service_shared_lib,
+    dependencies: [nns_capi_dep, ai_service_daemon_deps]
+  )
+  if get_option('default_library') == 'static'
+    nns_capi_service_dep = declare_dependency(link_with: nns_capi_service_static_lib,
+    dependencies: [nns_capi_dep, ai_service_daemon_deps]
+  )
+  endif
 endif
 
 ml_inf_conf = configuration_data()
@@ -198,13 +200,15 @@ configure_file(input: 'capi-ml-inference-single.pc.in', output: 'capi-ml-inferen
   configuration: ml_inf_single_conf
 )
 
-ml_inf_service_conf = configuration_data()
-ml_inf_service_conf.merge_from(api_conf)
-ml_inf_service_conf.set('ML_INFERENCE_SERVICE_REQUIRE', 'capi-nnstreamer')
-configure_file(input: 'capi-ml-service.pc.in', output: 'capi-ml-service.pc',
-  install_dir: join_paths(api_install_libdir, 'pkgconfig'),
-  configuration: ml_inf_service_conf
-)
+if get_option('enable-ml-service')
+  ml_inf_service_conf = configuration_data()
+  ml_inf_service_conf.merge_from(api_conf)
+  ml_inf_service_conf.set('ML_INFERENCE_SERVICE_REQUIRE', 'capi-nnstreamer')
+  configure_file(input: 'capi-ml-service.pc.in', output: 'capi-ml-service.pc',
+    install_dir: join_paths(api_install_libdir, 'pkgconfig'),
+    configuration: ml_inf_service_conf
+  )
+endif
 
 ml_common_api_conf = configuration_data()
 ml_common_api_conf.merge_from(api_conf)
@@ -221,3 +225,9 @@ configure_file(input: 'capi-ml-common.pc.in', output: 'capi-ml-common.pc',
 install_headers(nns_capi_headers,
   subdir: 'nnstreamer'
 )
+
+if get_option('enable-ml-service')
+  install_headers(nns_capi_service_headers,
+    subdir: 'nnstreamer'
+  )
+endif

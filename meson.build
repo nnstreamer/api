@@ -155,7 +155,7 @@ api_conf.set('EXEC_PREFIX', api_install_bindir)
 api_conf.set('LIB_INSTALL_DIR', api_install_libdir)
 api_conf.set('INCLUDE_INSTALL_DIR', api_install_includedir)
 
-if get_option('enable-machine-learning-agent')
+if get_option('enable-ml-service')
   subdir('daemon')
 endif
 

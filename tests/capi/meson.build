@@ -44,7 +44,7 @@ unittest_capi_datatype_consistency = executable('unittest_capi_datatype_consiste
 )
 test('unittest_capi_datatype_consistency', unittest_capi_datatype_consistency, env: testenv, timeout: 100)
 
-if get_option('enable-machine-learning-agent')
+if get_option('enable-ml-service')
   unittest_capi_service_agent_client = executable('unittest_capi_service_agent_client',
     'unittest_capi_service_agent_client.cc',
     dependencies: [unittest_common_dep, nns_capi_service_dep, gdbus_gen_header_test_dep],
