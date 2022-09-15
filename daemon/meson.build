@@ -1,5 +1,5 @@
 # Machine Learing Agent
-if get_option('enable-machine-learning-agent')
+if get_option('enable-ml-service')
   nns_ml_agent_srcs = []
   nns_ml_agent_gen_srcs = []
   nns_ml_agent_incs = include_directories('includes')
@@ -43,6 +43,7 @@ if get_option('enable-machine-learning-agent')
               '@INPUT@'])
 
   gdbus_gen_header_dep = declare_dependency(sources : nns_ml_agent_gen_srcs)
+
   gdbus_gen_header_test_dep = declare_dependency(sources : [nns_ml_agent_gen_srcs, gdbus_gen_test_src])
 
   ai_service_daemon_deps = [
