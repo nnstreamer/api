@@ -456,6 +456,7 @@ TEST_F (MLServiceAgentTest, query_client)
   /** it would fail if get the removed service */
   status = ml_service_get_pipeline (service_name, &ret_pipeline);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+  g_free (ret_pipeline);
 
   ml_option_destroy (query_client_option);
   ml_tensors_data_destroy (input);
@@ -486,6 +487,9 @@ TEST_F (MLServiceAgentTest, query_create_01_n)
 
   status = ml_service_query_create (invalid_option, &client);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_option_destroy (invalid_option);
+  EXPECT_EQ (ML_ERROR_NONE, status);
 }
 
 /**
