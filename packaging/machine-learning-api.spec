@@ -35,6 +35,7 @@
 # Disable a few features for TV releases
 %if "%{?profile}" == "tv"
 %define		enable_tizen_privilege 0
+%define		enable_ml_service 0
 %endif
 
 # If it is tizen, we can export Tizen API packages.
