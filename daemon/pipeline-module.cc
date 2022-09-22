@@ -101,7 +101,7 @@ static gboolean dbus_cb_core_set_pipeline (MachinelearningServicePipeline *obj,
   if (result) {
     _E ("Failed to set pipeline description of %s", service_name);
     machinelearning_service_pipeline_complete_set_pipeline (obj, invoc, result);
-    return FALSE;
+    return TRUE;
   }
 
   machinelearning_service_pipeline_complete_set_pipeline (obj, invoc, result);
@@ -138,7 +138,7 @@ static gboolean dbus_cb_core_get_pipeline (MachinelearningServicePipeline *obj,
   if (result) {
     _E ("Failed to get pipeline description of %s", service_name);
     machinelearning_service_pipeline_complete_get_pipeline (obj, invoc, result, NULL);
-    return FALSE;
+    return TRUE;
   }
 
   machinelearning_service_pipeline_complete_get_pipeline (obj, invoc, result, stored_pipeline_description.c_str ());
@@ -174,7 +174,7 @@ static gboolean dbus_cb_core_delete_pipeline (MachinelearningServicePipeline *ob
   if (result) {
     _E ("Failed to delete the pipeline description of %s", service_name);
     machinelearning_service_pipeline_complete_delete_pipeline (obj, invoc, result);
-    return FALSE;
+    return TRUE;
   }
 
   machinelearning_service_pipeline_complete_delete_pipeline (obj, invoc, result);
@@ -217,7 +217,7 @@ static gboolean dbus_cb_core_launch_pipeline (MachinelearningServicePipeline *ob
   if (result) {
     _E ("Failed to launch pipeline of %s", service_name);
     machinelearning_service_pipeline_complete_launch_pipeline (obj, invoc, result, -1);
-    return FALSE;
+    return TRUE;
   }
 
   pipeline = gst_parse_launch (stored_pipeline_description.c_str (), &err);
@@ -230,7 +230,7 @@ static gboolean dbus_cb_core_launch_pipeline (MachinelearningServicePipeline *ob
 
     result = -ESTRPIPE;
     machinelearning_service_pipeline_complete_launch_pipeline (obj, invoc, result, -1);
-    return FALSE;
+    return TRUE;
   }
 
   /** now set pipeline as paused state */
@@ -241,7 +241,7 @@ static gboolean dbus_cb_core_launch_pipeline (MachinelearningServicePipeline *ob
     gst_object_unref (pipeline);
     result = -ESTRPIPE;
     machinelearning_service_pipeline_complete_launch_pipeline (obj, invoc, result, -1);
-    return FALSE;
+    return TRUE;
   }
 
   /** now fill the struct and store into hash table */
@@ -386,7 +386,7 @@ static gboolean dbus_cb_core_get_state (MachinelearningServicePipeline *obj,
     result = -EINVAL;
     machinelearning_service_pipeline_complete_get_state (obj, invoc, result, (gint) state);
     G_UNLOCK (pipeline_table_lock);
-    return FALSE;
+    return TRUE;
   }
 
   g_mutex_lock (&p->lock);
@@ -398,7 +398,7 @@ static gboolean dbus_cb_core_get_state (MachinelearningServicePipeline *obj,
     _E ("Failed to get the state of the pipline whose service_name is %s (id: %" G_GINT64_FORMAT ")", p->service_name, id);
     result = -ESTRPIPE;
     machinelearning_service_pipeline_complete_get_state (obj, invoc, result, (gint) state);
-    return FALSE;
+    return TRUE;
   }
 
   machinelearning_service_pipeline_complete_get_state (obj, invoc, result, (gint) state);
