@@ -287,6 +287,57 @@ TEST_F (MLServiceAgentTest, usecase_01)
 }
 
 /**
+ * @brief Test ml_service_set_pipeline with invalid param.
+ */
+TEST_F (MLServiceAgentTest, set_pipeline_00_n)
+{
+  int status;
+  status = ml_service_set_pipeline (NULL, "some pipeline");
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+}
+
+/**
+ * @brief Test ml_service_set_pipeline with invalid param.
+ */
+TEST_F (MLServiceAgentTest, set_pipeline_01_n)
+{
+  int status;
+  status = ml_service_set_pipeline ("some key", NULL);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+}
+
+/**
+ * @brief Test ml_service_get_pipeline with invalid param.
+ */
+TEST_F (MLServiceAgentTest, get_pipeline_00_n)
+{
+  int status;
+  gchar *ret_pipeline = NULL;
+  status = ml_service_get_pipeline (NULL, &ret_pipeline);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+}
+
+/**
+ * @brief Test ml_service_get_pipeline with invalid param.
+ */
+TEST_F (MLServiceAgentTest, get_pipeline_01_n)
+{
+  int status;
+  status = ml_service_get_pipeline ("some key", NULL);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+}
+
+/**
+ * @brief Test ml_service_delete_pipeline with invalid param.
+ */
+TEST_F (MLServiceAgentTest, delete_pipeline_00_n)
+{
+  int status;
+  status = ml_service_delete_pipeline (NULL);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+}
+
+/**
  * @brief Test ml_service_launch_pipeline with invalid param.
  */
 TEST_F (MLServiceAgentTest, launch_pipeline_00_n)
@@ -566,8 +617,19 @@ TEST_F (MLServiceAgentTest, query_client)
 TEST_F (MLServiceAgentTest, query_create_00_n)
 {
   int status;
+  ml_option_h option = NULL;
+
   status = ml_service_query_create (NULL, NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_option_create (&option);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_service_query_create (option, NULL);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_option_destroy (option);
+  EXPECT_EQ (ML_ERROR_NONE, status);
 }
 
 /**
@@ -584,6 +646,37 @@ TEST_F (MLServiceAgentTest, query_create_01_n)
 
   status = ml_service_query_create (invalid_option, &client);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_option_destroy (invalid_option);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+}
+
+/**
+ * @brief Test ml_service_query_create with invalid param.
+ */
+TEST_F (MLServiceAgentTest, query_create_02_n)
+{
+  int status;
+  ml_service_h client = NULL;
+  ml_option_h invalid_option = NULL;
+
+  status = ml_option_create (&invalid_option);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  gchar *topic = g_strdup ("sample-topic");
+  status = ml_option_set (invalid_option, "topic", topic, g_free);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  gint some_int = 0;
+  status = ml_option_set (invalid_option, "unknown-key", &some_int, NULL);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  gchar *caps_str = g_strdup ("some invalid caps");
+  status = ml_option_set (invalid_option, "caps", caps_str, g_free);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_service_query_create (invalid_option, &client);
+  EXPECT_EQ (ML_ERROR_STREAMS_PIPE, status);
 
   status = ml_option_destroy (invalid_option);
   EXPECT_EQ (ML_ERROR_NONE, status);
