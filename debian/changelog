@@ -1,3 +1,9 @@
+ml-api (1.8.2.0) unstable xenial bionic focal; urgency=medium
+
+  * Release of 1.8.2
+
+ -- MyungJoo Ham <myungjoo.ham@samsung.com>  Mon, 26 Sep 2022 15:50:00 +0900
+
 ml-api (1.8.1.0) unstable xenial bionic focal; urgency=medium
 
   * Start development of 1.8.1 for Tizen 7.0 M2 release (1.8.2)
