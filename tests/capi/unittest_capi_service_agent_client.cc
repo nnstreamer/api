@@ -11,6 +11,7 @@
 #include <gtest/gtest.h>
 #include <ml-api-internal.h>
 #include <ml-api-service.h>
+#include <ml-api-service-private.h>
 #include <ml-api-inference-pipeline-internal.h>
 
 #include <netinet/tcp.h>
@@ -286,6 +287,34 @@ TEST_F (MLServiceAgentTest, usecase_01)
 }
 
 /**
+ * @brief Test ml_service_launch_pipeline with invalid param.
+ */
+TEST_F (MLServiceAgentTest, launch_pipeline_00_n)
+{
+  int status;
+  status = ml_service_launch_pipeline (NULL, NULL);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+}
+
+/**
+ * @brief Test ml_service_launch_pipeline with invalid key.
+ */
+TEST_F (MLServiceAgentTest, launch_pipeline_01_n)
+{
+  int status;
+  ml_service_h service_h = NULL;
+  status = ml_service_launch_pipeline (NULL, &service_h);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_service_launch_pipeline ("invalid key", &service_h);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  /* service_h is still NULL */
+  status = ml_service_destroy (service_h);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+}
+
+/**
  * @brief Test ml_service_start_pipeline with invalid param.
  */
 TEST_F (MLServiceAgentTest, start_pipeline_00_n)
@@ -306,13 +335,81 @@ TEST_F (MLServiceAgentTest, stop_pipeline_00_n)
 }
 
 /**
+ * @brief Test ml_service_get_pipeline_state with invalid param.
+ */
+TEST_F (MLServiceAgentTest, get_pipeline_state_00_n)
+{
+  int status;
+  ml_service_h h;
+  ml_pipeline_state_e state;
+
+  status = ml_service_get_pipeline_state (NULL, &state);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_service_set_pipeline ("key", "videotestsrc ! fakesink");
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_service_launch_pipeline ("key", &h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_service_get_pipeline_state (h, NULL);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_service_destroy (h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_service_delete_pipeline ("key");
+  EXPECT_EQ (ML_ERROR_NONE, status);
+}
+
+/**
  * @brief Test ml_service_destroy with invalid param.
  */
-TEST_F (MLServiceAgentTest, close_pipeline_00_n)
+TEST_F (MLServiceAgentTest, destroy_00_n)
 {
   int status;
   status = ml_service_destroy (NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+}
+
+/**
+ * @brief Test ml_service APIs with invalid handle.
+ */
+TEST_F (MLServiceAgentTest, explicit_invalid_handle_00_n)
+{
+  int status;
+  ml_service_h h;
+
+  status = ml_service_set_pipeline ("key", "videotestsrc ! fakesink");
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_service_launch_pipeline ("key", &h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  ml_service_s *mls = (ml_service_s *) h;
+  _ml_service_server_s *server = (_ml_service_server_s *) mls->priv;
+  gint64 _id = server->id;
+  server->id = -987654321; /* explicitly set id as invalid number */
+
+  status = ml_service_start_pipeline (h);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_service_stop_pipeline (h);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  ml_pipeline_state_e state;
+  status = ml_service_get_pipeline_state (h, &state);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_service_destroy (h);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  server->id = _id;
+  status = ml_service_destroy (h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_service_delete_pipeline ("key");
+  EXPECT_EQ (ML_ERROR_NONE, status);
 }
 
 /**
