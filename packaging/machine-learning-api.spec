@@ -56,7 +56,7 @@ Summary:	Tizen native API for NNStreamer
 # 2. Tizen   : ./packaging/machine-learning-api.spec
 # 3. Meson   : ./meson.build
 # 4. Android : ./java/android/nnstreamer/src/main/jni/Android.mk
-Version:	1.8.1
+Version:	1.8.2
 Release:	0
 Group:		Machine Learning/ML Framework
 Packager:	MyungJoo Ham <myungjoo.ham@samsung.com>
@@ -507,6 +507,9 @@ cp -r result %{buildroot}%{_datadir}/ml-api/unittest/
 %endif #unit_test
 
 %changelog
+* Mon Sep 26 2022 MyungJoo Ham <myungjoo.ham@samsung.com>
+- Release of 1.8.2
+
 * Fri Apr 22 2022 MyungJoo Ham <myungjoo.ham@samsung.com>
 - Start development of 1.8.1 for Tizen 7.0 M2 release (1.8.2)
 

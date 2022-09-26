@@ -1,5 +1,5 @@
 project('ml-api', 'c', 'cpp',
-  version: '1.8.1',
+  version: '1.8.2',
   license: ['Apache-2.0'],
   meson_version: '>=0.50.0',
   default_options: [
