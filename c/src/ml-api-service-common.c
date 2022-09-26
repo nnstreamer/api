@@ -71,6 +71,10 @@ ml_service_destroy (ml_service_h h)
 
     g_object_unref (mlsp);
 
+    if (ML_ERROR_INVALID_PARAMETER == ret)
+      _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+          "The data of given handle is corrupted. Please check it.");
+
     g_free (server->service_name);
     g_free (server);
   } else if (ML_SERVICE_TYPE_CLIENT_QUERY == mls->type) {

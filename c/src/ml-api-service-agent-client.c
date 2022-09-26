@@ -248,6 +248,10 @@ ml_service_get_pipeline_state (ml_service_h h, ml_pipeline_state_e * state)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'h' is NULL. It should be a valid ml_service_h");
 
+  if (!state)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'state' is NULL. It should be a valid ml_pipeline_state_e pointer");
+
   mlsp = _get_proxy_new_for_bus_sync ();
   if (!mlsp) {
     _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
