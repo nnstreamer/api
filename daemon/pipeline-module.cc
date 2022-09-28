@@ -50,7 +50,6 @@ typedef struct _pipeline {
 static void _pipeline_free (gpointer data)
 {
   pipeline_s *p;
-  GMutex *backup_lock;
 
   if (!data) {
     _E ("internal error, the data should not be NULL");
@@ -59,18 +58,14 @@ static void _pipeline_free (gpointer data)
 
   p = (pipeline_s *) data;
 
-  g_mutex_lock (&p->lock);
-  backup_lock = &p->lock;
-
   if (p->element)
     gst_object_unref (p->element);
 
   g_free (p->service_name);
   g_free (p->description);
-  g_free (p);
+  g_mutex_clear (&p->lock);
 
-  g_mutex_unlock (backup_lock);
-  g_mutex_clear (backup_lock);
+  g_free (p);
 }
 
 /**
