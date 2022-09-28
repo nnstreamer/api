@@ -334,7 +334,6 @@ static gboolean dbus_cb_core_destroy_pipeline (MachinelearningServicePipeline *o
         gint64 id, gpointer user_data)
 {
   gint result = 0;
-  GstStateChangeReturn sc_ret;
   pipeline_s *p = NULL;
 
   G_LOCK (pipeline_table_lock);
@@ -344,15 +343,22 @@ static gboolean dbus_cb_core_destroy_pipeline (MachinelearningServicePipeline *o
     _E ("there is no pipeline with id: %" G_GINT64_FORMAT, id);
     result = -EINVAL;
   } else {
-    g_mutex_lock (&p->lock);
-    sc_ret = gst_element_set_state (p->element, GST_STATE_NULL);
-    g_mutex_unlock (&p->lock);
 
-    if (sc_ret == GST_STATE_CHANGE_FAILURE) {
-      _E ("Failed to set the state of the pipeline to NULL whose service_name is %s (id: %" G_GINT64_FORMAT "). Destroy it anyway.", p->service_name, id);
-      result = -ESTRPIPE;
-    }
+/**
+ * @todo Fix hanging issue when trying to set GST_STATE_NULL state for pipelines containing tensor_query_*. As a workaround, just unref the pipeline instance. To fix this issue, tensor_query elements and nnstreamer-edge should well-behavior to the state change. And it should properly free socket resources. Revive following code after then.
+ */
+/**
+ *   GstStateChangeReturn sc_ret;
 
+ *   g_mutex_lock (&p->lock);
+ *   sc_ret = gst_element_set_state (p->element, GST_STATE_NULL);
+ *   g_mutex_unlock (&p->lock);
+
+ *   if (sc_ret == GST_STATE_CHANGE_FAILURE) {
+ *     _E ("Failed to set the state of the pipeline to NULL whose service_name is %s (id: %" G_GINT64_FORMAT "). Destroy it anyway.", p->service_name, id);
+ *     result = -ESTRPIPE;
+ *   }
+ */
     g_hash_table_remove (pipeline_table, GINT_TO_POINTER (id));
   }
 
