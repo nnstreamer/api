@@ -2824,10 +2824,29 @@ TEST (nnstreamer_capi_util, info_set_count_n)
 /**
  * @brief Test utility functions (public)
  */
-TEST (nnstreamer_capi_util, info_get_count_n)
+TEST (nnstreamer_capi_util, info_get_count_1_n)
 {
-  int status = ml_tensors_info_get_count (nullptr, nullptr);
+  unsigned int count;
+  int status = ml_tensors_info_get_count (nullptr, &count);
   ASSERT_EQ (status, ML_ERROR_INVALID_PARAMETER);
+}
+
+/**
+ * @brief Test utility functions (public)
+ */
+TEST (nnstreamer_capi_util, info_get_count_2_n)
+{
+  ml_tensors_info_h info;
+  int status;
+
+  status = ml_tensors_info_create (&info);
+  ASSERT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_tensors_info_get_count (info, nullptr);
+  ASSERT_EQ (status, ML_ERROR_INVALID_PARAMETER);
+
+  status = ml_tensors_info_destroy (info);
+  ASSERT_EQ (status, ML_ERROR_NONE);
 }
 
 /**
@@ -3274,7 +3293,6 @@ TEST (nnstreamer_capi_util, data_create_02_n)
 
   status = ml_tensors_info_create (&info);
   ASSERT_EQ (status, ML_ERROR_NONE);
-
 
   status = ml_tensors_data_create (info, nullptr);
   EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
@@ -6481,6 +6499,36 @@ TEST (nnstreamer_capi_internal, copy_from_gst)
 }
 
 /**
+ * @brief Test for internal function '_ml_tensors_info_copy_from_gst'.
+ */
+TEST (nnstreamer_capi_internal, copy_from_gst_01_n)
+{
+  GstTensorsInfo gst_info;
+  int status;
+
+  status = _ml_tensors_info_copy_from_gst (NULL, &gst_info);
+  EXPECT_NE (status, ML_ERROR_NONE);
+}
+
+/**
+ * @brief Test for internal function '_ml_tensors_info_copy_from_gst'.
+ */
+TEST (nnstreamer_capi_internal, copy_from_gst_02_n)
+{
+  ml_tensors_info_h ml_info;
+  int status;
+
+  status = ml_tensors_info_create (&ml_info);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = _ml_tensors_info_copy_from_gst ((ml_tensors_info_s *) ml_info, NULL);
+  EXPECT_NE (status, ML_ERROR_NONE);
+
+  status = ml_tensors_info_destroy (ml_info);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+}
+
+/**
  * @brief Test for internal function '_ml_tensors_info_copy_from_ml'.
  */
 TEST (nnstreamer_capi_internal, copy_from_ml)
@@ -6560,6 +6608,36 @@ TEST (nnstreamer_capi_internal, copy_from_ml)
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   gst_tensors_info_free (&gst_info);
+}
+
+/**
+ * @brief Test for internal function '_ml_tensors_info_copy_from_ml'.
+ */
+TEST (nnstreamer_capi_internal, copy_from_ml_01_n)
+{
+  ml_tensors_info_h ml_info;
+  int status;
+
+  status = ml_tensors_info_create (&ml_info);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = _ml_tensors_info_copy_from_ml (NULL, (ml_tensors_info_s *) ml_info);
+  EXPECT_NE (status, ML_ERROR_NONE);
+
+  status = ml_tensors_info_destroy (ml_info);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+}
+
+/**
+ * @brief Test for internal function '_ml_tensors_info_copy_from_ml'.
+ */
+TEST (nnstreamer_capi_internal, copy_from_ml_02_n)
+{
+  GstTensorsInfo gst_info;
+  int status;
+
+  status = _ml_tensors_info_copy_from_ml (&gst_info, NULL);
+  EXPECT_NE (status, ML_ERROR_NONE);
 }
 
 /**

@@ -3578,20 +3578,24 @@ TEST (nnstreamer_capi_ml_option, test03_n)
 {
   int status;
   ml_option_h option;
+  gchar *value = g_strdup ("value");
 
   status = ml_option_create (&option);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  gchar *value = g_strdup ("value");
+  status = ml_option_set (NULL, "key", value, NULL);
+  EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
+
   status = ml_option_set (option, NULL, value, NULL);
   EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
-  g_free (value);
 
   status = ml_option_set (option, "key", NULL, NULL);
   EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
 
   status = ml_option_destroy (option);
   EXPECT_EQ (status, ML_ERROR_NONE);
+
+  g_free (value);
 }
 
 /**
