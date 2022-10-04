@@ -387,12 +387,12 @@ ml_tensors_info_set_tensor_type (ml_tensors_info_h info,
         "The parameter, type, ML_TENSOR_TYPE_UNKNOWN or out of bound. The value of type should be between 0 and ML_TENSOR_TYPE_UNKNOWN - 1. type = %d, ML_TENSOR_TYPE_UNKNOWN = %d.",
         type, ML_TENSOR_TYPE_UNKNOWN);
 
-#ifndef SUPPORT_FLOAT16
+#ifndef FLOAT16_SUPPORT
   if (type == ML_TENSOR_TYPE_FLOAT16)
     _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
         "Float16 (IEEE 754) is not supported by the machine (or the compiler or your build configuration). You cannot configure ml_tensors_info instance with Float16 type.");
 #endif
- /** @todo add BFLOAT16 when nnstreamer is ready for it. */
+  /** @todo add BFLOAT16 when nnstreamer is ready for it. */
 
   tensors_info = (ml_tensors_info_s *) info;
   G_LOCK_UNLESS_NOLOCK (*tensors_info);
@@ -525,6 +525,7 @@ _ml_tensor_info_get_size (const ml_tensor_info_s * info)
       break;
     case ML_TENSOR_TYPE_INT16:
     case ML_TENSOR_TYPE_UINT16:
+    case ML_TENSOR_TYPE_FLOAT16:
       tensor_size = 2;
       break;
     case ML_TENSOR_TYPE_INT32:
@@ -785,7 +786,7 @@ ml_tensors_data_create (const ml_tensors_info_h info, ml_tensors_data_h * data)
   if (status != ML_ERROR_NONE)
     _ml_error_report_return_continue (status,
         "_ml_error_report_return_continue has reported that the parameter, info, is not NULL, but its contents are not valid. The user must provide a valid tensor information with it.");
-  if (valid == FALSE)
+  if (!valid)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, info, is not NULL, but its contents are not valid. The user must provide a valid tensor information with it. Probably, there is an entry that is not allocated or dimension/type information not available. The given info should have valid number of tensors, entries of every tensor along with its type and dimension info.");
 
