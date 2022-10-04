@@ -363,7 +363,7 @@ ninja -C build %{?_smp_mflags}
 %if 0%{?unit_test}
 bash %{test_script} ./tests/capi/unittest_capi_inference_single
 bash %{test_script} ./tests/capi/unittest_capi_inference
-bash %{test_script} ./tests/capi/unittest_datatype_consistency
+bash %{test_script} ./tests/capi/unittest_capi_datatype_consistency
 
 %if 0%{?enable_ml_service}
 bash %{test_script} ./tests/daemon/unittest_ml_agent

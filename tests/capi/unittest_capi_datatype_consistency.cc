@@ -51,13 +51,13 @@ TEST (nnstreamer_datatypes, test_all_2_n)
   int ret;
 
   ret = ml_tensors_info_create (&info);
-  EXPECT_EQ (ret, 0);
+  EXPECT_EQ (ret, ML_ERROR_NONE);
 
   ret = ml_tensors_info_set_count (info, NNS_TENSOR_SIZE_LIMIT + 1);
   EXPECT_EQ (ret, ML_ERROR_INVALID_PARAMETER);
 
   ret = ml_tensors_info_destroy (info);
-  EXPECT_EQ (ret, 0);
+  EXPECT_EQ (ret, ML_ERROR_NONE);
 }
 
 /**
@@ -69,16 +69,20 @@ TEST (nnstreamer_datatypes, test_all_3_n)
   int ret;
 
   ret = ml_tensors_info_create (&info);
-  EXPECT_EQ (ret, 0);
+  EXPECT_EQ (ret, ML_ERROR_NONE);
 
   ret = ml_tensors_info_set_count (info, 1);
-  EXPECT_EQ (ret, 0);
+  EXPECT_EQ (ret, ML_ERROR_NONE);
 
   ret = ml_tensors_info_set_tensor_type (info, 0, ML_TENSOR_TYPE_UNKNOWN);
   EXPECT_EQ (ret, ML_ERROR_INVALID_PARAMETER);
+#ifndef FLOAT16_SUPPORT
+  ret = ml_tensors_info_set_tensor_type (info, 0, ML_TENSOR_TYPE_FLOAT16);
+  EXPECT_EQ (ret, ML_ERROR_NOT_SUPPORTED);
+#endif
 
   ret = ml_tensors_info_destroy (info);
-  EXPECT_EQ (ret, 0);
+  EXPECT_EQ (ret, ML_ERROR_NONE);
 }
 
 /**
