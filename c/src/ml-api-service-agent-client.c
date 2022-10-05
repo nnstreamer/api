@@ -145,25 +145,28 @@ ml_service_launch_pipeline (const char *name, ml_service_h * h)
 
   g_object_unref (mlsp);
 
-  if (0 != ret) {
+  if (ML_ERROR_NONE != ret) {
     _ml_error_report_return (ret,
         "Failed to launch pipeline, please check its integrity.");
   }
 
+  mls = g_new0 (ml_service_s, 1);
   server = g_new0 (_ml_service_server_s, 1);
-  if (server == NULL)
+  if (server == NULL || mls == NULL) {
+    g_free (mls);
+    g_free (server);
     _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
         "Failed to allocate memory for the service_server. Out of memory?");
+  }
 
   server->id = out_id;
   server->service_name = g_strdup (name);
 
-  mls = g_new0 (ml_service_s, 1);
   mls->type = ML_SERVICE_TYPE_SERVER_PIPELINE;
   mls->priv = server;
-  *h = (ml_service_h *) mls;
+  *h = mls;
 
-  return ret;
+  return ML_ERROR_NONE;
 }
 
 /**
