@@ -148,19 +148,19 @@ ml_service_query_create (ml_option_h option, ml_service_h * h)
 
   status = ml_pipeline_construct (description, NULL, NULL, &pipe_h);
   g_free (description);
-  if (status) {
+  if (ML_ERROR_NONE != status) {
     _ml_error_report_return (status, "Failed to construct pipeline");
   }
 
   status = ml_pipeline_start (pipe_h);
-  if (status) {
+  if (ML_ERROR_NONE != status) {
     _ml_error_report ("Failed to start pipeline");
     ml_pipeline_destroy (pipe_h);
     return status;
   }
 
   status = ml_pipeline_src_get_handle (pipe_h, "srcx", &src_h);
-  if (status) {
+  if (ML_ERROR_NONE != status) {
     ml_pipeline_destroy (pipe_h);
     _ml_error_report_return (status, "Failed to get src handle");
   }
@@ -168,7 +168,7 @@ ml_service_query_create (ml_option_h option, ml_service_h * h)
   query_s = g_new0 (_ml_service_query_s, 1);
   status = ml_pipeline_sink_register (pipe_h, "sinkx",
       _sink_callback_for_query_client, query_s, &sink_h);
-  if (status) {
+  if (ML_ERROR_NONE != status) {
     ml_pipeline_destroy (pipe_h);
     g_free (query_s);
     _ml_error_report_return (status, "Failed to register sink handle");
@@ -221,5 +221,5 @@ ml_service_query_request (ml_service_h h, const ml_tensors_data_h input,
     _ml_error_report_return (ML_ERROR_TIMED_OUT, "timeout!");
   }
 
-  return status;
+  return ML_ERROR_NONE;
 }
