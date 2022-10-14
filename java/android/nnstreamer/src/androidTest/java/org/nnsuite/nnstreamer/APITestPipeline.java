@@ -1931,12 +1931,12 @@ public class APITestPipeline {
                         mInvalidState = true;
                     } else {
                         ByteBuffer output = data.getTensorData(0);
-                        if (!APITestCommon.isValidBuffer(output, 1917 * 91 * 4)) {
+                        if (!APITestCommon.isValidBuffer(output, 1917 * 4 * 4)) {
                             mInvalidState = true;
                         }
 
                         output = data.getTensorData(1);
-                        if (!APITestCommon.isValidBuffer(output, 1917 * 4 * 4)) {
+                        if (!APITestCommon.isValidBuffer(output, 1917 * 91 * 4)) {
                             mInvalidState = true;
                         }
                     }
@@ -1981,7 +1981,7 @@ public class APITestPipeline {
         String desc = "appsrc name=srcx ! " +
                 "other/tensor,dimension=(string)3:300:300:1,type=(string)float32,framerate=(fraction)0/1 ! " +
                 "tensor_filter framework=snpe " + "model=" + model.getAbsolutePath() +
-                " output=91:1917:1:1,4:1:1917:1 outputtype=float32,float32 outputname=concat,concat_1 ! " +
+                " output=4:1:1917:1,91:1917:1:1 outputtype=float32,float32 outputname=concat:0,concat_1:0 ! " +
                 "tensor_sink name=sinkx";
 
         runSNPEMultipleOutput(desc);
@@ -1998,7 +1998,7 @@ public class APITestPipeline {
         String desc = "appsrc name=srcx ! " +
                 "other/tensor,dimension=(string)3:300:300:1,type=(string)float32,framerate=(fraction)0/1 ! " +
                 "tensor_filter framework=snpe " + "model=" + model.getAbsolutePath() +
-                " custom=OutputLayer:concat;concat_1 ! " +
+                " custom=UserBuffer:true,OutputTensor:concat:0;concat_1:0 ! " +
                 "tensor_sink name=sinkx";
 
         runSNPEMultipleOutput(desc);
