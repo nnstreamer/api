@@ -37,6 +37,9 @@ include $(NNSTREAMER_ROOT)/jni/nnstreamer.mk
 
 NNSTREAMER_API_OPTION := all
 
+# tensor-query support
+ENABLE_TENSOR_QUERY := true
+
 # tensorflow-lite (nnstreamer tf-lite subplugin)
 ENABLE_TF_LITE := false
 

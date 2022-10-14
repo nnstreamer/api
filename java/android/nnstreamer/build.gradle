@@ -31,6 +31,16 @@ android {
                 if (nnsRoot == null)
                     throw new GradleException('NNSTREAMER_ROOT must be set, or "nnstreamerRoot" must be defined in your gradle.properties')
 
+                def nnsEdgeRoot
+
+                if (project.hasProperty('nnstreamerEdgeRoot'))
+                    nnsEdgeRoot = project.nnstreamerEdgeRoot
+                else
+                    nnsEdgeRoot = System.env.NNSTREAMER_EDGE_ROOT
+
+                if (nnsEdgeRoot == null)
+                    throw new GradleException('NNSTREAMER_EDGE_ROOT must be set, or "nnstreamerEdgeRoot" must be defined in your gradle.properties')
+
                 def mlApiRoot
 
                 if (project.hasProperty('mlApiRoot'))
