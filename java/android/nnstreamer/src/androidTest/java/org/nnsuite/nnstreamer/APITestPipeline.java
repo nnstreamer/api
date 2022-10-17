@@ -2386,4 +2386,49 @@ public class APITestPipeline {
             fail();
         }
     }
+
+    @Test
+    public void testTensorQuery() {
+        int serversrc_port = APITestCommon.getAvailablePort();
+        int client_port = APITestCommon.getAvailablePort();
+        String server_desc = "tensor_query_serversrc port=" + serversrc_port + " num-buffers=10 ! " +
+                "other/tensors,format=static,num_tensors=1,dimensions=3:4:4:1,types=uint8,framerate=0/1 ! " +
+                "tensor_query_serversink async=false";
+        String client_desc = "videotestsrc is-live=true num-buffers=10 ! " +
+                "video/x-raw,format=RGB,width=4,height=4,framerate=5/1 ! " +
+                "tensor_converter ! tensor_query_client timeout=1000 dest-port=" + serversrc_port + " port=" + client_port + " ! " +
+                "tensor_sink name=sinkx";
+
+        try {
+            Pipeline server_pipe = new Pipeline(server_desc);
+            server_pipe.start();
+
+            Thread.sleep(1000);
+
+            Pipeline client_pipe = new Pipeline(client_desc);
+            /* register sink callback */
+            client_pipe.registerSinkCallback("sinkx", new Pipeline.NewDataCallback() {
+                @Override
+                public void onNewDataReceived(TensorsData data) {
+                    if (data == null || data.getTensorsCount() != 1) {
+                        mInvalidState = true;
+                        return;
+                    }
+                    mReceived++;
+                }
+            });
+            client_pipe.start();
+
+            Thread.sleep(3000);
+
+            server_pipe.stop();
+            client_pipe.stop();
+
+            /* check received data from sink */
+            assertFalse(mInvalidState);
+            assertEquals(10, mReceived);
+        } catch (Exception e) {
+            fail();
+        }
+    }
 }
