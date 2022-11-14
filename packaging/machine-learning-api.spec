@@ -68,7 +68,7 @@ Source1002:	machine-learning-agent.manifest
 ## Define build requirements ##
 Requires:	capi-machine-learning-common = %{version}-%{release}
 Requires:	capi-machine-learning-inference-single = %{version}-%{release}
-%ifarch aarch64 x86_64
+%ifarch aarch64 x86_64 riscv64
 Provides:	libcapi-nnstreamer.so(64bit)
 %else
 Provides:	libcapi-nnstreamer.so
