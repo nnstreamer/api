@@ -6506,6 +6506,7 @@ TEST (nnstreamer_capi_internal, copy_from_gst_01_n)
   GstTensorsInfo gst_info;
   int status;
 
+  gst_tensors_info_init (&gst_info);
   status = _ml_tensors_info_copy_from_gst (NULL, &gst_info);
   EXPECT_NE (status, ML_ERROR_NONE);
 }
