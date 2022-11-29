@@ -810,10 +810,7 @@ ml_tensors_data_create (const ml_tensors_info_h info, ml_tensors_data_h * data)
   return ML_ERROR_NONE;
 
 failed_oom:
-  for (i = 0; i < _data->num_tensors; i++) {
-    g_free (_data->tensors[i].tensor);
-  }
-  g_free (_data);
+  _ml_tensors_data_destroy_internal (_data, TRUE);
 
   _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
       "Failed to allocate memory blocks for tensors data. Check if it's out-of-memory.");
