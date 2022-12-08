@@ -96,6 +96,13 @@ BuildRequires:	pkgconfig(dlog)
 BuildRequires:	pkgconfig(libtzplatform-config)
 %endif # tizen
 
+# To generage gcov package, --define "gcov 1"
+%if 0%{?gcov:1}
+%define		unit_test 1
+%define		release_test 1
+%define		testcoverage 1
+%endif
+
 # For test
 %if 0%{?unit_test}
 BuildRequires:  pkgconfig(gtest)
@@ -260,7 +267,6 @@ Requires:	capi-machine-learning-inference = %{version}-%{release}
 Unittests for Tizen Machine Learning API.
 %endif
 
-# To generage gcov package, --define "gcov ON"
 %if 0%{?gcov:1}
 %package gcov
 Summary:    Tizen Machine Learning API gcov objects
@@ -374,21 +380,12 @@ bash %{test_script} ./tests/capi/unittest_capi_service_agent_client
 %if 0%{?nnfw_support}
 bash %{test_script} ./tests/capi/unittest_capi_inference_nnfw_runtime
 %endif
-
-%if 0%{?gcov:1}
-mkdir -p gcov-obj
-find . -name '*.gcno' -exec cp '{}' gcov-obj ';'
-%endif
 %endif # unit_test
 
 %install
 DESTDIR=%{buildroot} ninja -C build %{?_smp_mflags} install
 
 %if 0%{?unit_test}
-%if 0%{?gcov:1}
-mkdir -p %{buildroot}%{_datadir}/gcov/obj/%{name}
-install -m 0644 gcov-obj/* %{buildroot}%{_datadir}/gcov/obj/%{name}
-%endif
 
 %if 0%{?testcoverage}
 # 'lcov' generates the date format with UTC time zone by default. Let's replace UTC with KST.
@@ -416,6 +413,19 @@ genhtml -o result unittest-filtered.info -t "ML API %{version}-%{release} ${VCS}
 
 mkdir -p %{buildroot}%{_datadir}/ml-api/unittest/
 cp -r result %{buildroot}%{_datadir}/ml-api/unittest/
+
+%if 0%{?gcov:1}
+builddir=$(basename $PWD)
+gcno_obj_dir=%{buildroot}%{_datadir}/gcov/obj/%{name}/"$builddir"
+mkdir -p "$gcno_obj_dir"
+pushd build
+find . -name '*.gcno' ! -name "meson-generated*" ! -name "sanitycheck*" -exec cp --parents '{}' "$gcno_obj_dir" ';'
+popd
+
+mkdir -p %{buildroot}%{_bindir}/tizen-unittests/%{name}
+install -m 0755 packaging/run-unittest.sh %{buildroot}%{_bindir}/tizen-unittests/%{name}
+%endif
+
 %endif # test coverage
 %endif # unit_test
 
@@ -493,6 +503,9 @@ cp -r result %{buildroot}%{_datadir}/ml-api/unittest/
 %files -n capi-machine-learning-unittests
 %manifest capi-machine-learning-inference.manifest
 %{_bindir}/unittest-ml
+%if 0%{?gcov:1}
+%{_bindir}/tizen-unittests/%{name}/run-unittest.sh
+%endif
 %endif
 
 %if 0%{?gcov:1}
