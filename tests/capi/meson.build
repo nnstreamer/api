@@ -1,5 +1,5 @@
 unittest_util_static = static_library('unittest_util',
-  join_paths(meson.current_source_dir(), 'unittest_util.c'),
+  files('unittest_util.c'),
   dependencies: [glib_dep],
   install: false,
 )
