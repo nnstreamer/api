@@ -156,6 +156,7 @@ api_conf.set('LIB_INSTALL_DIR', api_install_libdir)
 api_conf.set('INCLUDE_INSTALL_DIR', api_install_includedir)
 
 if get_option('enable-ml-service')
+  subdir('dbus')
   subdir('daemon')
 endif
 
