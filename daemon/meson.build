@@ -2,9 +2,6 @@
 if get_option('enable-ml-service')
   nns_ml_agent_gen_srcs = []
   nns_ml_agent_incs = include_directories('includes')
-
-  libsystemd_dep = dependency('libsystemd')
-
   nns_ml_agent_srcs = files('main.c', 'modules.c', 'gdbus-util.c', 'service-db.cc', 'pipeline-module.cc', 'model-dbus-impl.cc')
 
   # Generate GDbus header and code

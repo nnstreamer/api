@@ -27,10 +27,14 @@ gst_dep = dependency('gstreamer-1.0')
 gst_app_dep = dependency('gstreamer-app-1.0')
 nnstreamer_single_dep = dependency('nnstreamer-single')
 nnstreamer_dep = dependency('nnstreamer')
-leveldb_dep = dependency('leveldb', required: false)
-if (not leveldb_dep.found())
-  cpp = meson.get_compiler('cpp')
-  leveldb_dep = cpp.find_library('leveldb', required: true)
+
+if get_option('enable-ml-service')
+  libsystemd_dep = dependency('libsystemd')
+
+  leveldb_dep = dependency('leveldb', required: false)
+  if (not leveldb_dep.found())
+    leveldb_dep = cxx.find_library('leveldb', required: true)
+  endif
 endif
 
 # Set version info
