@@ -11,7 +11,6 @@
 #include <glib.h>
 #include <nnstreamer.h>
 #include <nnstreamer-single.h>
-#include <nnstreamer_plugin_api.h>
 #include <nnstreamer_internal.h>
 #include <nnstreamer-tizen-internal.h>
 #include <ml-api-inference-internal.h>

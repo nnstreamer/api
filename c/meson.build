@@ -16,6 +16,7 @@ if (get_option('enable-tizen'))
 
   tizen_deps = [
     dependency('capi-system-info'),
+    dependency('dlog')
   ]
 
   if get_option('enable-tizen-privilege-check')
@@ -30,8 +31,6 @@ if (get_option('enable-tizen'))
 
   nns_capi_deps += tizen_deps
   nns_capi_common_deps += tizen_deps
-
-  nns_capi_common_deps += [dependency('dlog')]
 endif
 
 subdir('include')
