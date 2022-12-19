@@ -21,8 +21,11 @@ cxx = meson.get_compiler('cpp')
 glib_dep = dependency('glib-2.0')
 gobject_dep = dependency('gobject-2.0')
 gmodule_dep = dependency('gmodule-2.0')
-gio_dep = dependency('gio-2.0')
-gio_unix_dep = dependency('gio-unix-2.0')
+if host_machine.system() == 'windows'
+  gio_dep = dependency('gio-2.0')
+else
+  gio_dep = [dependency('gio-2.0'), dependency('gio-unix-2.0')]
+endif
 gst_dep = dependency('gstreamer-1.0')
 gst_app_dep = dependency('gstreamer-app-1.0')
 nnstreamer_single_dep = dependency('nnstreamer-single')
