@@ -56,6 +56,7 @@ android {
                           "GSTREAMER_ROOT_ANDROID=$gstRoot",
                           "GSTREAMER_ASSETS_DIR=src/main/assets",
                           "NNSTREAMER_ROOT=$nnsRoot",
+                          "NNSTREAMER_EDGE_ROOT=$nnsEdgeRoot",
                           "ML_API_ROOT=$mlApiRoot"
 
                 targets "nnstreamer-native"
