@@ -344,10 +344,6 @@ CXXFLAGS=`echo $CXXFLAGS | sed -e "s|-Wp,-D_FORTIFY_SOURCE=[1-9]||g"`
 %define enable_test_coverage -Db_coverage=false
 %endif
 
-%if 0%{?gcov:1}
-export CFLAGS+=" -fprofile-arcs -ftest-coverage"
-export CXXFLAGS+=" -fprofile-arcs -ftest-coverage"
-%endif
 %else # unit_test
 %define enable_test -Denable-test=false
 %define install_test -Dinstall-test=false
