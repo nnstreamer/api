@@ -193,7 +193,6 @@ TEST_F (MLServiceAgentTest, usecase_00)
 
   g_free (pipeline_desc);
   g_free (client_pipeline_desc);
-  g_free (ret_pipeline);
 }
 
 /**
@@ -283,7 +282,6 @@ TEST_F (MLServiceAgentTest, usecase_01)
 
   g_free (pipeline_desc);
   g_free (client_pipeline_desc);
-  g_free (ret_pipeline);
 }
 
 /**
@@ -604,7 +602,6 @@ TEST_F (MLServiceAgentTest, query_client)
   /** it would fail if get the removed service */
   status = ml_service_get_pipeline (service_name, &ret_pipeline);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
-  g_free (ret_pipeline);
 
   ml_option_destroy (query_client_option);
   ml_tensors_data_destroy (input);
