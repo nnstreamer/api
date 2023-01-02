@@ -26,22 +26,22 @@
 #define DBUS_PIPELINE_INTERFACE          "org.tizen.machinelearning.service.pipeline"
 #define DBUS_PIPELINE_PATH               "/Org/Tizen/MachineLearning/Service/Pipeline"
 
-#define DBUS_PIPELINE_I_SET_HANDLER             "handle_set_pipeline"
-#define DBUS_PIPELINE_I_GET_HANDLER             "handle_get_pipeline"
-#define DBUS_PIPELINE_I_DELETE_HANDLER          "handle_delete_pipeline"
+#define DBUS_PIPELINE_I_SET_HANDLER             "handle-set-pipeline"
+#define DBUS_PIPELINE_I_GET_HANDLER             "handle-get-pipeline"
+#define DBUS_PIPELINE_I_DELETE_HANDLER          "handle-delete-pipeline"
 
-#define DBUS_PIPELINE_I_LAUNCH_HANDLER          "handle_launch_pipeline"
-#define DBUS_PIPELINE_I_START_HANDLER           "handle_start_pipeline"
-#define DBUS_PIPELINE_I_STOP_HANDLER            "handle_stop_pipeline"
-#define DBUS_PIPELINE_I_DESTROY_HANDLER         "handle_destroy_pipeline"
-#define DBUS_PIPELINE_I_GET_STATE_HANDLER       "handle_get_state"
+#define DBUS_PIPELINE_I_LAUNCH_HANDLER          "handle-launch-pipeline"
+#define DBUS_PIPELINE_I_START_HANDLER           "handle-start-pipeline"
+#define DBUS_PIPELINE_I_STOP_HANDLER            "handle-stop-pipeline"
+#define DBUS_PIPELINE_I_DESTROY_HANDLER         "handle-destroy-pipeline"
+#define DBUS_PIPELINE_I_GET_STATE_HANDLER       "handle-get-state"
 
 /* Model Interface */
 #define DBUS_MODEL_INTERFACE            "org.tizen.machinelearning.service.model"
 #define DBUS_MODEL_PATH                 "/Org/Tizen/MachineLearning/Service/Model"
 
-#define DBUS_MODEL_I_HANDLER_SET_PATH     "handle_set_path"
-#define DBUS_MODEL_I_HANDLER_GET_PATH     "handle_get_path"
-#define DBUS_MODEL_I_HANDLER_DELETE       "handle_delete"
+#define DBUS_MODEL_I_HANDLER_SET_PATH     "handle-set-path"
+#define DBUS_MODEL_I_HANDLER_GET_PATH     "handle-get-path"
+#define DBUS_MODEL_I_HANDLER_DELETE       "handle-delete"
 
 #endif /* __GDBUS_INTERFACE_H__ */

@@ -22,6 +22,6 @@
 #define DBUS_TEST_INTERFACE          "org.tizen.machinelearning.service.test"
 #define DBUS_TEST_PATH               "/Org/Tizen/MachineLearning/Service/Test"
 
-#define DBUS_TEST_I_GET_STATE_HANDLER       "handle_get_state"
+#define DBUS_TEST_I_GET_STATE_HANDLER       "handle-get-state"
 
 #endif /* __TEST_DBUS_INTERFACE_H__ */
