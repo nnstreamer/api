@@ -14,6 +14,7 @@
 #include <gst/gst.h>
 #include <gst/gstbuffer.h>
 #include <gst/app/app.h>
+#include <string.h>
 
 #include "ml-api-internal.h"
 #include "ml-api-service.h"

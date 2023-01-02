@@ -2,7 +2,7 @@
 /**
  * Copyright (c) 2021 Samsung Electronics Co., Ltd. All Rights Reserved.
  *
- * @file ml-api-internal-nnstreamer.h
+ * @file ml-api-inference-internal.h
  * @date 20 October 2021
  * @brief ML C-API internal header with NNStreamer deps.
  *        This file should NOT be exported to SDK or devel package.
