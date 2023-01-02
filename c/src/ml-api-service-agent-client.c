@@ -24,6 +24,8 @@ ml_service_set_pipeline (const char *name, const char *pipeline_desc)
 {
   int ret = ML_ERROR_NONE;
   MachinelearningServicePipeline *mlsp;
+  GError *err = NULL;
+  gboolean result;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
@@ -43,10 +45,17 @@ ml_service_set_pipeline (const char *name, const char *pipeline_desc)
         "Failed to get dbus proxy.");
   }
 
-  machinelearning_service_pipeline_call_set_pipeline_sync (mlsp, name,
-      pipeline_desc, &ret, NULL, NULL);
+  result = machinelearning_service_pipeline_call_set_pipeline_sync (mlsp, name,
+      pipeline_desc, &ret, NULL, &err);
 
   g_object_unref (mlsp);
+
+  if (!result) {
+    _ml_error_report ("Failed to invoke the method set_pipeline (%s).",
+        err ? err->message : "Unknown error");
+    ret = ML_ERROR_IO_ERROR;
+  }
+  g_clear_error (&err);
 
   return ret;
 }
@@ -59,6 +68,8 @@ ml_service_get_pipeline (const char *name, char **pipeline_desc)
 {
   int ret = ML_ERROR_NONE;
   MachinelearningServicePipeline *mlsp;
+  GError *err = NULL;
+  gboolean result;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
@@ -78,10 +89,17 @@ ml_service_get_pipeline (const char *name, char **pipeline_desc)
         "Failed to get dbus proxy.");
   }
 
-  machinelearning_service_pipeline_call_get_pipeline_sync (mlsp, name,
-      &ret, pipeline_desc, NULL, NULL);
+  result = machinelearning_service_pipeline_call_get_pipeline_sync (mlsp, name,
+      &ret, pipeline_desc, NULL, &err);
 
   g_object_unref (mlsp);
+
+  if (!result) {
+    _ml_error_report ("Failed to invoke the method get_pipeline (%s).",
+        err ? err->message : "Unknown error");
+    ret = ML_ERROR_IO_ERROR;
+  }
+  g_clear_error (&err);
 
   return ret;
 }
@@ -94,6 +112,8 @@ ml_service_delete_pipeline (const char *name)
 {
   int ret = ML_ERROR_NONE;
   MachinelearningServicePipeline *mlsp;
+  GError *err = NULL;
+  gboolean result;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
@@ -108,10 +128,17 @@ ml_service_delete_pipeline (const char *name)
         "Failed to get dbus proxy.");
   }
 
-  machinelearning_service_pipeline_call_delete_pipeline_sync (mlsp, name,
-      &ret, NULL, NULL);
+  result = machinelearning_service_pipeline_call_delete_pipeline_sync (mlsp,
+      name, &ret, NULL, &err);
 
   g_object_unref (mlsp);
+
+  if (!result) {
+    _ml_error_report ("Failed to invoke the method delete_pipeline (%s).",
+        err ? err->message : "Unknown error");
+    ret = ML_ERROR_IO_ERROR;
+  }
+  g_clear_error (&err);
 
   return ret;
 }
@@ -127,6 +154,8 @@ ml_service_launch_pipeline (const char *name, ml_service_h * h)
   _ml_service_server_s *server;
   gint64 out_id;
   MachinelearningServicePipeline *mlsp;
+  GError *err = NULL;
+  gboolean result;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
@@ -140,10 +169,17 @@ ml_service_launch_pipeline (const char *name, ml_service_h * h)
         "Failed to get dbus proxy.");
   }
 
-  machinelearning_service_pipeline_call_launch_pipeline_sync (mlsp, name,
-      &ret, &out_id, NULL, NULL);
+  result = machinelearning_service_pipeline_call_launch_pipeline_sync (mlsp,
+      name, &ret, &out_id, NULL, &err);
 
   g_object_unref (mlsp);
+
+  if (!result) {
+    _ml_error_report ("Failed to invoke the method launch_pipeline (%s).",
+        err ? err->message : "Unknown error");
+    ret = ML_ERROR_IO_ERROR;
+  }
+  g_clear_error (&err);
 
   if (ML_ERROR_NONE != ret) {
     _ml_error_report_return (ret,
@@ -179,6 +215,8 @@ ml_service_start_pipeline (ml_service_h h)
   ml_service_s *mls = (ml_service_s *) h;
   _ml_service_server_s *server;
   MachinelearningServicePipeline *mlsp;
+  GError *err = NULL;
+  gboolean result;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
@@ -193,10 +231,17 @@ ml_service_start_pipeline (ml_service_h h)
   }
 
   server = (_ml_service_server_s *) mls->priv;
-  machinelearning_service_pipeline_call_start_pipeline_sync (mlsp, server->id,
-      &ret, NULL, NULL);
+  result = machinelearning_service_pipeline_call_start_pipeline_sync (mlsp,
+      server->id, &ret, NULL, &err);
 
   g_object_unref (mlsp);
+
+  if (!result) {
+    _ml_error_report ("Failed to invoke the method start_pipeline (%s).",
+        err ? err->message : "Unknown error");
+    ret = ML_ERROR_IO_ERROR;
+  }
+  g_clear_error (&err);
 
   return ret;
 }
@@ -211,6 +256,8 @@ ml_service_stop_pipeline (ml_service_h h)
   ml_service_s *mls = (ml_service_s *) h;
   _ml_service_server_s *server;
   MachinelearningServicePipeline *mlsp;
+  GError *err = NULL;
+  gboolean result;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
@@ -225,10 +272,17 @@ ml_service_stop_pipeline (ml_service_h h)
   }
 
   server = (_ml_service_server_s *) mls->priv;
-  machinelearning_service_pipeline_call_stop_pipeline_sync (mlsp, server->id,
-      &ret, NULL, NULL);
+  result = machinelearning_service_pipeline_call_stop_pipeline_sync (mlsp,
+      server->id, &ret, NULL, &err);
 
   g_object_unref (mlsp);
+
+  if (!result) {
+    _ml_error_report ("Failed to invoke the method stop_pipeline (%s).",
+        err ? err->message : "Unknown error");
+    ret = ML_ERROR_IO_ERROR;
+  }
+  g_clear_error (&err);
 
   return ret;
 }
@@ -240,10 +294,12 @@ int
 ml_service_get_pipeline_state (ml_service_h h, ml_pipeline_state_e * state)
 {
   int ret = ML_ERROR_NONE;
-  gint _state;
+  gint _state = ML_PIPELINE_STATE_UNKNOWN;
   ml_service_s *mls = (ml_service_s *) h;
   _ml_service_server_s *server;
   MachinelearningServicePipeline *mlsp;
+  GError *err = NULL;
+  gboolean result;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
@@ -262,12 +318,19 @@ ml_service_get_pipeline_state (ml_service_h h, ml_pipeline_state_e * state)
   }
 
   server = (_ml_service_server_s *) mls->priv;
-  machinelearning_service_pipeline_call_get_state_sync (mlsp, server->id,
-      &ret, &_state, NULL, NULL);
+  result = machinelearning_service_pipeline_call_get_state_sync (mlsp,
+      server->id, &ret, &_state, NULL, &err);
 
   *state = (ml_pipeline_state_e) _state;
 
   g_object_unref (mlsp);
+
+  if (!result) {
+    _ml_error_report ("Failed to invoke the method get_state (%s).",
+        err ? err->message : "Unknown error");
+    ret = ML_ERROR_IO_ERROR;
+  }
+  g_clear_error (&err);
 
   return ret;
 }

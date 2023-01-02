@@ -58,6 +58,8 @@ ml_service_destroy (ml_service_h h)
   if (ML_SERVICE_TYPE_SERVER_PIPELINE == mls->type) {
     MachinelearningServicePipeline *mlsp;
     _ml_service_server_s *server = (_ml_service_server_s *) mls->priv;
+    GError *err = NULL;
+    gboolean result;
 
     mlsp = _get_proxy_new_for_bus_sync ();
     if (!mlsp) {
@@ -66,10 +68,17 @@ ml_service_destroy (ml_service_h h)
       goto exit;
     }
 
-    machinelearning_service_pipeline_call_destroy_pipeline_sync (mlsp,
-        server->id, &ret, NULL, NULL);
+    result = machinelearning_service_pipeline_call_destroy_pipeline_sync (mlsp,
+        server->id, &ret, NULL, &err);
 
     g_object_unref (mlsp);
+
+    if (!result) {
+      _ml_error_report ("Failed to invoke the method destroy_pipeline (%s).",
+          err ? err->message : "Unknown error");
+      ret = ML_ERROR_IO_ERROR;
+    }
+    g_clear_error (&err);
 
     if (ML_ERROR_INVALID_PARAMETER == ret)
       _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
