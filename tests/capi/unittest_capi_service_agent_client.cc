@@ -717,6 +717,7 @@ main (int argc, char **argv)
   }
 
   set_feature_state (ML_FEATURE, NOT_CHECKED_YET);
+  set_feature_state (ML_FEATURE_INFERENCE, NOT_CHECKED_YET);
   set_feature_state (ML_FEATURE_SERVICE, NOT_CHECKED_YET);
 
   return result;
