@@ -283,6 +283,9 @@ __setup_in_out_tensors (ml_single * single_h)
   ml_tensors_data_s *out_tensors = &single_h->out_tensors;
 
   /** Setup input buffer */
+  _ml_tensors_info_free (in_tensors->info);
+  ml_tensors_info_clone (in_tensors->info, &single_h->in_info);
+
   in_tensors->num_tensors = single_h->in_info.num_tensors;
   for (i = 0; i < single_h->in_info.num_tensors; i++) {
     /** memory will be allocated by tensor_filter_single */
@@ -292,6 +295,9 @@ __setup_in_out_tensors (ml_single * single_h)
   }
 
   /** Setup output buffer */
+  _ml_tensors_info_free (out_tensors->info);
+  ml_tensors_info_clone (out_tensors->info, &single_h->out_info);
+
   out_tensors->num_tensors = single_h->out_info.num_tensors;
   for (i = 0; i < single_h->out_info.num_tensors; i++) {
     /** memory will be allocated by tensor_filter_single */
@@ -1075,6 +1081,8 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
   }
 
   /* Setup input and output memory buffers for invoke */
+  ml_tensors_info_create (&single_h->in_tensors.info);
+  ml_tensors_info_create (&single_h->out_tensors.info);
   __setup_in_out_tensors (single_h);
 
   *single = single_h;
