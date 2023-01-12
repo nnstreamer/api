@@ -1030,7 +1030,7 @@ int ml_check_element_availability (const char *element_name, bool *available);
  * error:
  * // Destroy the pipeline and unregister custom filter.
  * ml_pipeline_stop (pipe);
- * ml_pipeline_destroy (handle);
+ * ml_pipeline_destroy (pipe);
  * ml_pipeline_custom_easy_filter_unregister (custom);
  * @endcode
  */
