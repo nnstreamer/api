@@ -763,6 +763,47 @@ _ml_tensors_data_clone_no_alloc (const ml_tensors_data_s * data_src,
 }
 
 /**
+ * @brief Copies the tensor data frame.
+ */
+int
+ml_tensors_data_clone (const ml_tensors_data_h in, ml_tensors_data_h * out)
+{
+  int status;
+  unsigned int i;
+  ml_tensors_data_s *_in, *_out;
+
+  check_feature_state (ML_FEATURE);
+
+  if (in == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, in, is NULL. It should be a valid ml_tensors_data_h handle, which is usually created by ml_tensors_data_create ().");
+
+  if (out == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, out, is NULL. It should be a valid pointer to ml_tensors_data_h handle.");
+
+  _in = (ml_tensors_data_s *) in;
+  G_LOCK_UNLESS_NOLOCK (*_in);
+
+  status = ml_tensors_data_create (_in->info, out);
+  if (status != ML_ERROR_NONE) {
+    _ml_loge ("Failed to create new handle to copy tensor data.");
+    goto error;
+  }
+
+  _out = (ml_tensors_data_s *) (*out);
+
+  for (i = 0; i < _out->num_tensors; ++i) {
+    memcpy (_out->tensors[i].tensor, _in->tensors[i].tensor,
+        _in->tensors[i].size);
+  }
+
+error:
+  G_UNLOCK_UNLESS_NOLOCK (*_in);
+  return status;
+}
+
+/**
  * @brief Allocates a tensor data frame with the given tensors info. (more info in nnstreamer.h)
  */
 int
