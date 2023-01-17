@@ -281,6 +281,20 @@ void _ml_tensors_info_free (ml_tensors_info_s *info);
 int _ml_tensors_data_clone_no_alloc (const ml_tensors_data_s * data_src, ml_tensors_data_h * data);
 
 /**
+ * @brief Copies the tensor data frame.
+ * @since_tizen 7.5
+ * @param[in] in The handle of tensors data to be cloned.
+ * @param[out] out The handle of tensors data. The caller is responsible for freeing the allocated data with ml_tensors_data_destroy().
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
+ * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
+ * @todo Consider adding new API from tizen 7.5.
+ */
+int ml_tensors_data_clone (const ml_tensors_data_h in, ml_tensors_data_h *out);
+
+/**
  * @brief Replaces string.
  * This function deallocates the input source string.
  * This is copied from nnstreamer/tensor_common.c by the nnstreamer maintainer.
