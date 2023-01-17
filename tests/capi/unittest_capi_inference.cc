@@ -3573,6 +3573,78 @@ TEST (nnstreamer_capi_util, data_set_tdata_05_n)
 }
 
 /**
+ * @brief Test utility functions - clone data.
+ */
+TEST (nnstreamer_capi_util, data_clone_01_p)
+{
+  int status;
+  ml_tensors_info_h info;
+  ml_tensors_data_h data;
+  ml_tensors_data_h data_out;
+  ml_tensor_dimension dim = { 5, 1, 1, 1 };
+  const int raw_data[5] = { 10, 20, 30, 40, 50 };
+  int *result = nullptr;
+  size_t data_size, result_size;
+
+  ml_tensors_info_create (&info);
+  ml_tensors_info_set_count (info, 1);
+  ml_tensors_info_set_tensor_type (info, 0, ML_TENSOR_TYPE_INT32);
+  ml_tensors_info_set_tensor_dimension (info, 0, dim);
+  ml_tensors_info_get_tensor_size (info, 0, &data_size);
+
+  ml_tensors_data_create (info, &data);
+  ml_tensors_data_set_tensor_data (data, 0, (const void *) raw_data, data_size);
+
+  /* test code : clone data and compare raw value. */
+  status = ml_tensors_data_clone (data, &data_out);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_tensors_data_get_tensor_data (data_out, 0, (void **) &result, &result_size);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  for (unsigned int i = 0; i < 5; i++)
+    EXPECT_EQ (result[i], raw_data[i]);
+
+  ml_tensors_info_destroy (info);
+  ml_tensors_data_destroy (data);
+  ml_tensors_data_destroy (data_out);
+}
+
+/**
+ * @brief Test utility functions - clone data.
+ */
+TEST (nnstreamer_capi_util, data_clone_02_n)
+{
+  int status;
+  ml_tensors_info_h info;
+  ml_tensors_data_h data;
+  ml_tensor_dimension dim = { 5, 1, 1, 1 };
+
+  ml_tensors_info_create (&info);
+  ml_tensors_info_set_count (info, 1);
+  ml_tensors_info_set_tensor_type (info, 0, ML_TENSOR_TYPE_INT32);
+  ml_tensors_info_set_tensor_dimension (info, 0, dim);
+  ml_tensors_data_create (info, &data);
+
+  status = ml_tensors_data_clone (data, nullptr);
+  EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
+
+  ml_tensors_info_destroy (info);
+  ml_tensors_data_destroy (data);
+}
+
+/**
+ * @brief Test utility functions - clone data.
+ */
+TEST (nnstreamer_capi_util, data_clone_03_n)
+{
+  int status;
+  ml_tensors_data_h data_out;
+
+  status = ml_tensors_data_clone (nullptr, &data_out);
+  EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
+}
+
+/**
  * @brief Test to replace string.
  */
 TEST (nnstreamer_capi_util, replaceStr01)
