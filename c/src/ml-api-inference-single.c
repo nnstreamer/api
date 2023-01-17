@@ -486,11 +486,15 @@ invoke_thread (void *arg)
 
     input = single_h->input;
     output = single_h->output;
+    /* Set null to prevent double-free. */
+    single_h->input = NULL;
 
     single_h->invoking = TRUE;
     g_mutex_unlock (&single_h->mutex);
     status = __invoke (single_h, input, output);
     g_mutex_lock (&single_h->mutex);
+    /* Clear input data after invoke is done. */
+    ml_tensors_data_destroy (input);
     single_h->invoking = FALSE;
 
     if (status != ML_ERROR_NONE) {
@@ -1385,7 +1389,14 @@ _ml_single_invoke_internal (ml_single_h single,
     single_h->output = *output;
   }
 
-  single_h->input = input;
+  /**
+   * Clone input data here to prevent use-after-free case.
+   * We should release single_h->input after calling __invoke() function.
+   */
+  status = ml_tensors_data_clone (input, &single_h->input);
+  if (status != ML_ERROR_NONE)
+    goto exit;
+
   single_h->state = RUNNING;
   single_h->free_output = need_alloc;
 
@@ -1417,6 +1428,8 @@ _ml_single_invoke_internal (ml_single_h single,
      */
     single_h->invoking = TRUE;
     status = __invoke (single_h, single_h->input, single_h->output);
+    ml_tensors_data_destroy (single_h->input);
+    single_h->input = NULL;
     single_h->invoking = FALSE;
     single_h->state = IDLE;
 
