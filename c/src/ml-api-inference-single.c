@@ -396,6 +396,12 @@ __invoke (ml_single * single_h, ml_tensors_data_h in, ml_tensors_data_h out)
   in_data = (ml_tensors_data_s *) in;
   out_data = (ml_tensors_data_s *) out;
 
+  /* Prevent error case when input or output is null in invoke thread. */
+  if (!in_data || !out_data) {
+    _ml_error_report ("Failed to invoke a model, invalid data handle.");
+    return ML_ERROR_STREAMS_PIPE;
+  }
+
   in_tensors = (GstTensorMemory *) in_data->tensors;
   out_tensors = (GstTensorMemory *) out_data->tensors;
 
