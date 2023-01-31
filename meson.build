@@ -33,6 +33,7 @@ nnstreamer_dep = dependency('nnstreamer')
 
 if get_option('enable-ml-service')
   libsystemd_dep = dependency('libsystemd')
+  sqlite_dep = dependency('sqlite3')
 
   leveldb_dep = dependency('leveldb', required: false)
   if (not leveldb_dep.found())
