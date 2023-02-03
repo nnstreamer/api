@@ -15,14 +15,16 @@
 #endif
 
 #include <glib.h>
-
-#include <system_info.h>
-#include <restriction.h>        /* device policy manager */
-#include <privacy_privilege_manager.h>
 #include <nnstreamer.h>
 #include "ml-api-internal.h"
 #include "ml-api-inference-internal.h"
 #include "ml-api-inference-pipeline-internal.h"
+
+#include <system_info.h>
+#include <restriction.h>        /* device policy manager */
+#if TIZENPPM
+#include <privacy_privilege_manager.h>
+#endif
 #if TIZEN5PLUS
 #include <mm_resource_manager.h>
 #endif
@@ -135,6 +137,7 @@ typedef struct
 
 /** The following functions are either not used or supported in Tizen 4 */
 #if TIZEN5PLUS
+#if TIZENPPM
 /**
  * @brief Function to check tizen privilege.
  */
@@ -157,6 +160,9 @@ ml_tizen_check_privilege (const gchar * privilege)
 
   return status;
 }
+#else
+#define ml_tizen_check_privilege(...) (ML_ERROR_NONE)
+#endif /* TIZENPPM */
 
 /**
  * @brief Function to check device policy.
@@ -852,7 +858,7 @@ ml_tizen_mm_convert_element (ml_pipeline_h pipe, gchar ** result,
 {
   return ML_ERROR_NOT_SUPPORTED;
 }
-#endif
+#endif /* TIZEN5PLUS */
 
 /**
  * @brief Releases the resource handle of Tizen.

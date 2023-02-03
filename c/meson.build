@@ -21,7 +21,9 @@ if (get_option('enable-tizen'))
 
   if get_option('enable-tizen-privilege-check')
     tizen_deps += dependency('dpm')
-    tizen_deps += dependency('capi-privacy-privilege-manager')
+    if ((tizenVmajor < 7) or (tizenVmajor == 7 and tizenVminor < 5))
+      tizen_deps += dependency('capi-privacy-privilege-manager')
+    endif
     tizen_deps += dependency('mm-camcorder')
 
     if (tizenVmajor >= 5)

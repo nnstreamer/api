@@ -106,6 +106,9 @@ typedef enum {
 #define TIZENMMCONF 1
 #endif
 #endif
+#if ((TIZENVERSION < 7) || (TIZENVERSION == 7 && TIZENVERSIONMINOR < 5))
+#define TIZENPPM 1
+#endif
 
 #else /* __TIZEN__ */
 #define check_feature_state(...)
@@ -118,6 +121,9 @@ typedef enum {
 #ifndef TIZENMMCONF
 #define TIZENMMCONF 0
 #endif /* TIZENMMCONF */
+#ifndef TIZENPPM
+#define TIZENPPM 0
+#endif /* TIZENPPM */
 
 #define EOS_MESSAGE_TIME_LIMIT 100
 #define WAIT_PAUSED_TIME_LIMIT 100
