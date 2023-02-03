@@ -83,12 +83,14 @@ BuildRequires:	meson >= 0.50.0
 %if %{with tizen}
 %if 0%{?enable_tizen_privilege}
 BuildRequires:	pkgconfig(dpm)
+%if (0%{tizen_version_major} < 7) || (0%{?tizen_version_major} == 7 && 0%{?tizen_version_minor} < 5)
 BuildRequires:	pkgconfig(capi-privacy-privilege-manager)
+%endif
 BuildRequires:	pkgconfig(mm-camcorder)
 %if 0%{tizen_version_major} >= 5
 BuildRequires:	pkgconfig(mm-resource-manager)
 %endif
-%endif
+%endif # enable_tizen_privilege
 BuildRequires:	pkgconfig(capi-system-info)
 BuildRequires:	pkgconfig(capi-base-common)
 BuildRequires:	pkgconfig(dlog)

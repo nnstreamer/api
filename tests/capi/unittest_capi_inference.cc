@@ -68,6 +68,7 @@ typedef struct {
   } while (0)
 
 #if defined (__TIZEN__)
+#if TIZENPPM
 /**
  * @brief Test NNStreamer pipeline construct with Tizen cam
  * @details Failure case to check permission (camera privilege)
@@ -105,6 +106,7 @@ TEST (nnstreamer_capi_construct_destruct, tizen_cam_fail_02_n)
 
   g_free (pipeline);
 }
+#endif /* TIZENPPM */
 
 /**
  * @brief Test NNStreamer pipeline construct with Tizen internal API.
