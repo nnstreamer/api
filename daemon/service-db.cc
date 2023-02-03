@@ -45,6 +45,7 @@ MLServiceLevelDB::MLServiceLevelDB (std::string path)
  */
 MLServiceLevelDB::~MLServiceLevelDB ()
 {
+  disconnectDB ();
   leveldb_readoptions_destroy (db_roptions);
   leveldb_writeoptions_destroy (db_woptions);
 }
@@ -70,9 +71,9 @@ MLServiceLevelDB::connectDB ()
     g_warning ("Error! Failed to open database located at '%s': leveldb_open() has returned an error: %s",
         path.c_str (), err);
     leveldb_free (err);
+    disconnectDB ();
     throw std::runtime_error ("Failed to connectDB()!");
   }
-  return;
 }
 
 /**
@@ -99,7 +100,7 @@ void
 MLServiceLevelDB::put (const std::string name,
     const std::string value)
 {
-  char *err = NULL;
+  char *err = nullptr;
 
   if (name.empty() || value.empty())
     throw std::invalid_argument ("Invalid name or value parameters!");
@@ -113,8 +114,7 @@ MLServiceLevelDB::put (const std::string name,
   if (err != nullptr) {
     g_warning
         ("Failed to call leveldb_put () for the name, '%s' of the pipeline description (size: %zu bytes / description: '%.40s')",
-        name.c_str (), value.size (),
-        value.c_str ());
+        name.c_str (), value.size (), value.c_str ());
     g_warning ("leveldb_put () has returned an error: %s", err);
     leveldb_free (err);
     throw std::runtime_error ("Failed to put()!");
@@ -130,8 +130,8 @@ void
 MLServiceLevelDB::get (const std::string name,
     std::string & out_value)
 {
-  char *err = NULL;
-  char *value = NULL;
+  char *err = nullptr;
+  char *value = nullptr;
   gsize read_len;
 
   if (name.empty())
@@ -148,15 +148,16 @@ MLServiceLevelDB::get (const std::string name,
         ("Failed to call leveldb_get() for the name %s. Error message is %s.",
         name.c_str (), err);
     leveldb_free (err);
-    leveldb_free (value);
+    if (value)
+      leveldb_free (value);
     throw std::runtime_error ("Failed to get()!");
   }
 
   if (!value) {
     g_warning
-        ("Failed to find the key %s. The key should be set before reading it",
+        ("Failed to find the key %s. The key should be set before reading it.",
         name.c_str ());
-    throw std::invalid_argument ("Fail to find the key");
+    throw std::invalid_argument ("Failed to find the key.");
   }
 
   out_value = std::string (value, read_len);
@@ -171,8 +172,8 @@ MLServiceLevelDB::get (const std::string name,
 void
 MLServiceLevelDB::del (const std::string name)
 {
-  char *err = NULL;
-  char *value = NULL;
+  char *err = nullptr;
+  char *value = nullptr;
   gsize read_len;
 
   if (name.empty())
@@ -185,18 +186,20 @@ MLServiceLevelDB::del (const std::string name)
   /* Check whether the key exists or not. */
   value = leveldb_get (db_obj, db_roptions, (char *) hash, sizeof (std::size_t) * 2,
       &read_len, &err);
-  if (!value) {
+  if (!value || err) {
     g_warning
-        ("Failed to find the key %s. The key should be set before reading it",
+        ("Failed to find the key %s. The key should be set before reading it.",
         name.c_str ());
-    throw std::invalid_argument ("Fail to find the key");
+    if (err)
+      leveldb_free (err);
+    throw std::invalid_argument ("Failed to find the key.");
   }
   leveldb_free (value);
 
   leveldb_delete (db_obj, db_woptions, (char *) hash, sizeof (std::size_t) * 2, &err);
   if (err != nullptr) {
-    g_warning ("Failed to delete the key %s. Error message is %s", name.c_str (),
-        err);
+    g_warning ("Failed to delete the key %s. Error message is %s.",
+        name.c_str (), err);
     leveldb_free (err);
     throw std::runtime_error ("Failed to del()!");
   }
