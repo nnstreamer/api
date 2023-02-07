@@ -79,7 +79,7 @@ static gboolean dbus_cb_core_set_pipeline (MachinelearningServicePipeline *obj,
 
   try {
     db.connectDB ();
-    db.put (service_name, pipeline_desc);
+    db.set_pipeline (service_name, pipeline_desc);
   } catch (const std::invalid_argument &e) {
     _E ("An exception occurred during write to the DB. Error message: %s", e.what ());
     result = -EINVAL;
@@ -116,7 +116,7 @@ static gboolean dbus_cb_core_get_pipeline (MachinelearningServicePipeline *obj,
 
   try {
     db.connectDB ();
-    db.get (service_name, stored_pipeline_description);
+    db.get_pipeline (service_name, stored_pipeline_description);
   } catch (const std::invalid_argument &e) {
     _E ("An exception occurred during read the DB. Error message: %s", e.what ());
     result = -EINVAL;
@@ -152,7 +152,7 @@ static gboolean dbus_cb_core_delete_pipeline (MachinelearningServicePipeline *ob
 
   try {
     db.connectDB ();
-    db.del (service_name);
+    db.delete_pipeline (service_name);
   } catch (const std::invalid_argument &e) {
     _E ("An exception occurred during delete an item in the DB. Error message: %s", e.what ());
     result = -EINVAL;
@@ -195,7 +195,7 @@ static gboolean dbus_cb_core_launch_pipeline (MachinelearningServicePipeline *ob
   /** get pipeline description from the DB */
   try {
     db.connectDB ();
-    db.get (service_name, stored_pipeline_description);
+    db.get_pipeline (service_name, stored_pipeline_description);
   } catch (const std::invalid_argument &e) {
     _E ("An exception occurred during read the DB. Error message: %s", e.what ());
     result = -EINVAL;

@@ -43,6 +43,7 @@ if get_option('enable-ml-service')
     gio_dep,
     gst_dep,
     leveldb_dep,
+    sqlite_dep,
     libsystemd_dep
   ]
 

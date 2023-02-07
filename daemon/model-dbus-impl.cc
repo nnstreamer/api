@@ -60,7 +60,7 @@ dbus_cb_model_set_path (MachinelearningServiceModel *obj,
 
   try {
     db.connectDB();
-    db.put (name, std::string (path));
+    db.set_model (name, std::string (path));
   }
   catch (const std::runtime_error & e)
   {
@@ -100,7 +100,7 @@ dbus_cb_model_get_path (MachinelearningServiceModel *obj,
 
   try {
     db.connectDB ();
-    db.get (name, ret_path);
+    db.get_model (name, ret_path);
   }
   catch (const std::invalid_argument & e)
   {
@@ -139,7 +139,7 @@ gdbus_cb_model_delete (MachinelearningServiceModel *obj,
 
   try {
     db.connectDB ();
-    db.del (name);
+    db.delete_model (name);
   }
   catch (const std::invalid_argument & e)
   {
