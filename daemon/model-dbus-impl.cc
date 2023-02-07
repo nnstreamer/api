@@ -56,7 +56,7 @@ dbus_cb_model_set_path (MachinelearningServiceModel *obj,
     const gchar *path)
 {
   int ret = 0;
-  IMLServiceDB &db = MLServiceLevelDB::getInstance ();
+  MLServiceDB &db = MLServiceDB::getInstance ();
 
   try {
     db.connectDB();
@@ -96,7 +96,7 @@ dbus_cb_model_get_path (MachinelearningServiceModel *obj,
 {
   int ret = 0;
   std::string ret_path;
-  IMLServiceDB & db = MLServiceLevelDB::getInstance ();
+  MLServiceDB &db = MLServiceDB::getInstance ();
 
   try {
     db.connectDB ();
@@ -135,7 +135,7 @@ gdbus_cb_model_delete (MachinelearningServiceModel *obj,
     const gchar *name)
 {
   int ret = 0;
-  IMLServiceDB & db = MLServiceLevelDB::getInstance ();
+  MLServiceDB &db = MLServiceDB::getInstance ();
 
   try {
     db.connectDB ();
@@ -218,7 +218,7 @@ probe_model_module (void *data)
   return 0;
 
 out_disconnect:
-  gdbus_disconnect_signal (g_gdbus_instance, 
+  gdbus_disconnect_signal (g_gdbus_instance,
     ARRAY_SIZE (handler_infos), handler_infos);
 
 out:
@@ -239,7 +239,7 @@ init_model_module (void *data) { }
 static void
 exit_model_module (void *data)
 {
-  gdbus_disconnect_signal (g_gdbus_instance, 
+  gdbus_disconnect_signal (g_gdbus_instance,
     ARRAY_SIZE (handler_infos), handler_infos);
   gdbus_put_model_instance (&g_gdbus_instance);
 }
