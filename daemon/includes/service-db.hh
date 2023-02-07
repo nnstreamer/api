@@ -13,7 +13,7 @@
 #ifndef __SERVICE_DB_HH__
 #define __SERVICE_DB_HH__
 
-#include <leveldb/c.h>
+#include <sqlite3.h>
 #include <iostream>
 
 /**
@@ -29,9 +29,12 @@ public:
 
   virtual void connectDB ();
   virtual void disconnectDB ();
-  virtual void put (const std::string name, const std::string value);
-  virtual void get (std::string name, std::string &out_value);
-  virtual void del (std::string name);
+  virtual void set_pipeline (const std::string name, const std::string description);
+  virtual void get_pipeline (const std::string name, std::string &description);
+  virtual void delete_pipeline (const std::string name);
+  virtual void set_model (const std::string name, const std::string model);
+  virtual void get_model (const std::string name, std::string &model);
+  virtual void delete_model (const std::string name);
 
   static MLServiceDB & getInstance (void);
 
@@ -39,10 +42,9 @@ private:
   MLServiceDB (std::string path);
   virtual ~MLServiceDB ();
 
-  std::string path;
-  leveldb_t *db_obj;
-  leveldb_readoptions_t *db_roptions;
-  leveldb_writeoptions_t *db_woptions;
+  std::string _path;
+  bool _initialized;
+  sqlite3 *_db;
 };
 
 #endif /* __SERVICE_DB_HH__ */
