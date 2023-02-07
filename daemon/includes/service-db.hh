@@ -17,49 +17,27 @@
 #include <iostream>
 
 /**
- * @brief Interface for database operation of ML service
+ * @brief Class for ML-Service Database.
  */
-class IMLServiceDB
+class MLServiceDB
 {
 public:
-  /**
-   * @brief Destroy the IMLServiceDB object
-   */
-  virtual ~IMLServiceDB ()
-  {
-  };
-  virtual void connectDB () = 0;
-  virtual void disconnectDB () = 0;
-  virtual void put (const std::string key, const std::string value) = 0;
-  virtual void get (const std::string name,
-      std::string & out_value) = 0;
-  virtual void del (const std::string name) = 0;
-};
+  MLServiceDB (const MLServiceDB &) = delete;
+  MLServiceDB (MLServiceDB &&) = delete;
+  MLServiceDB & operator= (const MLServiceDB &) = delete;
+  MLServiceDB & operator= (MLServiceDB &&) = delete;
 
-/**
- * @brief Class for implementation of IMLServiceDB
- */
-class MLServiceLevelDB : public IMLServiceDB
-{
-public:
-  MLServiceLevelDB (const MLServiceLevelDB &) = delete;
-  MLServiceLevelDB (MLServiceLevelDB &&) = delete;
-  MLServiceLevelDB & operator= (const MLServiceLevelDB &) = delete;
-  MLServiceLevelDB & operator= (MLServiceLevelDB &&) = delete;
-
-  virtual void connectDB () override;
-  virtual void disconnectDB () override;
-  virtual void put (const std::string name,
-      const std::string value) override;
-  virtual void get (std::string name,
-      std::string & out_value) override;
+  virtual void connectDB ();
+  virtual void disconnectDB ();
+  virtual void put (const std::string name, const std::string value);
+  virtual void get (std::string name, std::string &out_value);
   virtual void del (std::string name);
 
-  static IMLServiceDB & getInstance (void);
+  static MLServiceDB & getInstance (void);
 
 private:
-  MLServiceLevelDB (std::string path);
-  virtual ~MLServiceLevelDB ();
+  MLServiceDB (std::string path);
+  virtual ~MLServiceDB ();
 
   std::string path;
   leveldb_t *db_obj;

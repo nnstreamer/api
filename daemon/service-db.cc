@@ -18,22 +18,22 @@
 #define DB_KEY_PREFIX         MESON_KEY_PREFIX
 
 /**
- * @brief Get an instance of IMLServiceDB, which is created only once at runtime.
- * @return IMLServiceDB& IMLServiceDB instance
+ * @brief Get an instance of MLServiceDB, which is created only once at runtime.
+ * @return MLServiceDB& MLServiceDB instance
  */
-IMLServiceDB & MLServiceLevelDB::getInstance (void)
+MLServiceDB & MLServiceDB::getInstance (void)
 {
-  static MLServiceLevelDB instance (ML_DATABASE_PATH);
+  static MLServiceDB instance (ML_DATABASE_PATH);
 
   return instance;
 }
 
 /**
- * @brief Construct a new MLServiceLevelDB object
+ * @brief Construct a new MLServiceDB object.
  * @param path database path
  */
-MLServiceLevelDB::MLServiceLevelDB (std::string path)
-:  path (path), db_obj (nullptr), db_roptions (nullptr), db_woptions (nullptr)
+MLServiceDB::MLServiceDB (std::string path)
+: path (path), db_obj (nullptr), db_roptions (nullptr), db_woptions (nullptr)
 {
   db_roptions = leveldb_readoptions_create ();
   db_woptions = leveldb_writeoptions_create ();
@@ -41,9 +41,9 @@ MLServiceLevelDB::MLServiceLevelDB (std::string path)
 }
 
 /**
- * @brief Destroy the MLServiceLevelDB object
+ * @brief Destroy the MLServiceDB object.
  */
-MLServiceLevelDB::~MLServiceLevelDB ()
+MLServiceDB::~MLServiceDB ()
 {
   disconnectDB ();
   leveldb_readoptions_destroy (db_roptions);
@@ -51,10 +51,10 @@ MLServiceLevelDB::~MLServiceLevelDB ()
 }
 
 /**
- * @brief Connect the level DB and initialize the private variables.
+ * @brief Connect to ML Service DB and initialize the private variables.
  */
 void
-MLServiceLevelDB::connectDB ()
+MLServiceDB::connectDB ()
 {
   char *err = nullptr;
   leveldb_options_t *db_options;
@@ -77,12 +77,12 @@ MLServiceLevelDB::connectDB ()
 }
 
 /**
- * @brief Disconnect the level DB
+ * @brief Disconnect the DB.
  * @note LevelDB does not support multi-process and it might cause
  * the IO exception when multiple clients write the key simultaneously.
  */
 void
-MLServiceLevelDB::disconnectDB ()
+MLServiceDB::disconnectDB ()
 {
   if (db_obj) {
     leveldb_close (db_obj);
@@ -93,12 +93,11 @@ MLServiceLevelDB::disconnectDB ()
 /**
  * @brief Set the value with the given name.
  * @note If the name already exists, the pipeline description is overwritten.
- * @param[in] name Unique name to retrieve the associated pipeline description.
+ * @param[in] name Unique name to set the associated pipeline description.
  * @param[in] value The pipeline description to be stored.
  */
 void
-MLServiceLevelDB::put (const std::string name,
-    const std::string value)
+MLServiceDB::put (const std::string name, const std::string value)
 {
   char *err = nullptr;
 
@@ -127,8 +126,7 @@ MLServiceLevelDB::put (const std::string name,
  * @param[out] value The pipeline corresponding with the given name.
  */
 void
-MLServiceLevelDB::get (const std::string name,
-    std::string & out_value)
+MLServiceDB::get (const std::string name, std::string & out_value)
 {
   char *err = nullptr;
   char *value = nullptr;
@@ -170,7 +168,7 @@ MLServiceLevelDB::get (const std::string name,
  * @param[in] name The unique name to delete
  */
 void
-MLServiceLevelDB::del (const std::string name)
+MLServiceDB::del (const std::string name)
 {
   char *err = nullptr;
   char *value = nullptr;

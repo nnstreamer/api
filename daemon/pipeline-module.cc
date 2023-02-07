@@ -75,7 +75,7 @@ static gboolean dbus_cb_core_set_pipeline (MachinelearningServicePipeline *obj,
         GDBusMethodInvocation *invoc, const gchar *service_name, const gchar *pipeline_desc, gpointer user_data)
 {
   gint result = 0;
-  IMLServiceDB &db = MLServiceLevelDB::getInstance ();
+  MLServiceDB &db = MLServiceDB::getInstance ();
 
   try {
     db.connectDB ();
@@ -112,7 +112,7 @@ static gboolean dbus_cb_core_get_pipeline (MachinelearningServicePipeline *obj,
 {
   gint result = 0;
   std::string stored_pipeline_description;
-  IMLServiceDB &db = MLServiceLevelDB::getInstance ();
+  MLServiceDB &db = MLServiceDB::getInstance ();
 
   try {
     db.connectDB ();
@@ -148,7 +148,7 @@ static gboolean dbus_cb_core_delete_pipeline (MachinelearningServicePipeline *ob
         GDBusMethodInvocation *invoc, const gchar *service_name, gpointer user_data)
 {
   gint result = 0;
-  IMLServiceDB &db = MLServiceLevelDB::getInstance ();
+  MLServiceDB &db = MLServiceDB::getInstance ();
 
   try {
     db.connectDB ();
@@ -189,7 +189,7 @@ static gboolean dbus_cb_core_launch_pipeline (MachinelearningServicePipeline *ob
   GstElement *pipeline = NULL;
   pipeline_s *p;
 
-  IMLServiceDB &db = MLServiceLevelDB::getInstance ();
+  MLServiceDB &db = MLServiceDB::getInstance ();
   std::string stored_pipeline_description;
 
   /** get pipeline description from the DB */
