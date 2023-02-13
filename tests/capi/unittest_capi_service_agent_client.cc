@@ -690,6 +690,22 @@ TEST_F (MLServiceAgentTest, query_request_00_n)
 }
 
 /**
+ * @brief Test the usecase of ml_servive for model. TBU.
+ */
+TEST_F (MLServiceAgentTest, model_00)
+{
+  int status;
+
+  const gchar *key = "yolov5";
+  const gchar *model = "yolov5s-fp16.tflite";
+  unsigned int version;
+
+  status = ml_service_model_register (key, model, &version);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  EXPECT_EQ (1U, version);
+}
+
+/**
  * @brief Main gtest
  */
 int
