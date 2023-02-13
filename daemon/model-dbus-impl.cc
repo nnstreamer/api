@@ -41,9 +41,51 @@ gdbus_put_model_instance (MachinelearningServiceModel ** instance)
 }
 
 /**
+ * @brief The callback function of Register method
+ *
+ * @param obj Proxy instance.
+ * @param invoc Method invocation handle.
+ * @param name The name of target model.
+ * @param path The file path of target.
+ * @return @c TRUE if the request is handled. FALSE if the service is not available.
+ */
+static gboolean
+gdbus_cb_model_register (MachinelearningServiceModel *obj,
+    GDBusMethodInvocation *invoc,
+    const gchar *name,
+    const gchar *path)
+{
+  int ret = 0;
+  guint version = 0U;
+  MLServiceDB & db = MLServiceDB::getInstance ();
+
+  try {
+    /**
+     * @todo register the given model to the DB, and get the version of the model.
+    */
+   version = 1U;
+  } catch (...) {
+    g_critical ("DB error occurred. Failed to register the model: %s", name);
+    ret = -EIO;
+  }
+
+  db.disconnectDB ();
+  machinelearning_service_model_complete_register (obj, invoc, version, ret);
+
+  return TRUE;
+}
+
+/**
  * @brief Event handler list of Model interface
  */
-static struct gdbus_signal_info handler_infos[] = { };
+static struct gdbus_signal_info handler_infos[] = {
+  {
+    .signal_name = DBUS_MODEL_I_HANDLER_REGISTER,
+    .cb = G_CALLBACK (gdbus_cb_model_register),
+    .cb_data = NULL,
+    .handler_id = 0,
+  },
+};
 
 /**
  * @brief The callback function for probing Model Interface module.
