@@ -68,7 +68,7 @@ typedef struct
 /**
  * @brief Internal function to get proxy of the pipeline d-bus interface
  */
-MachinelearningServicePipeline * _get_proxy_new_for_bus_sync (void);
+MachinelearningServicePipeline * _get_mlsp_proxy_new_for_bus_sync (void);
 
 #ifdef __cplusplus
 }
