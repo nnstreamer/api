@@ -334,3 +334,50 @@ ml_service_get_pipeline_state (ml_service_h h, ml_pipeline_state_e * state)
 
   return ret;
 }
+
+/**
+ * @brief TBU
+ */
+int
+ml_service_model_register (const char *key, const char *model_path,
+    unsigned int *version)
+{
+  int ret = ML_ERROR_NONE;
+  MachinelearningServiceModel *mlsm;
+  GError *err = NULL;
+  gboolean result;
+
+  check_feature_state (ML_FEATURE_SERVICE);
+
+  if (!key)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'key' is NULL. It should be a valid string");
+
+  if (!model_path)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'model_path' is NULL. It should be a valid string");
+
+  if (!version)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'version' is NULL. It should be a valid unsigned int pointer");
+
+  mlsm = _get_mlsm_proxy_new_for_bus_sync ();
+  if (!mlsm) {
+    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
+        "Failed to get dbus proxy.");
+  }
+
+  result = machinelearning_service_model_call_register_sync (mlsm,
+      key, model_path, version, &ret, NULL, &err);
+
+  g_object_unref (mlsm);
+
+  if (!result) {
+    _ml_error_report ("Failed to invoke the method register (%s).",
+        err ? err->message : "Unknown error");
+    ret = ML_ERROR_IO_ERROR;
+  }
+  g_clear_error (&err);
+
+  return ret;
+}

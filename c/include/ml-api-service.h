@@ -224,6 +224,11 @@ int ml_service_query_create (ml_option_h option, ml_service_h *handle);
 int ml_service_query_request (ml_service_h handle, const ml_tensors_data_h input, ml_tensors_data_h *output);
 
 /**
+ * @brief TBU
+ */
+int ml_service_model_register (const char *key, const char *model_path, unsigned int *version);
+
+/**
  * @}
  */
 #ifdef __cplusplus
