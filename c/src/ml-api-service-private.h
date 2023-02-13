@@ -18,6 +18,7 @@
 #include <ml-api-inference-internal.h>
 
 #include "pipeline-dbus.h"
+#include "model-dbus.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -69,6 +70,11 @@ typedef struct
  * @brief Internal function to get proxy of the pipeline d-bus interface
  */
 MachinelearningServicePipeline * _get_mlsp_proxy_new_for_bus_sync (void);
+
+/**
+ * @brief Internal function to get proxy of the model d-bus interface
+ */
+MachinelearningServiceModel * _get_mlsm_proxy_new_for_bus_sync (void);
 
 #ifdef __cplusplus
 }

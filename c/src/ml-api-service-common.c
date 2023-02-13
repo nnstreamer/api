@@ -41,6 +41,32 @@ _get_mlsp_proxy_new_for_bus_sync (void)
 }
 
 /**
+ * @brief Internal function to get proxy of the model d-bus interface
+ */
+MachinelearningServiceModel *
+_get_mlsm_proxy_new_for_bus_sync (void)
+{
+  MachinelearningServiceModel *mlsm;
+
+  /** @todo deal with GError */
+  mlsm = machinelearning_service_model_proxy_new_for_bus_sync
+      (G_BUS_TYPE_SYSTEM, G_DBUS_PROXY_FLAGS_NONE,
+      "org.tizen.machinelearning.service",
+      "/Org/Tizen/MachineLearning/Service/Model", NULL, NULL);
+
+  if (mlsm)
+    return mlsm;
+
+  /** Try with session type */
+  mlsm = machinelearning_service_model_proxy_new_for_bus_sync
+      (G_BUS_TYPE_SESSION, G_DBUS_PROXY_FLAGS_NONE,
+      "org.tizen.machinelearning.service",
+      "/Org/Tizen/MachineLearning/Service/Model", NULL, NULL);
+
+  return mlsm;
+}
+
+/**
  * @brief Destroy the pipeline of given ml_service_h
  */
 int
