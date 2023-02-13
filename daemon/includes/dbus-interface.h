@@ -44,4 +44,6 @@
 #define DBUS_MODEL_I_HANDLER_GET_PATH     "handle-get-path"
 #define DBUS_MODEL_I_HANDLER_DELETE       "handle-delete"
 
+#define DBUS_MODEL_I_HANDLER_REGISTER     "handle-register"
+
 #endif /* __GDBUS_INTERFACE_H__ */
