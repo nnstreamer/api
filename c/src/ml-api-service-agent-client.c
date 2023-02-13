@@ -39,7 +39,7 @@ ml_service_set_pipeline (const char *name, const char *pipeline_desc)
         "The parameter, 'pipeline_desc' is NULL. It should be a valid string.");
   }
 
-  mlsp = _get_proxy_new_for_bus_sync ();
+  mlsp = _get_mlsp_proxy_new_for_bus_sync ();
   if (!mlsp) {
     _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
         "Failed to get dbus proxy.");
@@ -83,7 +83,7 @@ ml_service_get_pipeline (const char *name, char **pipeline_desc)
         "The parameter 'pipeline_desc'. It should be a valid char**");
   }
 
-  mlsp = _get_proxy_new_for_bus_sync ();
+  mlsp = _get_mlsp_proxy_new_for_bus_sync ();
   if (!mlsp) {
     _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
         "Failed to get dbus proxy.");
@@ -122,7 +122,7 @@ ml_service_delete_pipeline (const char *name)
         "The parameter, 'name' is NULL, It should be a valid string");
   }
 
-  mlsp = _get_proxy_new_for_bus_sync ();
+  mlsp = _get_mlsp_proxy_new_for_bus_sync ();
   if (!mlsp) {
     _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
         "Failed to get dbus proxy.");
@@ -163,7 +163,7 @@ ml_service_launch_pipeline (const char *name, ml_service_h * h)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'h' is NULL. It should be a valid ml_service_h");
 
-  mlsp = _get_proxy_new_for_bus_sync ();
+  mlsp = _get_mlsp_proxy_new_for_bus_sync ();
   if (!mlsp) {
     _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
         "Failed to get dbus proxy.");
@@ -224,7 +224,7 @@ ml_service_start_pipeline (ml_service_h h)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'h' is NULL. It should be a valid ml_service_h");
 
-  mlsp = _get_proxy_new_for_bus_sync ();
+  mlsp = _get_mlsp_proxy_new_for_bus_sync ();
   if (!mlsp) {
     _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
         "Failed to get dbus proxy.");
@@ -265,7 +265,7 @@ ml_service_stop_pipeline (ml_service_h h)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'h' is NULL. It should be a valid ml_service_h");
 
-  mlsp = _get_proxy_new_for_bus_sync ();
+  mlsp = _get_mlsp_proxy_new_for_bus_sync ();
   if (!mlsp) {
     _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
         "Failed to get dbus proxy.");
@@ -311,7 +311,7 @@ ml_service_get_pipeline_state (ml_service_h h, ml_pipeline_state_e * state)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'state' is NULL. It should be a valid ml_pipeline_state_e pointer");
 
-  mlsp = _get_proxy_new_for_bus_sync ();
+  mlsp = _get_mlsp_proxy_new_for_bus_sync ();
   if (!mlsp) {
     _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
         "Failed to get dbus proxy.");

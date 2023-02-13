@@ -18,7 +18,7 @@
  * @brief Internal function to get proxy of the pipeline d-bus interface
  */
 MachinelearningServicePipeline *
-_get_proxy_new_for_bus_sync (void)
+_get_mlsp_proxy_new_for_bus_sync (void)
 {
   MachinelearningServicePipeline *mlsp;
 
@@ -61,7 +61,7 @@ ml_service_destroy (ml_service_h h)
     GError *err = NULL;
     gboolean result;
 
-    mlsp = _get_proxy_new_for_bus_sync ();
+    mlsp = _get_mlsp_proxy_new_for_bus_sync ();
     if (!mlsp) {
       _ml_error_report ("Failed to get dbus proxy.");
       ret = ML_ERROR_INVALID_PARAMETER;
