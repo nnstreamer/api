@@ -694,7 +694,7 @@ _ml_tensors_data_create_no_alloc (const ml_tensors_info_h info,
 
   if (data == NULL)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, data, is NULL. It should be a valid ml_tensors_info_h handle, which is usually created by ml_tensors_info_create ().");
+        "The parameter, data, is NULL. It should be a valid ml_tensors_info_h handle that may hold a space for ml_tensors_info_h. E.g., ml_tensors_data_h data; _ml_tensors_data_create_no_alloc (info, &data);.");
 
   /* init null */
   *data = NULL;
@@ -780,7 +780,7 @@ ml_tensors_data_clone (const ml_tensors_data_h in, ml_tensors_data_h * out)
 
   if (out == NULL)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, out, is NULL. It should be a valid pointer to ml_tensors_data_h handle.");
+        "The parameter, out, is NULL. It should be a valid pointer to a space that can hold a ml_tensors_data_h handle. E.g., ml_tensors_data_h out; ml_tensors_data_clone (in, &out);.");
 
   _in = (ml_tensors_data_s *) in;
   G_LOCK_UNLESS_NOLOCK (*_in);
@@ -821,7 +821,7 @@ ml_tensors_data_create (const ml_tensors_info_h info, ml_tensors_data_h * data)
         "The parameter, info, is NULL. It should be a valid pointer of ml_tensors_info_h, which is usually created by ml_tensors_info_create().");
   if (data == NULL)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, data, is NULL. It should be a valid ml_tensors_data_h handle, which is usually created by ml_tensors_data_create ().");
+        "The parameter, data, is NULL. It should be a valid space to hold a ml_tensors_data_h handle. E.g., ml_tensors_data_h data; ml_tensors_data_create (info, &data);.");
 
   status = ml_tensors_info_validate (info, &valid);
   if (status != ML_ERROR_NONE)
