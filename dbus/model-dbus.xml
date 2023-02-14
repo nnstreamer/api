@@ -1,22 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <node name="/Org/Tizen/MachineLearning/Service">
   <interface name="org.tizen.machinelearning.service.model">
-    <!-- Set the file path of the designated neural network model -->
-    <method name="SetPath">
-      <arg type="s" name="name" direction="in" />
-      <arg type="s" name="path" direction="in" />
-      <arg type="i" name="result" direction="out" />
-    </method>
-    <!-- Get the file path of the designated neural network model -->
-    <method name="GetPath">
-      <arg type="s" name="name" direction="in" />
-      <arg type="s" name="path" direction="out" />
-      <arg type="i" name="result" direction="out" />
-    </method>
-    <!-- Delete the file path of the designated neural network model -->
-    <method name="Delete">
-      <arg type="s" name="name" direction="in" />
-      <arg type="i" name="result" direction="out" />
-    </method>
   </interface>
 </node>
