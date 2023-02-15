@@ -159,6 +159,7 @@ BuildRequires:  pkgconfig(libsystemd)
 BuildRequires:  pkgconfig(leveldb)
 BuildRequires:  pkgconfig(sqlite3)
 BuildRequires:  dbus
+BuildRequires:  pkgconfig(capi-appfw-package-manager)
 %endif
 
 %description
