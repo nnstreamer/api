@@ -21,6 +21,7 @@
 #include "gdbus-util.h"
 #include "log.h"
 #include "dbus-interface.h"
+#include "pkg-mgr.h"
 
 static GMainLoop *g_mainloop;
 static gboolean verbose = FALSE;
@@ -108,13 +109,20 @@ main (int argc, char **argv)
 
   init_modules (NULL);
   if (postinit () < 0)
-    _E ("cannot init system\n");
+    _E ("cannot init system");
+
+  /* Register package manager callback */
+  if (pkg_mgr_init () < 0) {
+    _E ("cannot init package manager");
+  }
 
   g_main_loop_run (g_mainloop);
   exit_modules (NULL);
 
   gdbus_put_system_connection ();
   g_main_loop_unref (g_mainloop);
+
+  pkg_mgr_deinit();
 
   return 0;
 }
