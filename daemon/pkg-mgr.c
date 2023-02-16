@@ -86,6 +86,96 @@ static void _pkg_mgr_event_cb (const char *type, const char *package,
 }
 
 /**
+ * @brief Callback function to be invoked for checking installed package.
+ * @param handle package info handle
+ * @param user_data user data to be passed
+ * @return true continue with the next iteration of the loop
+ * @return false break out of the loop
+ */
+static bool
+_pkg_mgr_installed_cb (package_info_h handle, void *user_data)
+{
+  int ret = 0;
+  GDir *dir;
+  gchar *pkg_path = NULL;
+  gchar *pkg_name = NULL;
+
+  ret = package_info_get_package(handle, &pkg_name);
+  if (ret != PACKAGE_MANAGER_ERROR_NONE) {
+    _E ("package_info_get_package() failed: %d", ret);
+    return false;
+  }
+
+  /**
+   * TODO
+   * 1) Check the directory and xml file of the installed resource package.
+   * 2) If target package has model and xml files but not registered in database, register them.
+   */
+  _I ("Pkg name: %s", pkg_name);
+  pkg_path = g_strdup_printf ("/opt/usr/globalapps/%s/shared/res", pkg_name);
+
+  dir = g_dir_open (pkg_path, 0, NULL);
+  if (dir) {
+    const gchar *file_name;
+    while ((file_name = g_dir_read_name (dir))) {
+      _I ("- file: %s", file_name);
+    }
+    g_dir_close (dir);
+  }
+
+  ret = package_info_destroy (handle);
+  if (ret != PACKAGE_MANAGER_ERROR_NONE) {
+    _E ("package_info_destroy() failed: %d", ret);
+    return false;
+  }
+
+  g_free (pkg_name);
+  g_free (pkg_path);
+  return true;
+}
+
+/**
+ * @brief Check the installed resource package and register them into database.
+ */
+static int
+pkg_mgr_get_check_installed_pkg(void)
+{
+  int ret = 0;
+  int count = -1;
+  package_manager_filter_h handle = NULL;
+
+  ret = package_manager_filter_create (&handle);
+  if (ret != PACKAGE_MANAGER_ERROR_NONE) {
+    _E ("package_manager_filter_create() failed: %d", ret);
+    return -1;
+  }
+
+  ret = package_manager_filter_add_string (handle, PACKAGE_MANAGER_PKGINFO_PROP_TYPE, "rpk");
+  if (ret != PACKAGE_MANAGER_ERROR_NONE) {
+    _E ("package_manager_filter_add_string() failed: %d", ret);
+    return -1;
+  }
+
+  ret = package_manager_filter_count (handle, &count);
+  if (ret != PACKAGE_MANAGER_ERROR_NONE) {
+    _E ("package_manager_filter_count() failed: %d", ret);
+    return -1;
+  }
+
+  _I ("Installed count: %d", count);
+
+  ret = package_manager_filter_foreach_package_info (handle, _pkg_mgr_installed_cb, NULL);
+  if (ret != PACKAGE_MANAGER_ERROR_NONE) {
+    _E ("package_manager_filter_foreach_package_info() failed: %d", ret);
+    return -1;
+  }
+
+  package_manager_filter_destroy (handle);
+
+  return 0;
+}
+
+/**
  * @brief Initialize the package manager handler for the resource package.
  */
 int pkg_mgr_init(void)
@@ -111,6 +201,13 @@ int pkg_mgr_init(void)
     _E ("package_manager_set_event_cb() failed: %d", ret);
     return -1;
   }
+
+  ret = pkg_mgr_get_check_installed_pkg();
+  if (ret != 0) {
+    _E ("pkg_mgr_get_check_installed_pkg() failed: %d", ret);
+    return -1;
+  }
+
   return 0;
 }
 
