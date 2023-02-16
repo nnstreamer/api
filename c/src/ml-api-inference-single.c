@@ -563,7 +563,8 @@ ml_single_update_info (ml_single_h single,
   __setup_in_out_tensors (single);
   _ml_error_report_return_continue_iferr (ml_single_get_output_info (single,
           out_info),
-      "Fetching output info after configuring input information has failed with %d error code.");
+      "Fetching output info after configuring input information has failed with %d error code.",
+      _ERRNO);
 
   return ML_ERROR_NONE;
 }
