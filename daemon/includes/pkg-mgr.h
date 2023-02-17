@@ -22,6 +22,7 @@
 extern "C" {
 #endif /* __cplusplus */
 
+#if defined(__TIZEN__)
 #include <glib.h>
 #include <stdio.h>
 
@@ -39,7 +40,10 @@ int pkg_mgr_init (void);
  * @return @c 0 on success. Otherwise a negative error value.
  */
 int pkg_mgr_deinit (void);
-
+#else
+#define pkg_mgr_init(...) ((int) 0)
+#define pkg_mgr_deinit(...) ((int) 0)
+#endif /* __TIZEN__ */
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

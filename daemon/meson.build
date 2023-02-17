@@ -1,8 +1,11 @@
 # Machine Learing Agent
 if get_option('enable-ml-service')
   nns_ml_agent_incs = include_directories('includes')
-  nns_ml_agent_srcs = files('main.c', 'modules.c', 'gdbus-util.c', 'pkg-mgr.c',
+  nns_ml_agent_srcs = files('main.c', 'modules.c', 'gdbus-util.c',
     'service-db.cc', 'pipeline-module.cc', 'model-dbus-impl.cc')
+  if get_option('enable-tizen')
+    nns_ml_agent_srcs += files('pkg-mgr.c')
+  endif
 
   # Generate GDbus header and code
   gdbus_prog = find_program('gdbus-codegen', required : true)
@@ -45,12 +48,11 @@ if get_option('enable-ml-service')
     gst_dep,
     leveldb_dep,
     sqlite_dep,
-    libsystemd_dep,
-    appfw_package_manager_dep
+    libsystemd_dep
   ]
 
   if (get_option('enable-tizen'))
-    ai_service_daemon_deps += dependency('dlog')
+    ai_service_daemon_deps += [appfw_package_manager_dep, dependency('dlog')]
   endif
 
   serviceDBPath = get_option('service-db-path')

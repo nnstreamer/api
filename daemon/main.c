@@ -122,7 +122,8 @@ main (int argc, char **argv)
   gdbus_put_system_connection ();
   g_main_loop_unref (g_mainloop);
 
-  pkg_mgr_deinit();
+  if (pkg_mgr_deinit() < 0)
+    _W ("cannot finalize package manager");
 
   return 0;
 }
