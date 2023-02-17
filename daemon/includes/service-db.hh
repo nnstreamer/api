@@ -32,6 +32,7 @@ public:
   virtual void set_pipeline (const std::string name, const std::string description);
   virtual void get_pipeline (const std::string name, std::string &description);
   virtual void delete_pipeline (const std::string name);
+  /** @todo update methods to handle nn model */
   virtual void set_model (const std::string name, const std::string model);
   virtual void get_model (const std::string name, std::string &model);
   virtual void delete_model (const std::string name);
@@ -41,6 +42,8 @@ public:
 private:
   MLServiceDB (std::string path);
   virtual ~MLServiceDB ();
+
+  void initDB ();
 
   std::string _path;
   bool _initialized;
