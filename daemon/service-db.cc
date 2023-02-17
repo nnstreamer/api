@@ -69,14 +69,76 @@ MLServiceDB::~MLServiceDB ()
 }
 
 /**
+ * @brief Create table and handle database version.
+ */
+void
+MLServiceDB::initDB ()
+{
+  int rc;
+  char *sql;
+  char *errmsg = nullptr;
+
+  if (_initialized)
+    return;
+
+  /**
+   * @todo handle database version
+   * - check old level db and insert pipeline description into sqlite.
+   * - check database info (TBL_DB_INFO), fetch data and update table schema when version is updated, ...
+   * - need transaction
+   */
+  rc = sqlite3_exec (_db, "BEGIN TRANSACTION;", nullptr, nullptr, &errmsg);
+  if (rc != SQLITE_OK) {
+    g_warning ("Failed to begin transaction: %s (%d)", errmsg, rc);
+    sqlite3_clear_errmsg (errmsg);
+    return;
+  }
+
+  /* Create tables. */
+  sql = g_strdup_printf ("CREATE TABLE IF NOT EXISTS %s;", g_mlsvc_table_schema[TBL_DB_INFO]);
+  rc = sqlite3_exec (_db, sql, nullptr, nullptr, &errmsg);
+  g_free (sql);
+  if (rc != SQLITE_OK) {
+    g_warning ("Failed to create table for database info: %s (%d)", errmsg, rc);
+    sqlite3_clear_errmsg (errmsg);
+    return;
+  }
+
+  sql = g_strdup_printf ("CREATE TABLE IF NOT EXISTS %s;", g_mlsvc_table_schema[TBL_PIPELINE_DESCRIPTION]);
+  rc = sqlite3_exec (_db, sql, nullptr, nullptr, &errmsg);
+  g_free (sql);
+  if (rc != SQLITE_OK) {
+    g_warning ("Failed to create table for pipeline description: %s (%d)", errmsg, rc);
+    sqlite3_clear_errmsg (errmsg);
+    return;
+  }
+
+  sql = g_strdup_printf ("CREATE TABLE IF NOT EXISTS %s;", g_mlsvc_table_schema[TBL_MODEL_INFO]);
+  rc = sqlite3_exec (_db, sql, nullptr, nullptr, &errmsg);
+  g_free (sql);
+  if (rc != SQLITE_OK) {
+    g_warning ("Failed to create table for model info: %s (%d)", errmsg, rc);
+    sqlite3_clear_errmsg (errmsg);
+    return;
+  }
+
+  rc = sqlite3_exec (_db, "END TRANSACTION;", nullptr, nullptr, &errmsg);
+  if (rc != SQLITE_OK) {
+    g_warning ("Failed to end transaction: %s (%d)", errmsg, rc);
+    sqlite3_clear_errmsg (errmsg);
+    return;
+  }
+
+  _initialized = true;
+}
+
+/**
  * @brief Connect to ML Service DB and initialize the private variables.
  */
 void
 MLServiceDB::connectDB ()
 {
   int rc;
-  char *sql;
-  char *errmsg = nullptr;
 
   if (_db != nullptr)
     return;
@@ -87,59 +149,7 @@ MLServiceDB::connectDB ()
     goto error;
   }
 
-  /* Create table and handle database version. */
-  if (!_initialized) {
-    /**
-     * @todo handle database version
-     * - check old level db and insert pipeline description into sqlite.
-     * - check database info (TBL_DB_INFO), fetch data and update table schema when version is updated, ...
-     * - need transaction
-     */
-
-    rc = sqlite3_exec (_db, "BEGIN TRANSACTION;", nullptr, nullptr, &errmsg);
-    if (rc != SQLITE_OK) {
-      g_warning ("Failed to begin transaction: %s (%d)", errmsg, rc);
-      sqlite3_clear_errmsg (errmsg);
-      goto error;
-    }
-
-    /* Create tables. */
-    sql = g_strdup_printf ("CREATE TABLE IF NOT EXISTS %s;", g_mlsvc_table_schema[TBL_DB_INFO]);
-    rc = sqlite3_exec (_db, sql, nullptr, nullptr, &errmsg);
-    g_free (sql);
-    if (rc != SQLITE_OK) {
-      g_warning ("Failed to create table for database info: %s (%d)", errmsg, rc);
-      sqlite3_clear_errmsg (errmsg);
-      goto error;
-    }
-
-    sql = g_strdup_printf ("CREATE TABLE IF NOT EXISTS %s;", g_mlsvc_table_schema[TBL_PIPELINE_DESCRIPTION]);
-    rc = sqlite3_exec (_db, sql, nullptr, nullptr, &errmsg);
-    g_free (sql);
-    if (rc != SQLITE_OK) {
-      g_warning ("Failed to create table for pipeline description: %s (%d)", errmsg, rc);
-      sqlite3_clear_errmsg (errmsg);
-      goto error;
-    }
-
-    sql = g_strdup_printf ("CREATE TABLE IF NOT EXISTS %s;", g_mlsvc_table_schema[TBL_MODEL_INFO]);
-    rc = sqlite3_exec (_db, sql, nullptr, nullptr, &errmsg);
-    g_free (sql);
-    if (rc != SQLITE_OK) {
-      g_warning ("Failed to create table for model info: %s (%d)", errmsg, rc);
-      sqlite3_clear_errmsg (errmsg);
-      goto error;
-    }
-
-    rc = sqlite3_exec (_db, "END TRANSACTION;", nullptr, nullptr, &errmsg);
-    if (rc != SQLITE_OK) {
-      g_warning ("Failed to end transaction: %s (%d)", errmsg, rc);
-      sqlite3_clear_errmsg (errmsg);
-      goto error;
-    }
-
-    _initialized = true;
-  }
+  initDB ();
 
 error:
   if (!_initialized) {
