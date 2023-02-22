@@ -268,7 +268,15 @@ MLServiceDB::delete_pipeline (const std::string name)
   if (rc != SQLITE_OK) {
     g_warning ("Failed to delete pipeline description with name %s: %s (%d)", name.c_str (), errmsg, rc);
     sqlite3_clear_errmsg (errmsg);
-    throw std::invalid_argument ("Failed to delete pipeline description.");
+    throw std::runtime_error ("Failed to delete pipeline description.");
+  }
+
+  /* count the number of rows modified */
+  rc = sqlite3_changes (_db);
+  if (rc == 0) {
+    g_warning ("No pipeline description with name %s: %s (%d)", name.c_str (), errmsg, rc);
+    sqlite3_clear_errmsg (errmsg);
+    throw std::invalid_argument ("There is no pipeline description with the given name.");
   }
 }
 
