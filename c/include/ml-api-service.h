@@ -224,9 +224,99 @@ int ml_service_query_create (ml_option_h option, ml_service_h *handle);
 int ml_service_query_request (ml_service_h handle, const ml_tensors_data_h input, ml_tensors_data_h *output);
 
 /**
- * @brief TBU
+ * @brief Registers new information of a neural network model.
+ * @since_tizen 7.5
+ * @remarks Only one model can be activated with given @a name. If same name is already registered in machine learning service, this returns no error and old model will be deactivated when the flag @a activate is true.
+ * @param[in] name The unique name to indicate the model.
+ * @param[in] path The path to neural network model.
+ * @param[in] activate The flag to set the model to be activated.
+ * @param[in] description Nullable, description for neural network model.
+ * @param[out] version The version of registered model.
+ * @return 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
  */
-int ml_service_model_register (const char *key, const char *model_path, unsigned int *version);
+int ml_service_model_register (const char *name, const char *path, const bool activate, const char *description, unsigned int *version);
+
+/**
+ * @brief Updates the description of neural network model with given @a name and @a version.
+ * @since_tizen 7.5
+ * @param[in] name The unique name to indicate the model.
+ * @param[in] version The version of registered model.
+ * @param[in] description The description for neural network model.
+ * @return 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
+ */
+int ml_service_model_update_description (const char *name, const unsigned int version, const char *description);
+
+/**
+ * @brief Activates a neural network model with given @a name and @a version.
+ * @since_tizen 7.5
+ * @param[in] name The unique name to indicate the model.
+ * @param[in] version The version of registered model.
+ * @return 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
+ */
+int ml_service_model_activate (const char *name, const unsigned int version);
+
+/**
+ * @brief Gets the information of neural network model with given @a name and @ version.
+ * @since_tizen 7.5
+ * @param[in] name The unique name to indicate the model.
+ * @param[in] version The version of registered model.
+ * @param[out] info The handle of model. The caller should release the returned handle using ml_info_destroy().
+ * @return 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
+ * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
+ */
+int ml_service_model_get (const char *name, const unsigned int version, ml_info_h *info);
+
+/**
+ * @brief Gets the information of activated neural network model with given @a name.
+ * @since_tizen 7.5
+ * @param[in] name The unique name to indicate the model.
+ * @param[out] info The handle of activated model. The caller should release the returned handle using ml_info_destroy().
+ * @return 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
+ * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
+ */
+int ml_service_model_get_activated (const char *name, ml_info_h *info);
+
+/**
+ * @brief Gets the list of neural network model with given @a name.
+ * @since_tizen 7.5
+ * @param[in] name The unique name to indicate the model.
+ * @param[out] info_list The handles of registered model. The caller should release each handle using ml_info_destroy().
+ * @param[out] num Total number of registered model.
+ * @return 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
+ * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
+ */
+int ml_service_model_get_all (const char *name, ml_info_h *info_list[], unsigned int *num);
+
+/**
+ * @brief Deletes a model information with given @a name and @a version from machine learning service.
+ * @since_tizen 7.5
+ * @remarks This does not remove the model file from file system. If @a version is 0, machine learning service will delete all information with given @a name.
+ * @param[in] name The unique name to indicate the model.
+ * @param[in] version The version of registered model.
+ * @return 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
+ */
+int ml_service_model_delete (const char *name, const unsigned int version);
 
 /**
  * @}

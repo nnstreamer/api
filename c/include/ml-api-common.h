@@ -462,7 +462,37 @@ int ml_option_destroy (ml_option_h option);
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
  */
-int ml_option_set (ml_option_h option, const char* key, void *value, ml_data_destroy_cb destroy);
+int ml_option_set (ml_option_h option, const char *key, void *value, ml_data_destroy_cb destroy);
+
+/**
+ * @brief A handle of machine learning information, key-value pair.
+ * @since_tizen 7.5
+ */
+typedef void *ml_info_h;
+
+/**
+ * @brief Gets a value of key in ml-info instance.
+ * @since_tizen 7.5
+ * @param[in] info The handle of ml-info.
+ * @param[in] key The key to get the corresponding value.
+ * @param[out] value The value of the key. The caller should release the returned string using free().
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
+ */
+int ml_info_get (ml_info_h info, const char *key, char **value);
+
+/**
+ * @brief Destroys the ml-info instance.
+ * @since_tizen 7.5
+ * @param[in] info The handle to be destroyed.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
+ */
+int ml_info_destroy (ml_info_h info);
 
 /**
  * @}

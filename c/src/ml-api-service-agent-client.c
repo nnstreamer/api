@@ -339,8 +339,8 @@ ml_service_get_pipeline_state (ml_service_h h, ml_pipeline_state_e * state)
  * @brief TBU
  */
 int
-ml_service_model_register (const char *key, const char *model_path,
-    unsigned int *version)
+ml_service_model_register (const char *name, const char *path,
+    const bool activate, const char *description, unsigned int *version)
 {
   int ret = ML_ERROR_NONE;
   MachinelearningServiceModel *mlsm;
@@ -349,13 +349,13 @@ ml_service_model_register (const char *key, const char *model_path,
 
   check_feature_state (ML_FEATURE_SERVICE);
 
-  if (!key)
+  if (!name)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'key' is NULL. It should be a valid string");
+        "The parameter, 'name' is NULL. It should be a valid string");
 
-  if (!model_path)
+  if (!path)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'model_path' is NULL. It should be a valid string");
+        "The parameter, 'path' is NULL. It should be a valid string");
 
   if (!version)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -368,7 +368,7 @@ ml_service_model_register (const char *key, const char *model_path,
   }
 
   result = machinelearning_service_model_call_register_sync (mlsm,
-      key, model_path, version, &ret, NULL, &err);
+      name, path, version, &ret, NULL, &err);
 
   g_object_unref (mlsm);
 

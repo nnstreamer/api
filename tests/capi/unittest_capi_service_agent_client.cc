@@ -729,7 +729,7 @@ TEST_F (MLServiceAgentTest, model_00)
   const gchar *model = "yolov5s-fp16.tflite";
   unsigned int version;
 
-  status = ml_service_model_register (key, model, &version);
+  status = ml_service_model_register (key, model, false, nullptr, &version);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_EQ (1U, version);
 }
