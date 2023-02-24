@@ -737,7 +737,7 @@ TEST_F (MLServiceAgentTest, model_00)
       "mobilenet_v1_1.0_224_quant.tflite", NULL);
   ASSERT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
 
-  status = ml_service_model_register (key, test_model, &version);
+  status = ml_service_model_register (key, test_model, false, nullptr, &version);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_EQ (1U, version);
 

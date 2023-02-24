@@ -340,7 +340,7 @@ ml_service_get_pipeline_state (ml_service_h h, ml_pipeline_state_e * state)
  */
 int
 ml_service_model_register (const char *name, const char *path,
-    unsigned int *version)
+    const bool activate, const char *description, unsigned int *version)
 {
   int ret = ML_ERROR_NONE;
   MachinelearningServiceModel *mlsm;
