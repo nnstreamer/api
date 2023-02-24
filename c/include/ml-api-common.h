@@ -462,7 +462,21 @@ int ml_option_destroy (ml_option_h option);
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
  */
-int ml_option_set (ml_option_h option, const char* key, void *value, ml_data_destroy_cb destroy);
+int ml_option_set (ml_option_h option, const char *key, void *value, ml_data_destroy_cb destroy);
+
+/**
+ * @brief Gets a value of key in ml-option instance.
+ * @details This returns the pointer of memory in the handle. Do not deallocate the returned value. If you modify the returned memory (value), the contents of value is updated.
+ * @since_tizen 7.5
+ * @param[in] option The handle of ml-option.
+ * @param[in] key The key to get the corresponding value.
+ * @param[out] value The value of the key.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
+ */
+int ml_option_get (ml_option_h option, const char *key, void **value);
 
 /**
  * @}
