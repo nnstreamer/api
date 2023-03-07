@@ -156,6 +156,7 @@ BuildConflicts:	libarmcl-release
 %if 0%{?enable_ml_service}
 BuildRequires:  pkgconfig(libsystemd)
 BuildRequires:  pkgconfig(sqlite3)
+BuildRequires:  pkgconfig(json-glib-1.0)
 BuildRequires:  dbus
 BuildRequires:  pkgconfig(capi-appfw-package-manager)
 %endif

@@ -11,6 +11,7 @@
  */
 
 #include <glib/gstdio.h>
+#include <json-glib/json-glib.h>
 
 #include "ml-api-internal.h"
 #include "ml-api-service.h"
@@ -336,13 +337,14 @@ ml_service_get_pipeline_state (ml_service_h h, ml_pipeline_state_e * state)
 }
 
 /**
- * @brief TBU
+ * @brief Registers new information of a neural network model.
  */
 int
 ml_service_model_register (const char *name, const char *path,
     const bool activate, const char *description, unsigned int *version)
 {
   int ret = ML_ERROR_NONE;
+
   MachinelearningServiceModel *mlsm;
   GError *err = NULL;
   gboolean result;
@@ -383,8 +385,9 @@ ml_service_model_register (const char *name, const char *path,
         "Failed to get dbus proxy.");
   }
 
-  result = machinelearning_service_model_call_register_sync (mlsm,
-      name, path, version, &ret, NULL, &err);
+  result =
+      machinelearning_service_model_call_register_sync (mlsm, name, path,
+      activate, description ? description : "", version, &ret, NULL, &err);
 
   g_object_unref (mlsm);
 
@@ -393,6 +396,466 @@ ml_service_model_register (const char *name, const char *path,
         err ? err->message : "Unknown error");
     ret = ML_ERROR_IO_ERROR;
   }
+  g_clear_error (&err);
+
+  return ret;
+}
+
+/**
+ * @brief Updates the description of neural network model with given @a name and @a version.
+ */
+int
+ml_service_model_update_description (const char *name,
+    const unsigned int version, const char *description)
+{
+  int ret = ML_ERROR_NONE;
+
+  MachinelearningServiceModel *mlsm;
+  GError *err = NULL;
+  gboolean result;
+
+  check_feature_state (ML_FEATURE_SERVICE);
+
+  if (!name)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'name' is NULL. It should be a valid string");
+
+  if (version == 0U)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'version' is 0. It should be a valid unsigned int");
+
+  if (!description)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'description' is NULL. It should be a valid string");
+
+  mlsm = _get_mlsm_proxy_new_for_bus_sync ();
+  if (!mlsm) {
+    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
+        "Failed to get dbus proxy.");
+  }
+
+  result = machinelearning_service_model_call_update_description_sync (mlsm,
+      name, version, description, &ret, NULL, &err);
+
+  g_object_unref (mlsm);
+
+  if (!result) {
+    _ml_error_report ("Failed to invoke the method update_description (%s).",
+        err ? err->message : "Unknown error");
+    ret = ML_ERROR_IO_ERROR;
+  }
+
+  g_clear_error (&err);
+
+  return ret;
+}
+
+/**
+ * @brief Activates a neural network model with given @a name and @a version.
+ */
+int
+ml_service_model_activate (const char *name, const unsigned int version)
+{
+  int ret = ML_ERROR_NONE;
+
+  MachinelearningServiceModel *mlsm;
+  GError *err = NULL;
+  gboolean result;
+
+  check_feature_state (ML_FEATURE_SERVICE);
+
+  if (!name)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'name' is NULL. It should be a valid string");
+
+  if (version == 0U)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'version' is 0. It should be a valid unsigned int");
+
+  mlsm = _get_mlsm_proxy_new_for_bus_sync ();
+  if (!mlsm) {
+    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
+        "Failed to get dbus proxy.");
+  }
+
+  result = machinelearning_service_model_call_activate_sync (mlsm,
+      name, version, &ret, NULL, &err);
+
+  g_object_unref (mlsm);
+
+  if (!result) {
+    _ml_error_report ("Failed to invoke the method activate (%s).",
+        err ? err->message : "Unknown error");
+    ret = ML_ERROR_IO_ERROR;
+  }
+
+  g_clear_error (&err);
+
+  return ret;
+}
+
+/**
+ * @brief Gets the information of neural network model with given @a name and @a version.
+ */
+int
+ml_service_model_get (const char *name, const unsigned int version,
+    ml_option_h * info)
+{
+  int ret = ML_ERROR_NONE;
+
+  ml_option_h _info = NULL;
+  MachinelearningServiceModel *mlsm;
+  GError *err = NULL;
+  gboolean result;
+  gchar *description;
+
+  JsonParser *parser;
+  JsonObjectIter iter;
+  JsonNode *root_node;
+  JsonNode *member_node;
+  const gchar *member_name;
+  JsonObject *j_object;
+
+  check_feature_state (ML_FEATURE_SERVICE);
+
+  if (!name)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'name' is NULL. It should be a valid string");
+
+  if (!info)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'info' is NULL. It should be a valid pointer to ml_info_h");
+
+  mlsm = _get_mlsm_proxy_new_for_bus_sync ();
+  if (!mlsm) {
+    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
+        "Failed to get dbus proxy.");
+  }
+
+  result = machinelearning_service_model_call_get_sync (mlsm,
+      name, version, &description, &ret, NULL, &err);
+
+  g_object_unref (mlsm);
+
+  if (!result) {
+    _ml_error_report ("Failed to invoke the method get_activated (%s).",
+        err ? err->message : "Unknown error");
+    ret = ML_ERROR_IO_ERROR;
+    g_clear_error (&err);
+  }
+
+  if (ML_ERROR_NONE != ret) {
+    g_free (description);
+    return ret;
+  }
+
+  ret = ml_option_create (&_info);
+  if (ML_ERROR_NONE != ret) {
+    g_free (description);
+    return ret;
+  }
+
+  /* fill ml_info */
+  parser = json_parser_new ();
+  if (!parser) {
+    g_free (description);
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Failed to allocate memory for JsonParser. Out of memory?");
+  }
+
+  if (!json_parser_load_from_data (parser, description, -1, &err)) {
+    g_free (description);
+    g_error_free (err);
+    g_object_unref (parser);
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "Failed to parse the json string. %s", err->message);
+  }
+
+  root_node = json_parser_get_root (parser);
+  if (!root_node) {
+    g_object_unref (parser);
+    g_free (description);
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "Failed to get the root node of json string.");
+  }
+
+  j_object = json_node_get_object (root_node);
+  json_object_iter_init_ordered (&iter, j_object);
+  while (json_object_iter_next_ordered (&iter, &member_name, &member_node)) {
+    const gchar *value = json_object_get_string_member (j_object, member_name);
+    ml_option_set (_info, member_name, g_strdup (value), g_free);
+  }
+
+  g_object_unref (parser);
+  g_free (description);
+
+  *info = _info;
+
+  return ret;
+}
+
+/**
+ * @brief Gets the information of activated neural network model with given @a name.
+ */
+int
+ml_service_model_get_activated (const char *name, ml_option_h * info)
+{
+  int ret = ML_ERROR_NONE;
+
+  ml_option_h _info = NULL;
+  MachinelearningServiceModel *mlsm;
+  GError *err = NULL;
+  gboolean result;
+  gchar *description;
+
+  JsonParser *parser;
+  JsonObjectIter iter;
+  JsonNode *root_node;
+  JsonNode *member_node;
+  const gchar *member_name;
+  JsonObject *j_object;
+
+  check_feature_state (ML_FEATURE_SERVICE);
+
+  if (!name)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'name' is NULL. It should be a valid string");
+
+  if (!info)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'info' is NULL. It should be a valid pointer to ml_info_h");
+
+  mlsm = _get_mlsm_proxy_new_for_bus_sync ();
+  if (!mlsm) {
+    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
+        "Failed to get dbus proxy.");
+  }
+
+  result = machinelearning_service_model_call_get_activated_sync (mlsm,
+      name, &description, &ret, NULL, &err);
+
+  g_object_unref (mlsm);
+
+  if (!result) {
+    _ml_error_report ("Failed to invoke the method get_activated (%s).",
+        err ? err->message : "Unknown error");
+    ret = ML_ERROR_IO_ERROR;
+    g_clear_error (&err);
+  }
+
+  if (ML_ERROR_NONE != ret) {
+    g_free (description);
+    return ret;
+  }
+
+  ret = ml_option_create (&_info);
+  if (ML_ERROR_NONE != ret) {
+    g_free (description);
+    return ret;
+  }
+
+  /* fill ml_info */
+  parser = json_parser_new ();
+  if (!parser) {
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Failed to allocate memory for JsonParser. Out of memory?");
+  }
+
+  if (!json_parser_load_from_data (parser, description, -1, &err)) {
+    g_error_free (err);
+    g_object_unref (parser);
+    g_free (description);
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "Failed to parse the json string. %s", err->message);
+  }
+
+  root_node = json_parser_get_root (parser);
+  if (!root_node) {
+    g_object_unref (parser);
+    g_free (description);
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "Failed to get the root node of json string.");
+  }
+
+  j_object = json_node_get_object (root_node);
+  json_object_iter_init_ordered (&iter, j_object);
+  while (json_object_iter_next_ordered (&iter, &member_name, &member_node)) {
+    const gchar *value = json_object_get_string_member (j_object, member_name);
+    ml_option_set (_info, member_name, g_strdup (value), g_free);
+  }
+
+  g_object_unref (parser);
+  g_free (description);
+
+  *info = _info;
+
+  return ret;
+}
+
+/**
+ * @brief Gets the list of neural network model with given @a name.
+ */
+int
+ml_service_model_get_all (const char *name, ml_option_h * info_list[],
+    unsigned int *num)
+{
+  int ret = ML_ERROR_NONE;
+
+  ml_option_h *_info_list = NULL;
+  MachinelearningServiceModel *mlsm;
+  GError *err = NULL;
+  gboolean result;
+  gchar *description = NULL;
+  guint i;
+
+  JsonParser *parser;
+  JsonArray *array;
+
+  check_feature_state (ML_FEATURE_SERVICE);
+
+  if (!name)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'name' is NULL. It should be a valid string");
+
+  if (!info_list)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'info' is NULL. It should be a valid pointer to array of ml_info_h");
+
+  if (!num)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'num' is NULL. It should be a valid pointer to unsigned int");
+
+  mlsm = _get_mlsm_proxy_new_for_bus_sync ();
+  if (!mlsm) {
+    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
+        "Failed to get dbus proxy.");
+  }
+
+  result = machinelearning_service_model_call_get_all_sync (mlsm,
+      name, &description, &ret, NULL, &err);
+
+  g_object_unref (mlsm);
+
+  if (!result) {
+    _ml_error_report ("Failed to invoke the method get_activated (%s).",
+        err ? err->message : "Unknown error");
+    ret = ML_ERROR_IO_ERROR;
+    g_clear_error (&err);
+  }
+
+  if (ML_ERROR_NONE != ret) {
+    g_free (description);
+    return ret;
+  }
+
+  if (!description) {
+    *num = 0;
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "There is no model with name %s", name);
+  }
+
+  parser = json_parser_new ();
+  if (!parser) {
+    g_free (description);
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Failed to allocate memory for JsonParser. Out of memory?");
+  }
+
+  if (!json_parser_load_from_data (parser, description, -1, &err)) {
+    g_error_free (err);
+    g_object_unref (parser);
+    g_free (description);
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "Failed to parse the json string. %s", err->message);
+  }
+
+  array = json_node_get_array (json_parser_get_root (parser));
+  if (!array) {
+    g_object_unref (parser);
+    g_free (description);
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "Failed to get array from json string.");
+  }
+
+  *num = json_array_get_length (array);
+
+  if (*num == 0U) {
+    g_object_unref (parser);
+    g_free (description);
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "Failed to get array from json string.");
+  }
+
+  _info_list = g_new0 (ml_option_h, *num);
+  if (!_info_list) {
+    g_free (description);
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Failed to allocate memory for list of ml_info_h. Out of memory?");
+  }
+
+  for (i = 0; i < *num; i++) {
+    JsonObjectIter iter;
+    const gchar *member_name;
+    JsonNode *member_node;
+    JsonObject *object;
+
+    if (ml_option_create (&_info_list[i]) != ML_ERROR_NONE) {
+      g_object_unref (parser);
+      g_free (description);
+      _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+          "Failed to allocate memory for ml_option_h. Out of memory?");
+    }
+
+    object = json_array_get_object_element (array, i);
+    json_object_iter_init_ordered (&iter, object);
+    while (json_object_iter_next_ordered (&iter, &member_name, &member_node)) {
+      const gchar *value = json_object_get_string_member (object, member_name);
+      ml_option_set (_info_list[i], member_name, g_strdup (value), g_free);
+    }
+  }
+
+  g_object_unref (parser);
+  g_free (description);
+
+  *info_list = _info_list;
+
+  return ret;
+}
+
+/**
+ * @brief Deletes a model information with given @a name and @a version from machine learning service.
+ */
+int
+ml_service_model_delete (const char *name, const unsigned int version)
+{
+  int ret = ML_ERROR_NONE;
+  MachinelearningServiceModel *mlsm;
+  GError *err = NULL;
+  gboolean result;
+
+  check_feature_state (ML_FEATURE_SERVICE);
+
+  if (!name)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'name' is NULL. It should be a valid string");
+
+  mlsm = _get_mlsm_proxy_new_for_bus_sync ();
+  if (!mlsm) {
+    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
+        "Failed to get dbus proxy.");
+  }
+
+  result = machinelearning_service_model_call_delete_sync (mlsm,
+      name, version, &ret, NULL, &err);
+
+  g_object_unref (mlsm);
+
+  if (!result) {
+    _ml_error_report ("Failed to invoke the method delete (%s).",
+        err ? err->message : "Unknown error");
+    ret = ML_ERROR_IO_ERROR;
+  }
+
   g_clear_error (&err);
 
   return ret;

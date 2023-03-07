@@ -34,6 +34,7 @@ nnstreamer_dep = dependency('nnstreamer')
 if get_option('enable-ml-service')
   libsystemd_dep = dependency('libsystemd')
   sqlite_dep = dependency('sqlite3')
+  json_glib_dep = dependency('json-glib-1.0')
 
   if get_option('enable-tizen')
     appfw_package_manager_dep = dependency('capi-appfw-package-manager')
