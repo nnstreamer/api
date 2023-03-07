@@ -5,41 +5,47 @@
     <method name="Register">
       <arg type="s" name="name" direction="in" />
       <arg type="s" name="path" direction="in" />
+      <arg type="b" name="active" direction="in" />
+      <arg type="s" name="description" direction="in" />
       <arg type="u" name="version" direction="out" />
       <arg type="i" name="result" direction="out" />
     </method>
-    <!-- Update the given model -->
-    <method name="Update">
-      <arg type="s" name="name" direction="in" />
-      <arg type="s" name="path" direction="in" />
-      <arg type="b" name="stable" direction="in" />
-      <arg type="u" name="version" direction="out" />
-      <arg type="i" name="result" direction="out" />
-    </method>
-    <!-- Rollback the given model -->
-    <method name="Rollback">
-      <arg type="s" name="name" direction="in" />
-      <arg type="u" name="version" direction="out" />
-      <arg type="i" name="result" direction="out" />
-    </method>
-    <!-- Set stable the given model -->
-    <method name="SetInference">
+    <!-- Update the model description -->
+    <method name="UpdateDescription">
       <arg type="s" name="name" direction="in" />
       <arg type="u" name="version" direction="in" />
-      <arg type="b" name="stable" direction="in" />
+      <arg type="s" name="description" direction="in" />
       <arg type="i" name="result" direction="out" />
     </method>
-    <!-- Get the latest stable model -->
-    <method name="GetLatest">
+    <!-- Activate the model -->
+    <method name="Activate">
       <arg type="s" name="name" direction="in" />
-      <arg type="s" name="path" direction="out" />
+      <arg type="u" name="version" direction="in" />
       <arg type="i" name="result" direction="out" />
     </method>
     <!-- Get the model of given version -->
     <method name="Get">
       <arg type="s" name="name" direction="in" />
       <arg type="u" name="version" direction="in" />
-      <arg type="s" name="path" direction="out" />
+      <arg type="s" name="info" direction="out" />
+      <arg type="i" name="result" direction="out" />
+    </method>
+    <!-- Get the activated model -->
+    <method name="GetActivated">
+      <arg type="s" name="name" direction="in" />
+      <arg type="s" name="info" direction="out" />
+      <arg type="i" name="result" direction="out" />
+    </method>
+    <!-- Get list of models -->
+    <method name="GetAll">
+      <arg type="s" name="name" direction="in" />
+      <arg type="s" name="info_list" direction="out" />
+      <arg type="i" name="result" direction="out" />
+    </method>
+    <!-- Delete model -->
+    <method name="Delete">
+      <arg type="s" name="name" direction="in" />
+      <arg type="u" name="version" direction="in" />
       <arg type="i" name="result" direction="out" />
     </method>
   </interface>
