@@ -40,10 +40,12 @@
 #define DBUS_MODEL_INTERFACE            "org.tizen.machinelearning.service.model"
 #define DBUS_MODEL_PATH                 "/Org/Tizen/MachineLearning/Service/Model"
 
-#define DBUS_MODEL_I_HANDLER_SET_PATH     "handle-set-path"
-#define DBUS_MODEL_I_HANDLER_GET_PATH     "handle-get-path"
-#define DBUS_MODEL_I_HANDLER_DELETE       "handle-delete"
-
-#define DBUS_MODEL_I_HANDLER_REGISTER     "handle-register"
+#define DBUS_MODEL_I_HANDLER_REGISTER           "handle-register"
+#define DBUS_MODEL_I_HANDLER_UPDATE_DESCRIPTION "handle-update-description"
+#define DBUS_MODEL_I_HANDLER_ACTIVATE           "handle-activate"
+#define DBUS_MODEL_I_HANDLER_GET                "handle-get"
+#define DBUS_MODEL_I_HANDLER_GET_ACTIVATED      "handle-get-activated"
+#define DBUS_MODEL_I_HANDLER_GET_ALL            "handle-get-all"
+#define DBUS_MODEL_I_HANDLER_DELETE             "handle-delete"
 
 #endif /* __GDBUS_INTERFACE_H__ */
