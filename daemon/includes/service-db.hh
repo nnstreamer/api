@@ -33,9 +33,11 @@ public:
   virtual void get_pipeline (const std::string name, std::string &description);
   virtual void delete_pipeline (const std::string name);
   /** @todo update methods to handle nn model */
-  virtual void set_model (const std::string name, const std::string model);
-  virtual void get_model (const std::string name, std::string &model);
-  virtual void delete_model (const std::string name);
+  virtual void set_model (const std::string name, const std::string model, const bool is_active, const std::string description, guint *version);
+  virtual void update_model_description (const std::string name, const guint version, const std::string description);
+  virtual void activate_model (const std::string name, const guint version);
+  virtual void get_model (const std::string name, std::string &model, const gint version);
+  virtual void delete_model (const std::string name, const guint version);
 
   static MLServiceDB & getInstance (void);
 
