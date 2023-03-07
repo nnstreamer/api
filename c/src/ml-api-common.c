@@ -1325,3 +1325,41 @@ ml_option_set (ml_option_h option, const char *key, void *value,
 
   return ML_ERROR_NONE;
 }
+
+/**
+ * @brief Gets a value of key in ml_option instance.
+ */
+int
+ml_option_get (ml_option_h option, const char *key, void **value)
+{
+  ml_option_s *_option;
+  ml_option_value_s *_option_value;
+
+  check_feature_state (ML_FEATURE);
+
+  if (!option) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'option' is NULL. It should be a valid ml_option_h, which should be created by ml_option_create().");
+  }
+
+  if (!key) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'key' is NULL. It should be a valid const char*");
+  }
+
+  if (!value) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'value' is NULL. It should be a valid void**");
+  }
+
+  _option = (ml_option_s *) option;
+  _option_value = (ml_option_value_s *)
+      g_hash_table_lookup (_option->option_table, key);
+  if (_option_value == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The key - %s - is not found in the option table.", key);
+
+  *value = _option_value->value;
+
+  return ML_ERROR_NONE;
+}
