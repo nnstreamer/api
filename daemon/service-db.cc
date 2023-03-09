@@ -19,6 +19,16 @@
 #define ML_DATABASE_PATH      DB_PATH"/.ml-service.db"
 #define DB_KEY_PREFIX         MESON_KEY_PREFIX
 
+/**
+ * @brief The version of pipeline table schema. It should be a positive integer.
+ */
+#define TBL_VER_PIPELINE_DESCRIPTION (1)
+
+/**
+ * @brief The version of model table schema. It should be a positive integer.
+ */
+#define TBL_VER_MODEL_INFO (1)
+
 typedef enum
 {
   TBL_DB_INFO = 0,
@@ -75,17 +85,20 @@ void
 MLServiceDB::initDB ()
 {
   int rc;
+  int tbl_ver;
   char *sql;
   char *errmsg = nullptr;
+  sqlite3_stmt *res;
 
   if (_initialized)
     return;
 
   /**
-   * @todo handle database version
-   * - check old level db and insert pipeline description into sqlite.
-   * - check database info (TBL_DB_INFO), fetch data and update table schema when version is updated, ...
-   * - need transaction
+   * @todo data migration
+   * handle database version and update each table
+   * 1. get all records from table
+   * 2. drop old table
+   * 3. create new table and insert records
    */
   rc = sqlite3_exec (_db, "BEGIN TRANSACTION;", nullptr, nullptr, &errmsg);
   if (rc != SQLITE_OK) {
@@ -118,6 +131,52 @@ MLServiceDB::initDB ()
   g_free (sql);
   if (rc != SQLITE_OK) {
     g_warning ("Failed to create table for model info: %s (%d)", errmsg, rc);
+    sqlite3_clear_errmsg (errmsg);
+    return;
+  }
+
+  /* Check pipeline table. */
+  rc = sqlite3_prepare_v2 (_db, "SELECT version FROM tblMLDBInfo WHERE name = 'tblPipeline';", -1, &res, nullptr);
+  if (rc != SQLITE_OK) {
+    g_warning ("Failed to get the version of pipeline table: %s (%d)", sqlite3_errmsg (_db), rc);
+    return;
+  }
+
+  tbl_ver = (sqlite3_step (res) == SQLITE_ROW) ? sqlite3_column_int (res, 0) : TBL_VER_PIPELINE_DESCRIPTION;
+  sqlite3_finalize (res);
+
+  if (tbl_ver != TBL_VER_PIPELINE_DESCRIPTION) {
+    /** @todo update pipeline table if table schema is changed */
+  }
+
+  sql = g_strdup_printf ("INSERT OR REPLACE INTO tblMLDBInfo VALUES ('tblPipeline', '%d');", TBL_VER_PIPELINE_DESCRIPTION);
+  rc = sqlite3_exec (_db, sql, nullptr, nullptr, &errmsg);
+  g_free (sql);
+  if (rc != SQLITE_OK) {
+    g_warning ("Failed to update version of pipeline table: %s (%d)", errmsg, rc);
+    sqlite3_clear_errmsg (errmsg);
+    return;
+  }
+
+  /* Check model table. */
+  rc = sqlite3_prepare_v2 (_db, "SELECT version FROM tblMLDBInfo WHERE name = 'tblModel';", -1, &res, nullptr);
+  if (rc != SQLITE_OK) {
+    g_warning ("Failed to get the version of model table: %s (%d)", sqlite3_errmsg (_db), rc);
+    return;
+  }
+
+  tbl_ver = (sqlite3_step (res) == SQLITE_ROW) ? sqlite3_column_int (res, 0) : TBL_VER_MODEL_INFO;
+  sqlite3_finalize (res);
+
+  if (tbl_ver != TBL_VER_MODEL_INFO) {
+    /** @todo update model table if table schema is changed */
+  }
+
+  sql = g_strdup_printf ("INSERT OR REPLACE INTO tblMLDBInfo VALUES ('tblModel', '%d');", TBL_VER_MODEL_INFO);
+  rc = sqlite3_exec (_db, sql, nullptr, nullptr, &errmsg);
+  g_free (sql);
+  if (rc != SQLITE_OK) {
+    g_warning ("Failed to update version of model table: %s (%d)", errmsg, rc);
     sqlite3_clear_errmsg (errmsg);
     return;
   }
