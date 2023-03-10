@@ -38,10 +38,6 @@ if get_option('enable-ml-service')
   if get_option('enable-tizen')
     appfw_package_manager_dep = dependency('capi-appfw-package-manager')
   endif
-  leveldb_dep = dependency('leveldb', required: false)
-  if (not leveldb_dep.found())
-    leveldb_dep = cxx.find_library('leveldb', required: true)
-  endif
 endif
 
 # Set version info
