@@ -155,8 +155,6 @@ BuildConflicts:	libarmcl-release
 
 %if 0%{?enable_ml_service}
 BuildRequires:  pkgconfig(libsystemd)
-#TODO remove dependency to leveldb
-BuildRequires:  pkgconfig(leveldb)
 BuildRequires:  pkgconfig(sqlite3)
 BuildRequires:  dbus
 BuildRequires:  pkgconfig(capi-appfw-package-manager)
