@@ -4,8 +4,8 @@ unittest_install_dir = join_paths(unittest_base_dir,'tests')
 
 # Set dependency and test-env
 testenv = environment()
-testenv.set('NNSTREAMER_SOURCE_ROOT_PATH', meson.source_root())
-testenv.set('NNSTREAMER_BUILD_ROOT_PATH', meson.build_root())
+testenv.set('MLAPI_SOURCE_ROOT_PATH', meson.source_root())
+testenv.set('MLAPI_BUILD_ROOT_PATH', meson.build_root())
 
 gtest_dep = dependency('gtest', required: false)
 if gtest_dep.found()

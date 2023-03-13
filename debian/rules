@@ -16,6 +16,8 @@ ROOT_DIR:=$(shell pwd)
 export DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 export DEB_HOST_ARCH ?= $(shell dpkg-architecture -qDEB_HOST_ARCH)
 export BUILDDIR=build
+export MLAPI_SOURCE_ROOT_PATH=$(ROOT_DIR)
+export MLAPI_BUILD_ROOT_PATH=${MLAPI_SOURCE_ROOT_PATH}/${BUILDDIR}
 export JAVA_DIR ?= $(shell echo 'System.out.println(java.lang.System.getProperty("java.home"));' | jshell  -)
 
 %:

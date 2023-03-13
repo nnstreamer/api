@@ -77,7 +77,7 @@ protected:
     ml_tensors_info_create (&out_res);
 
     /* supposed to run test in build directory */
-    root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+    root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
     if (root_path == NULL) {
       root_path = "..";
     }
