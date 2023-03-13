@@ -10,7 +10,7 @@
  * @bug No known bugs except for NYI items
  */
 
-#include <gio/gio.h>
+#include <glib/gstdio.h>
 
 #include "ml-api-internal.h"
 #include "ml-api-service.h"
@@ -339,27 +339,43 @@ ml_service_get_pipeline_state (ml_service_h h, ml_pipeline_state_e * state)
  * @brief TBU
  */
 int
-ml_service_model_register (const char *key, const char *model_path,
+ml_service_model_register (const char *name, const char *path,
     unsigned int *version)
 {
   int ret = ML_ERROR_NONE;
   MachinelearningServiceModel *mlsm;
   GError *err = NULL;
   gboolean result;
+  gchar *dir_name;
+  GStatBuf statbuf;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
-  if (!key)
+  if (!name)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'key' is NULL. It should be a valid string");
+        "The parameter, 'name' is NULL. It should be a valid string");
 
-  if (!model_path)
+  if (!path)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'model_path' is NULL. It should be a valid string");
+        "The parameter, 'path' is NULL. It should be a valid string");
 
   if (!version)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'version' is NULL. It should be a valid unsigned int pointer");
+
+  dir_name = g_path_get_dirname (path);
+  ret = g_stat (dir_name, &statbuf);
+  g_free (dir_name);
+
+  if (ret != 0)
+    _ml_error_report_return (ML_ERROR_PERMISSION_DENIED,
+        "Failed to get the information of the model file '%s'.", path);
+
+  if (!g_path_is_absolute (path) ||
+      !g_file_test (path, (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR)) ||
+      g_file_test (path, G_FILE_TEST_IS_SYMLINK))
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The model file '%s' is not a regular file.", path);
 
   mlsm = _get_mlsm_proxy_new_for_bus_sync ();
   if (!mlsm) {
@@ -368,7 +384,7 @@ ml_service_model_register (const char *key, const char *model_path,
   }
 
   result = machinelearning_service_model_call_register_sync (mlsm,
-      key, model_path, version, &ret, NULL, &err);
+      name, path, version, &ret, NULL, &err);
 
   g_object_unref (mlsm);
 
