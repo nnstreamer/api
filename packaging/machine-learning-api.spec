@@ -364,6 +364,9 @@ meson --buildtype=plain --prefix=%{_prefix} --sysconfdir=%{_sysconfdir} --libdir
 
 ninja -C build %{?_smp_mflags}
 
+export MLAPI_SOURCE_ROOT_PATH=$(pwd)
+export MLAPI_BUILD_ROOT_PATH=$(pwd)/%{builddir}
+
 # Run test
 %if 0%{?unit_test}
 bash %{test_script} ./tests/capi/unittest_capi_inference_single

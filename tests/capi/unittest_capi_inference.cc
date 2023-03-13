@@ -1451,7 +1451,7 @@ check_orange_output (const ml_tensors_data_h data, const ml_tensors_info_h info,
   gsize raw_content_len;
   gchar *orange_raw_file;
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   /* supposed to run test in build directory */
   if (root_path == NULL)
     root_path = "..";
@@ -1500,7 +1500,7 @@ TEST (nnstreamer_capi_src, pngfile)
   gchar *orange_png_file, *pipeline;
   uint8_t *content;
   gsize content_len;
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   /* supposed to run test in build directory */
   if (root_path == NULL)
     root_path = "..";
@@ -4176,7 +4176,7 @@ TEST (nnstreamer_capi_element, set_property_string_01_p)
   ml_pipeline_element_h filter_h = nullptr;
   gchar *pipeline, *test_model;
   int status;
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
 
   /* Skip this test if enable-tensorflow-lite is false */
   if (!is_enabled_tensorflow_lite)
@@ -4240,7 +4240,7 @@ TEST (nnstreamer_capi_element, set_property_string_03_n)
   ml_pipeline_element_h filter_h = nullptr;
   gchar *pipeline, *test_model;
   int status;
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
 
   /* Skip this test if enable-tensorflow-lite is false */
   if (!is_enabled_tensorflow_lite)
@@ -4327,7 +4327,7 @@ TEST (nnstreamer_capi_element, get_property_string_01_p)
   gchar *pipeline, *test_model;
   gchar *ret_prop;
   int status;
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
 
   /* Skip this test if enable-tensorflow-lite is false */
   if (!is_enabled_tensorflow_lite)
@@ -4406,7 +4406,7 @@ TEST (nnstreamer_capi_element, get_property_string_03_n)
   gchar *pipeline, *test_model;
   gchar *ret_prop;
   int status;
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
 
   /* Skip this test if enable-tensorflow-lite is false */
   if (!is_enabled_tensorflow_lite)
@@ -4457,7 +4457,7 @@ TEST (nnstreamer_capi_element, get_property_string_04_n)
   ml_pipeline_element_h filter_h = nullptr;
   gchar *pipeline, *test_model;
   int status;
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
 
   /* Skip this test if enable-tensorflow-lite is false */
   if (!is_enabled_tensorflow_lite)

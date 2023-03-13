@@ -33,7 +33,7 @@ class nnstreamer_capi_singleshot_latency : public ::testing::Test
    */
   virtual void SetUp ()
   {
-    root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+    root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
     /* supposed to run test in build directory */
     if (root_path == NULL)
       root_path = "..";
