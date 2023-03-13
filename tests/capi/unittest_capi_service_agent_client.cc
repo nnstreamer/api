@@ -724,14 +724,24 @@ TEST_F (MLServiceAgentTest, query_request_00_n)
 TEST_F (MLServiceAgentTest, model_00)
 {
   int status;
-
-  const gchar *key = "yolov5";
-  const gchar *model = "yolov5s-fp16.tflite";
+  const gchar *key = "mobilenet_v1";
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
+  gchar *test_model;
   unsigned int version;
 
-  status = ml_service_model_register (key, model, &version);
+  /* ml_service_model_register() requires absolute path to model, ignore this case. */
+  if (root_path == NULL)
+    return;
+
+  test_model = g_build_filename (root_path, "tests", "test_models", "models",
+      "mobilenet_v1_1.0_224_quant.tflite", NULL);
+  ASSERT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
+
+  status = ml_service_model_register (key, test_model, &version);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_EQ (1U, version);
+
+  g_free (test_model);
 }
 
 /**
