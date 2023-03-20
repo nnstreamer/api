@@ -549,12 +549,6 @@ ml_service_model_get (const char *name, const unsigned int version,
     return ret;
   }
 
-  ret = ml_option_create (&_info);
-  if (ML_ERROR_NONE != ret) {
-    g_free (description);
-    return ret;
-  }
-
   /* fill ml_info */
   parser = json_parser_new ();
   if (!parser) {
@@ -564,11 +558,11 @@ ml_service_model_get (const char *name, const unsigned int version,
   }
 
   if (!json_parser_load_from_data (parser, description, -1, &err)) {
+    _ml_error_report ("Failed to parse the json string. %s", err->message);
     g_free (description);
     g_error_free (err);
     g_object_unref (parser);
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "Failed to parse the json string. %s", err->message);
+    return ML_ERROR_INVALID_PARAMETER;
   }
 
   root_node = json_parser_get_root (parser);
@@ -577,6 +571,12 @@ ml_service_model_get (const char *name, const unsigned int version,
     g_free (description);
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "Failed to get the root node of json string.");
+  }
+
+  ret = ml_option_create (&_info);
+  if (ML_ERROR_NONE != ret) {
+    g_free (description);
+    return ret;
   }
 
   j_object = json_node_get_object (root_node);
@@ -648,12 +648,6 @@ ml_service_model_get_activated (const char *name, ml_option_h * info)
     return ret;
   }
 
-  ret = ml_option_create (&_info);
-  if (ML_ERROR_NONE != ret) {
-    g_free (description);
-    return ret;
-  }
-
   /* fill ml_info */
   parser = json_parser_new ();
   if (!parser) {
@@ -662,11 +656,11 @@ ml_service_model_get_activated (const char *name, ml_option_h * info)
   }
 
   if (!json_parser_load_from_data (parser, description, -1, &err)) {
+    _ml_error_report ("Failed to parse the json string. %s", err->message);
     g_error_free (err);
     g_object_unref (parser);
     g_free (description);
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "Failed to parse the json string. %s", err->message);
+    return ML_ERROR_INVALID_PARAMETER;
   }
 
   root_node = json_parser_get_root (parser);
@@ -675,6 +669,12 @@ ml_service_model_get_activated (const char *name, ml_option_h * info)
     g_free (description);
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "Failed to get the root node of json string.");
+  }
+
+  ret = ml_option_create (&_info);
+  if (ML_ERROR_NONE != ret) {
+    g_free (description);
+    return ret;
   }
 
   j_object = json_node_get_object (root_node);
@@ -706,7 +706,7 @@ ml_service_model_get_all (const char *name, ml_option_h * info_list[],
   GError *err = NULL;
   gboolean result;
   gchar *description = NULL;
-  guint i;
+  guint i, j;
 
   JsonParser *parser;
   JsonArray *array;
@@ -762,11 +762,11 @@ ml_service_model_get_all (const char *name, ml_option_h * info_list[],
   }
 
   if (!json_parser_load_from_data (parser, description, -1, &err)) {
+    _ml_error_report ("Failed to parse the json string. %s", err->message);
     g_error_free (err);
     g_object_unref (parser);
     g_free (description);
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "Failed to parse the json string. %s", err->message);
+    return ML_ERROR_INVALID_PARAMETER;
   }
 
   array = json_node_get_array (json_parser_get_root (parser));
@@ -802,6 +802,11 @@ ml_service_model_get_all (const char *name, ml_option_h * info_list[],
     if (ml_option_create (&_info_list[i]) != ML_ERROR_NONE) {
       g_object_unref (parser);
       g_free (description);
+
+      for (j = 0; j < i; j++)
+        ml_option_destroy (_info_list[j]);
+
+      g_free (_info_list);
       _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
           "Failed to allocate memory for ml_option_h. Out of memory?");
     }
