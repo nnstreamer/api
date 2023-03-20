@@ -422,9 +422,7 @@ popd
 builddir=$(basename $PWD)
 gcno_obj_dir=%{buildroot}%{_datadir}/gcov/obj/%{name}/"$builddir"
 mkdir -p "$gcno_obj_dir"
-pushd build
 find . -name '*.gcno' ! -path "*/tests/*" ! -name "meson-generated*" ! -name "sanitycheck*" -exec cp --parents '{}' "$gcno_obj_dir" ';'
-popd
 
 mkdir -p %{buildroot}%{_bindir}/tizen-unittests/%{name}
 install -m 0755 packaging/run-unittest.sh %{buildroot}%{_bindir}/tizen-unittests/%{name}
