@@ -353,6 +353,7 @@ MLServiceDB::set_model (const std::string name, const std::string model, const b
   int rc;
   char *sql;
   char *errmsg = nullptr;
+  sqlite3_stmt *res;
 
   if (name.empty () || model.empty ())
     throw std::invalid_argument ("Invalid name or value parameters!");
@@ -409,10 +410,7 @@ MLServiceDB::set_model (const std::string name, const std::string model, const b
 
   /* get model's version */
   sql = g_strdup_printf ("SELECT version FROM tblModel WHERE rowid = %lld ORDER BY version DESC LIMIT 1;", last_id);
-
-  sqlite3_stmt *res;
   rc = sqlite3_prepare_v2 (_db, sql, -1, &res, nullptr);
-
   g_free (sql);
   if (rc != SQLITE_OK) {
     g_critical ("Failed to get model version with name %s: %s (%d)", name.c_str (), errmsg, rc);
@@ -422,8 +420,8 @@ MLServiceDB::set_model (const std::string name, const std::string model, const b
 
   /* set rowid as the last_id int the sql */
   sqlite3_bind_int (res, 1, last_id);
-  int step = sqlite3_step (res);
-  if (step == SQLITE_ROW) {
+  rc = sqlite3_step (res);
+  if (rc == SQLITE_ROW) {
     *version = sqlite3_column_int (res, 0);
   }
 
@@ -448,6 +446,7 @@ MLServiceDB::update_model_description (const std::string name, const guint versi
   int rc;
   char *sql;
   char *errmsg = nullptr;
+  sqlite3_stmt *res;
 
   if (name.empty ())
     throw std::invalid_argument ("Invalid name parameter!");
@@ -458,8 +457,6 @@ MLServiceDB::update_model_description (const std::string name, const guint versi
   /* check the existence of given model */
   sql = g_strdup_printf ("SELECT EXISTS(SELECT 1 FROM tblModel WHERE key = '%s' AND version = %u);",
       key_with_prefix.c_str (), version);
-
-  sqlite3_stmt *res;
   rc = sqlite3_prepare_v2 (_db, sql, -1, &res, nullptr);
   g_free (sql);
   if (rc != SQLITE_OK) {
@@ -468,8 +465,8 @@ MLServiceDB::update_model_description (const std::string name, const guint versi
     throw std::runtime_error ("Failed to check the existence of model.");
   }
 
-  int step = sqlite3_step (res);
-  if (step == SQLITE_ROW) {
+  rc = sqlite3_step (res);
+  if (rc == SQLITE_ROW) {
     int count = sqlite3_column_int (res, 0);
     if (count != 1) {
       g_critical ("There is no model with name %s and version %u", name.c_str (), version);
@@ -503,6 +500,7 @@ MLServiceDB::activate_model (const std::string name, const guint version)
   int rc;
   char *sql;
   char *errmsg = nullptr;
+  sqlite3_stmt *res;
 
   if (name.empty ())
     throw std::invalid_argument ("Invalid name parameter!");
@@ -513,8 +511,6 @@ MLServiceDB::activate_model (const std::string name, const guint version)
   /* check the existence */
   sql = g_strdup_printf ("SELECT EXISTS(SELECT 1 FROM tblModel WHERE key = '%s' AND version = %u);",
       key_with_prefix.c_str (), version);
-
-  sqlite3_stmt *res;
   rc = sqlite3_prepare_v2 (_db, sql, -1, &res, nullptr);
   g_free (sql);
   if (rc != SQLITE_OK) {
@@ -523,8 +519,8 @@ MLServiceDB::activate_model (const std::string name, const guint version)
     throw std::runtime_error ("Failed to check the existence of model.");
   }
 
-  int step = sqlite3_step (res);
-  if (step == SQLITE_ROW) {
+  rc = sqlite3_step (res);
+  if (rc == SQLITE_ROW) {
     int count = sqlite3_column_int (res, 0);
     if (count != 1) {
       g_critical ("There is no model with name %s and version %u", name.c_str (), version);
@@ -636,6 +632,7 @@ MLServiceDB::delete_model (const std::string name, const guint version)
   int rc;
   char *sql;
   char *errmsg = nullptr;
+  sqlite3_stmt *res;
 
   if (name.empty ())
     throw std::invalid_argument ("Invalid name parameters!");
@@ -647,8 +644,6 @@ MLServiceDB::delete_model (const std::string name, const guint version)
   if (0U != version) {
     sql = g_strdup_printf ("SELECT EXISTS(SELECT 1 FROM tblModel WHERE key = '%s' AND version = %u);",
       key_with_prefix.c_str (), version);
-
-    sqlite3_stmt *res;
     rc = sqlite3_prepare_v2 (_db, sql, -1, &res, nullptr);
     g_free (sql);
     if (rc != SQLITE_OK) {
@@ -657,8 +652,8 @@ MLServiceDB::delete_model (const std::string name, const guint version)
       throw std::runtime_error ("Failed to check the existence of model.");
     }
 
-    int step = sqlite3_step (res);
-    if (step == SQLITE_ROW) {
+    rc = sqlite3_step (res);
+    if (rc == SQLITE_ROW) {
       int count = sqlite3_column_int (res, 0);
       if (count != 1) {
         g_critical ("There is no model with name %s and version %u", name.c_str (), version);
