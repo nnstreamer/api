@@ -507,9 +507,9 @@ ml_service_model_get (const char *name, const unsigned int version,
   MachinelearningServiceModel *mlsm;
   GError *err = NULL;
   gboolean result;
-  gchar *description;
+  gchar *description = NULL;
 
-  JsonParser *parser;
+  JsonParser *parser = NULL;
   JsonObjectIter iter;
   JsonNode *root_node;
   JsonNode *member_node;
@@ -540,43 +540,41 @@ ml_service_model_get (const char *name, const unsigned int version,
   if (!result) {
     _ml_error_report ("Failed to invoke the method get_activated (%s).",
         err ? err->message : "Unknown error");
-    ret = ML_ERROR_IO_ERROR;
     g_clear_error (&err);
+    ret = ML_ERROR_IO_ERROR;
+    goto error;
   }
 
-  if (ML_ERROR_NONE != ret) {
-    g_free (description);
-    return ret;
+  if (ML_ERROR_NONE != ret || !description) {
+    goto error;
   }
 
   ret = ml_option_create (&_info);
   if (ML_ERROR_NONE != ret) {
-    g_free (description);
-    return ret;
+    goto error;
   }
 
   /* fill ml_info */
   parser = json_parser_new ();
   if (!parser) {
-    g_free (description);
-    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
-        "Failed to allocate memory for JsonParser. Out of memory?");
+    _ml_error_report
+        ("Failed to allocate memory for JsonParser. Out of memory?");
+    ret = ML_ERROR_OUT_OF_MEMORY;
+    goto error;
   }
 
   if (!json_parser_load_from_data (parser, description, -1, &err)) {
-    g_free (description);
-    g_error_free (err);
-    g_object_unref (parser);
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "Failed to parse the json string. %s", err->message);
+    _ml_error_report ("Failed to parse the json string. %s", err->message);
+    g_clear_error (&err);
+    ret = ML_ERROR_INVALID_PARAMETER;
+    goto error;
   }
 
   root_node = json_parser_get_root (parser);
   if (!root_node) {
-    g_object_unref (parser);
-    g_free (description);
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "Failed to get the root node of json string.");
+    _ml_error_report ("Failed to get the root node of json string.");
+    ret = ML_ERROR_INVALID_PARAMETER;
+    goto error;
   }
 
   j_object = json_node_get_object (root_node);
@@ -586,10 +584,17 @@ ml_service_model_get (const char *name, const unsigned int version,
     ml_option_set (_info, member_name, g_strdup (value), g_free);
   }
 
-  g_object_unref (parser);
+  *info = _info;
+
+error:
+  if (parser)
+    g_object_unref (parser);
   g_free (description);
 
-  *info = _info;
+  if (ret != ML_ERROR_NONE) {
+    if (_info)
+      ml_option_destroy (_info);
+  }
 
   return ret;
 }
@@ -606,9 +611,9 @@ ml_service_model_get_activated (const char *name, ml_option_h * info)
   MachinelearningServiceModel *mlsm;
   GError *err = NULL;
   gboolean result;
-  gchar *description;
+  gchar *description = NULL;
 
-  JsonParser *parser;
+  JsonParser *parser = NULL;
   JsonObjectIter iter;
   JsonNode *root_node;
   JsonNode *member_node;
@@ -639,42 +644,41 @@ ml_service_model_get_activated (const char *name, ml_option_h * info)
   if (!result) {
     _ml_error_report ("Failed to invoke the method get_activated (%s).",
         err ? err->message : "Unknown error");
-    ret = ML_ERROR_IO_ERROR;
     g_clear_error (&err);
+    ret = ML_ERROR_IO_ERROR;
+    goto error;
   }
 
-  if (ML_ERROR_NONE != ret) {
-    g_free (description);
-    return ret;
+  if (ML_ERROR_NONE != ret || !description) {
+    goto error;
   }
 
   ret = ml_option_create (&_info);
   if (ML_ERROR_NONE != ret) {
-    g_free (description);
-    return ret;
+    goto error;
   }
 
   /* fill ml_info */
   parser = json_parser_new ();
   if (!parser) {
-    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
-        "Failed to allocate memory for JsonParser. Out of memory?");
+    _ml_error_report
+        ("Failed to allocate memory for JsonParser. Out of memory?");
+    ret = ML_ERROR_OUT_OF_MEMORY;
+    goto error;
   }
 
   if (!json_parser_load_from_data (parser, description, -1, &err)) {
-    g_error_free (err);
-    g_object_unref (parser);
-    g_free (description);
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "Failed to parse the json string. %s", err->message);
+    _ml_error_report ("Failed to parse the json string. %s", err->message);
+    g_clear_error (&err);
+    ret = ML_ERROR_INVALID_PARAMETER;
+    goto error;
   }
 
   root_node = json_parser_get_root (parser);
   if (!root_node) {
-    g_object_unref (parser);
-    g_free (description);
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "Failed to get the root node of json string.");
+    _ml_error_report ("Failed to get the root node of json string.");
+    ret = ML_ERROR_INVALID_PARAMETER;
+    goto error;
   }
 
   j_object = json_node_get_object (root_node);
@@ -684,10 +688,17 @@ ml_service_model_get_activated (const char *name, ml_option_h * info)
     ml_option_set (_info, member_name, g_strdup (value), g_free);
   }
 
-  g_object_unref (parser);
+  *info = _info;
+
+error:
+  if (parser)
+    g_object_unref (parser);
   g_free (description);
 
-  *info = _info;
+  if (ret != ML_ERROR_NONE) {
+    if (_info)
+      ml_option_destroy (_info);
+  }
 
   return ret;
 }
@@ -706,9 +717,9 @@ ml_service_model_get_all (const char *name, ml_option_h * info_list[],
   GError *err = NULL;
   gboolean result;
   gchar *description = NULL;
-  guint i;
+  guint i, n;
 
-  JsonParser *parser;
+  JsonParser *parser = NULL;
   JsonArray *array;
 
   check_feature_state (ML_FEATURE_SERVICE);
@@ -725,6 +736,8 @@ ml_service_model_get_all (const char *name, ml_option_h * info_list[],
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'num' is NULL. It should be a valid pointer to unsigned int");
 
+  *num = 0;
+
   mlsm = _get_mlsm_proxy_new_for_bus_sync ();
   if (!mlsm) {
     _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
@@ -739,71 +752,64 @@ ml_service_model_get_all (const char *name, ml_option_h * info_list[],
   if (!result) {
     _ml_error_report ("Failed to invoke the method get_activated (%s).",
         err ? err->message : "Unknown error");
-    ret = ML_ERROR_IO_ERROR;
     g_clear_error (&err);
+    ret = ML_ERROR_IO_ERROR;
+    goto error;
   }
 
-  if (ML_ERROR_NONE != ret) {
-    g_free (description);
-    return ret;
-  }
-
-  if (!description) {
-    *num = 0;
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "There is no model with name %s", name);
+  if (ML_ERROR_NONE != ret || !description) {
+    goto error;
   }
 
   parser = json_parser_new ();
   if (!parser) {
-    g_free (description);
-    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
-        "Failed to allocate memory for JsonParser. Out of memory?");
+    _ml_error_report
+        ("Failed to allocate memory for JsonParser. Out of memory?");
+    ret = ML_ERROR_OUT_OF_MEMORY;
+    goto error;
   }
 
   if (!json_parser_load_from_data (parser, description, -1, &err)) {
-    g_error_free (err);
-    g_object_unref (parser);
-    g_free (description);
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "Failed to parse the json string. %s", err->message);
+    _ml_error_report ("Failed to parse the json string. %s", err->message);
+    g_clear_error (&err);
+    ret = ML_ERROR_INVALID_PARAMETER;
+    goto error;
   }
 
   array = json_node_get_array (json_parser_get_root (parser));
   if (!array) {
-    g_object_unref (parser);
-    g_free (description);
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "Failed to get array from json string.");
+    _ml_error_report ("Failed to get array from json string.");
+    ret = ML_ERROR_INVALID_PARAMETER;
+    goto error;
   }
 
-  *num = json_array_get_length (array);
-
-  if (*num == 0U) {
-    g_object_unref (parser);
-    g_free (description);
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "Failed to get array from json string.");
+  n = json_array_get_length (array);
+  if (n == 0U) {
+    _ml_error_report ("Failed to get array from json string.");
+    ret = ML_ERROR_INVALID_PARAMETER;
+    goto error;
   }
 
-  _info_list = g_new0 (ml_option_h, *num);
+  _info_list = g_new0 (ml_option_h, n);
   if (!_info_list) {
-    g_free (description);
-    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
-        "Failed to allocate memory for list of ml_info_h. Out of memory?");
+    _ml_error_report
+        ("Failed to allocate memory for list of ml_info_h. Out of memory?");
+    ret = ML_ERROR_OUT_OF_MEMORY;
+    goto error;
   }
 
-  for (i = 0; i < *num; i++) {
+  for (i = 0; i < n; i++) {
     JsonObjectIter iter;
     const gchar *member_name;
     JsonNode *member_node;
     JsonObject *object;
 
     if (ml_option_create (&_info_list[i]) != ML_ERROR_NONE) {
-      g_object_unref (parser);
-      g_free (description);
-      _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
-          "Failed to allocate memory for ml_option_h. Out of memory?");
+      _ml_error_report
+          ("Failed to allocate memory for ml_option_h. Out of memory?");
+      n = i;
+      ret = ML_ERROR_OUT_OF_MEMORY;
+      goto error;
     }
 
     object = json_array_get_object_element (array, i);
@@ -814,10 +820,24 @@ ml_service_model_get_all (const char *name, ml_option_h * info_list[],
     }
   }
 
-  g_object_unref (parser);
+  *info_list = _info_list;
+  *num = n;
+
+error:
+  if (parser)
+    g_object_unref (parser);
   g_free (description);
 
-  *info_list = _info_list;
+  if (ret != ML_ERROR_NONE) {
+    if (_info_list) {
+      for (i = 0; i < n; i++) {
+        if (_info_list[i])
+          ml_option_destroy (_info_list[i]);
+      }
+
+      g_free (_info_list);
+    }
+  }
 
   return ret;
 }
