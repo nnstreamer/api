@@ -27,6 +27,15 @@ if gtest_dep.found()
       include_directories: nns_ml_agent_incs,
       cpp_args: [daemon_cpp_db_key_prefix_arg, '-DDB_PATH="."']
     )
+
+  test_db_config_args = declare_dependency(
+    compile_args: ['-DDB_PATH="."', daemon_cpp_db_key_prefix_arg])
+
+  service_db_dep_for_test = declare_dependency(
+    sources: files('../daemon/service-db.cc'),
+    dependencies: [glib_dep, sqlite_dep, test_db_config_args],
+    include_directories: nns_ml_agent_incs
+  )
   endif
 
   subdir('capi')
