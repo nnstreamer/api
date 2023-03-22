@@ -66,8 +66,11 @@ gdbus_cb_model_register (MachinelearningServiceModel *obj,
   try {
     db.connectDB ();
     db.set_model (name, path, is_active, description, &version);
-  } catch (...) {
-    g_critical ("DB error occurred. Failed to register the model: %s", name);
+  } catch (const std::invalid_argument &e) {
+    g_critical ("%s", e.what ());
+    ret = -EINVAL;
+  } catch (const std::exception &e) {
+    g_critical ("%s", e.what ());
     ret = -EIO;
   }
 
@@ -101,10 +104,10 @@ gdbus_cb_model_update_description (MachinelearningServiceModel *obj,
     db.connectDB ();
     db.update_model_description (name, version, description);
   } catch (const std::invalid_argument &e) {
-    g_critical ("There is no such model");
+    g_critical ("%s", e.what ());
     ret = -EINVAL;
-  } catch (...) {
-    g_critical ("DB error occurred. Failed to update the model description: %s", name);
+  } catch (const std::exception &e) {
+    g_critical ("%s", e.what ());
     ret = -EIO;
   }
 
@@ -136,10 +139,10 @@ gdbus_cb_model_activate (MachinelearningServiceModel *obj,
     db.connectDB ();
     db.activate_model (name, version);
   } catch (const std::invalid_argument &e) {
-    g_critical ("There is no such model");
+    g_critical ("%s", e.what ());
     ret = -EINVAL;
-  } catch (...) {
-    g_critical ("DB error occurred. Failed to activate the model: %s", name);
+  } catch (const std::exception &e) {
+    g_critical ("%s", e.what ());
     ret = -EIO;
   }
 
@@ -171,10 +174,10 @@ gdbus_cb_model_get (MachinelearningServiceModel *obj,
     db.connectDB ();
     db.get_model (name, model_info, version);
   } catch (const std::invalid_argument &e) {
-    g_critical ("There is no active model");
+    g_critical ("%s", e.what ());
     ret = -EINVAL;
-  } catch (...) {
-    g_critical ("DB error occurred. Failed to get the active model: %s", name);
+  } catch (const std::exception &e) {
+    g_critical ("%s", e.what ());
     ret = -EIO;
   }
 
@@ -205,10 +208,10 @@ gdbus_cb_model_get_activated (MachinelearningServiceModel *obj,
     db.connectDB ();
     db.get_model (name, model_info, -1);
   } catch (const std::invalid_argument &e) {
-    g_critical ("There is no active model");
+    g_critical ("%s", e.what ());
     ret = -EINVAL;
-  } catch (...) {
-    g_critical ("DB error occurred. Failed to get the active model: %s", name);
+  } catch (const std::exception &e) {
+    g_critical ("%s", e.what ());
     ret = -EIO;
   }
 
@@ -240,10 +243,10 @@ gdbus_cb_model_get_all (MachinelearningServiceModel *obj,
     db.connectDB ();
     db.get_model (name, all_model_list, 0);
   } catch (const std::invalid_argument &e) {
-    g_critical ("There is no such model");
+    g_critical ("%s", e.what ());
     ret = -EINVAL;
-  } catch (...) {
-    g_critical ("DB error occurred. Failed to get all the models");
+  } catch (const std::exception &e) {
+    g_critical ("%s", e.what ());
     ret = -EIO;
   }
 
@@ -276,10 +279,10 @@ gdbus_cb_model_delete (MachinelearningServiceModel *obj,
     db.connectDB ();
     db.delete_model (name, version);
   } catch (const std::invalid_argument &e) {
-    g_critical ("There is no such model");
+    g_critical ("%s", e.what ());
     ret = -EINVAL;
-  } catch (...) {
-    g_critical ("DB error occurred. Failed to delete the model: %s", name);
+  } catch (const std::exception &e) {
+    g_critical ("%s", e.what ());
     ret = -EIO;
   }
 
