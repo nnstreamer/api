@@ -238,9 +238,7 @@ MLServiceDB::disconnectDB ()
 void
 MLServiceDB::set_pipeline (const std::string name, const std::string description)
 {
-  int rc;
-  char *sql;
-  char *errmsg = nullptr;
+  sqlite3_stmt *res;
 
   if (name.empty () || description.empty ())
     throw std::invalid_argument ("Invalid name or value parameters!");
@@ -248,16 +246,15 @@ MLServiceDB::set_pipeline (const std::string name, const std::string description
   std::string key_with_prefix = DB_KEY_PREFIX;
   key_with_prefix += name;
 
-  /* (key, description) */
-  sql = g_strdup_printf ("INSERT OR REPLACE INTO tblPipeline VALUES ('%s', '%s');",
-      key_with_prefix.c_str (), description.c_str ());
-  rc = sqlite3_exec (_db, sql, nullptr, nullptr, &errmsg);
-  g_free (sql);
-  if (rc != SQLITE_OK) {
-    g_warning ("Failed to insert pipeline description with name %s: %s (%d)", name.c_str (), errmsg, rc);
-    sqlite3_clear_errmsg (errmsg);
-    throw std::runtime_error ("Failed to insert pipeline description.");
+  if (sqlite3_prepare_v2 (_db, "INSERT OR REPLACE INTO tblPipeline VALUES (?1, ?2)", -1, &res, nullptr) != SQLITE_OK ||
+      sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, NULL) != SQLITE_OK ||
+      sqlite3_bind_text (res, 2, description.c_str (), -1, NULL) != SQLITE_OK ||
+      sqlite3_step (res) != SQLITE_DONE) {
+    sqlite3_finalize (res);
+    throw std::runtime_error ("Failed to insert pipeline description of " + name);
   }
+
+  sqlite3_finalize (res);
 }
 
 /**
@@ -268,8 +265,6 @@ MLServiceDB::set_pipeline (const std::string name, const std::string description
 void
 MLServiceDB::get_pipeline (const std::string name, std::string &description)
 {
-  int rc;
-  char *sql;
   char *value = nullptr;
   sqlite3_stmt *res;
 
@@ -279,27 +274,18 @@ MLServiceDB::get_pipeline (const std::string name, std::string &description)
   std::string key_with_prefix = DB_KEY_PREFIX;
   key_with_prefix += name;
 
-  sql = g_strdup_printf ("SELECT description FROM tblPipeline WHERE key = '%s';",
-      key_with_prefix.c_str ());
-  rc = sqlite3_prepare_v2 (_db, sql, -1, &res, nullptr);
-  g_free (sql);
-  if (rc != SQLITE_OK) {
-    g_warning ("Failed to get pipeline description with name %s: %s (%d)", name.c_str (), sqlite3_errmsg (_db), rc);
-    goto error;
-  }
-
-  rc = sqlite3_step (res);
-  if (rc == SQLITE_ROW)
+  if (sqlite3_prepare_v2 (_db, "SELECT description FROM tblPipeline WHERE key = ?1", -1, &res, nullptr) == SQLITE_OK &&
+      sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, NULL) == SQLITE_OK &&
+      sqlite3_step (res) == SQLITE_ROW)
     value = g_strdup_printf ("%s", sqlite3_column_text (res, 0));
 
   sqlite3_finalize (res);
 
-error:
   if (value) {
     description = std::string (value);
     g_free (value);
   } else {
-    throw std::invalid_argument ("Failed to get pipeline description.");
+    throw std::invalid_argument ("Failed to get pipeline description of " + name);
   }
 }
 
@@ -311,8 +297,7 @@ void
 MLServiceDB::delete_pipeline (const std::string name)
 {
   int rc;
-  char *sql;
-  char *errmsg = nullptr;
+  sqlite3_stmt *res;
 
   if (name.empty ())
     throw std::invalid_argument ("Invalid name parameters!");
@@ -320,22 +305,19 @@ MLServiceDB::delete_pipeline (const std::string name)
   std::string key_with_prefix = DB_KEY_PREFIX;
   key_with_prefix += name;
 
-  sql = g_strdup_printf ("DELETE FROM tblPipeline WHERE key = '%s';",
-      key_with_prefix.c_str ());
-  rc = sqlite3_exec (_db, sql, nullptr, nullptr, &errmsg);
-  g_free (sql);
-  if (rc != SQLITE_OK) {
-    g_warning ("Failed to delete pipeline description with name %s: %s (%d)", name.c_str (), errmsg, rc);
-    sqlite3_clear_errmsg (errmsg);
-    throw std::runtime_error ("Failed to delete pipeline description.");
+  if (sqlite3_prepare_v2 (_db, "DELETE FROM tblPipeline WHERE key = ?1", -1, &res, nullptr) != SQLITE_OK ||
+      sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, NULL) != SQLITE_OK ||
+      sqlite3_step (res) != SQLITE_DONE) {
+        sqlite3_finalize (res);
+        throw std::runtime_error ("Failed to delete pipeline description of " + name);
   }
+
+  sqlite3_finalize (res);
 
   /* count the number of rows modified */
   rc = sqlite3_changes (_db);
   if (rc == 0) {
-    g_warning ("No pipeline description with name %s: %s (%d)", name.c_str (), errmsg, rc);
-    sqlite3_clear_errmsg (errmsg);
-    throw std::invalid_argument ("There is no pipeline description with the given name.");
+    throw std::invalid_argument ("There is no pipeline description of " + name);
   }
 }
 
@@ -351,12 +333,12 @@ void
 MLServiceDB::set_model (const std::string name, const std::string model, const bool is_active, const std::string description, guint *version)
 {
   int rc;
-  char *sql;
   char *errmsg = nullptr;
+  guint _version = 0U;
   sqlite3_stmt *res;
 
-  if (name.empty () || model.empty ())
-    throw std::invalid_argument ("Invalid name or value parameters!");
+  if (name.empty () || model.empty () || !version)
+    throw std::invalid_argument ("Invalid name, model, or version parameter!");
 
   std::string key_with_prefix = DB_KEY_PREFIX;
   key_with_prefix += name;
@@ -370,28 +352,28 @@ MLServiceDB::set_model (const std::string name, const std::string model, const b
 
   /* set other models as NOT active */
   if (is_active) {
-    sql = g_strdup_printf ("UPDATE tblModel SET active = 'F' WHERE key = '%s';",
-        key_with_prefix.c_str ());
-    rc = sqlite3_exec (_db, sql, nullptr, nullptr, &errmsg);
-    g_free (sql);
-    if (rc != SQLITE_OK) {
-      g_critical ("Failed to set other models as NOT active: %s (%d)", errmsg, rc);
-      sqlite3_clear_errmsg (errmsg);
+    if (sqlite3_prepare_v2 (_db, "UPDATE tblModel SET active = 'F' WHERE key = ?1", -1, &res, nullptr) != SQLITE_OK ||
+        sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, NULL) != SQLITE_OK ||
+        sqlite3_step (res) != SQLITE_DONE) {
+      sqlite3_finalize (res);
       throw std::runtime_error ("Failed to set other models as NOT active.");
     }
+    sqlite3_finalize (res);
   }
 
-  /* (key, version, active, path, description) */
-  sql = g_strdup_printf ("INSERT OR REPLACE INTO tblModel VALUES ('%s', IFNULL ((SELECT version from tblModel WHERE key = '%s' ORDER BY version DESC LIMIT 1) + 1, 1), '%s', '%s', '%s');",
-      key_with_prefix.c_str (), key_with_prefix.c_str (), is_active ? "T" : "F", model.c_str (), description.c_str ());
-
-  rc = sqlite3_exec (_db, sql, nullptr, nullptr, &errmsg);
-  g_free (sql);
-  if (rc != SQLITE_OK) {
-    g_critical ("Failed to register model with name %s: %s (%d)", name.c_str (), errmsg, rc);
-    sqlite3_clear_errmsg (errmsg);
-    throw std::runtime_error ("Failed to register model.");
+  /* insert new row */
+  if (sqlite3_prepare_v2 (_db, "INSERT OR REPLACE INTO tblModel VALUES (?1, IFNULL ((SELECT version from tblModel WHERE key = ?2 ORDER BY version DESC LIMIT 1) + 1, 1), ?3, ?4, ?5)", -1, &res, nullptr) != SQLITE_OK ||
+      sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, NULL) != SQLITE_OK ||
+      sqlite3_bind_text (res, 2, key_with_prefix.c_str (), -1, NULL) != SQLITE_OK ||
+      sqlite3_bind_text (res, 3, is_active ? "T" : "F", -1, NULL) != SQLITE_OK ||
+      sqlite3_bind_text (res, 4, model.c_str (), -1, NULL) != SQLITE_OK ||
+      sqlite3_bind_text (res, 5, description.c_str (), -1, NULL) != SQLITE_OK ||
+      sqlite3_step (res) != SQLITE_DONE) {
+    sqlite3_finalize (res);
+    throw std::runtime_error ("Failed to register the model " + name);
   }
+
+  sqlite3_finalize (res);
 
   /* END TRANSACTION */
   rc = sqlite3_exec (_db, "END TRANSACTION;", nullptr, nullptr, &errmsg);
@@ -403,35 +385,25 @@ MLServiceDB::set_model (const std::string name, const std::string model, const b
 
   long long int last_id = sqlite3_last_insert_rowid (_db);
   if (last_id == 0) {
-    g_critical ("Failed to get last inserted row id: %s", errmsg);
-    sqlite3_clear_errmsg (errmsg);
+    g_critical ("Failed to get last inserted row id: %s", sqlite3_errmsg (_db));
     throw std::runtime_error ("Failed to get last inserted row id.");
   }
 
   /* get model's version */
-  sql = g_strdup_printf ("SELECT version FROM tblModel WHERE rowid = %lld ORDER BY version DESC LIMIT 1;", last_id);
-  rc = sqlite3_prepare_v2 (_db, sql, -1, &res, nullptr);
-  g_free (sql);
-  if (rc != SQLITE_OK) {
-    g_critical ("Failed to get model version with name %s: %s (%d)", name.c_str (), errmsg, rc);
-    sqlite3_clear_errmsg (errmsg);
-    throw std::runtime_error ("Failed to get model version.");
-  }
-
-  /* set rowid as the last_id int the sql */
-  sqlite3_bind_int (res, 1, last_id);
-  rc = sqlite3_step (res);
-  if (rc == SQLITE_ROW) {
-    *version = sqlite3_column_int (res, 0);
+  if (sqlite3_prepare_v2 (_db, "SELECT version FROM tblModel WHERE rowid = ? ORDER BY version DESC LIMIT 1;", -1, &res, nullptr) == SQLITE_OK &&
+      sqlite3_bind_int (res, 1, last_id) == SQLITE_OK &&
+      sqlite3_step (res) == SQLITE_ROW) {
+    _version = sqlite3_column_int (res, 0);
   }
 
   sqlite3_finalize (res);
 
-  if (version == 0) {
-    g_critical ("Failed to get model version with name %s: %s (%d)", name.c_str (), errmsg, rc);
-    sqlite3_clear_errmsg (errmsg);
-    throw std::runtime_error ("Failed to get model version.");
+  if (_version == 0) {
+    g_critical ("Failed to get model version with name %s: %s (%d)", name.c_str (), sqlite3_errmsg (_db), rc);
+    throw std::invalid_argument ("Failed to get model version of " + name);
   }
+
+  *version = _version;
 }
 
 /**
@@ -443,50 +415,37 @@ MLServiceDB::set_model (const std::string name, const std::string model, const b
 void
 MLServiceDB::update_model_description (const std::string name, const guint version, const std::string description)
 {
-  int rc;
-  char *sql;
-  char *errmsg = nullptr;
   sqlite3_stmt *res;
 
-  if (name.empty ())
-    throw std::invalid_argument ("Invalid name parameter!");
+  if (name.empty () || description.empty ())
+    throw std::invalid_argument ("Invalid name or description parameter!");
 
   std::string key_with_prefix = DB_KEY_PREFIX;
   key_with_prefix += name;
 
   /* check the existence of given model */
-  sql = g_strdup_printf ("SELECT EXISTS(SELECT 1 FROM tblModel WHERE key = '%s' AND version = %u);",
-      key_with_prefix.c_str (), version);
-  rc = sqlite3_prepare_v2 (_db, sql, -1, &res, nullptr);
-  g_free (sql);
-  if (rc != SQLITE_OK) {
-    g_critical ("Failed to check the existence of model with name %s: %s (%d)", name.c_str (), errmsg, rc);
-    sqlite3_clear_errmsg (errmsg);
-    throw std::runtime_error ("Failed to check the existence of model.");
-  }
-
-  rc = sqlite3_step (res);
-  if (rc == SQLITE_ROW) {
-    int count = sqlite3_column_int (res, 0);
-    if (count != 1) {
-      g_critical ("There is no model with name %s and version %u", name.c_str (), version);
-      sqlite3_finalize (res);
-      throw std::invalid_argument ("There is no model with the given name and version.");
-    }
+  if (sqlite3_prepare_v2 (_db, "SELECT EXISTS(SELECT 1 FROM tblModel WHERE key = ?1 AND version = ?2)", -1, &res, nullptr) != SQLITE_OK ||
+      sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, NULL) != SQLITE_OK ||
+      sqlite3_bind_int (res, 2, version) != SQLITE_OK ||
+      sqlite3_step (res) != SQLITE_ROW ||
+      sqlite3_column_int (res, 0) != 1) {
+    sqlite3_finalize (res);
+    throw std::invalid_argument ("Failed to check the existence of " + name + " version " + std::to_string (version));
   }
 
   sqlite3_finalize (res);
 
-  /* (key, version, active, path, description) */
-  sql = g_strdup_printf ("UPDATE tblModel SET description = '%s' WHERE key = '%s' AND version = %u;",
-      description.c_str (), key_with_prefix.c_str (), version);
-  rc = sqlite3_exec (_db, sql, nullptr, nullptr, &errmsg);
-  g_free (sql);
-  if (rc != SQLITE_OK) {
-    g_critical ("Failed to update model description with name %s: %s (%d)", name.c_str (), errmsg, rc);
-    sqlite3_clear_errmsg (errmsg);
+  /* update model description */
+  if (sqlite3_prepare_v2 (_db, "UPDATE tblModel SET description = ?1 WHERE key = ?2 AND version = ?3", -1, &res, nullptr) != SQLITE_OK ||
+      sqlite3_bind_text (res, 1, description.c_str (), -1, NULL) != SQLITE_OK ||
+      sqlite3_bind_text (res, 2, key_with_prefix.c_str (), -1, NULL) != SQLITE_OK ||
+      sqlite3_bind_int (res, 3, version) != SQLITE_OK ||
+      sqlite3_step (res) != SQLITE_DONE) {
+    sqlite3_finalize (res);
     throw std::runtime_error ("Failed to update model description.");
   }
+
+  sqlite3_finalize (res);
 }
 
 /**
@@ -498,7 +457,6 @@ void
 MLServiceDB::activate_model (const std::string name, const guint version)
 {
   int rc;
-  char *sql;
   char *errmsg = nullptr;
   sqlite3_stmt *res;
 
@@ -509,24 +467,13 @@ MLServiceDB::activate_model (const std::string name, const guint version)
   key_with_prefix += name;
 
   /* check the existence */
-  sql = g_strdup_printf ("SELECT EXISTS(SELECT 1 FROM tblModel WHERE key = '%s' AND version = %u);",
-      key_with_prefix.c_str (), version);
-  rc = sqlite3_prepare_v2 (_db, sql, -1, &res, nullptr);
-  g_free (sql);
-  if (rc != SQLITE_OK) {
-    g_critical ("Failed to check the existence of model with name %s: %s (%d)", name.c_str (), errmsg, rc);
-    sqlite3_clear_errmsg (errmsg);
-    throw std::runtime_error ("Failed to check the existence of model.");
-  }
-
-  rc = sqlite3_step (res);
-  if (rc == SQLITE_ROW) {
-    int count = sqlite3_column_int (res, 0);
-    if (count != 1) {
-      g_critical ("There is no model with name %s and version %u", name.c_str (), version);
-      sqlite3_finalize (res);
-      throw std::invalid_argument ("There is no model with the given name and version.");
-    }
+  if (sqlite3_prepare_v2 (_db, "SELECT EXISTS(SELECT 1 FROM tblModel WHERE key = ?1 AND version = ?2)", -1, &res, nullptr) != SQLITE_OK ||
+      sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, NULL) != SQLITE_OK ||
+      sqlite3_bind_int (res, 2, version) != SQLITE_OK ||
+      sqlite3_step (res) != SQLITE_ROW ||
+      sqlite3_column_int (res, 0) != 1) {
+    sqlite3_finalize (res);
+    throw std::invalid_argument ("There is no model with name " + name + " and version " + std::to_string (version));
   }
 
   sqlite3_finalize (res);
@@ -539,25 +486,25 @@ MLServiceDB::activate_model (const std::string name, const guint version)
   }
 
   /* set other row active as F */
-  sql = g_strdup_printf ("UPDATE tblModel SET active = 'F' WHERE key = '%s';", key_with_prefix.c_str ());
-  rc = sqlite3_exec (_db, sql, nullptr, nullptr, &errmsg);
-  g_free (sql);
-  if (rc != SQLITE_OK) {
-    g_critical ("Failed to deactivate model other than name %s: %s (%d)", name.c_str (), errmsg, rc);
-    sqlite3_clear_errmsg (errmsg);
-    throw std::runtime_error ("Failed to update model description.");
+  if (sqlite3_prepare_v2 (_db, "UPDATE tblModel SET active = 'F' WHERE key = ?1", -1, &res, nullptr) != SQLITE_OK ||
+      sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, NULL) != SQLITE_OK ||
+      sqlite3_step (res) != SQLITE_DONE) {
+    sqlite3_finalize (res);
+    throw std::runtime_error ("Failed to deactivate other models of " + name);
   }
 
-  /* (key, version, active, path, description) */
-  sql = g_strdup_printf ("UPDATE tblModel SET active = 'T' WHERE key = '%s' AND version = %u;",
-      key_with_prefix.c_str (), version);
-  rc = sqlite3_exec (_db, sql, nullptr, nullptr, &errmsg);
-  g_free (sql);
-  if (rc != SQLITE_OK) {
-    g_critical ("Failed to activate model with name %s with version %u: %s (%d)", name.c_str (), version, errmsg, rc);
-    sqlite3_clear_errmsg (errmsg);
-    throw std::runtime_error ("Failed to update model description.");
+  sqlite3_finalize (res);
+
+  /* set the given row active as T */
+  if (sqlite3_prepare_v2 (_db, "UPDATE tblModel SET active = 'T' WHERE key = ?1 AND version = ?2", -1, &res, nullptr) != SQLITE_OK ||
+      sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, NULL) != SQLITE_OK ||
+      sqlite3_bind_int (res, 2, version) != SQLITE_OK ||
+      sqlite3_step (res) != SQLITE_DONE) {
+    sqlite3_finalize (res);
+    throw std::runtime_error ("Failed to activate model with name " + name + " of version " + std::to_string (version));
   }
+
+  sqlite3_finalize (res);
 
   rc = sqlite3_exec (_db, "END TRANSACTION;", nullptr, nullptr, &errmsg);
   if (rc != SQLITE_OK) {
@@ -576,7 +523,6 @@ MLServiceDB::activate_model (const std::string name, const guint version)
 void
 MLServiceDB::get_model (const std::string name, std::string &model, const gint version)
 {
-  int rc;
   char *sql;
   char *value = nullptr;
   sqlite3_stmt *res;
@@ -588,36 +534,27 @@ MLServiceDB::get_model (const std::string name, std::string &model, const gint v
   key_with_prefix += name;
 
   if (version == 0)
-    sql = g_strdup_printf ("SELECT json_group_array(json_object('key', key, 'version', CAST(version AS TEXT), 'active', active, 'path', path, 'description', description)) FROM tblModel WHERE key = '%s';",
-      key_with_prefix.c_str ());
+    sql = g_strdup ("SELECT json_group_array(json_object('key', key, 'version', CAST(version AS TEXT), 'active', active, 'path', path, 'description', description)) FROM tblModel WHERE key = ?1");
   else if (version == -1)
-    sql = g_strdup_printf ("SELECT json_object('key', key, 'version', CAST(version AS TEXT), 'active', active, 'path', path, 'description', description) FROM tblModel WHERE key = '%s' and active = 'T' ORDER BY version DESC LIMIT 1;",
-        key_with_prefix.c_str ());
+    sql = g_strdup ("SELECT json_object('key', key, 'version', CAST(version AS TEXT), 'active', active, 'path', path, 'description', description) FROM tblModel WHERE key = ?1 and active = 'T' ORDER BY version DESC LIMIT 1");
   else if (version > 0)
-    sql = g_strdup_printf ("SELECT json_object('key', key, 'version', CAST(version AS TEXT), 'active', active, 'path', path, 'description', description) FROM tblModel WHERE key = '%s' and version = %d;",
-        key_with_prefix.c_str (), version);
+    sql = g_strdup_printf ("SELECT json_object('key', key, 'version', CAST(version AS TEXT), 'active', active, 'path', path, 'description', description) FROM tblModel WHERE key = ?1 and version = %d", version);
   else
     throw std::invalid_argument ("Invalid version parameter!");
 
-  rc = sqlite3_prepare_v2 (_db, sql, -1, &res, nullptr);
-  g_free (sql);
-  if (rc != SQLITE_OK) {
-    g_critical ("Failed to get model info with name %s: %s (%d)", name.c_str (), sqlite3_errmsg (_db), rc);
-    goto error;
-  }
-
-  rc = sqlite3_step (res);
-  if (rc == SQLITE_ROW)
+  if (sqlite3_prepare_v2 (_db, sql, -1, &res, nullptr) == SQLITE_OK &&
+      sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, NULL) == SQLITE_OK &&
+      sqlite3_step (res) == SQLITE_ROW)
     value = g_strdup_printf ("%s", sqlite3_column_text (res, 0));
 
   sqlite3_finalize (res);
+  g_free (sql);
 
-error:
   if (value) {
     model = std::string (value);
     g_free (value);
   } else {
-    throw std::invalid_argument ("Failed to get model.");
+    throw std::invalid_argument ("Failed to get model with name " + name + " and version " + std::to_string (version));
   }
 }
 
@@ -631,7 +568,6 @@ MLServiceDB::delete_model (const std::string name, const guint version)
 {
   int rc;
   char *sql;
-  char *errmsg = nullptr;
   sqlite3_stmt *res;
 
   if (name.empty ())
@@ -642,46 +578,40 @@ MLServiceDB::delete_model (const std::string name, const guint version)
 
   /* existence check */
   if (0U != version) {
-    sql = g_strdup_printf ("SELECT EXISTS(SELECT 1 FROM tblModel WHERE key = '%s' AND version = %u);",
-      key_with_prefix.c_str (), version);
-    rc = sqlite3_prepare_v2 (_db, sql, -1, &res, nullptr);
-    g_free (sql);
-    if (rc != SQLITE_OK) {
-      g_critical ("Failed to check the existence of model with name %s: %s (%d)", name.c_str (), errmsg, rc);
-      sqlite3_clear_errmsg (errmsg);
-      throw std::runtime_error ("Failed to check the existence of model.");
+    if (sqlite3_prepare_v2 (_db, "SELECT EXISTS(SELECT 1 FROM tblModel WHERE key = ?1 AND version = ?2);", -1, &res, nullptr) != SQLITE_OK ||
+        sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, NULL) != SQLITE_OK ||
+        sqlite3_bind_int (res, 2, version) != SQLITE_OK ||
+        sqlite3_step (res) != SQLITE_ROW) {
+      sqlite3_finalize (res);
+      throw std::runtime_error ("Failed to check the existence of model with name " + name + " and version " + std::to_string (version));
     }
 
-    rc = sqlite3_step (res);
-    if (rc == SQLITE_ROW) {
-      int count = sqlite3_column_int (res, 0);
-      if (count != 1) {
-        g_critical ("There is no model with name %s and version %u", name.c_str (), version);
-        sqlite3_finalize (res);
-        throw std::invalid_argument ("There is no model with the given name and version.");
-      }
+    if (sqlite3_column_int (res, 0) != 1) {
+      sqlite3_finalize (res);
+      throw std::invalid_argument ("There is no model with name " + name + " and version " + std::to_string (version));
     }
 
     sqlite3_finalize (res);
   }
 
   if (0U == version)
-    sql = g_strdup_printf ("DELETE FROM tblModel WHERE key = '%s';",
-      key_with_prefix.c_str ());
+    sql = g_strdup ("DELETE FROM tblModel WHERE key = ?1");
   else
-    sql = g_strdup_printf ("DELETE FROM tblModel WHERE key = '%s' and version = %u;",
-      key_with_prefix.c_str (), version);
-  rc = sqlite3_exec (_db, sql, nullptr, nullptr, &errmsg);
-  g_free (sql);
-  if (rc != SQLITE_OK) {
-    g_critical ("Failed to delete model with name %s: %s (%d)", name.c_str (), errmsg, rc);
-    sqlite3_clear_errmsg (errmsg);
-    throw std::invalid_argument ("Failed to delete model.");
+    sql = g_strdup_printf ("DELETE FROM tblModel WHERE key = ?1 and version = %u", version);
+
+  if (sqlite3_prepare_v2 (_db, sql, -1, &res, nullptr) != SQLITE_OK ||
+      sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, NULL) != SQLITE_OK ||
+      sqlite3_step (res) != SQLITE_DONE) {
+    sqlite3_finalize (res);
+    g_free (sql);
+    throw std::runtime_error ("Failed to delete model with name " + name + " and version " + std::to_string (version));
   }
+
+  sqlite3_finalize (res);
+  g_free (sql);
 
   rc = sqlite3_changes (_db);
   if (rc == 0) {
-    g_critical ("Failed to delete model with name %s", name.c_str ());
-    throw std::invalid_argument ("There is no model with the given name.");
+    throw std::invalid_argument ("There is no model with the given name " + name + " and version " + std::to_string (version));
   }
 }
