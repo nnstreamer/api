@@ -930,7 +930,8 @@ TEST_F (MLServiceAgentTest, model_ml_option_get_00_n)
   status = ml_option_get (info_h, key, (void **) &value);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  g_free (info_h);
+  status = ml_option_destroy (info_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
 }
 
 /**
