@@ -52,6 +52,19 @@ convert_ml_tensor_type_from (tensor_type type)
   return (ml_tensor_type_e) type;
 }
 
+static gboolean
+gst_info_is_extended (const GstTensorsInfo * gst_info)
+{
+  int i, j;
+  for (i = 0; i < gst_info->num_tensors; i++) {
+    for (j = ML_TENSOR_RANK_LIMIT_PREV; j < NNS_TENSOR_RANK_LIMIT; j++) {
+      if (gst_info->info[i].dimension[j] != 1)
+        return TRUE;
+    }
+  }
+  return FALSE;
+}
+
 /**
  * @brief Allocates a tensors information handle from gst info.
  */
@@ -59,6 +72,8 @@ int
 _ml_tensors_info_create_from_gst (ml_tensors_info_h * ml_info,
     GstTensorsInfo * gst_info)
 {
+  gboolean is_extended;
+
   if (!ml_info)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, ml_info, is NULL. It should be a valid ml_tensors_info_h instance usually created by ml_tensors_info_create(). This could be an internal bug of ML API.");
@@ -67,8 +82,15 @@ _ml_tensors_info_create_from_gst (ml_tensors_info_h * ml_info,
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, gst_info, is NULL. It should be a valid GstTensorsInfo instance. This could be an internal bug of ML API.");
 
-  _ml_error_report_return_continue_iferr (ml_tensors_info_create (ml_info),
-      "The call to ml_tensors_info_create has failed with %d.", _ERRNO);
+  is_extended = gst_info_is_extended (gst_info);
+  if (is_extended)
+    _ml_error_report_return_continue_iferr (ml_tensors_info_create_extended
+        (ml_info),
+        "The call to ml_tensors_info_create_extended has failed with %d.",
+        _ERRNO);
+  else
+    _ml_error_report_return_continue_iferr (ml_tensors_info_create (ml_info),
+        "The call to ml_tensors_info_create has failed with %d.", _ERRNO);
 
   _ml_tensors_info_copy_from_gst (*ml_info, gst_info);
   return ML_ERROR_NONE;
@@ -97,6 +119,7 @@ _ml_tensors_info_copy_from_gst (ml_tensors_info_s * ml_info,
   max_dim = MIN (ML_TENSOR_RANK_LIMIT, NNS_TENSOR_RANK_LIMIT);
 
   ml_info->num_tensors = gst_info->num_tensors;
+  ml_info->is_extended = gst_info_is_extended (gst_info);
 
   for (i = 0; i < gst_info->num_tensors; i++) {
     /* Copy name string */
@@ -114,6 +137,12 @@ _ml_tensors_info_copy_from_gst (ml_tensors_info_s * ml_info,
 
     for (; j < ML_TENSOR_RANK_LIMIT; j++) {
       ml_info->info[i].dimension[j] = 1;
+    }
+
+    if (!ml_info->is_extended) {
+      for (j = ML_TENSOR_RANK_LIMIT_PREV; j < ML_TENSOR_RANK_LIMIT; j++) {
+        ml_info->info[i].dimension[j] = 1;
+      }
     }
   }
   return ML_ERROR_NONE;
@@ -159,6 +188,12 @@ _ml_tensors_info_copy_from_ml (GstTensorsInfo * gst_info,
 
     for (; j < NNS_TENSOR_RANK_LIMIT; j++) {
       gst_info->info[i].dimension[j] = 1;
+    }
+
+    if (!ml_info->is_extended) {
+      for (j = ML_TENSOR_RANK_LIMIT_PREV; j < NNS_TENSOR_RANK_LIMIT; j++) {
+        gst_info->info[i].dimension[j] = 1;
+      }
     }
   }
   G_UNLOCK_UNLESS_NOLOCK (*ml_info);

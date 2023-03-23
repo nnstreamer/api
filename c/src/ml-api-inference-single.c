@@ -295,7 +295,8 @@ __setup_in_out_tensors (ml_single * single_h)
     /** memory will be allocated by tensor_filter_single */
     in_tensors->tensors[i].tensor = NULL;
     in_tensors->tensors[i].size =
-        _ml_tensor_info_get_size (&single_h->in_info.info[i]);
+        _ml_tensor_info_get_size (&single_h->in_info.info[i],
+        single_h->in_info.is_extended);
   }
 
   /** Setup output buffer */
@@ -307,7 +308,8 @@ __setup_in_out_tensors (ml_single * single_h)
     /** memory will be allocated by tensor_filter_single */
     out_tensors->tensors[i].tensor = NULL;
     out_tensors->tensors[i].size =
-        _ml_tensor_info_get_size (&single_h->out_info.info[i]);
+        _ml_tensor_info_get_size (&single_h->out_info.info[i],
+        single_h->out_info.is_extended);
   }
 }
 
@@ -453,6 +455,44 @@ __process_output (ml_single * single_h, ml_tensors_data_h output)
     out_data = (ml_tensors_data_s *) output;
     set_destroy_notify (single_h, out_data, FALSE);
   }
+}
+
+/**
+ * @brief Initializes the rank information with default value.
+ */
+static int
+_ml_tensors_rank_initialize (guint * rank)
+{
+  guint i;
+
+  if (!rank)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, rank, is NULL. Provide a valid pointer.");
+
+  for (i = 0; i < ML_TENSOR_SIZE_LIMIT; i++) {
+    rank[i] = 0;
+  }
+
+  return ML_ERROR_NONE;
+}
+
+/**
+ * @brief Sets the rank information with given value.
+ */
+static int
+_ml_tensors_set_rank (guint * rank, guint val)
+{
+  guint i;
+
+  if (!rank)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, rank, is NULL. Provide a valid pointer.");
+
+  for (i = 0; i < ML_TENSOR_SIZE_LIMIT; i++) {
+    rank[i] = val;
+  }
+
+  return ML_ERROR_NONE;
 }
 
 /**
@@ -1098,8 +1138,22 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
   }
 
   /* Setup input and output memory buffers for invoke */
-  ml_tensors_info_create (&single_h->in_tensors.info);
-  ml_tensors_info_create (&single_h->out_tensors.info);
+  if (in_tensors_info && in_tensors_info->is_extended) {
+    ml_tensors_info_create_extended (&single_h->in_tensors.info);
+    _ml_tensors_set_rank (single_h->input_ranks, ML_TENSOR_RANK_LIMIT);
+  } else {
+    ml_tensors_info_create (&single_h->in_tensors.info);
+    _ml_tensors_set_rank (single_h->input_ranks, ML_TENSOR_RANK_LIMIT_PREV);
+  }
+
+  if (out_tensors_info && out_tensors_info->is_extended) {
+    ml_tensors_info_create_extended (&single_h->out_tensors.info);
+    _ml_tensors_set_rank (single_h->output_ranks, ML_TENSOR_RANK_LIMIT);
+  } else {
+    ml_tensors_info_create (&single_h->out_tensors.info);
+    _ml_tensors_set_rank (single_h->output_ranks, ML_TENSOR_RANK_LIMIT_PREV);
+  }
+
   __setup_in_out_tensors (single_h);
 
   *single = single_h;
