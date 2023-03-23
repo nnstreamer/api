@@ -371,7 +371,8 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
           }
 
           for (i = 0; i < _info->num_tensors; i++) {
-            size_t sz = _ml_tensor_info_get_size (&_info->info[i]);
+            size_t sz =
+                _ml_tensor_info_get_size (&_info->info[i], _info->is_extended);
 
             /* Not configured, yet. */
             if (sz == 0)
@@ -1552,7 +1553,8 @@ ml_pipeline_src_parse_tensors_info (ml_pipeline_element * elem)
     elem->is_flexible_tensor = flexible;
     if (!flexible) {
       for (i = 0; i < _info->num_tensors; i++) {
-        elem->size += _ml_tensor_info_get_size (&_info->info[i]);
+        elem->size +=
+            _ml_tensor_info_get_size (&_info->info[i], _info->is_extended);
       }
     }
   } else {
@@ -1713,7 +1715,8 @@ ml_pipeline_src_input_data (ml_pipeline_src_h h, ml_tensors_data_h data,
     }
 
     for (i = 0; i < elem->tensors_info.num_tensors; i++) {
-      size_t sz = _ml_tensor_info_get_size (&elem->tensors_info.info[i]);
+      size_t sz = _ml_tensor_info_get_size (&elem->tensors_info.info[i],
+          elem->tensors_info.is_extended);
 
       if (sz != _data->tensors[i].size) {
         _ml_error_report
@@ -1921,7 +1924,7 @@ ml_pipeline_src_get_tensors_info (ml_pipeline_src_h h, ml_tensors_info_h * info)
   ret = ml_pipeline_src_parse_tensors_info (elem);
 
   if (ret == ML_ERROR_NONE) {
-    ml_tensors_info_create (info);
+    ml_tensors_info_create_extended (info);
     ml_tensors_info_clone (*info, &elem->tensors_info);
   } else {
     _ml_error_report_continue
@@ -2888,8 +2891,8 @@ ml_pipeline_custom_easy_filter_register (const char *name,
   c->ref_count = 0;
   c->cb = cb;
   c->pdata = user_data;
-  ml_tensors_info_create (&c->in_info);
-  ml_tensors_info_create (&c->out_info);
+  ml_tensors_info_create_extended (&c->in_info);
+  ml_tensors_info_create_extended (&c->out_info);
 
   status = ml_tensors_info_clone (c->in_info, in);
   if (status != ML_ERROR_NONE) {

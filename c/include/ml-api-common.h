@@ -96,9 +96,10 @@ typedef enum {
 /******* ML API Common Data Structure for Inference, Training, and Service */
 /**
  * @brief The maximum rank that NNStreamer supports with Tizen APIs.
+ * @remarks The maximum rank in Tizen APIs is 4 until tizen 7.0 and 16 since 7.5
  * @since_tizen 5.5
  */
-#define ML_TENSOR_RANK_LIMIT  (4)
+#define ML_TENSOR_RANK_LIMIT  (16)
 
 /**
  * @brief The maximum number of other/tensor instances that other/tensors may have.
@@ -179,6 +180,19 @@ typedef int (*ml_custom_easy_invoke_cb) (const ml_tensors_data_h in, ml_tensors_
  * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
  */
 int ml_tensors_info_create (ml_tensors_info_h *info);
+
+/**
+ * @brief Creates an extended tensors information handle with default value.
+ * @details An extended tensors support higher rank limit.
+ * @since_tizen 7.5
+ * @param[out] info The handle of tensors information.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
+ * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
+ */
+int ml_tensors_info_create_extended (ml_tensors_info_h *info);
 
 /**
  * @brief Frees the given handle of a tensors information.

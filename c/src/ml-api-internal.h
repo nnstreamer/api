@@ -129,6 +129,12 @@ typedef enum {
 #define WAIT_PAUSED_TIME_LIMIT 100
 
 /**
+ * @brief The previous maximum rank that NNStreamer supports.
+ * @details NNStreamer supports max rank 4 before 2.3.1
+ */
+#define ML_TENSOR_RANK_LIMIT_PREV  (4)
+
+/**
  * @brief Data structure for tensor information.
  * @since_tizen 5.5
  */
@@ -147,6 +153,7 @@ typedef struct {
   ml_tensor_info_s info[ML_TENSOR_SIZE_LIMIT];  /**< The list of tensor info. */
   GMutex lock; /**< Lock for thread safety */
   int nolock; /**< Set non-zero to avoid using m (giving up thread safety) */
+  bool is_extended; /**< True if tensors are extended */
 } ml_tensors_info_s;
 
 /**
@@ -255,7 +262,7 @@ typedef struct {
  * @brief Gets the byte size of the given tensor info.
  * @note This is not thread safe.
  */
-size_t _ml_tensor_info_get_size (const ml_tensor_info_s *info);
+size_t _ml_tensor_info_get_size (const ml_tensor_info_s *info, bool is_extended);
 
 /**
  * @brief Initializes the tensors information with default value.
@@ -266,16 +273,6 @@ size_t _ml_tensor_info_get_size (const ml_tensor_info_s *info);
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
  */
 int _ml_tensors_info_initialize (ml_tensors_info_s *info);
-
-/**
- * @brief Initializes the rank information with default value.
- * @since_tizen 7.5
- * @param[in] info The rank array pointer to be initialized.
- * @return @c 0 on success. Otherwise a negative error value.
- * @retval #ML_ERROR_NONE Successful
- * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
- */
-int _ml_tensors_rank_initialize (guint *rank);
 
 /**
  * @brief Frees and initialize the data in tensors info.
