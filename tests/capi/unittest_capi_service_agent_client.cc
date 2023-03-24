@@ -451,6 +451,26 @@ TEST_F (MLServiceAgentTest, destroy_00_n)
 }
 
 /**
+ * @brief Test ml_service_destroy with explicit invalid param.
+ */
+TEST_F (MLServiceAgentTest, destroy_01_n)
+{
+  int status;
+  ml_service_h h;
+
+  ml_service_s *mls = g_new0 (ml_service_s, 1);
+  _ml_service_server_s *server = g_new0 (_ml_service_server_s, 1);
+  mls->priv = server;
+  mls->type = ML_SERVICE_TYPE_MAX;
+
+  h = (ml_service_h) mls;
+  status = ml_service_destroy (h);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  g_free (server);
+}
+
+/**
  * @brief Test ml_service APIs with invalid handle.
  */
 TEST_F (MLServiceAgentTest, explicit_invalid_handle_00_n)
@@ -1133,6 +1153,89 @@ TEST_F (MLServiceAgentTest, model_scenario)
 
   g_free (test_model1);
   g_free (test_model2);
+}
+
+/**
+ * @brief Negative test for pipeline. With DBus unconnected.
+ */
+TEST (MLServiceAgentTestDbusUnconnected, pipeline_n)
+{
+  int status;
+
+  status = ml_service_set_pipeline ("test", "test");
+  EXPECT_EQ (ML_ERROR_IO_ERROR, status);
+
+  gchar *ret_pipeline;
+  status = ml_service_get_pipeline ("test", &ret_pipeline);
+  EXPECT_EQ (ML_ERROR_IO_ERROR, status);
+
+
+  ml_service_h service;
+  status = ml_service_launch_pipeline ("test", &service);
+  EXPECT_EQ (ML_ERROR_IO_ERROR, status);
+
+  ml_service_s *mls = g_new0 (ml_service_s, 1);
+  _ml_service_server_s *server = g_new0 (_ml_service_server_s, 1);
+  mls->priv = server;
+
+  server->id = -987654321; /* explicitly set id as invalid number */
+
+  service = (ml_service_h) mls;
+  status = ml_service_start_pipeline (service);
+  EXPECT_EQ (ML_ERROR_IO_ERROR, status);
+
+  status = ml_service_stop_pipeline (service);
+  EXPECT_EQ (ML_ERROR_IO_ERROR, status);
+
+  ml_pipeline_state_e state;
+  status = ml_service_get_pipeline_state (service, &state);
+  EXPECT_EQ (ML_ERROR_IO_ERROR, status);
+
+  mls->type = ML_SERVICE_TYPE_SERVER_PIPELINE;
+  status = ml_service_destroy (service);
+  EXPECT_EQ (ML_ERROR_IO_ERROR, status);
+}
+
+/**
+ * @brief Negative test for model. With DBus unconnected.
+ */
+TEST (MLServiceAgentTestDbusUnconnected, model_n)
+{
+  int status;
+
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
+  unsigned int version;
+
+  /* ml_service_model_register() requires absolute path to model, ignore this case. */
+  if (root_path == NULL)
+    return;
+
+  gchar *test_model = g_build_filename (root_path, "tests", "test_models", "models",
+      "mobilenet_v1_1.0_224_quant.tflite", NULL);
+  ASSERT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
+
+  status = ml_service_model_register ("test", test_model, false, "test", &version);
+  EXPECT_EQ (ML_ERROR_IO_ERROR, status);
+
+  g_free (test_model);
+
+  status = ml_service_model_update_description ("test", 1U, "test");
+  EXPECT_EQ (ML_ERROR_IO_ERROR, status);
+
+  status = ml_service_model_activate ("test", 1U);
+  EXPECT_EQ (ML_ERROR_IO_ERROR, status);
+
+  ml_option_h model_info;
+  status = ml_service_model_get ("test", 1U, &model_info);
+  EXPECT_EQ (ML_ERROR_IO_ERROR, status);
+
+  status = ml_service_model_get_activated ("test", &model_info);
+  EXPECT_EQ (ML_ERROR_IO_ERROR, status);
+
+  ml_option_h *info_list;
+  guint info_num;
+  status = ml_service_model_get_all ("test", &info_list, &info_num);
+  EXPECT_EQ (ML_ERROR_IO_ERROR, status);
 }
 
 /**
