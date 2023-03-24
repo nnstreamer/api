@@ -468,6 +468,7 @@ TEST_F (MLServiceAgentTest, destroy_01_n)
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
   g_free (server);
+  g_free (mls);
 }
 
 /**
@@ -1194,6 +1195,9 @@ TEST (MLServiceAgentTestDbusUnconnected, pipeline_n)
   mls->type = ML_SERVICE_TYPE_SERVER_PIPELINE;
   status = ml_service_destroy (service);
   EXPECT_EQ (ML_ERROR_IO_ERROR, status);
+
+  g_free (server);
+  g_free (mls);
 }
 
 /**
