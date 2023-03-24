@@ -25,7 +25,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 typedef enum {
-  ML_SERVICE_TYPE = 0,
+  ML_SERVICE_TYPE_UNKNOWN = 0,
   ML_SERVICE_TYPE_SERVER_PIPELINE,
   ML_SERVICE_TYPE_CLIENT_QUERY,
 

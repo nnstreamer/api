@@ -89,9 +89,7 @@ ml_service_destroy (ml_service_h h)
 
     mlsp = _get_mlsp_proxy_new_for_bus_sync ();
     if (!mlsp) {
-      _ml_error_report ("Failed to get dbus proxy.");
-      ret = ML_ERROR_IO_ERROR;
-      goto exit;
+      _ml_error_report_return (ML_ERROR_IO_ERROR, "Failed to get dbus proxy.");
     }
 
     result = machinelearning_service_pipeline_call_destroy_pipeline_sync (mlsp,
@@ -106,8 +104,8 @@ ml_service_destroy (ml_service_h h)
     }
     g_clear_error (&err);
 
-    if (ML_ERROR_INVALID_PARAMETER == ret)
-      _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+    if (ML_ERROR_NONE != ret)
+      _ml_error_report_return (ret,
           "The data of given handle is corrupted. Please check it.");
 
     g_free (server->service_name);
@@ -132,13 +130,10 @@ ml_service_destroy (ml_service_h h)
     g_async_queue_unref (query->out_data_queue);
     g_free (query);
   } else {
-    _ml_error_report ("Invalid type of ml_service_h.");
-    ret = ML_ERROR_INVALID_PARAMETER;
-    goto exit;
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "Invalid type of ml_service_h.");
   }
 
-exit:
   g_free (mls);
-
-  return ret;
+  return ML_ERROR_NONE;
 }
