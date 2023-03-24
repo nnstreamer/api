@@ -90,7 +90,7 @@ ml_service_destroy (ml_service_h h)
     mlsp = _get_mlsp_proxy_new_for_bus_sync ();
     if (!mlsp) {
       _ml_error_report ("Failed to get dbus proxy.");
-      ret = ML_ERROR_INVALID_PARAMETER;
+      ret = ML_ERROR_IO_ERROR;
       goto exit;
     }
 

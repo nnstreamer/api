@@ -42,8 +42,7 @@ ml_service_set_pipeline (const char *name, const char *pipeline_desc)
 
   mlsp = _get_mlsp_proxy_new_for_bus_sync ();
   if (!mlsp) {
-    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
-        "Failed to get dbus proxy.");
+    _ml_error_report_return (ML_ERROR_IO_ERROR, "Failed to get dbus proxy.");
   }
 
   result = machinelearning_service_pipeline_call_set_pipeline_sync (mlsp, name,
@@ -86,8 +85,7 @@ ml_service_get_pipeline (const char *name, char **pipeline_desc)
 
   mlsp = _get_mlsp_proxy_new_for_bus_sync ();
   if (!mlsp) {
-    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
-        "Failed to get dbus proxy.");
+    _ml_error_report_return (ML_ERROR_IO_ERROR, "Failed to get dbus proxy.");
   }
 
   result = machinelearning_service_pipeline_call_get_pipeline_sync (mlsp, name,
@@ -125,8 +123,7 @@ ml_service_delete_pipeline (const char *name)
 
   mlsp = _get_mlsp_proxy_new_for_bus_sync ();
   if (!mlsp) {
-    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
-        "Failed to get dbus proxy.");
+    _ml_error_report_return (ML_ERROR_IO_ERROR, "Failed to get dbus proxy.");
   }
 
   result = machinelearning_service_pipeline_call_delete_pipeline_sync (mlsp,
@@ -166,8 +163,7 @@ ml_service_launch_pipeline (const char *name, ml_service_h * h)
 
   mlsp = _get_mlsp_proxy_new_for_bus_sync ();
   if (!mlsp) {
-    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
-        "Failed to get dbus proxy.");
+    _ml_error_report_return (ML_ERROR_IO_ERROR, "Failed to get dbus proxy.");
   }
 
   result = machinelearning_service_pipeline_call_launch_pipeline_sync (mlsp,
@@ -227,8 +223,7 @@ ml_service_start_pipeline (ml_service_h h)
 
   mlsp = _get_mlsp_proxy_new_for_bus_sync ();
   if (!mlsp) {
-    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
-        "Failed to get dbus proxy.");
+    _ml_error_report_return (ML_ERROR_IO_ERROR, "Failed to get dbus proxy.");
   }
 
   server = (_ml_service_server_s *) mls->priv;
@@ -268,8 +263,7 @@ ml_service_stop_pipeline (ml_service_h h)
 
   mlsp = _get_mlsp_proxy_new_for_bus_sync ();
   if (!mlsp) {
-    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
-        "Failed to get dbus proxy.");
+    _ml_error_report_return (ML_ERROR_IO_ERROR, "Failed to get dbus proxy.");
   }
 
   server = (_ml_service_server_s *) mls->priv;
@@ -314,8 +308,7 @@ ml_service_get_pipeline_state (ml_service_h h, ml_pipeline_state_e * state)
 
   mlsp = _get_mlsp_proxy_new_for_bus_sync ();
   if (!mlsp) {
-    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
-        "Failed to get dbus proxy.");
+    _ml_error_report_return (ML_ERROR_IO_ERROR, "Failed to get dbus proxy.");
   }
 
   server = (_ml_service_server_s *) mls->priv;
@@ -381,8 +374,7 @@ ml_service_model_register (const char *name, const char *path,
 
   mlsm = _get_mlsm_proxy_new_for_bus_sync ();
   if (!mlsm) {
-    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
-        "Failed to get dbus proxy.");
+    _ml_error_report_return (ML_ERROR_IO_ERROR, "Failed to get dbus proxy.");
   }
 
   result =
@@ -430,8 +422,7 @@ ml_service_model_update_description (const char *name,
 
   mlsm = _get_mlsm_proxy_new_for_bus_sync ();
   if (!mlsm) {
-    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
-        "Failed to get dbus proxy.");
+    _ml_error_report_return (ML_ERROR_IO_ERROR, "Failed to get dbus proxy.");
   }
 
   result = machinelearning_service_model_call_update_description_sync (mlsm,
@@ -474,8 +465,7 @@ ml_service_model_activate (const char *name, const unsigned int version)
 
   mlsm = _get_mlsm_proxy_new_for_bus_sync ();
   if (!mlsm) {
-    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
-        "Failed to get dbus proxy.");
+    _ml_error_report_return (ML_ERROR_IO_ERROR, "Failed to get dbus proxy.");
   }
 
   result = machinelearning_service_model_call_activate_sync (mlsm,
@@ -528,8 +518,7 @@ ml_service_model_get (const char *name, const unsigned int version,
 
   mlsm = _get_mlsm_proxy_new_for_bus_sync ();
   if (!mlsm) {
-    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
-        "Failed to get dbus proxy.");
+    _ml_error_report_return (ML_ERROR_IO_ERROR, "Failed to get dbus proxy.");
   }
 
   result = machinelearning_service_model_call_get_sync (mlsm,
@@ -632,8 +621,7 @@ ml_service_model_get_activated (const char *name, ml_option_h * info)
 
   mlsm = _get_mlsm_proxy_new_for_bus_sync ();
   if (!mlsm) {
-    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
-        "Failed to get dbus proxy.");
+    _ml_error_report_return (ML_ERROR_IO_ERROR, "Failed to get dbus proxy.");
   }
 
   result = machinelearning_service_model_call_get_activated_sync (mlsm,
@@ -740,8 +728,7 @@ ml_service_model_get_all (const char *name, ml_option_h * info_list[],
 
   mlsm = _get_mlsm_proxy_new_for_bus_sync ();
   if (!mlsm) {
-    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
-        "Failed to get dbus proxy.");
+    _ml_error_report_return (ML_ERROR_IO_ERROR, "Failed to get dbus proxy.");
   }
 
   result = machinelearning_service_model_call_get_all_sync (mlsm,
@@ -861,8 +848,7 @@ ml_service_model_delete (const char *name, const unsigned int version)
 
   mlsm = _get_mlsm_proxy_new_for_bus_sync ();
   if (!mlsm) {
-    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
-        "Failed to get dbus proxy.");
+    _ml_error_report_return (ML_ERROR_IO_ERROR, "Failed to get dbus proxy.");
   }
 
   result = machinelearning_service_model_call_delete_sync (mlsm,
