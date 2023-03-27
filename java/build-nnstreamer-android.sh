@@ -128,7 +128,7 @@ enable_mxnet="no"
 mxnet_ver="1.9.1"
 
 # Enable the flatbuffer converter/decoder by default
-enable_flatbuf="yes"
+enable_flatbuf="no"
 flatbuf_ver="1.12.0"
 
 # Enable option for MQTT
