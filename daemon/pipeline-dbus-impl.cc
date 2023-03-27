@@ -5,7 +5,7 @@
  */
 
 /**
- * @file    pipeline-module.cc
+ * @file    pipeline-dbus-impl.cc
  * @date    20 Jul 2022
  * @brief   Implementation of pipeline dbus interface.
  * @see     https://github.com/nnstreamer/api
