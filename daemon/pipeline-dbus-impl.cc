@@ -102,9 +102,6 @@ static gboolean dbus_cb_core_set_pipeline (MachinelearningServicePipeline *obj,
   } catch (const std::invalid_argument &e) {
     _E ("An exception occurred during write to the DB. Error message: %s", e.what ());
     result = -EINVAL;
-  } catch (const std::runtime_error &e) {
-    _E ("An exception occurred during write to the DB. Error message: %s", e.what ());
-    result = -EIO;
   } catch (const std::exception &e) {
     _E ("An exception occurred during write to the DB. Error message: %s", e.what ());
     result = -EIO;
@@ -139,9 +136,6 @@ static gboolean dbus_cb_core_get_pipeline (MachinelearningServicePipeline *obj,
   } catch (const std::invalid_argument &e) {
     _E ("An exception occurred during read the DB. Error message: %s", e.what ());
     result = -EINVAL;
-  } catch (const std::runtime_error &e) {
-    _E ("An exception occurred during read the DB. Error message: %s", e.what ());
-    result = -EIO;
   } catch (const std::exception &e) {
     _E ("An exception occurred during read the DB. Error message: %s", e.what ());
     result = -EIO;
@@ -175,9 +169,6 @@ static gboolean dbus_cb_core_delete_pipeline (MachinelearningServicePipeline *ob
   } catch (const std::invalid_argument &e) {
     _E ("An exception occurred during delete an item in the DB. Error message: %s", e.what ());
     result = -EINVAL;
-  } catch (const std::runtime_error &e) {
-    _E ("An exception occurred during delete an item in the DB. Error message: %s", e.what ());
-    result = -EIO;
   } catch (const std::exception &e) {
     _E ("An exception occurred during delete an item in the DB. Error message: %s", e.what ());
     result = -EIO;
@@ -218,9 +209,6 @@ static gboolean dbus_cb_core_launch_pipeline (MachinelearningServicePipeline *ob
   } catch (const std::invalid_argument &e) {
     _E ("An exception occurred during read the DB. Error message: %s", e.what ());
     result = -EINVAL;
-  } catch (const std::runtime_error &e) {
-    _E ("An exception occurred during read the DB. Error message: %s", e.what ());
-    result = -EIO;
   } catch (const std::exception &e) {
     _E ("An exception occurred during read the DB. Error message: %s", e.what ());
     result = -EIO;
