@@ -24,7 +24,6 @@ class MLServiceAgentTest : public::testing::Test
 {
 protected:
   GTestDBus *dbus;
-  GDBusProxy *proxy;
 
 public:
   /**
@@ -42,20 +41,6 @@ public:
     g_free (services_dir);
 
     g_test_dbus_up (dbus);
-
-    GError *error = NULL;
-    proxy = g_dbus_proxy_new_for_bus_sync (
-        G_BUS_TYPE_SESSION,
-        G_DBUS_PROXY_FLAGS_NONE,
-        NULL,
-        "org.tizen.machinelearning.service",
-        "/Org/Tizen/MachineLearning/Service/Pipeline",
-        "org.tizen.machinelearning.service.pipeline",
-        NULL,
-        &error);
-
-    ASSERT_EQ (nullptr, error);
-    ASSERT_NE (nullptr, proxy);
   }
 
   /**
@@ -63,9 +48,6 @@ public:
    */
   void TearDown () override
   {
-    if (proxy)
-      g_object_unref (proxy);
-
     if (dbus) {
       g_test_dbus_down (dbus);
       g_object_unref (dbus);
