@@ -393,6 +393,21 @@ TEST_F (MLServiceAgentTest, launch_pipeline_01_n)
 }
 
 /**
+ * @brief Test ml_service_launch_pipeline with invalid pipeline.
+ */
+TEST_F (MLServiceAgentTest, launch_pipeline_02_n)
+{
+  int status;
+  ml_service_h h;
+
+  status = ml_service_set_pipeline ("key", "invalid_element ! invalid_element");
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_service_launch_pipeline ("key", &h);
+  EXPECT_EQ (ML_ERROR_STREAMS_PIPE, status);
+}
+
+/**
  * @brief Test ml_service_start_pipeline with invalid param.
  */
 TEST_F (MLServiceAgentTest, start_pipeline_00_n)
@@ -1154,6 +1169,69 @@ TEST_F (MLServiceAgentTest, model_scenario)
 
   g_free (test_model1);
   g_free (test_model2);
+}
+
+/**
+ * @brief Negative testcase of pipeline gdbus call.
+ */
+TEST_F (MLServiceAgentTest, pipeline_gdbus_call_n)
+{
+  int ret;
+  GError *error = NULL;
+
+  MachinelearningServicePipeline *proxy_for_pipeline = machinelearning_service_pipeline_proxy_new_for_bus_sync (
+    G_BUS_TYPE_SESSION, G_DBUS_PROXY_FLAGS_NONE,
+    "org.tizen.machinelearning.service",
+    "/Org/Tizen/MachineLearning/Service/Pipeline", NULL, &error);
+
+  if (!proxy_for_pipeline || error) {
+    g_critical ("Failed to create proxy_for_pipeline for machinelearning service pipeline");
+    if (error) {
+      g_critical ("Error Message : %s", error->message);
+      g_clear_error (&error);
+    }
+    ASSERT_TRUE (false);
+  }
+
+  /* gdbus call with empty string */
+  machinelearning_service_pipeline_call_set_pipeline_sync (
+    proxy_for_pipeline, "", "", &ret, nullptr, nullptr);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, ret);
+}
+
+/**
+ * @brief Negative testcase of model gdbus call.
+ */
+TEST_F (MLServiceAgentTest, model_gdbus_call_n)
+{
+  int ret;
+  GError *error = NULL;
+
+  MachinelearningServiceModel *proxy_for_model = machinelearning_service_model_proxy_new_for_bus_sync (
+    G_BUS_TYPE_SESSION, G_DBUS_PROXY_FLAGS_NONE,
+    "org.tizen.machinelearning.service",
+    "/Org/Tizen/MachineLearning/Service/Model", NULL, &error);
+
+  if (!proxy_for_model || error) {
+    g_critical ("Failed to create proxy_for_model for machinelearning service model");
+    if (error) {
+      g_critical ("Error Message : %s", error->message);
+      g_clear_error (&error);
+    }
+    ASSERT_TRUE (false);
+  }
+
+  /* empty string */
+  machinelearning_service_model_call_register_sync (
+    proxy_for_model, "", "", false, "test", NULL, &ret, nullptr, nullptr);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, ret);
+
+  /* empty string */
+  machinelearning_service_model_call_get_all_sync (
+    proxy_for_model, "", NULL, &ret, nullptr, nullptr);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, ret);
+
+  g_object_unref (proxy_for_model);
 }
 
 /**
