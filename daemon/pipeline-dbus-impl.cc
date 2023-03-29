@@ -26,6 +26,7 @@
 #include <gdbus-util.h>
 #include <log.h>
 
+#include "pipeline-dbus.h"
 #include "service-db.hh"
 #include "dbus-interface.h"
 
@@ -66,6 +67,24 @@ static void _pipeline_free (gpointer data)
   g_mutex_clear (&p->lock);
 
   g_free (p);
+}
+
+/**
+ * @brief Get the skeleton object of the DBus interface.
+ */
+static MachinelearningServicePipeline *
+gdbus_get_pipeline_instance (void)
+{
+  return machinelearning_service_pipeline_skeleton_new ();
+}
+
+/**
+ * @brief Put the obtained skeleton object and release the resource.
+ */
+static void
+gdbus_put_pipeline_instance (MachinelearningServicePipeline ** instance)
+{
+  g_clear_object (instance);
 }
 
 /**
@@ -458,7 +477,7 @@ static int probe_pipeline_module (void *data)
 {
   int ret = 0;
 
-  g_gdbus_instance = gdbus_get_instance_pipeline ();
+  g_gdbus_instance = gdbus_get_pipeline_instance ();
   if (g_gdbus_instance == NULL) {
     _E ("cannot get a dbus instance for the %s interface\n",
         DBUS_PIPELINE_INTERFACE);
@@ -488,7 +507,7 @@ out_disconnect:
   gdbus_disconnect_signal (g_gdbus_instance,
       ARRAY_SIZE (handler_infos), handler_infos);
 out:
-  gdbus_put_instance_pipeline (&g_gdbus_instance);
+  gdbus_put_pipeline_instance (&g_gdbus_instance);
 
   return ret;
 }
@@ -528,7 +547,7 @@ static void exit_pipeline_module (void *data)
 
   gdbus_disconnect_signal (g_gdbus_instance,
       ARRAY_SIZE (handler_infos), handler_infos);
-  gdbus_put_instance_pipeline (&g_gdbus_instance);
+  gdbus_put_pipeline_instance (&g_gdbus_instance);
 }
 
 static const struct module_ops pipeline_ops = {

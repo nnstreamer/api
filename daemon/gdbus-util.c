@@ -115,34 +115,6 @@ gdbus_disconnect_signal (gpointer instance, int num_signals,
 }
 
 /**
- * @brief Cleanup the instance of the DBus interface.
- */
-static void
-put_instance (gpointer * instance)
-{
-  g_object_unref (*instance);
-  *instance = NULL;
-}
-
-/**
- * @brief Get the skeleton object of the DBus interface.
- */
-MachinelearningServicePipeline *
-gdbus_get_instance_pipeline (void)
-{
-  return machinelearning_service_pipeline_skeleton_new ();
-}
-
-/**
- * @brief Put the obtained skeleton object and release the resource.
- */
-void
-gdbus_put_instance_pipeline (MachinelearningServicePipeline ** instance)
-{
-  put_instance ((gpointer *) instance);
-}
-
-/**
  * @brief Connect to the DBus message bus, which type is SYSTEM.
  */
 int
