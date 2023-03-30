@@ -1,11 +1,16 @@
 # Machine Learning Agent
 # This file should be included when ml-service feature is enabled.
 nns_ml_agent_incs = include_directories('includes')
-nns_ml_agent_srcs = files('main.c', 'modules.c', 'gdbus-util.c',
-  'service-db.cc', 'pipeline-dbus-impl.cc', 'model-dbus-impl.cc')
-if get_option('enable-tizen')
-  nns_ml_agent_srcs += files('pkg-mgr.c')
+__nns_ml_agent_srcs = ['main.c', 'modules.c', 'gdbus-util.c',
+  'service-db.cc', 'pipeline-dbus-impl.cc', 'model-dbus-impl.cc']
+if (get_option('enable-tizen'))
+  __nns_ml_agent_srcs += 'pkg-mgr.c'
 endif
+
+nns_ml_agent_srcs = []
+foreach f : __nns_ml_agent_srcs
+  nns_ml_agent_srcs += files(join_paths(meson.global_source_root(), 'daemon', f))
+endforeach
 
 # Generate GDbus header and code
 gdbus_prog = find_program('gdbus-codegen', required: true)
