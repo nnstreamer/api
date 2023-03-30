@@ -1,11 +1,15 @@
 # Machine Learning Agent
 # This file should be included when ml-service feature is enabled.
 nns_ml_agent_incs = include_directories('includes')
-nns_ml_agent_srcs = files('main.c', 'modules.c', 'gdbus-util.c',
-  'service-db.cc', 'pipeline-dbus-impl.cc', 'model-dbus-impl.cc')
-if get_option('enable-tizen')
-  nns_ml_agent_srcs += files('pkg-mgr.c')
+nns_ml_agent_common_srcs = files('main.c', 'modules.c', 'gdbus-util.c',
+  'pipeline-dbus-impl.cc', 'model-dbus-impl.cc')
+nns_ml_agent_service_db_srcs = files('service-db.cc')
+
+if (get_option('enable-tizen'))
+  nns_ml_agent_common_srcs += files('pkg-mgr.c')
 endif
+
+nns_ml_agent_srcs = [nns_ml_agent_common_srcs, nns_ml_agent_service_db_srcs]
 
 # Generate GDbus header and code
 gdbus_prog = find_program('gdbus-codegen', required: true)
@@ -46,7 +50,7 @@ daemon_cpp_db_path_arg = '-DDB_PATH="' + serviceDBPath + '"'
 serviceDBKeyPrefix = get_option('service-db-key-prefix')
 daemon_cpp_db_key_prefix_arg = '-DMESON_KEY_PREFIX="' + serviceDBKeyPrefix + '"'
 
-executable('machine-learning-agent',
+nns_ml_agent_executable = executable('machine-learning-agent',
   nns_ml_agent_srcs,
   dependencies: [ai_service_daemon_deps],
   include_directories: nns_ml_agent_incs,
