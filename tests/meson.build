@@ -21,10 +21,12 @@ if gtest_dep.found()
     gdbus_gen_header_test_dep = declare_dependency(sources: gdbus_gen_test_src,
       dependencies: gdbus_gen_header_dep)
 
+    nns_ml_agent_common_objs = nns_ml_agent_executable.extract_objects(nns_ml_agent_common_srcs)
     executable('machine-learning-agent-test',
-      [nns_ml_agent_srcs, files('daemon/test-dbus-impl.c')],
+      [nns_ml_agent_service_db_srcs, files('daemon/test-dbus-impl.c')],
       dependencies: [ai_service_daemon_deps, gdbus_gen_header_test_dep],
       include_directories: nns_ml_agent_incs,
+      objects: [nns_ml_agent_common_objs],
       cpp_args: [daemon_cpp_db_key_prefix_arg, '-DDB_PATH="."']
     )
   endif
