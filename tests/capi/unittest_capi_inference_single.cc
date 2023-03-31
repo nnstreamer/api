@@ -2044,6 +2044,113 @@ skip_test:
   g_free (test_model);
 }
 
+/**
+ * @brief Test for input_ranks and output_ranks property of the ml_single
+ * @details Given dimension string, check its value.
+ */
+TEST (nnstreamer_capi_singleshot, property_05_p)
+{
+  ml_single_h single;
+  char *prop_value;
+  int status;
+
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
+  gchar *test_model;
+
+  /* supposed to run test in build directory */
+  if (root_path == NULL)
+    root_path = "..";
+
+  /** add.tflite adds value 2 to all the values in the input */
+  test_model = g_build_filename (
+      root_path, "tests", "test_models", "models", "add.tflite", NULL);
+  ASSERT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
+
+  status = ml_single_open (&single, test_model, NULL, NULL,
+      ML_NNFW_TYPE_TENSORFLOW_LITE, ML_NNFW_HW_ANY);
+  if (is_enabled_tensorflow_lite) {
+    EXPECT_EQ (status, ML_ERROR_NONE);
+  } else {
+    EXPECT_NE (status, ML_ERROR_NONE);
+    goto skip_test;
+  }
+
+  status = ml_single_set_property (single, "input", "5:1:1:1");
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_single_get_property (single, "input", &prop_value);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  EXPECT_STREQ (prop_value, "5:1:1:1");
+  g_free (prop_value);
+
+  status = ml_single_set_property (single, "input", "5:1:1");
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_single_get_property (single, "input", &prop_value);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  EXPECT_STREQ (prop_value, "5:1:1");
+  g_free (prop_value);
+
+  status = ml_single_set_property (single, "input", "5:1");
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_single_get_property (single, "input", &prop_value);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  EXPECT_STREQ (prop_value, "5:1");
+  g_free (prop_value);
+
+  status = ml_single_set_property (single, "input", "5");
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_single_get_property (single, "input", &prop_value);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  EXPECT_STREQ (prop_value, "5");
+  g_free (prop_value);
+
+  status = ml_single_set_property (single, "output", "5:1:1:1");
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_single_get_property (single, "output", &prop_value);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  EXPECT_STREQ (prop_value, "5:1:1:1");
+  g_free (prop_value);
+
+  status = ml_single_set_property (single, "output", "5:1:1");
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_single_get_property (single, "output", &prop_value);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  EXPECT_STREQ (prop_value, "5:1:1");
+  g_free (prop_value);
+
+  status = ml_single_set_property (single, "output", "5:1");
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_single_get_property (single, "output", &prop_value);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  EXPECT_STREQ (prop_value, "5:1");
+  g_free (prop_value);
+
+  status = ml_single_set_property (single, "output", "5");
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_single_get_property (single, "output", &prop_value);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  EXPECT_STREQ (prop_value, "5");
+  g_free (prop_value);
+
+skip_test:
+  g_free (test_model);
+}
+
 #ifdef ENABLE_NNFW_RUNTIME
 /**
  * @brief Test NNStreamer single shot (nnfw backend)

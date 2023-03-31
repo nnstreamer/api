@@ -268,6 +268,16 @@ size_t _ml_tensor_info_get_size (const ml_tensor_info_s *info);
 int _ml_tensors_info_initialize (ml_tensors_info_s *info);
 
 /**
+ * @brief Initializes the rank information with default value.
+ * @since_tizen 7.5
+ * @param[in] info The rank array pointer to be initialized.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful
+ * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
+ */
+int _ml_tensors_rank_initialize (guint *rank);
+
+/**
  * @brief Frees and initialize the data in tensors info.
  * @since_tizen 5.5
  * @param[in] info The tensors info pointer to be freed.

@@ -96,6 +96,25 @@ _ml_tensors_info_initialize (ml_tensors_info_s * info)
 }
 
 /**
+ * @brief Initializes the tensors information with default value.
+ */
+int
+_ml_tensors_rank_initialize (guint * rank)
+{
+  guint i;
+
+  if (!rank)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, rank, is NULL. Provide a valid pointer.");
+
+  for (i = 0; i < ML_TENSOR_SIZE_LIMIT; i++) {
+    rank[i] = 0;
+  }
+
+  return ML_ERROR_NONE;
+}
+
+/**
  * @brief Compares the given tensor info.
  */
 static gboolean
