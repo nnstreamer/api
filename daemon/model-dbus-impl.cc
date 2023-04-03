@@ -18,6 +18,7 @@
 #include "gdbus-util.h"
 #include "dbus-interface.h"
 #include "model-dbus.h"
+#include "log.h"
 #include "service-db.hh"
 
 static MachinelearningServiceModel *g_gdbus_instance = NULL;
@@ -67,10 +68,10 @@ gdbus_cb_model_register (MachinelearningServiceModel *obj,
     db.connectDB ();
     db.set_model (name, path, is_active, description, &version);
   } catch (const std::invalid_argument &e) {
-    g_critical ("%s", e.what ());
+    _E ("%s", e.what ());
     ret = -EINVAL;
   } catch (const std::exception &e) {
-    g_critical ("%s", e.what ());
+    _E ("%s", e.what ());
     ret = -EIO;
   }
 
@@ -104,10 +105,10 @@ gdbus_cb_model_update_description (MachinelearningServiceModel *obj,
     db.connectDB ();
     db.update_model_description (name, version, description);
   } catch (const std::invalid_argument &e) {
-    g_critical ("%s", e.what ());
+    _E ("%s", e.what ());
     ret = -EINVAL;
   } catch (const std::exception &e) {
-    g_critical ("%s", e.what ());
+    _E ("%s", e.what ());
     ret = -EIO;
   }
 
@@ -139,10 +140,10 @@ gdbus_cb_model_activate (MachinelearningServiceModel *obj,
     db.connectDB ();
     db.activate_model (name, version);
   } catch (const std::invalid_argument &e) {
-    g_critical ("%s", e.what ());
+    _E ("%s", e.what ());
     ret = -EINVAL;
   } catch (const std::exception &e) {
-    g_critical ("%s", e.what ());
+    _E ("%s", e.what ());
     ret = -EIO;
   }
 
@@ -174,10 +175,10 @@ gdbus_cb_model_get (MachinelearningServiceModel *obj,
     db.connectDB ();
     db.get_model (name, model_info, version);
   } catch (const std::invalid_argument &e) {
-    g_critical ("%s", e.what ());
+    _E ("%s", e.what ());
     ret = -EINVAL;
   } catch (const std::exception &e) {
-    g_critical ("%s", e.what ());
+    _E ("%s", e.what ());
     ret = -EIO;
   }
 
@@ -208,10 +209,10 @@ gdbus_cb_model_get_activated (MachinelearningServiceModel *obj,
     db.connectDB ();
     db.get_model (name, model_info, -1);
   } catch (const std::invalid_argument &e) {
-    g_critical ("%s", e.what ());
+    _E ("%s", e.what ());
     ret = -EINVAL;
   } catch (const std::exception &e) {
-    g_critical ("%s", e.what ());
+    _E ("%s", e.what ());
     ret = -EIO;
   }
 
@@ -243,10 +244,10 @@ gdbus_cb_model_get_all (MachinelearningServiceModel *obj,
     db.connectDB ();
     db.get_model (name, all_model_list, 0);
   } catch (const std::invalid_argument &e) {
-    g_critical ("%s", e.what ());
+    _E ("%s", e.what ());
     ret = -EINVAL;
   } catch (const std::exception &e) {
-    g_critical ("%s", e.what ());
+    _E ("%s", e.what ());
     ret = -EIO;
   }
 
@@ -279,10 +280,10 @@ gdbus_cb_model_delete (MachinelearningServiceModel *obj,
     db.connectDB ();
     db.delete_model (name, version);
   } catch (const std::invalid_argument &e) {
-    g_critical ("%s", e.what ());
+    _E ("%s", e.what ());
     ret = -EINVAL;
   } catch (const std::exception &e) {
-    g_critical ("%s", e.what ());
+    _E ("%s", e.what ());
     ret = -EIO;
   }
 
@@ -341,11 +342,11 @@ static int
 probe_model_module (void *data)
 {
   int ret = 0;
-  g_debug ("probe_model_module");
+  _D ("probe_model_module");
 
   g_gdbus_instance = gdbus_get_model_instance ();
   if (NULL == g_gdbus_instance) {
-    g_critical ("cannot get a dbus instance for the %s interface\n",
+    _E ("cannot get a dbus instance for the %s interface\n",
         DBUS_MODEL_INTERFACE);
     return -ENOSYS;
   }
@@ -353,16 +354,16 @@ probe_model_module (void *data)
   ret = gdbus_connect_signal (g_gdbus_instance,
       ARRAY_SIZE(handler_infos), handler_infos);
   if (ret < 0) {
-    g_critical ("cannot register callbacks as the dbus method invocation "
-        "handlers\n ret: %d", ret);
+    _E ("cannot register callbacks as the dbus method invocation handlers\n ret: %d",
+        ret);
     ret = -ENOSYS;
     goto out;
   }
 
   ret = gdbus_export_interface (g_gdbus_instance, DBUS_MODEL_PATH);
   if (ret < 0) {
-    g_critical ("cannot export the dbus interface '%s' "
-        "at the object path '%s'\n", DBUS_MODEL_INTERFACE, DBUS_MODEL_PATH);
+    _E ("cannot export the dbus interface '%s' at the object path '%s'\n",
+        DBUS_MODEL_INTERFACE, DBUS_MODEL_PATH);
     ret = -ENOSYS;
     goto out_disconnect;
   }
