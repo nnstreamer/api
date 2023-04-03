@@ -300,37 +300,37 @@ static struct gdbus_signal_info handler_infos[] = {
     .signal_name = DBUS_MODEL_I_HANDLER_REGISTER,
     .cb = G_CALLBACK (gdbus_cb_model_register),
     .cb_data = NULL,
-    .handler_id = 1U,
+    .handler_id = 0,
   }, {
     .signal_name = DBUS_MODEL_I_HANDLER_UPDATE_DESCRIPTION,
     .cb = G_CALLBACK (gdbus_cb_model_update_description),
     .cb_data = NULL,
-    .handler_id = 2U,
+    .handler_id = 0,
   }, {
     .signal_name = DBUS_MODEL_I_HANDLER_ACTIVATE,
     .cb = G_CALLBACK (gdbus_cb_model_activate),
     .cb_data = NULL,
-    .handler_id = 3U,
+    .handler_id = 0,
   }, {
     .signal_name = DBUS_MODEL_I_HANDLER_GET,
     .cb = G_CALLBACK (gdbus_cb_model_get),
     .cb_data = NULL,
-    .handler_id = 4U,
+    .handler_id = 0,
   }, {
     .signal_name = DBUS_MODEL_I_HANDLER_GET_ACTIVATED,
     .cb = G_CALLBACK (gdbus_cb_model_get_activated),
     .cb_data = NULL,
-    .handler_id = 5U,
+    .handler_id = 0,
   }, {
     .signal_name = DBUS_MODEL_I_HANDLER_GET_ALL,
     .cb = G_CALLBACK (gdbus_cb_model_get_all),
     .cb_data = NULL,
-    .handler_id = 6U,
+    .handler_id = 0,
   }, {
     .signal_name = DBUS_MODEL_I_HANDLER_DELETE,
     .cb = G_CALLBACK (gdbus_cb_model_delete),
     .cb_data = NULL,
-    .handler_id = 7U,
+    .handler_id = 0,
   }
 };
 
