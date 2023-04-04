@@ -126,7 +126,7 @@ gdbus_get_system_connection (gboolean is_session)
   g_dbus_sys_conn = g_bus_get_sync (bus_type, NULL, &error);
   if (g_dbus_sys_conn == NULL) {
     _E ("cannot connect to the system message bus: %s\n", error->message);
-    g_clear_error(&error);
+    g_clear_error (&error);
     return -ENOSYS;
   }
 

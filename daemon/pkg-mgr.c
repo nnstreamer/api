@@ -24,21 +24,25 @@ static package_manager_h pkg_mgr = NULL;
  * @param error the error code when the package manager is failed
  * @param user_data user data to be passed
  */
-static void _pkg_mgr_event_cb (const char *type, const char *package,
-  package_manager_event_type_e event_type, package_manager_event_state_e event_state,
-  int progress, package_manager_error_e error, void *user_data)
+static void
+_pkg_mgr_event_cb (const char *type, const char *package,
+    package_manager_event_type_e event_type,
+    package_manager_event_state_e event_state, int progress,
+    package_manager_error_e error, void *user_data)
 {
   GDir *dir;
   gchar *pkg_path = NULL;
-  _I ("type: %s, package: %s, event_type: %d, event_state: %d", type, package, event_type, event_state);
-  
+  _I ("type: %s, package: %s, event_type: %d, event_state: %d",
+      type, package, event_type, event_state);
+
   if (g_strcmp0 (type, "rpk") != 0)
     return;
 
   /* TODO Define the path of the model & xml files */
   pkg_path = g_strdup_printf ("/opt/usr/globalapps/%s/shared/res", package);
 
-  if (event_type == PACKAGE_MANAGER_EVENT_TYPE_INSTALL && event_state == PACKAGE_MANAGER_EVENT_STATE_COMPLETED) {
+  if (event_type == PACKAGE_MANAGER_EVENT_TYPE_INSTALL &&
+      event_state == PACKAGE_MANAGER_EVENT_STATE_COMPLETED) {
     /* TODO Need to register the model into database */
     if (g_file_test (pkg_path, G_FILE_TEST_IS_DIR)) {
       _I ("package path: %s", pkg_path);
@@ -51,7 +55,8 @@ static void _pkg_mgr_event_cb (const char *type, const char *package,
         g_dir_close (dir);
       }
     }
-  } else if (event_type == PACKAGE_MANAGER_EVENT_TYPE_UNINSTALL && event_state == PACKAGE_MANAGER_EVENT_STATE_STARTED) {
+  } else if (event_type == PACKAGE_MANAGER_EVENT_TYPE_UNINSTALL &&
+      event_state == PACKAGE_MANAGER_EVENT_STATE_STARTED) {
     /* TODO Need to invalid model */
     if (g_file_test (pkg_path, G_FILE_TEST_IS_DIR)) {
       _I ("package path: %s", pkg_path);
@@ -64,7 +69,8 @@ static void _pkg_mgr_event_cb (const char *type, const char *package,
         g_dir_close (dir);
       }
     }
-  } else if (event_type == PACKAGE_MANAGER_EVENT_TYPE_UPDATE && event_state == PACKAGE_MANAGER_EVENT_STATE_COMPLETED) {
+  } else if (event_type == PACKAGE_MANAGER_EVENT_TYPE_UPDATE &&
+      event_state == PACKAGE_MANAGER_EVENT_STATE_COMPLETED) {
     /* TODO Need to update database */
     if (g_file_test (pkg_path, G_FILE_TEST_IS_DIR)) {
       _I ("package path: %s", pkg_path);
@@ -88,19 +94,22 @@ static void _pkg_mgr_event_cb (const char *type, const char *package,
 /**
  * @brief Initialize the package manager handler for the resource package.
  */
-int pkg_mgr_init(void)
+int
+pkg_mgr_init (void)
 {
   int ret = 0;
 
   ret = package_manager_create (&pkg_mgr);
   if (ret != PACKAGE_MANAGER_ERROR_NONE) {
-      _E ("package_manager_create() failed: %d", ret);
-      return -1;
+    _E ("package_manager_create() failed: %d", ret);
+    return -1;
   }
 
   /* Monitoring install, uninstall and upgrade events of the resource package. */
   ret = package_manager_set_event_status (pkg_mgr,
-    PACKAGE_MANAGER_STATUS_TYPE_INSTALL|PACKAGE_MANAGER_STATUS_TYPE_UNINSTALL|PACKAGE_MANAGER_STATUS_TYPE_UPGRADE);
+      PACKAGE_MANAGER_STATUS_TYPE_INSTALL |
+      PACKAGE_MANAGER_STATUS_TYPE_UNINSTALL |
+      PACKAGE_MANAGER_STATUS_TYPE_UPGRADE);
   if (ret != PACKAGE_MANAGER_ERROR_NONE) {
     _E ("package_manager_set_event_status() failed: %d", ret);
     return -1;
@@ -117,7 +126,8 @@ int pkg_mgr_init(void)
 /**
  * @brief Finalize the package manager handler for the resource package.
  */
-int pkg_mgr_deinit(void)
+int
+pkg_mgr_deinit (void)
 {
   int ret = 0;
   ret = package_manager_destroy (pkg_mgr);

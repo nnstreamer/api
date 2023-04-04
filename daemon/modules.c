@@ -17,7 +17,7 @@
 #include "modules.h"
 #include "log.h"
 
-static GList *module_head;
+static GList *module_head = NULL;
 
 /**
  * @brief Add the specific DBus interface into the Machine Learning agent daemon.

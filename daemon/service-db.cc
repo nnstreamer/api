@@ -308,8 +308,8 @@ MLServiceDB::delete_pipeline (const std::string name)
   if (sqlite3_prepare_v2 (_db, "DELETE FROM tblPipeline WHERE key = ?1", -1, &res, nullptr) != SQLITE_OK ||
       sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, NULL) != SQLITE_OK ||
       sqlite3_step (res) != SQLITE_DONE) {
-        sqlite3_finalize (res);
-        throw std::runtime_error ("Failed to delete pipeline description of " + name);
+    sqlite3_finalize (res);
+    throw std::runtime_error ("Failed to delete pipeline description of " + name);
   }
 
   sqlite3_finalize (res);
