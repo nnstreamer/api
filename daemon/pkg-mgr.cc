@@ -2,7 +2,7 @@
 /**
  * Copyright (c) 2023 Samsung Electronics Co., Ltd. All Rights Reserved.
  *
- * @file    pkg-mgr.c
+ * @file    pkg-mgr.cc
  * @date    16 Feb 2023
  * @brief   NNStreamer/Utilities C-API Wrapper.
  * @see	    https://github.com/nnstreamer/api
@@ -10,7 +10,12 @@
  * @bug     No known bugs except for NYI items
  */
 
+#include <glib.h>
+
+#include "log.h"
+#include "package_manager.h"
 #include "pkg-mgr.h"
+#include "service-db.hh"
 
 static package_manager_h pkg_mgr = NULL;
 
@@ -30,6 +35,7 @@ static void _pkg_mgr_event_cb (const char *type, const char *package,
 {
   GDir *dir;
   gchar *pkg_path = NULL;
+  MLServiceDB &db = MLServiceDB::getInstance ();
   _I ("type: %s, package: %s, event_type: %d, event_state: %d", type, package, event_type, event_state);
   
   if (g_strcmp0 (type, "rpk") != 0)
@@ -40,6 +46,8 @@ static void _pkg_mgr_event_cb (const char *type, const char *package,
 
   if (event_type == PACKAGE_MANAGER_EVENT_TYPE_INSTALL && event_state == PACKAGE_MANAGER_EVENT_STATE_COMPLETED) {
     /* TODO Need to register the model into database */
+    db.connectDB ();
+
     if (g_file_test (pkg_path, G_FILE_TEST_IS_DIR)) {
       _I ("package path: %s", pkg_path);
       dir = g_dir_open (pkg_path, 0, NULL);
@@ -51,6 +59,8 @@ static void _pkg_mgr_event_cb (const char *type, const char *package,
         g_dir_close (dir);
       }
     }
+    
+    db.disconnectDB ();
   } else if (event_type == PACKAGE_MANAGER_EVENT_TYPE_UNINSTALL && event_state == PACKAGE_MANAGER_EVENT_STATE_STARTED) {
     /* TODO Need to invalid model */
     if (g_file_test (pkg_path, G_FILE_TEST_IS_DIR)) {

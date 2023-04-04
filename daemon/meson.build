@@ -6,7 +6,7 @@ nns_ml_agent_common_srcs = files('main.c', 'modules.c', 'gdbus-util.c',
 nns_ml_agent_service_db_srcs = files('service-db.cc')
 
 if (get_option('enable-tizen'))
-  nns_ml_agent_common_srcs += files('pkg-mgr.c')
+  nns_ml_agent_common_srcs += files('pkg-mgr.cc')
 endif
 
 nns_ml_agent_srcs = [nns_ml_agent_common_srcs, nns_ml_agent_service_db_srcs]
