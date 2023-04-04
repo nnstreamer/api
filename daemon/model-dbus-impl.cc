@@ -36,7 +36,7 @@ gdbus_get_model_instance (void)
  * @brief Utility function to release DBus proxy of Model interface.
  */
 static void
-gdbus_put_model_instance (MachinelearningServiceModel ** instance)
+gdbus_put_model_instance (MachinelearningServiceModel **instance)
 {
   g_clear_object (instance);
 }
@@ -233,8 +233,7 @@ gdbus_cb_model_get_activated (MachinelearningServiceModel *obj,
 static gboolean
 gdbus_cb_model_get_all (MachinelearningServiceModel *obj,
     GDBusMethodInvocation *invoc,
-    const gchar *name
-    )
+    const gchar *name)
 {
   int ret = 0;
   MLServiceDB & db = MLServiceDB::getInstance ();
@@ -352,7 +351,7 @@ probe_model_module (void *data)
   }
 
   ret = gdbus_connect_signal (g_gdbus_instance,
-      ARRAY_SIZE(handler_infos), handler_infos);
+      ARRAY_SIZE (handler_infos), handler_infos);
   if (ret < 0) {
     _E ("cannot register callbacks as the dbus method invocation handlers\n ret: %d",
         ret);
@@ -372,7 +371,7 @@ probe_model_module (void *data)
 
 out_disconnect:
   gdbus_disconnect_signal (g_gdbus_instance,
-    ARRAY_SIZE (handler_infos), handler_infos);
+      ARRAY_SIZE (handler_infos), handler_infos);
 
 out:
   gdbus_put_model_instance (&g_gdbus_instance);
@@ -384,7 +383,9 @@ out:
  * @brief The callback function for initializing Model Interface module.
  */
 static void
-init_model_module (void *data) { }
+init_model_module (void *data)
+{
+}
 
 /**
  * @brief The callback function for exiting Model Interface module.
@@ -393,7 +394,7 @@ static void
 exit_model_module (void *data)
 {
   gdbus_disconnect_signal (g_gdbus_instance,
-    ARRAY_SIZE (handler_infos), handler_infos);
+      ARRAY_SIZE (handler_infos), handler_infos);
   gdbus_put_model_instance (&g_gdbus_instance);
 }
 

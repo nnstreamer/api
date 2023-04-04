@@ -23,7 +23,7 @@
 #include "dbus-interface.h"
 #include "pkg-mgr.h"
 
-static GMainLoop *g_mainloop;
+static GMainLoop *g_mainloop = NULL;
 static gboolean verbose = FALSE;
 static gboolean is_session = FALSE;
 
@@ -84,10 +84,10 @@ parse_args (gint *argc, gchar ***argv)
 
   err = NULL;
   ret = g_option_context_parse (context, argc, argv, &err);
-  g_option_context_free(context);
+  g_option_context_free (context);
   if (!ret) {
     _E ("Fail to option parsing: %s", err->message);
-    g_clear_error(&err);
+    g_clear_error (&err);
     return -EINVAL;
   }
 
@@ -100,7 +100,7 @@ parse_args (gint *argc, gchar ***argv)
 int
 main (int argc, char **argv)
 {
-  if (parse_args(&argc, &argv)) {
+  if (parse_args (&argc, &argv)) {
     return -EINVAL;
   }
 
@@ -121,8 +121,9 @@ main (int argc, char **argv)
 
   gdbus_put_system_connection ();
   g_main_loop_unref (g_mainloop);
+  g_mainloop = NULL;
 
-  if (pkg_mgr_deinit() < 0)
+  if (pkg_mgr_deinit () < 0)
     _W ("cannot finalize package manager");
 
   return 0;
