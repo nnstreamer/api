@@ -506,14 +506,13 @@ ml_tensors_info_set_tensor_dimension (ml_tensors_info_h info,
         tensors_info->num_tensors, index, index);
   }
 
-  for (i = 0; i < ML_TENSOR_RANK_LIMIT; i++) {
+  for (i = 0; i < ML_TENSOR_RANK_LIMIT_PREV; i++) {
     tensors_info->info[index].dimension[i] = dimension[i];
   }
 
-  if (!tensors_info->is_extended) {
-    for (i = ML_TENSOR_RANK_LIMIT_PREV; i < ML_TENSOR_RANK_LIMIT; i++) {
-      tensors_info->info[index].dimension[i] = 1;
-    }
+  for (i = ML_TENSOR_RANK_LIMIT_PREV; i < ML_TENSOR_RANK_LIMIT; i++) {
+    tensors_info->info[index].dimension[i] =
+        (tensors_info->is_extended ? dimension[i] : 1);
   }
 
   G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
@@ -550,6 +549,10 @@ ml_tensors_info_get_tensor_dimension (ml_tensors_info_h info,
   for (i = 0; i < valid_rank; i++) {
     dimension[i] = tensors_info->info[index].dimension[i];
   }
+
+  /* Fill remained dim (default value 1) */
+  for (i = valid_rank; i < ML_TENSOR_RANK_LIMIT; i++)
+    dimension[i] = 1;
 
   G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
   return ML_ERROR_NONE;
