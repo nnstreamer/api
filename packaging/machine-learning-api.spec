@@ -233,10 +233,23 @@ Requires:	capi-machine-learning-inference-devel = %{version}-%{release}
 Tizen internal headers for Tizen Machine Learning API.
 
 %if 0%{?enable_ml_service}
+%package -n libmachine-learning-agent
+Summary:	Library that exports interfaces provided by Machine Learning Agent Service
+Group:		Machine Learning/ML Framework = %{version}-%{release}
+%description -n libmachine-learning-agent
+Shared library to export interfaces provided by the Machine Learning Agent Service.
+
+%package -n libmachine-learning-agent-devel
+Summary:	Development headers and static library for interfaces provided by Machine Learning Agent Service
+Group:		Machine Learning/ML Framework
+Requires:	libmachine-learning-agent  = %{version}-%{release}
+%description -n libmachine-learning-agent-devel
+Development headers and static library for interfaces provided by Machine Learning Agent Service.
+
 %package -n machine-learning-agent
 Summary:    AI Service Daemon
 Group:		Machine Learning/ML Framework
-Requires:	capi-machine-learning-service = %{version}-%{release}
+Requires:	libmachine-learning-agent = %{version}-%{release}
 %description -n machine-learning-agent
 AI Service Daemon
 
@@ -481,6 +494,18 @@ install -m 0755 packaging/run-unittest.sh %{buildroot}%{_bindir}/tizen-unittests
 %{_includedir}/nnstreamer/nnstreamer-tizen-internal.h
 
 %if 0%{?enable_ml_service}
+%files -n libmachine-learning-agent
+%manifest machine-learning-agent.manifest
+%{_libdir}/libml-agentd.so.*
+
+#TODO: Need to provide a pkg-config file
+%files -n libmachine-learning-agent-devel
+%manifest machine-learning-agent.manifest
+%{_libdir}/libml-agentd.so
+%{_libdir}/libml-agentd.a
+%{_includedir}/ml-agentd/ml-agent-dbus-interface.h
+
+
 %files -n machine-learning-agent
 %manifest machine-learning-agent.manifest
 %attr(0755,root,root) %{_bindir}/machine-learning-agent

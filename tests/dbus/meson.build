@@ -8,6 +8,6 @@ gdbus_gen_test_src = custom_target('gdbus-gencode-test',
             '--generate-c-code', 'test-dbus',
             '--output-directory', meson.current_build_dir(),
             '@INPUT@'])
-gdbus_test_gen_dep = declare_dependency(sources: gdbus_gen_test_src,
+gdbus_gen_test_dep = declare_dependency(sources: gdbus_gen_test_src,
     dependencies: gdbus_gen_header_dep)
 
