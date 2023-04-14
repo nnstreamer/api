@@ -26,20 +26,20 @@ if get_option('enable-ml-service')
 
   test_db_config_args = declare_dependency(
     compile_args: ['-DDB_PATH="."', daemon_cpp_db_key_prefix_arg])
-
-  nns_ml_agent_common_objs = nns_ml_agent_executable.extract_objects(nns_ml_agent_common_srcs)
+  ml_agentd_main_objs = ml_agent_executable.extract_objects(ml_agentd_main_file)
+  ml_agentd_common_objs = ml_agentd_lib.extract_objects(ml_agentd_lib_common_srcs)
   executable('machine-learning-agent-test',
-    [nns_ml_agent_service_db_srcs, test_dbus_impl_srcs],
-    dependencies: [ai_service_daemon_deps, gdbus_test_gen_dep, test_db_config_args],
-    include_directories: nns_ml_agent_incs,
+    [ml_agentd_lib_service_db_srcs, test_dbus_impl_srcs],
+    dependencies: [ml_agentd_deps, gdbus_gen_test_dep, test_db_config_args],
+    include_directories: ml_agentd_incs,
     link_with: lib_unittest_mock,
-    objects: [nns_ml_agent_common_objs]
+    objects: [ml_agentd_common_objs, ml_agentd_main_objs],
   )
 
   service_db_dep_for_test = declare_dependency(
-    sources: nns_ml_agent_service_db_srcs,
+    sources: ml_agentd_lib_service_db_srcs,
     dependencies: [glib_dep, sqlite_dep, test_db_config_args],
-    include_directories: nns_ml_agent_incs
+    include_directories: ml_agentd_incs
   )
 
   subdir('services')
