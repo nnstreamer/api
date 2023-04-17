@@ -159,6 +159,7 @@ BuildRequires:  pkgconfig(sqlite3)
 BuildRequires:  pkgconfig(json-glib-1.0)
 BuildRequires:  dbus
 BuildRequires:  pkgconfig(capi-appfw-package-manager)
+BuildRequires:	pkgconfig(capi-appfw-app-common)
 %endif
 
 %description

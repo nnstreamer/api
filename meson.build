@@ -39,6 +39,7 @@ if get_option('enable-ml-service')
 
   if get_option('enable-tizen')
     appfw_package_manager_dep = dependency('capi-appfw-package-manager')
+    appfw_app_common_dep = dependency('capi-appfw-app-common')
   endif
 endif
 
