@@ -17,6 +17,82 @@
 #include "ml-api-service.h"
 #include "ml-api-service-private.h"
 
+#if defined(__TIZEN__)
+#include <app_common.h>
+
+/**
+ * @brief Parse app_info and update path (for model from rpk). Only for Tizen Applications.
+ */
+static int
+_parse_app_info_and_update_path (ml_option_h ml_info)
+{
+  int ret = ML_ERROR_NONE;
+
+  gchar *app_info = NULL;
+  g_autoptr (JsonParser) parser = NULL;
+  g_autoptr (GError) err = NULL;
+
+  JsonObject *j_object;
+
+  /* parsing app_info and fill path (for rpk) */
+  ret = ml_option_get (ml_info, "app_info", (void **) &app_info);
+  if (ret != ML_ERROR_NONE) {
+    _ml_error_report ("Failed to get app_info from the model info.");
+    return ret;
+  }
+
+  _ml_logi ("Parsing app_info: %s", app_info);
+
+  /* parsing the app_info json string. If the model is from rpk, path should be updated. */
+  parser = json_parser_new ();
+  if (!json_parser_load_from_data (parser, app_info, -1, &err)) {
+    _ml_logi ("Failed to parse app_info (%s). Skip it.", err->message);
+    return 0;
+  }
+
+  j_object = json_node_get_object (json_parser_get_root (parser));
+  if (!j_object) {
+    _ml_error_report ("Failed to get json object from the app_info. Skip it.");
+    return 0;
+  }
+
+  if (g_strcmp0 (json_object_get_string_member (j_object, "is_rpk"), "T") == 0) {
+    gchar *ori_path, *new_path;
+    g_autofree gchar *global_resource_path;
+    const gchar *res_type =
+        json_object_get_string_member (j_object, "res_type");
+
+    ret = ml_option_get (ml_info, "path", (void **) &ori_path);
+    if (ret != ML_ERROR_NONE) {
+      _ml_error_report ("Failed to get path from the model info.");
+      return ret;
+    }
+
+    ret =
+        app_get_res_control_global_resource_path (res_type,
+        &global_resource_path);
+    if (ret != APP_ERROR_NONE) {
+      _ml_error_report ("Failed to get global resource path.");
+      ret = ML_ERROR_INVALID_PARAMETER;
+      return ret;
+    }
+
+    new_path = g_strdup_printf ("%s/%s", global_resource_path, ori_path);
+    ret = ml_option_set (ml_info, "path", new_path, g_free);
+    if (ret != ML_ERROR_NONE) {
+      _ml_error_report ("Failed to set path to the model info.");
+      return ret;
+    }
+  } else {
+    _ml_logi ("The model is not from rpk. Skip it.");
+  }
+
+  return 0;
+}
+#else
+#define _parse_app_info_and_update_path(...) ((int) 0)
+#endif
+
 /**
  * @brief Set the pipeline description with a given name.
  */
@@ -346,6 +422,10 @@ ml_service_model_register (const char *name, const char *path,
 
   g_autofree gchar *app_info = NULL;
 
+  g_autofree gchar *app_id = NULL;
+  g_autoptr (JsonBuilder) builder = NULL;
+  g_autoptr (JsonGenerator) gen = NULL;
+
   check_feature_state (ML_FEATURE_SERVICE);
 
   if (!name)
@@ -373,6 +453,53 @@ ml_service_model_register (const char *name, const char *path,
       g_file_test (path, G_FILE_TEST_IS_SYMLINK))
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The model file '%s' is not a regular file.", path);
+
+#if defined(__TIZEN__)
+  /* Tizen application info of caller should be provided as a json string */
+
+  ret = app_get_id (&app_id);
+  if (ret == APP_ERROR_INVALID_CONTEXT) {
+    /* Not a Tizen APP context, e.g. gbs build test */
+    _ml_logi ("Not an APP context, skip creating app_info");
+    goto app_info_exit;
+  }
+
+  /**
+   * @todo Check whether the given path is in the app's resource directory.
+   * Below is sample code for this (unfortunately, TCT get error with it):
+   * g_autofree gchar *app_resource_path = NULL;
+   * g_autofree gchar *app_shared_resource_path = NULL;
+   * app_resource_path = app_get_resource_path ();
+   * app_shared_resource_path = app_get_shared_resource_path ();
+   * if (!app_resource_path || !app_shared_resource_path) {
+   *   _ml_error_report_return (ML_ERROR_PERMISSION_DENIED,
+   *      "Failed to get the app resource path of the caller.");
+   * }
+   * if (!g_str_has_prefix (path, app_resource_path) &&
+   *     !g_str_has_prefix (path, app_shared_resource_path)) {
+   *   _ml_error_report_return (ML_ERROR_PERMISSION_DENIED,
+   *      "The model file '%s' is not in the app's resource directory.", path);
+   * }
+  */
+
+  builder = json_builder_new ();
+  json_builder_begin_object (builder);
+
+  json_builder_set_member_name (builder, "is_rpk");
+  json_builder_add_string_value (builder, "F");
+
+  json_builder_set_member_name (builder, "app_id");
+  json_builder_add_string_value (builder, app_id);
+
+  json_builder_end_object (builder);
+
+  gen = json_generator_new ();
+  json_generator_set_root (gen, json_builder_get_root (builder));
+  json_generator_set_pretty (gen, TRUE);
+
+  app_info = json_generator_to_data (gen, NULL);
+app_info_exit:
+#endif
 
   mlsm = _get_mlsm_proxy_new_for_bus_sync ();
   if (!mlsm) {
@@ -576,6 +703,12 @@ ml_service_model_get (const char *name, const unsigned int version,
     ml_option_set (_info, member_name, g_strdup (value), g_free);
   }
 
+  if (_parse_app_info_and_update_path (_info) != 0) {
+    _ml_error_report ("Failed to parse app_info and update path.");
+    ret = ML_ERROR_INVALID_PARAMETER;
+    goto error;
+  }
+
   *info = _info;
 
 error:
@@ -603,9 +736,9 @@ ml_service_model_get_activated (const char *name, ml_option_h * info)
   MachinelearningServiceModel *mlsm;
   GError *err = NULL;
   gboolean result;
-  gchar *description = NULL;
+  g_autofree gchar *description = NULL;
 
-  JsonParser *parser = NULL;
+  g_autoptr (JsonParser) parser = NULL;
   JsonObjectIter iter;
   JsonNode *root_node;
   JsonNode *member_node;
@@ -679,13 +812,15 @@ ml_service_model_get_activated (const char *name, ml_option_h * info)
     ml_option_set (_info, member_name, g_strdup (value), g_free);
   }
 
+  if (_parse_app_info_and_update_path (_info) != 0) {
+    _ml_error_report ("Failed to parse app_info and update path.");
+    ret = ML_ERROR_INVALID_PARAMETER;
+    goto error;
+  }
+
   *info = _info;
 
 error:
-  if (parser)
-    g_object_unref (parser);
-  g_free (description);
-
   if (ret != ML_ERROR_NONE) {
     if (_info)
       ml_option_destroy (_info);
@@ -807,6 +942,12 @@ ml_service_model_get_all (const char *name, ml_option_h * info_list[],
     while (json_object_iter_next_ordered (&iter, &member_name, &member_node)) {
       const gchar *value = json_object_get_string_member (object, member_name);
       ml_option_set (_info_list[i], member_name, g_strdup (value), g_free);
+    }
+
+    if (_parse_app_info_and_update_path (_info_list[i]) != 0) {
+      _ml_error_report ("Failed to parse app_info and update path.");
+      ret = ML_ERROR_INVALID_PARAMETER;
+      goto error;
     }
   }
 

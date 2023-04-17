@@ -102,7 +102,7 @@ nns_capi_dep = declare_dependency(link_with: nns_capi_lib,
 if get_option('enable-ml-service')
   nns_capi_service_shared_lib = shared_library ('capi-ml-service',
     nns_capi_service_srcs,
-    dependencies: [nns_capi_dep, ai_service_daemon_deps, json_glib_dep],
+    dependencies: [nns_capi_dep, ai_service_daemon_deps, json_glib_dep, appfw_app_common_dep],
     include_directories: nns_capi_include,
     install: true,
     install_dir: api_install_libdir,
@@ -111,7 +111,7 @@ if get_option('enable-ml-service')
 
   nns_capi_service_static_lib = static_library ('capi-ml-service',
     nns_capi_service_srcs,
-    dependencies: [nns_capi_dep, ai_service_daemon_deps, json_glib_dep],
+    dependencies: [nns_capi_dep, ai_service_daemon_deps, json_glib_dep, appfw_app_common_dep],
     include_directories: nns_capi_include,
     install: true,
     install_dir: api_install_libdir,
