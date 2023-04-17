@@ -23,11 +23,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 #if defined(__TIZEN__)
-#include <glib.h>
-#include <stdio.h>
-
 #include "log.h"
-#include "package_manager.h"
 
 /**
  * @brief Initialize the package manager handler for the resource package.
