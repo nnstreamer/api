@@ -84,7 +84,7 @@ TEST (serviceDB, set_model_n)
 
   try {
     guint version;
-    db.set_model ("", "model", true, "description", &version);
+    db.set_model ("", "model", true, "description", "", &version);
   } catch (const std::exception &e) {
     g_critical ("Got Exception: %s", e.what ());
     gotException = 1;
@@ -94,7 +94,7 @@ TEST (serviceDB, set_model_n)
   gotException = 0;
   try {
     guint version;
-    db.set_model ("test", "", true, "description", &version);
+    db.set_model ("test", "", true, "description", "", &version);
   } catch (const std::exception &e) {
     g_critical ("Got Exception: %s", e.what ());
     gotException = 1;
@@ -104,7 +104,7 @@ TEST (serviceDB, set_model_n)
   gotException = 0;
   try {
     guint version;
-    db.set_model ("test", "model", true, "", &version);
+    db.set_model ("test", "model", true, "", "", &version);
   } catch (const std::exception &e) {
     g_critical ("Got Exception: %s", e.what ());
     gotException = 1;
@@ -262,7 +262,7 @@ TEST (serviceDBNotInitalized, set_model_n)
 
   try {
     guint version;
-    db.set_model ("test", "model", true, "description", &version);
+    db.set_model ("test", "model", true, "description", "", &version);
   } catch (const std::exception &e) {
     g_critical ("Got Exception: %s", e.what ());
     gotException = 1;

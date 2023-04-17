@@ -58,7 +58,9 @@ gdbus_cb_model_register (MachinelearningServiceModel *obj,
     const gchar *name,
     const gchar *path,
     const bool is_active,
-    const gchar *description)
+    const gchar *description,
+    const gchar *app_info
+    )
 {
   int ret = 0;
   guint version = 0U;
@@ -66,7 +68,7 @@ gdbus_cb_model_register (MachinelearningServiceModel *obj,
 
   try {
     db.connectDB ();
-    db.set_model (name, path, is_active, description, &version);
+    db.set_model (name, path, is_active, description, app_info, &version);
   } catch (const std::invalid_argument &e) {
     _E ("%s", e.what ());
     ret = -EINVAL;

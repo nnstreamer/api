@@ -7,6 +7,7 @@
       <arg type="s" name="path" direction="in" />
       <arg type="b" name="active" direction="in" />
       <arg type="s" name="description" direction="in" />
+      <arg type="s" name="app_info" direction="in" />
       <arg type="u" name="version" direction="out" />
       <arg type="i" name="result" direction="out" />
     </method>
