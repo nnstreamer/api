@@ -344,6 +344,8 @@ ml_service_model_register (const char *name, const char *path,
   gchar *dir_name;
   GStatBuf statbuf;
 
+  g_autofree gchar *app_info = NULL;
+
   check_feature_state (ML_FEATURE_SERVICE);
 
   if (!name)
@@ -379,7 +381,8 @@ ml_service_model_register (const char *name, const char *path,
 
   result =
       machinelearning_service_model_call_register_sync (mlsm, name, path,
-      activate, description ? description : "", version, &ret, NULL, &err);
+      activate, description ? description : "", app_info ? app_info : "",
+      version, &ret, NULL, &err);
 
   g_object_unref (mlsm);
 

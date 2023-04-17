@@ -1049,7 +1049,6 @@ TEST_F (MLServiceAgentTest, model_scenario)
       "add.tflite", NULL);
   ASSERT_TRUE (g_file_test (test_model2, G_FILE_TEST_EXISTS));
 
-
   status = ml_service_model_register (key, test_model2, false, "this is the temp tflite model", &version);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_EQ (version, 2U);
@@ -1099,6 +1098,11 @@ TEST_F (MLServiceAgentTest, model_scenario)
       status = ml_option_get (info_list[i], "path", (void **) &path);
       EXPECT_EQ (ML_ERROR_NONE, status);
       EXPECT_STREQ (path, test_model1);
+
+      gchar *app_info;
+      status = ml_option_get (info_list[i], "app_info", (void **) &app_info);
+      EXPECT_EQ (ML_ERROR_NONE, status);
+      EXPECT_STREQ (app_info, "");
     } else if (g_ascii_strcasecmp (version_str, "2") == 0) {
       gchar *is_active;
       status = ml_option_get (info_list[i], "active", (void **) &is_active);
@@ -1205,7 +1209,7 @@ TEST_F (MLServiceAgentTest, model_gdbus_call_n)
 
   /* empty string */
   machinelearning_service_model_call_register_sync (
-    proxy_for_model, "", "", false, "test", NULL, &ret, nullptr, nullptr);
+    proxy_for_model, "", "", false, "test", "", NULL, &ret, nullptr, nullptr);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, ret);
 
   /* empty string */

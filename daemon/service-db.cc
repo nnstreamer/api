@@ -43,7 +43,7 @@ const char *g_mlsvc_table_schema_v1[] =
   [TBL_DB_INFO] = "tblMLDBInfo (name TEXT PRIMARY KEY NOT NULL, version INTEGER DEFAULT 1)",
   [TBL_PIPELINE_DESCRIPTION] = "tblPipeline (key TEXT PRIMARY KEY NOT NULL, description TEXT, CHECK (length(description) > 0))",
   [TBL_MODEL_INFO] = "tblModel (key TEXT NOT NULL, version INTEGER DEFAULT 1, active TEXT DEFAULT 'N', "
-      "path TEXT, description TEXT, PRIMARY KEY (key, version), CHECK (length(path) > 0), CHECK (active IN ('T', 'F')))",
+      "path TEXT, description TEXT, app_info TEXT, PRIMARY KEY (key, version), CHECK (length(path) > 0), CHECK (active IN ('T', 'F')))",
   NULL
 };
 
@@ -330,7 +330,7 @@ MLServiceDB::delete_pipeline (const std::string name)
  * @param[out] version The version of the model.
  */
 void
-MLServiceDB::set_model (const std::string name, const std::string model, const bool is_active, const std::string description, guint *version)
+MLServiceDB::set_model (const std::string name, const std::string model, const bool is_active, const std::string description, const std::string app_info, guint *version)
 {
   int rc;
   char *errmsg = nullptr;
@@ -362,12 +362,13 @@ MLServiceDB::set_model (const std::string name, const std::string model, const b
   }
 
   /* insert new row */
-  if (sqlite3_prepare_v2 (_db, "INSERT OR REPLACE INTO tblModel VALUES (?1, IFNULL ((SELECT version from tblModel WHERE key = ?2 ORDER BY version DESC LIMIT 1) + 1, 1), ?3, ?4, ?5)", -1, &res, nullptr) != SQLITE_OK ||
+  if (sqlite3_prepare_v2 (_db, "INSERT OR REPLACE INTO tblModel VALUES (?1, IFNULL ((SELECT version from tblModel WHERE key = ?2 ORDER BY version DESC LIMIT 1) + 1, 1), ?3, ?4, ?5, ?6)", -1, &res, nullptr) != SQLITE_OK ||
       sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, NULL) != SQLITE_OK ||
       sqlite3_bind_text (res, 2, key_with_prefix.c_str (), -1, NULL) != SQLITE_OK ||
       sqlite3_bind_text (res, 3, is_active ? "T" : "F", -1, NULL) != SQLITE_OK ||
       sqlite3_bind_text (res, 4, model.c_str (), -1, NULL) != SQLITE_OK ||
       sqlite3_bind_text (res, 5, description.c_str (), -1, NULL) != SQLITE_OK ||
+      sqlite3_bind_text (res, 6, app_info.c_str (), -1, NULL) != SQLITE_OK ||
       sqlite3_step (res) != SQLITE_DONE) {
     sqlite3_finalize (res);
     throw std::runtime_error ("Failed to register the model " + name);
@@ -534,11 +535,11 @@ MLServiceDB::get_model (const std::string name, std::string &model, const gint v
   key_with_prefix += name;
 
   if (version == 0)
-    sql = g_strdup ("SELECT json_group_array(json_object('key', key, 'version', CAST(version AS TEXT), 'active', active, 'path', path, 'description', description)) FROM tblModel WHERE key = ?1");
+    sql = g_strdup ("SELECT json_group_array(json_object('key', key, 'version', CAST(version AS TEXT), 'active', active, 'path', path, 'description', description, 'app_info', app_info)) FROM tblModel WHERE key = ?1");
   else if (version == -1)
-    sql = g_strdup ("SELECT json_object('key', key, 'version', CAST(version AS TEXT), 'active', active, 'path', path, 'description', description) FROM tblModel WHERE key = ?1 and active = 'T' ORDER BY version DESC LIMIT 1");
+    sql = g_strdup ("SELECT json_object('key', key, 'version', CAST(version AS TEXT), 'active', active, 'path', path, 'description', description, 'app_info', app_info) FROM tblModel WHERE key = ?1 and active = 'T' ORDER BY version DESC LIMIT 1");
   else if (version > 0)
-    sql = g_strdup_printf ("SELECT json_object('key', key, 'version', CAST(version AS TEXT), 'active', active, 'path', path, 'description', description) FROM tblModel WHERE key = ?1 and version = %d", version);
+    sql = g_strdup_printf ("SELECT json_object('key', key, 'version', CAST(version AS TEXT), 'active', active, 'path', path, 'description', description, 'app_info', app_info) FROM tblModel WHERE key = ?1 and version = %d", version);
   else
     throw std::invalid_argument ("Invalid version parameter!");
 
