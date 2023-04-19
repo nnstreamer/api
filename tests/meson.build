@@ -21,21 +21,12 @@ unittest_common_dep = declare_dependency(
 )
 
 if get_option('enable-ml-service')
-  gdbus_gen_test_src = custom_target('gdbus-gencode-test',
-    input: test_dbus_input,
-    output: ['test-dbus.h', 'test-dbus.c'],
-    command: [gdbus_prog, '--interface-prefix', 'org.tizen',
-              '--generate-c-code', 'test-dbus',
-              '--output-directory', meson.current_build_dir(),
-              '@INPUT@'])
-
-  gdbus_gen_header_test_dep = declare_dependency(sources: gdbus_gen_test_src,
-    dependencies: gdbus_gen_header_dep)
+  subdir('dbus')
 
   nns_ml_agent_common_objs = nns_ml_agent_executable.extract_objects(nns_ml_agent_common_srcs)
   executable('machine-learning-agent-test',
-    [nns_ml_agent_service_db_srcs, files('daemon/test-dbus-impl.c')],
-    dependencies: [ai_service_daemon_deps, gdbus_gen_header_test_dep],
+    [nns_ml_agent_service_db_srcs, test_dbus_impl_srcs],
+    dependencies: [ai_service_daemon_deps, gdbus_test_gen_dep],
     include_directories: nns_ml_agent_incs,
     objects: [nns_ml_agent_common_objs],
     cpp_args: [daemon_cpp_db_key_prefix_arg, '-DDB_PATH="."']

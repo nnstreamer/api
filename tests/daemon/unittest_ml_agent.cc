@@ -11,8 +11,8 @@
 #include <gtest/gtest.h>
 
 #include "test-dbus.h"
-#include "../../daemon/includes/dbus-interface.h"
-#include "../../daemon/includes/test-dbus-interface.h"
+#include "dbus-interface.h"
+#include "../dbus/test-dbus-interface.h"
 
 /**
  * @brief Test base class for ML Agent Daemon
