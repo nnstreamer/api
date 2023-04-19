@@ -182,5 +182,10 @@ endif
 
 # Run unittest
 if get_option('enable-test')
-  subdir('tests')
+  gtest_dep = dependency('gtest', required: false)
+  if gtest_dep.found()
+    subdir('tests')
+  else
+    warning('The enable-test option requires google-test.')
+  endif
 endif
