@@ -11,8 +11,8 @@
 #include <gtest/gtest.h>
 #include <errno.h>
 
+#include "dbus-interface.h"
 #include "model-dbus.h"
-#include "../../daemon/includes/dbus-interface.h"
 
 /**
  * @brief Test base class of DBus Model interface
