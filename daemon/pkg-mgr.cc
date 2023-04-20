@@ -21,6 +21,29 @@
 static package_manager_h pkg_mgr = NULL;
 
 /**
+ * @brief A simple package manager event handler for temporary use
+ * @param pkg_path The path where the target package is installed
+ */
+static inline void _pkg_mgr_echo_pkg_path_info(const gchar * pkg_path) {
+  GDir *dir;
+
+  if (g_file_test (pkg_path, G_FILE_TEST_IS_DIR)) {
+
+      _I ("package path: %s", pkg_path);
+
+      dir = g_dir_open (pkg_path, 0, NULL);
+      if (dir) {
+        const gchar *file_name;
+
+        while ((file_name = g_dir_read_name (dir))) {
+          _I ("- file: %s", file_name);
+        }
+        g_dir_close (dir);
+      }
+    }
+}
+
+/**
  * @brief Callback function to be invoked for resource package.
  * @param type the package type such as rpk, tpk, wgt, etc.
  * @param package_name the name of the package
@@ -36,7 +59,6 @@ _pkg_mgr_event_cb (const char *type, const char *package_name,
     package_manager_event_state_e event_state, int progress,
     package_manager_error_e error, void *user_data)
 {
-  GDir *dir;
   g_autofree gchar *pkg_path = NULL;
   package_info_h pkg_info = NULL;
   int ret;
@@ -174,36 +196,14 @@ _pkg_mgr_event_cb (const char *type, const char *package_name,
 
   } else if (event_type == PACKAGE_MANAGER_EVENT_TYPE_UNINSTALL &&
       event_state == PACKAGE_MANAGER_EVENT_STATE_STARTED) {
-
     _I ("resource package %s is being uninstalled", package_name);
-    /* TODO Need to invalid model */
-    if (g_file_test (pkg_path, G_FILE_TEST_IS_DIR)) {
-      _I ("package path: %s", pkg_path);
-      dir = g_dir_open (pkg_path, 0, NULL);
-      if (dir) {
-        const gchar *file_name;
-        while ((file_name = g_dir_read_name (dir))) {
-          _I ("- file: %s", file_name);
-        }
-        g_dir_close (dir);
-      }
-    }
+    _pkg_mgr_echo_pkg_path_info(pkg_path);
+    /* TODO: Invalidate models related to the package would be uninstalled */
   } else if (event_type == PACKAGE_MANAGER_EVENT_TYPE_UPDATE &&
       event_state == PACKAGE_MANAGER_EVENT_STATE_COMPLETED) {
     _I ("resource package %s is updated", package_name);
-
-    /* TODO Need to update database */
-    if (g_file_test (pkg_path, G_FILE_TEST_IS_DIR)) {
-      _I ("package path: %s", pkg_path);
-      dir = g_dir_open (pkg_path, 0, NULL);
-      if (dir) {
-        const gchar *file_name;
-        while ((file_name = g_dir_read_name (dir))) {
-          _I ("- file: %s", file_name);
-        }
-        g_dir_close (dir);
-      }
-    }
+    _pkg_mgr_echo_pkg_path_info(pkg_path);
+    /* TODO: Update database */
   } else {
     /* Do not consider other events: do nothing */
   }
