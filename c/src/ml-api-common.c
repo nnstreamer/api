@@ -550,10 +550,6 @@ ml_tensors_info_get_tensor_dimension (ml_tensors_info_h info,
     dimension[i] = tensors_info->info[index].dimension[i];
   }
 
-  /* Fill remained dim (default value 1) */
-  for (i = valid_rank; i < ML_TENSOR_RANK_LIMIT; i++)
-    dimension[i] = 1;
-
   G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
   return ML_ERROR_NONE;
 }
