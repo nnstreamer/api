@@ -37,7 +37,7 @@ _pkg_mgr_event_cb (const char *type, const char *package_name,
     package_manager_error_e error, void *user_data)
 {
   GDir *dir;
-  gchar *pkg_path = NULL;
+  g_autofree gchar *pkg_path = NULL;
   package_info_h pkg_info = NULL;
   int ret;
 
@@ -207,9 +207,6 @@ _pkg_mgr_event_cb (const char *type, const char *package_name,
   } else {
     /* Do not consider other events: do nothing */
   }
-
-  g_free (pkg_path);
-  pkg_path = NULL;
 }
 
 /**
