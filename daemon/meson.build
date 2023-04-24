@@ -42,7 +42,11 @@ ai_service_daemon_deps = [
 ]
 
 if (get_option('enable-tizen'))
-  ai_service_daemon_deps += [appfw_package_manager_dep, dependency('dlog')]
+  ai_service_daemon_deps += [
+    dependency('capi-appfw-app-common'),
+    dependency('capi-appfw-package-manager'),
+    dependency('dlog')
+  ]
 endif
 
 serviceDBPath = get_option('service-db-path')
