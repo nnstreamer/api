@@ -16,6 +16,8 @@
 #ifndef __MOCK_PACKAGE_MANAGER_H__
 #define __MOCK_PACKAGE_MANAGER_H__
 
+#include <tizen_error.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
