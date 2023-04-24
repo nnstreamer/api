@@ -14,7 +14,6 @@
  *  and utilities for unit test cases of ML Agent Service APIs.
  */
 
-#include <tizen_error.h>
 #include <glib-2.0/glib.h>
 
 #include "mock_package_manager.h"
