@@ -78,6 +78,29 @@ if get_option('default_library') == 'static'
     ml_agentd_lib = ml_agentd_static_lib
 endif
 
+ml_agentd_lib_common_objs = ml_agentd_shared_lib.extract_objects(ml_agentd_lib_common_srcs)
+ml_agentd_test_both_lib = both_libraries('ml-agentd-test',
+  ml_agentd_lib_service_db_srcs,
+  dependencies: ml_agentd_deps,
+  include_directories: ml_agentd_incs,
+  install: false,
+  cpp_args: ['-DDB_PATH="."', daemon_cpp_db_key_prefix_arg],
+  objects: ml_agentd_lib_common_objs,
+  version: api_version,
+  pic: true,
+)
+
+ml_agentd_test_lib = ml_agentd_test_both_lib.get_shared_lib()
+if get_option('default_library') == 'static'
+    ml_agentd_test_lib = ml_agentd_test_both_lib.get_static_lib()
+endif
+
+lib_ml_agentd_test_dep = declare_dependency(
+  dependencies: ml_agentd_deps,
+  include_directories: ml_agentd_incs,
+  link_with: ml_agentd_test_lib,
+)
+
 subdir('includes')
 install_headers(ml_agentd_headers,
   subdir: 'ml-agentd'

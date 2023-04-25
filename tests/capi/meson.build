@@ -35,10 +35,10 @@ if get_option('enable-ml-service')
   unittest_capi_service_agent_client = executable('unittest_capi_service_agent_client',
     'unittest_capi_service_agent_client.cc',
     link_with: nns_capi_service_lib,
-    dependencies: [unittest_common_dep, gdbus_gen_test_dep],
+    dependencies: [unittest_common_dep, gdbus_gen_test_dep, lib_ml_agentd_test_dep],
     install: get_option('install-test'),
     install_dir: unittest_install_dir,
-    include_directories: [nns_capi_include, ml_agentd_incs],
+    include_directories: nns_capi_include,
   )
   test('unittest_capi_service_agent_client', unittest_capi_service_agent_client, env: testenv, timeout: 100)
 endif
