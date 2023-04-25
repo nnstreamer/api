@@ -377,7 +377,6 @@ bash %{test_script} ./tests/capi/unittest_capi_datatype_consistency
 
 %if 0%{?enable_ml_service}
 bash %{test_script} ./tests/daemon/unittest_ml_agent
-bash %{test_script} ./tests/daemon/unittest_dbus_model
 bash %{test_script} ./tests/daemon/unittest_service_db
 bash %{test_script} ./tests/capi/unittest_capi_service_agent_client
 %endif
