@@ -1871,6 +1871,25 @@ TEST (nnstreamer_capi_singleshot, property_01_p)
   EXPECT_STREQ (prop_value, "false");
   g_free (prop_value);
 
+  /* set updatable */
+  status = ml_single_set_property (single, "is-updatable", "true");
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_single_get_property (single, "is-updatable", &prop_value);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  EXPECT_STREQ (prop_value, "true");
+  g_free (prop_value);
+
+  status = ml_single_set_property (single, "is-updatable", "false");
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_single_get_property (single, "is-updatable", &prop_value);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  EXPECT_STREQ (prop_value, "false");
+  g_free (prop_value);
+
   /* get input info */
   status = ml_single_get_input_info (single, &in_info);
   EXPECT_EQ (status, ML_ERROR_NONE);
