@@ -13,6 +13,7 @@
 #include "pipeline-dbus.h"
 
 #include <glib.h>
+#include <errno.h>
 
 typedef enum
 {
