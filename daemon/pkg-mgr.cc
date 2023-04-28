@@ -91,6 +91,10 @@ _pkg_mgr_event_cb (const char *type, const char *package_name,
     ret = package_info_get_res_type (pkg_info, &res_type);
     if (ret != PACKAGE_MANAGER_ERROR_NONE) {
       _E ("package_info_get_res_type failed: %d", ret);
+      ret = package_info_destroy (pkg_info);
+      if (ret != PACKAGE_MANAGER_ERROR_NONE) {
+        _E ("package_info_destroy failed: %d", ret);
+      }
       return;
     }
 
@@ -98,6 +102,10 @@ _pkg_mgr_event_cb (const char *type, const char *package_name,
     ret = package_info_get_res_version (pkg_info, &res_version);
     if (ret != PACKAGE_MANAGER_ERROR_NONE) {
       _E ("package_info_get_res_version failed: %d", ret);
+      ret = package_info_destroy (pkg_info);
+      if (ret != PACKAGE_MANAGER_ERROR_NONE) {
+        _E ("package_info_destroy failed: %d", ret);
+      }
       return;
     }
 
