@@ -128,10 +128,10 @@ _pkg_mgr_event_cb (const char *type, const char *package_name,
 
     /* parsing model_description.json */
     g_autoptr(JsonParser) parser = json_parser_new ();
-    g_autoptr(GError) error = NULL;
-    json_parser_load_from_file (parser, json_file_path, &error);
-    if (error) {
-      _E ("Failed to parse json file '%s': %s", json_file_path, error->message);
+    g_autoptr(GError) err = NULL;
+    json_parser_load_from_file (parser, json_file_path, &err);
+    if (err) {
+      _E ("Failed to parse json file '%s': %s", json_file_path, err->message);
       return;
     }
 
