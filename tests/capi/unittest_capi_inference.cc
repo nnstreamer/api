@@ -10,15 +10,15 @@
 #include <gtest/gtest.h>
 #include <glib.h>
 #include <glib/gstdio.h> /* GStatBuf */
-#include <nnstreamer.h>
-#include <nnstreamer_plugin_api.h>
-#include <nnstreamer_internal.h>
-#include <nnstreamer-tizen-internal.h>
-#include <ml-api-internal.h>
 #include <ml-api-inference-internal.h>
 #include <ml-api-inference-pipeline-internal.h>
+#include <ml-api-internal.h>
+#include <nnstreamer-tizen-internal.h>
+#include <nnstreamer.h>
+#include <nnstreamer_internal.h>
+#include <nnstreamer_plugin_api.h>
 
-#if defined (__APPLE__)
+#if defined(__APPLE__)
 #define SO_FILE_EXTENSION ".dylib"
 #else
 #define SO_FILE_EXTENSION ".so"
@@ -26,7 +26,7 @@
 
 static const unsigned int SINGLE_DEF_TIMEOUT_MSEC = 10000U;
 
-#if defined (ENABLE_TENSORFLOW_LITE) || defined (ENABLE_TENSORFLOW2_LITE)
+#if defined(ENABLE_TENSORFLOW_LITE) || defined(ENABLE_TENSORFLOW2_LITE)
 constexpr bool is_enabled_tensorflow_lite = true;
 #else
 constexpr bool is_enabled_tensorflow_lite = false;
@@ -43,31 +43,33 @@ typedef struct {
 /**
  * @brief Macro to wait for pipeline state.
  */
-#define wait_for_start(handle, state, status) do { \
-    int counter = 0; \
+#define wait_for_start(handle, state, status)                                      \
+  do {                                                                             \
+    int counter = 0;                                                               \
     while ((state == ML_PIPELINE_STATE_PAUSED || state == ML_PIPELINE_STATE_READY) \
-           && counter < 20) { \
-      g_usleep (50000); \
-      counter++; \
-      status = ml_pipeline_get_state (handle, &state); \
-      EXPECT_EQ (status, ML_ERROR_NONE); \
-    } \
+           && counter < 20) {                                                      \
+      g_usleep (50000);                                                            \
+      counter++;                                                                   \
+      status = ml_pipeline_get_state (handle, &state);                             \
+      EXPECT_EQ (status, ML_ERROR_NONE);                                           \
+    }                                                                              \
   } while (0)
 
 /**
  * @brief Macro to wait for expected buffers to arrive.
  */
-#define wait_pipeline_process_buffers(received, expected) do { \
-    guint timer = 0; \
-    while (received < expected) { \
-      g_usleep (10000); \
-      timer += 10; \
-      if (timer > SINGLE_DEF_TIMEOUT_MSEC) \
-        break; \
-    } \
+#define wait_pipeline_process_buffers(received, expected) \
+  do {                                                    \
+    guint timer = 0;                                      \
+    while (received < expected) {                         \
+      g_usleep (10000);                                   \
+      timer += 10;                                        \
+      if (timer > SINGLE_DEF_TIMEOUT_MSEC)                \
+        break;                                            \
+    }                                                     \
   } while (0)
 
-#if defined (__TIZEN__)
+#if defined(__TIZEN__)
 #if TIZENPPM
 /**
  * @brief Test NNStreamer pipeline construct with Tizen cam
@@ -229,8 +231,7 @@ TEST (nnstreamer_capi_playstop, dummy_01)
   status = ml_pipeline_start (handle);
   EXPECT_EQ (status, ML_ERROR_NONE);
   status = ml_pipeline_get_state (handle, &state);
-  EXPECT_EQ (status,
-      ML_ERROR_NONE); /* At this moment, it can be READY, PAUSED, or PLAYING */
+  EXPECT_EQ (status, ML_ERROR_NONE); /* At this moment, it can be READY, PAUSED, or PLAYING */
   EXPECT_NE (state, ML_PIPELINE_STATE_UNKNOWN);
   EXPECT_NE (state, ML_PIPELINE_STATE_NULL);
 
@@ -268,8 +269,7 @@ TEST (nnstreamer_capi_playstop, dummy_02)
   status = ml_pipeline_start (handle);
   EXPECT_EQ (status, ML_ERROR_NONE);
   status = ml_pipeline_get_state (handle, &state);
-  EXPECT_EQ (status,
-      ML_ERROR_NONE); /* At this moment, it can be READY, PAUSED, or PLAYING */
+  EXPECT_EQ (status, ML_ERROR_NONE); /* At this moment, it can be READY, PAUSED, or PLAYING */
   EXPECT_NE (state, ML_PIPELINE_STATE_UNKNOWN);
   EXPECT_NE (state, ML_PIPELINE_STATE_NULL);
 
@@ -315,7 +315,7 @@ TEST (nnstreamer_capi_valve, test01)
   const gchar *_tmpdir = g_get_tmp_dir ();
   const gchar *_dirname = "nns-tizen-XXXXXX";
   gchar *fullpath = g_build_path ("/", _tmpdir, _dirname, NULL);
-  gchar *dir = g_mkdtemp ((gchar *)fullpath);
+  gchar *dir = g_mkdtemp ((gchar *) fullpath);
   gchar *file1 = g_build_path ("/", dir, "valve1", NULL);
   gchar *pipeline = g_strdup_printf (
       "videotestsrc is-live=true ! videoconvert ! videoscale ! video/x-raw,format=RGBx,width=16,height=16,framerate=10/1 ! tensor_converter ! queue ! valve name=valve1 ! filesink location=\"%s\"",
@@ -342,8 +342,7 @@ TEST (nnstreamer_capi_valve, test01)
 
   g_usleep (50000); /* 50ms. Wait for the pipeline stgart. */
   status = ml_pipeline_get_state (handle, &state);
-  EXPECT_EQ (status,
-      ML_ERROR_NONE); /* At this moment, it can be READY, PAUSED, or PLAYING */
+  EXPECT_EQ (status, ML_ERROR_NONE); /* At this moment, it can be READY, PAUSED, or PLAYING */
   EXPECT_NE (state, ML_PIPELINE_STATE_UNKNOWN);
   EXPECT_NE (state, ML_PIPELINE_STATE_NULL);
 
@@ -507,7 +506,7 @@ static void
 test_sink_callback_dm01 (
     const ml_tensors_data_h data, const ml_tensors_info_h info, void *user_data)
 {
-  gchar *filepath = (gchar *)user_data;
+  gchar *filepath = (gchar *) user_data;
   unsigned int i, num = 0;
   void *data_ptr;
   size_t data_size;
@@ -537,7 +536,7 @@ static void
 test_sink_callback_count (
     const ml_tensors_data_h data, const ml_tensors_info_h info, void *user_data)
 {
-  guint *count = (guint *)user_data;
+  guint *count = (guint *) user_data;
 
   G_LOCK (callback_lock);
   *count = *count + 1;
@@ -553,17 +552,17 @@ test_pipe_state_callback (ml_pipeline_state_e state, void *user_data)
   TestPipeState *pipe_state;
 
   G_LOCK (callback_lock);
-  pipe_state = (TestPipeState *)user_data;
+  pipe_state = (TestPipeState *) user_data;
 
   switch (state) {
-  case ML_PIPELINE_STATE_PAUSED:
-    pipe_state->paused = TRUE;
-    break;
-  case ML_PIPELINE_STATE_PLAYING:
-    pipe_state->playing = TRUE;
-    break;
-  default:
-    break;
+    case ML_PIPELINE_STATE_PAUSED:
+      pipe_state->paused = TRUE;
+      break;
+    case ML_PIPELINE_STATE_PLAYING:
+      pipe_state->playing = TRUE;
+      break;
+    default:
+      break;
   }
   G_UNLOCK (callback_lock);
 }
@@ -634,9 +633,9 @@ TEST (nnstreamer_capi_sink, dummy_01)
   const gchar *_tmpdir = g_get_tmp_dir ();
   const gchar *_dirname = "nns-tizen-XXXXXX";
   gchar *fullpath = g_build_path ("/", _tmpdir, _dirname, NULL);
-  gchar *dir = g_mkdtemp ((gchar *)fullpath);
+  gchar *dir = g_mkdtemp ((gchar *) fullpath);
 
-  ASSERT_NE (dir, (gchar *)NULL);
+  ASSERT_NE (dir, (gchar *) NULL);
 
   gchar *file1 = g_build_path ("/", dir, "original", NULL);
   gchar *file2 = g_build_path ("/", dir, "sink", NULL);
@@ -698,11 +697,11 @@ TEST (nnstreamer_capi_sink, dummy_02)
   /* pipeline with appsink */
   pipeline = g_strdup ("videotestsrc num-buffers=3 ! videoconvert ! tensor_converter ! appsink name=sinkx sync=false");
 
-  count_sink = (guint *)g_malloc (sizeof (guint));
+  count_sink = (guint *) g_malloc (sizeof (guint));
   ASSERT_TRUE (count_sink != NULL);
   *count_sink = 0;
 
-  pipe_state = (TestPipeState *)g_new0 (TestPipeState, 1);
+  pipe_state = (TestPipeState *) g_new0 (TestPipeState, 1);
   ASSERT_TRUE (pipe_state != NULL);
 
   status = ml_pipeline_construct (pipeline, test_pipe_state_callback, pipe_state, &handle);
@@ -758,15 +757,15 @@ TEST (nnstreamer_capi_sink, register_duplicated)
 
   /* pipeline with appsink */
   pipeline = g_strdup ("videotestsrc num-buffers=3 ! videoconvert ! tensor_converter ! appsink name=sinkx sync=false");
-  count_sink0 = (guint *)g_malloc (sizeof (guint));
+  count_sink0 = (guint *) g_malloc (sizeof (guint));
   ASSERT_TRUE (count_sink0 != NULL);
   *count_sink0 = 0;
 
-  count_sink1 = (guint *)g_malloc (sizeof (guint));
+  count_sink1 = (guint *) g_malloc (sizeof (guint));
   ASSERT_TRUE (count_sink1 != NULL);
   *count_sink1 = 0;
 
-  pipe_state = (TestPipeState *)g_new0 (TestPipeState, 1);
+  pipe_state = (TestPipeState *) g_new0 (TestPipeState, 1);
   ASSERT_TRUE (pipe_state != NULL);
 
   status = ml_pipeline_construct (pipeline, test_pipe_state_callback, pipe_state, &handle);
@@ -817,7 +816,7 @@ TEST (nnstreamer_capi_sink, failure_01_n)
   int status;
   guint *count_sink;
 
-  count_sink = (guint *)g_malloc (sizeof (guint));
+  count_sink = (guint *) g_malloc (sizeof (guint));
   ASSERT_TRUE (count_sink != NULL);
   *count_sink = 0;
 
@@ -843,7 +842,7 @@ TEST (nnstreamer_capi_sink, failure_02_n)
 
   pipeline = g_strdup ("videotestsrc num-buffers=3 ! videoconvert ! valve name=valvex ! tensor_converter ! tensor_sink name=sinkx");
 
-  count_sink = (guint *)g_malloc (sizeof (guint));
+  count_sink = (guint *) g_malloc (sizeof (guint));
   ASSERT_TRUE (count_sink != NULL);
   *count_sink = 0;
 
@@ -873,7 +872,7 @@ TEST (nnstreamer_capi_sink, failure_03_n)
 
   pipeline = g_strdup ("videotestsrc num-buffers=3 ! videoconvert ! valve name=valvex ! tensor_converter ! tensor_sink name=sinkx");
 
-  count_sink = (guint *)g_malloc (sizeof (guint));
+  count_sink = (guint *) g_malloc (sizeof (guint));
   ASSERT_TRUE (count_sink != NULL);
   *count_sink = 0;
 
@@ -903,7 +902,7 @@ TEST (nnstreamer_capi_sink, failure_04_n)
 
   pipeline = g_strdup ("videotestsrc num-buffers=3 ! videoconvert ! valve name=valvex ! tensor_converter ! tensor_sink name=sinkx");
 
-  count_sink = (guint *)g_malloc (sizeof (guint));
+  count_sink = (guint *) g_malloc (sizeof (guint));
   ASSERT_TRUE (count_sink != NULL);
   *count_sink = 0;
 
@@ -933,7 +932,7 @@ TEST (nnstreamer_capi_sink, failure_05_n)
 
   pipeline = g_strdup ("videotestsrc num-buffers=3 ! videoconvert ! valve name=valvex ! tensor_converter ! tensor_sink name=sinkx");
 
-  count_sink = (guint *)g_malloc (sizeof (guint));
+  count_sink = (guint *) g_malloc (sizeof (guint));
   ASSERT_TRUE (count_sink != NULL);
   *count_sink = 0;
 
@@ -961,7 +960,7 @@ TEST (nnstreamer_capi_sink, failure_06_n)
 
   pipeline = g_strdup ("videotestsrc num-buffers=3 ! videoconvert ! valve name=valvex ! tensor_converter ! tensor_sink name=sinkx");
 
-  count_sink = (guint *)g_malloc (sizeof (guint));
+  count_sink = (guint *) g_malloc (sizeof (guint));
   ASSERT_TRUE (count_sink != NULL);
   *count_sink = 0;
 
@@ -985,7 +984,7 @@ TEST (nnstreamer_capi_src, dummy_01)
   const gchar *_tmpdir = g_get_tmp_dir ();
   const gchar *_dirname = "nns-tizen-XXXXXX";
   gchar *fullpath = g_build_path ("/", _tmpdir, _dirname, NULL);
-  gchar *dir = g_mkdtemp ((gchar *)fullpath);
+  gchar *dir = g_mkdtemp ((gchar *) fullpath);
   gchar *file1 = g_build_path ("/", dir, "output", NULL);
   gchar *pipeline = g_strdup_printf (
       "appsrc name=srcx ! other/tensor,dimension=(string)4:1:1:1,type=(string)uint8,framerate=(fraction)0/1 ! filesink location=\"%s\" buffer-mode=unbuffered",
@@ -1012,14 +1011,14 @@ TEST (nnstreamer_capi_src, dummy_01)
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_TRUE (dir != NULL);
   for (i = 0; i < 10; i++) {
-    uintarray1[i] = (uint8_t *)g_malloc (4);
+    uintarray1[i] = (uint8_t *) g_malloc (4);
     ASSERT_TRUE (uintarray1[i] != NULL);
     uintarray1[i][0] = i + 4;
     uintarray1[i][1] = i + 1;
     uintarray1[i][2] = i + 3;
     uintarray1[i][3] = i + 2;
 
-    uintarray2[i] = (uint8_t *)g_malloc (4);
+    uintarray2[i] = (uint8_t *) g_malloc (4);
     ASSERT_TRUE (uintarray2[i] != NULL);
     uintarray2[i][0] = i + 3;
     uintarray2[i][1] = i + 2;
@@ -1033,8 +1032,7 @@ TEST (nnstreamer_capi_src, dummy_01)
   EXPECT_EQ (status, ML_ERROR_NONE);
   g_usleep (10000); /* 10ms. Wait a bit. */
   status = ml_pipeline_get_state (handle, &state);
-  EXPECT_EQ (status,
-      ML_ERROR_NONE); /* At this moment, it can be READY, PAUSED, or PLAYING */
+  EXPECT_EQ (status, ML_ERROR_NONE); /* At this moment, it can be READY, PAUSED, or PLAYING */
   EXPECT_NE (state, ML_PIPELINE_STATE_UNKNOWN);
   EXPECT_NE (state, ML_PIPELINE_STATE_NULL);
 
@@ -1122,7 +1120,7 @@ TEST (nnstreamer_capi_src, dummy_01)
 
   g_free (pipeline);
 
-  EXPECT_TRUE (g_file_get_contents (file1, (gchar **)&content, &len, NULL));
+  EXPECT_TRUE (g_file_get_contents (file1, (gchar **) &content, &len, NULL));
   EXPECT_EQ (len, 8U * 11);
   EXPECT_TRUE (content != nullptr);
 
@@ -1315,8 +1313,7 @@ test_src_cb_push_dummy (ml_pipeline_src_h src_handle)
  * @brief appsrc callback - need_data.
  */
 static void
-test_src_cb_need_data (ml_pipeline_src_h src_handle, unsigned int length,
-    void *user_data)
+test_src_cb_need_data (ml_pipeline_src_h src_handle, unsigned int length, void *user_data)
 {
   /* For test, push dummy if given src handles are same. */
   if (src_handle == user_data)
@@ -1332,7 +1329,9 @@ TEST (nnstreamer_capi_src, callback_replace)
   ml_pipeline_h handle;
   ml_pipeline_src_h srchandle1, srchandle2;
   ml_pipeline_sink_h sinkhandle;
-  ml_pipeline_src_callbacks_s callback = { 0, };
+  ml_pipeline_src_callbacks_s callback = {
+    0,
+  };
   guint *count_sink;
   int status;
 
@@ -1351,7 +1350,7 @@ TEST (nnstreamer_capi_src, callback_replace)
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   status = ml_pipeline_sink_register (
-    handle, "sinkx", test_sink_callback_count, count_sink, &sinkhandle);
+      handle, "sinkx", test_sink_callback_count, count_sink, &sinkhandle);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   status = ml_pipeline_start (handle);
@@ -1396,7 +1395,9 @@ TEST (nnstreamer_capi_src, callback_invalid_param_01_n)
   const char pipeline[] = "appsrc name=srcx ! other/tensor,dimension=(string)4:1:1:1,type=(string)uint8,framerate=(fraction)0/1 ! tensor_sink";
   ml_pipeline_h handle;
   ml_pipeline_src_h srchandle;
-  ml_pipeline_src_callbacks_s callback = { 0, };
+  ml_pipeline_src_callbacks_s callback = {
+    0,
+  };
   int status;
 
   callback.need_data = test_src_cb_need_data;
@@ -1460,7 +1461,8 @@ check_orange_output (const ml_tensors_data_h data, const ml_tensors_info_h info,
       root_path, "tests", "test_models", "data", "orange.raw", NULL);
   ASSERT_TRUE (g_file_test (orange_raw_file, G_FILE_TEST_EXISTS));
 
-  EXPECT_TRUE (g_file_get_contents (orange_raw_file, (gchar **) &raw_content, &raw_content_len, NULL));
+  EXPECT_TRUE (g_file_get_contents (
+      orange_raw_file, (gchar **) &raw_content, &raw_content_len, NULL));
 
   status = ml_tensors_data_get_tensor_data (data, 0, (void **) &data, &data_size);
   EXPECT_EQ (status, ML_ERROR_NONE);
@@ -1511,8 +1513,7 @@ TEST (nnstreamer_capi_src, pngfile)
   ASSERT_TRUE (g_file_test (orange_png_file, G_FILE_TEST_EXISTS));
 
   pipeline = g_strdup_printf (
-    "appsrc name=srcx caps=image/png ! pngdec ! videoconvert ! videoscale ! video/x-raw,format=RGB,width=224,height=224,framerate=0/1 ! tensor_converter ! tensor_sink name=sinkx sync=false async=false"
-  );
+      "appsrc name=srcx caps=image/png ! pngdec ! videoconvert ! videoscale ! video/x-raw,format=RGB,width=224,height=224,framerate=0/1 ! tensor_converter ! tensor_sink name=sinkx sync=false async=false");
 
   /* construct pipeline */
   status = ml_pipeline_construct (pipeline, NULL, NULL, &handle);
@@ -1608,11 +1609,11 @@ TEST (nnstreamer_capi_switch, dummy_01)
       "videotestsrc is-live=true ! videoconvert ! ins.sink_0 "
       "videotestsrc num-buffers=3 is-live=true ! videoconvert ! ins.sink_1");
 
-  count_sink = (guint *)g_malloc (sizeof (guint));
+  count_sink = (guint *) g_malloc (sizeof (guint));
   ASSERT_TRUE (count_sink != NULL);
   *count_sink = 0;
 
-  pipe_state = (TestPipeState *)g_new0 (TestPipeState, 1);
+  pipe_state = (TestPipeState *) g_new0 (TestPipeState, 1);
   ASSERT_TRUE (pipe_state != NULL);
 
   status = ml_pipeline_construct (pipeline, test_pipe_state_callback, pipe_state, &handle);
@@ -1705,11 +1706,11 @@ TEST (nnstreamer_capi_switch, dummy_02)
                        "outs.src_0 ! tensor_sink name=sink0 async=false "
                        "outs.src_1 ! tensor_sink name=sink1 async=false");
 
-  count_sink0 = (guint *)g_malloc (sizeof (guint));
+  count_sink0 = (guint *) g_malloc (sizeof (guint));
   ASSERT_TRUE (count_sink0 != NULL);
   *count_sink0 = 0;
 
-  count_sink1 = (guint *)g_malloc (sizeof (guint));
+  count_sink1 = (guint *) g_malloc (sizeof (guint));
   ASSERT_TRUE (count_sink1 != NULL);
   *count_sink1 = 0;
 
@@ -2043,7 +2044,8 @@ TEST (nnstreamer_capi_util, nnfw_availability_full_01)
   int status;
   bool result;
 
-  status = ml_check_nnfw_availability_full (ML_NNFW_TYPE_TENSORFLOW_LITE, ML_NNFW_HW_ANY, NULL, &result);
+  status = ml_check_nnfw_availability_full (
+      ML_NNFW_TYPE_TENSORFLOW_LITE, ML_NNFW_HW_ANY, NULL, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, is_enabled_tensorflow_lite);
 }
@@ -2055,7 +2057,8 @@ TEST (nnstreamer_capi_util, nnfw_availability_full_02_n)
 {
   int status;
 
-  status = ml_check_nnfw_availability_full (ML_NNFW_TYPE_TENSORFLOW_LITE, ML_NNFW_HW_ANY, NULL, NULL);
+  status = ml_check_nnfw_availability_full (
+      ML_NNFW_TYPE_TENSORFLOW_LITE, ML_NNFW_HW_ANY, NULL, NULL);
   EXPECT_NE (status, ML_ERROR_NONE);
 }
 
@@ -2091,38 +2094,34 @@ TEST (nnstreamer_capi_util, availability_01)
   bool result;
   int status;
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_TENSORFLOW_LITE,
-      ML_NNFW_HW_ANY, &result);
+  status = ml_check_nnfw_availability (ML_NNFW_TYPE_TENSORFLOW_LITE, ML_NNFW_HW_ANY, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, is_enabled_tensorflow_lite);
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_TENSORFLOW_LITE,
-      ML_NNFW_HW_AUTO, &result);
+  status = ml_check_nnfw_availability (
+      ML_NNFW_TYPE_TENSORFLOW_LITE, ML_NNFW_HW_AUTO, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, is_enabled_tensorflow_lite);
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_TENSORFLOW_LITE,
-      ML_NNFW_HW_CPU, &result);
+  status = ml_check_nnfw_availability (ML_NNFW_TYPE_TENSORFLOW_LITE, ML_NNFW_HW_CPU, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, is_enabled_tensorflow_lite);
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_TENSORFLOW_LITE,
-      ML_NNFW_HW_CPU_NEON, &result);
+  status = ml_check_nnfw_availability (
+      ML_NNFW_TYPE_TENSORFLOW_LITE, ML_NNFW_HW_CPU_NEON, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, is_enabled_tensorflow_lite);
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_TENSORFLOW_LITE,
-      ML_NNFW_HW_CPU_SIMD, &result);
+  status = ml_check_nnfw_availability (
+      ML_NNFW_TYPE_TENSORFLOW_LITE, ML_NNFW_HW_CPU_SIMD, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, is_enabled_tensorflow_lite);
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_TENSORFLOW_LITE,
-      ML_NNFW_HW_GPU, &result);
+  status = ml_check_nnfw_availability (ML_NNFW_TYPE_TENSORFLOW_LITE, ML_NNFW_HW_GPU, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, is_enabled_tensorflow_lite);
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_TENSORFLOW_LITE,
-      ML_NNFW_HW_NPU, &result);
+  status = ml_check_nnfw_availability (ML_NNFW_TYPE_TENSORFLOW_LITE, ML_NNFW_HW_NPU, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, is_enabled_tensorflow_lite);
 }
@@ -2135,23 +2134,23 @@ TEST (nnstreamer_capi_util, availability_fail_01_n)
   bool result;
   int status;
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_TENSORFLOW_LITE,
-      ML_NNFW_HW_NPU_MOVIDIUS, &result);
+  status = ml_check_nnfw_availability (
+      ML_NNFW_TYPE_TENSORFLOW_LITE, ML_NNFW_HW_NPU_MOVIDIUS, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, false);
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_TENSORFLOW_LITE,
-      ML_NNFW_HW_NPU_EDGE_TPU, &result);
+  status = ml_check_nnfw_availability (
+      ML_NNFW_TYPE_TENSORFLOW_LITE, ML_NNFW_HW_NPU_EDGE_TPU, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, false);
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_TENSORFLOW_LITE,
-      ML_NNFW_HW_NPU_VIVANTE, &result);
+  status = ml_check_nnfw_availability (
+      ML_NNFW_TYPE_TENSORFLOW_LITE, ML_NNFW_HW_NPU_VIVANTE, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, false);
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_TENSORFLOW_LITE,
-      ML_NNFW_HW_NPU_SR, &result);
+  status = ml_check_nnfw_availability (
+      ML_NNFW_TYPE_TENSORFLOW_LITE, ML_NNFW_HW_NPU_SR, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, false);
 }
@@ -2165,13 +2164,11 @@ TEST (nnstreamer_capi_util, availability_02)
   bool result;
   int status;
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_TENSORFLOW,
-      ML_NNFW_HW_ANY, &result);
+  status = ml_check_nnfw_availability (ML_NNFW_TYPE_TENSORFLOW, ML_NNFW_HW_ANY, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, true);
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_TENSORFLOW,
-      ML_NNFW_HW_AUTO, &result);
+  status = ml_check_nnfw_availability (ML_NNFW_TYPE_TENSORFLOW, ML_NNFW_HW_AUTO, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, true);
 }
@@ -2184,13 +2181,13 @@ TEST (nnstreamer_capi_util, availability_fail_02_n)
   bool result;
   int status;
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_TENSORFLOW,
-      ML_NNFW_HW_NPU_VIVANTE, &result);
+  status = ml_check_nnfw_availability (
+      ML_NNFW_TYPE_TENSORFLOW, ML_NNFW_HW_NPU_VIVANTE, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, false);
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_TENSORFLOW,
-      ML_NNFW_HW_NPU_MOVIDIUS, &result);
+  status = ml_check_nnfw_availability (
+      ML_NNFW_TYPE_TENSORFLOW, ML_NNFW_HW_NPU_MOVIDIUS, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, false);
 }
@@ -2204,13 +2201,11 @@ TEST (nnstreamer_capi_util, availability_03)
   bool result;
   int status;
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_CUSTOM_FILTER,
-      ML_NNFW_HW_ANY, &result);
+  status = ml_check_nnfw_availability (ML_NNFW_TYPE_CUSTOM_FILTER, ML_NNFW_HW_ANY, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, true);
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_CUSTOM_FILTER,
-      ML_NNFW_HW_AUTO, &result);
+  status = ml_check_nnfw_availability (ML_NNFW_TYPE_CUSTOM_FILTER, ML_NNFW_HW_AUTO, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, true);
 }
@@ -2223,13 +2218,11 @@ TEST (nnstreamer_capi_util, availability_fail_03_n)
   bool result;
   int status;
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_CUSTOM_FILTER,
-      ML_NNFW_HW_CPU, &result);
+  status = ml_check_nnfw_availability (ML_NNFW_TYPE_CUSTOM_FILTER, ML_NNFW_HW_CPU, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, false);
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_CUSTOM_FILTER,
-      ML_NNFW_HW_GPU, &result);
+  status = ml_check_nnfw_availability (ML_NNFW_TYPE_CUSTOM_FILTER, ML_NNFW_HW_GPU, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, false);
 }
@@ -2272,13 +2265,11 @@ TEST (nnstreamer_capi_util, availability_fail_04_n)
   bool result;
   int status;
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_NNFW,
-      ML_NNFW_HW_NPU_SR, &result);
+  status = ml_check_nnfw_availability (ML_NNFW_TYPE_NNFW, ML_NNFW_HW_NPU_SR, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, false);
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_NNFW,
-      ML_NNFW_HW_NPU_MOVIDIUS, &result);
+  status = ml_check_nnfw_availability (ML_NNFW_TYPE_NNFW, ML_NNFW_HW_NPU_MOVIDIUS, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, false);
 }
@@ -2293,23 +2284,19 @@ TEST (nnstreamer_capi_util, availability_05)
   bool result;
   int status;
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_MVNC,
-      ML_NNFW_HW_ANY, &result);
+  status = ml_check_nnfw_availability (ML_NNFW_TYPE_MVNC, ML_NNFW_HW_ANY, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, true);
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_MVNC,
-      ML_NNFW_HW_AUTO, &result);
+  status = ml_check_nnfw_availability (ML_NNFW_TYPE_MVNC, ML_NNFW_HW_AUTO, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, true);
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_MVNC,
-      ML_NNFW_HW_NPU, &result);
+  status = ml_check_nnfw_availability (ML_NNFW_TYPE_MVNC, ML_NNFW_HW_NPU, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, true);
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_MVNC,
-      ML_NNFW_HW_NPU_MOVIDIUS, &result);
+  status = ml_check_nnfw_availability (ML_NNFW_TYPE_MVNC, ML_NNFW_HW_NPU_MOVIDIUS, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, true);
 }
@@ -2322,13 +2309,11 @@ TEST (nnstreamer_capi_util, availability_fail_05_n)
   bool result;
   int status;
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_MVNC,
-      ML_NNFW_HW_CPU, &result);
+  status = ml_check_nnfw_availability (ML_NNFW_TYPE_MVNC, ML_NNFW_HW_CPU, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, false);
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_MVNC,
-      ML_NNFW_HW_GPU, &result);
+  status = ml_check_nnfw_availability (ML_NNFW_TYPE_MVNC, ML_NNFW_HW_GPU, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, false);
 }
@@ -2343,28 +2328,23 @@ TEST (nnstreamer_capi_util, availability_06)
   bool result;
   int status;
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_ARMNN,
-      ML_NNFW_HW_ANY, &result);
+  status = ml_check_nnfw_availability (ML_NNFW_TYPE_ARMNN, ML_NNFW_HW_ANY, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, true);
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_ARMNN,
-      ML_NNFW_HW_AUTO, &result);
+  status = ml_check_nnfw_availability (ML_NNFW_TYPE_ARMNN, ML_NNFW_HW_AUTO, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, true);
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_ARMNN,
-      ML_NNFW_HW_CPU, &result);
+  status = ml_check_nnfw_availability (ML_NNFW_TYPE_ARMNN, ML_NNFW_HW_CPU, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, true);
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_ARMNN,
-      ML_NNFW_HW_CPU_NEON, &result);
+  status = ml_check_nnfw_availability (ML_NNFW_TYPE_ARMNN, ML_NNFW_HW_CPU_NEON, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, true);
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_ARMNN,
-      ML_NNFW_HW_GPU, &result);
+  status = ml_check_nnfw_availability (ML_NNFW_TYPE_ARMNN, ML_NNFW_HW_GPU, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, true);
 }
@@ -2377,13 +2357,11 @@ TEST (nnstreamer_capi_util, availability_fail_06_n)
   bool result;
   int status;
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_ARMNN,
-      ML_NNFW_HW_NPU, &result);
+  status = ml_check_nnfw_availability (ML_NNFW_TYPE_ARMNN, ML_NNFW_HW_NPU, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, false);
 
-  status = ml_check_nnfw_availability (ML_NNFW_TYPE_ARMNN,
-      ML_NNFW_HW_NPU_EDGE_TPU, &result);
+  status = ml_check_nnfw_availability (ML_NNFW_TYPE_ARMNN, ML_NNFW_HW_NPU_EDGE_TPU, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, false);
 }
@@ -2395,19 +2373,20 @@ TEST (nnstreamer_capi_util, availability_fail_06_n)
 TEST (nnstreamer_capi_util, element_available_01_p)
 {
   bool available;
-  int status, n_elems,  i;
+  int status, n_elems, i;
   /**
    * If the allowed element list of nnstreamer is changed, this should also be changed.
    * https://github.com/nnstreamer/nnstreamer/blob/main/packaging/nnstreamer.spec#L642 (# Element allowance in Tizen)
    */
   const gchar *allowed = "tensor_converter tensor_filter tensor_query_serversrc capsfilter input-selector output-selector queue tee valve appsink appsrc audioconvert audiorate audioresample audiomixer videoconvert videocrop videorate videoscale videoflip videomixer compositor fakesrc fakesink filesrc filesink audiotestsrc videotestsrc jpegparse jpegenc jpegdec pngenc pngdec tcpclientsink tcpclientsrc tcpserversink tcpserversrc xvimagesink ximagesink evasimagesink evaspixmapsink glimagesink theoraenc lame vorbisenc wavenc volume oggmux avimux matroskamux v4l2src avsysvideosrc camerasrc tvcamerasrc pulsesrc fimcconvert tizenwlsink gdppay gdpdepay join rtpdec rtspsrc rtspclientsink zmqsrc zmqsink mqttsrc mqttsink udpsrc udpsink multiudpsink audioamplify audiochebband audiocheblimit audiodynamic audioecho audiofirfilter audioiirfilter audioinvert audiokaraoke audiopanorama audiowsincband audiowsinclimit scaletempo stereo";
   /** This not_allowed list is written only for testing. */
-  const gchar *not_allowed = "videobox videobalance aasink adder alpha alsasink x264enc ximagesrc webpenc wavescope v4l2sink v4l2radio urisourcebin uridecodebin typefind timeoverlay rtpstreampay rtpsession rtpgstpay queue2 fdsink fdsrc chromium capssetter cairooverlay autovideosink";
+  const gchar *not_allowed
+      = "videobox videobalance aasink adder alpha alsasink x264enc ximagesrc webpenc wavescope v4l2sink v4l2radio urisourcebin uridecodebin typefind timeoverlay rtpstreampay rtpsession rtpgstpay queue2 fdsink fdsrc chromium capssetter cairooverlay autovideosink";
   gchar **elements;
   gboolean restricted;
 
-  restricted = nnsconf_get_custom_value_bool ("element-restriction",
-      "enable_element_restriction", FALSE);
+  restricted = nnsconf_get_custom_value_bool (
+      "element-restriction", "enable_element_restriction", FALSE);
 
   /* element restriction is disabled */
   if (!restricted)
@@ -2589,7 +2568,7 @@ TEST (nnstreamer_capi_util, tensors_info_extended)
   status = ml_tensors_info_create_extended (&info);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  for (i = 0 ;i < ML_TENSOR_RANK_LIMIT ; i++) {
+  for (i = 0; i < ML_TENSOR_RANK_LIMIT; i++) {
     in_dim[i] = i % 4 + 1;
   }
 
@@ -2617,7 +2596,7 @@ TEST (nnstreamer_capi_util, tensors_info_extended)
   status = ml_tensors_info_get_tensor_dimension (info, 0, out_dim);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  for (i = 0 ;i < ML_TENSOR_RANK_LIMIT ; i++) {
+  for (i = 0; i < ML_TENSOR_RANK_LIMIT; i++) {
     EXPECT_EQ (out_dim[i], i % 4 + 1);
   }
 
@@ -2632,7 +2611,7 @@ TEST (nnstreamer_capi_util, tensors_info_extended)
   status = ml_tensors_info_get_tensor_dimension (info, 1, out_dim);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  for (i = 0 ;i < ML_TENSOR_RANK_LIMIT ; i++) {
+  for (i = 0; i < ML_TENSOR_RANK_LIMIT; i++) {
     EXPECT_EQ (out_dim[i], i % 4 + 1);
   }
 
@@ -2648,11 +2627,13 @@ TEST (nnstreamer_capi_util, tensors_info_extended)
 
   status = ml_tensors_info_get_tensor_size (info, 1, &data_size);
   EXPECT_EQ (status, ML_ERROR_NONE);
-  EXPECT_TRUE (data_size == ((2 * 3 * 4) * (2 * 3 * 4) * (2 * 3 * 4) * (2 * 3 * 4)* 8));
+  EXPECT_TRUE (data_size == ((2 * 3 * 4) * (2 * 3 * 4) * (2 * 3 * 4) * (2 * 3 * 4) * 8));
 
   status = ml_tensors_info_get_tensor_size (info, -1, &data_size);
   EXPECT_EQ (status, ML_ERROR_NONE);
-  EXPECT_TRUE (data_size == (((2 * 3 * 4) * (2 * 3 * 4) * (2 * 3 * 4) * (2 * 3 * 4)) + ((2 * 3 * 4) * (2 * 3 * 4) * (2 * 3 * 4) * (2 * 3 * 4)* 8)));
+  EXPECT_TRUE (data_size
+               == (((2 * 3 * 4) * (2 * 3 * 4) * (2 * 3 * 4) * (2 * 3 * 4))
+                   + ((2 * 3 * 4) * (2 * 3 * 4) * (2 * 3 * 4) * (2 * 3 * 4) * 8)));
 
   status = ml_tensors_info_destroy (info);
   EXPECT_EQ (status, ML_ERROR_NONE);
@@ -2723,7 +2704,7 @@ TEST (nnstreamer_capi_util, compare_info_extended)
   status = ml_tensors_info_create_extended (&info2);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  for (i = 0 ;i < ML_TENSOR_RANK_LIMIT ; i++) {
+  for (i = 0; i < ML_TENSOR_RANK_LIMIT; i++) {
     dim[i] = i + 1;
   }
 
@@ -2772,7 +2753,7 @@ TEST (nnstreamer_capi_util, compare_info_extended_n)
   status = ml_tensors_info_create (&info2);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  for (i = 0 ;i < ML_TENSOR_RANK_LIMIT ; i++) {
+  for (i = 0; i < ML_TENSOR_RANK_LIMIT; i++) {
     dim[i] = i + 1;
   }
 
@@ -2972,9 +2953,9 @@ TEST (nnstreamer_capi_util, info_comp_0)
   status = ml_tensors_info_create (&info2);
   ASSERT_EQ (status, ML_ERROR_NONE);
 
-  is = (ml_tensors_info_s *)info1;
+  is = (ml_tensors_info_s *) info1;
   is->num_tensors = 1;
-  is = (ml_tensors_info_s *)info2;
+  is = (ml_tensors_info_s *) info2;
   is->num_tensors = 2;
 
   status = _ml_tensors_info_compare (info1, info2, &equal);
@@ -3461,7 +3442,7 @@ TEST (nnstreamer_capi_util, info_clone_extended)
   status = ml_tensors_info_create_extended (&out_info);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  for (i = 0 ;i < ML_TENSOR_RANK_LIMIT ; i++) {
+  for (i = 0; i < ML_TENSOR_RANK_LIMIT; i++) {
     in_dim[i] = i + 1;
   }
 
@@ -3486,7 +3467,7 @@ TEST (nnstreamer_capi_util, info_clone_extended)
   status = ml_tensors_info_get_tensor_dimension (out_info, 0, out_dim);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  for (i = 0 ;i < ML_TENSOR_RANK_LIMIT ; i++) {
+  for (i = 0; i < ML_TENSOR_RANK_LIMIT; i++) {
     EXPECT_TRUE (in_dim[i] == out_dim[i]);
   }
 
@@ -6713,7 +6694,7 @@ TEST (nnstreamer_capi_element, scenario_02_p)
 
   pipeline = g_strdup ("videotestsrc is-live=true ! videoconvert ! tensor_converter ! appsink name=sinkx sync=false");
 
-  count_sink = (guint *)g_malloc (sizeof (guint));
+  count_sink = (guint *) g_malloc (sizeof (guint));
   ASSERT_TRUE (count_sink != NULL);
   *count_sink = 0;
 
@@ -6792,7 +6773,7 @@ TEST (nnstreamer_capi_internal, copy_from_gst)
   status = ml_tensors_info_create (&ml_info);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  _ml_tensors_info_copy_from_gst ((ml_tensors_info_s *)ml_info, &gst_info);
+  _ml_tensors_info_copy_from_gst ((ml_tensors_info_s *) ml_info, &gst_info);
   status = ml_tensors_info_get_count (ml_info, &count);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (count, 2U);
@@ -6805,7 +6786,7 @@ TEST (nnstreamer_capi_internal, copy_from_gst)
 
   gst_info.info[0].type = _NNS_INT32;
   gst_info.info[1].type = _NNS_UINT32;
-  _ml_tensors_info_copy_from_gst ((ml_tensors_info_s *)ml_info, &gst_info);
+  _ml_tensors_info_copy_from_gst ((ml_tensors_info_s *) ml_info, &gst_info);
   status = ml_tensors_info_get_tensor_type (ml_info, 0, &type);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (type, ML_TENSOR_TYPE_INT32);
@@ -6815,7 +6796,7 @@ TEST (nnstreamer_capi_internal, copy_from_gst)
 
   gst_info.info[0].type = _NNS_INT16;
   gst_info.info[1].type = _NNS_UINT16;
-  _ml_tensors_info_copy_from_gst ((ml_tensors_info_s *)ml_info, &gst_info);
+  _ml_tensors_info_copy_from_gst ((ml_tensors_info_s *) ml_info, &gst_info);
   status = ml_tensors_info_get_tensor_type (ml_info, 0, &type);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (type, ML_TENSOR_TYPE_INT16);
@@ -6825,7 +6806,7 @@ TEST (nnstreamer_capi_internal, copy_from_gst)
 
   gst_info.info[0].type = _NNS_INT8;
   gst_info.info[1].type = _NNS_UINT8;
-  _ml_tensors_info_copy_from_gst ((ml_tensors_info_s *)ml_info, &gst_info);
+  _ml_tensors_info_copy_from_gst ((ml_tensors_info_s *) ml_info, &gst_info);
   status = ml_tensors_info_get_tensor_type (ml_info, 0, &type);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (type, ML_TENSOR_TYPE_INT8);
@@ -6835,7 +6816,7 @@ TEST (nnstreamer_capi_internal, copy_from_gst)
 
   gst_info.info[0].type = _NNS_INT64;
   gst_info.info[1].type = _NNS_UINT64;
-  _ml_tensors_info_copy_from_gst ((ml_tensors_info_s *)ml_info, &gst_info);
+  _ml_tensors_info_copy_from_gst ((ml_tensors_info_s *) ml_info, &gst_info);
   status = ml_tensors_info_get_tensor_type (ml_info, 0, &type);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (type, ML_TENSOR_TYPE_INT64);
@@ -6845,7 +6826,7 @@ TEST (nnstreamer_capi_internal, copy_from_gst)
 
   gst_info.info[0].type = _NNS_FLOAT64;
   gst_info.info[1].type = _NNS_FLOAT32;
-  _ml_tensors_info_copy_from_gst ((ml_tensors_info_s *)ml_info, &gst_info);
+  _ml_tensors_info_copy_from_gst ((ml_tensors_info_s *) ml_info, &gst_info);
   status = ml_tensors_info_get_tensor_type (ml_info, 0, &type);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (type, ML_TENSOR_TYPE_FLOAT64);
@@ -6855,7 +6836,7 @@ TEST (nnstreamer_capi_internal, copy_from_gst)
 
   gst_info.info[0].name = g_strdup ("tn1");
   gst_info.info[1].name = g_strdup ("tn2");
-  _ml_tensors_info_copy_from_gst ((ml_tensors_info_s *)ml_info, &gst_info);
+  _ml_tensors_info_copy_from_gst ((ml_tensors_info_s *) ml_info, &gst_info);
   status = ml_tensors_info_get_tensor_name (ml_info, 0, &name);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_STREQ (name, "tn1");
@@ -6896,7 +6877,7 @@ TEST (nnstreamer_capi_internal, copy_from_gst_extended)
   status = ml_tensors_info_create_extended (&ml_info);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  _ml_tensors_info_copy_from_gst ((ml_tensors_info_s *)ml_info, &gst_info);
+  _ml_tensors_info_copy_from_gst ((ml_tensors_info_s *) ml_info, &gst_info);
   status = ml_tensors_info_get_count (ml_info, &count);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (count, 2U);
@@ -6964,7 +6945,7 @@ TEST (nnstreamer_capi_internal, copy_from_ml)
   status = ml_tensors_info_set_tensor_dimension (ml_info, 1, dim);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  _ml_tensors_info_copy_from_ml (&gst_info, (ml_tensors_info_s *)ml_info);
+  _ml_tensors_info_copy_from_ml (&gst_info, (ml_tensors_info_s *) ml_info);
   EXPECT_EQ (gst_info.num_tensors, 2U);
   EXPECT_EQ (gst_info.info[0].dimension[0], 1U);
   EXPECT_EQ (gst_info.info[0].dimension[1], 2U);
@@ -6975,7 +6956,7 @@ TEST (nnstreamer_capi_internal, copy_from_ml)
   EXPECT_EQ (status, ML_ERROR_NONE);
   status = ml_tensors_info_set_tensor_type (ml_info, 1, ML_TENSOR_TYPE_UINT32);
   EXPECT_EQ (status, ML_ERROR_NONE);
-  _ml_tensors_info_copy_from_ml (&gst_info, (ml_tensors_info_s *)ml_info);
+  _ml_tensors_info_copy_from_ml (&gst_info, (ml_tensors_info_s *) ml_info);
   EXPECT_EQ (gst_info.info[0].type, _NNS_INT32);
   EXPECT_EQ (gst_info.info[1].type, _NNS_UINT32);
 
@@ -6983,7 +6964,7 @@ TEST (nnstreamer_capi_internal, copy_from_ml)
   EXPECT_EQ (status, ML_ERROR_NONE);
   status = ml_tensors_info_set_tensor_type (ml_info, 1, ML_TENSOR_TYPE_UINT16);
   EXPECT_EQ (status, ML_ERROR_NONE);
-  _ml_tensors_info_copy_from_ml (&gst_info, (ml_tensors_info_s *)ml_info);
+  _ml_tensors_info_copy_from_ml (&gst_info, (ml_tensors_info_s *) ml_info);
   EXPECT_EQ (gst_info.info[0].type, _NNS_INT16);
   EXPECT_EQ (gst_info.info[1].type, _NNS_UINT16);
 
@@ -6991,7 +6972,7 @@ TEST (nnstreamer_capi_internal, copy_from_ml)
   EXPECT_EQ (status, ML_ERROR_NONE);
   status = ml_tensors_info_set_tensor_type (ml_info, 1, ML_TENSOR_TYPE_UINT8);
   EXPECT_EQ (status, ML_ERROR_NONE);
-  _ml_tensors_info_copy_from_ml (&gst_info, (ml_tensors_info_s *)ml_info);
+  _ml_tensors_info_copy_from_ml (&gst_info, (ml_tensors_info_s *) ml_info);
   EXPECT_EQ (gst_info.info[0].type, _NNS_INT8);
   EXPECT_EQ (gst_info.info[1].type, _NNS_UINT8);
 
@@ -6999,7 +6980,7 @@ TEST (nnstreamer_capi_internal, copy_from_ml)
   EXPECT_EQ (status, ML_ERROR_NONE);
   status = ml_tensors_info_set_tensor_type (ml_info, 1, ML_TENSOR_TYPE_UINT64);
   EXPECT_EQ (status, ML_ERROR_NONE);
-  _ml_tensors_info_copy_from_ml (&gst_info, (ml_tensors_info_s *)ml_info);
+  _ml_tensors_info_copy_from_ml (&gst_info, (ml_tensors_info_s *) ml_info);
   EXPECT_EQ (gst_info.info[0].type, _NNS_INT64);
   EXPECT_EQ (gst_info.info[1].type, _NNS_UINT64);
 
@@ -7007,7 +6988,7 @@ TEST (nnstreamer_capi_internal, copy_from_ml)
   EXPECT_EQ (status, ML_ERROR_NONE);
   status = ml_tensors_info_set_tensor_type (ml_info, 1, ML_TENSOR_TYPE_FLOAT32);
   EXPECT_EQ (status, ML_ERROR_NONE);
-  _ml_tensors_info_copy_from_ml (&gst_info, (ml_tensors_info_s *)ml_info);
+  _ml_tensors_info_copy_from_ml (&gst_info, (ml_tensors_info_s *) ml_info);
   EXPECT_EQ (gst_info.info[0].type, _NNS_FLOAT64);
   EXPECT_EQ (gst_info.info[1].type, _NNS_FLOAT32);
 
@@ -7015,7 +6996,7 @@ TEST (nnstreamer_capi_internal, copy_from_ml)
   EXPECT_EQ (status, ML_ERROR_NONE);
   status = ml_tensors_info_set_tensor_name (ml_info, 1, "tn2");
   EXPECT_EQ (status, ML_ERROR_NONE);
-  _ml_tensors_info_copy_from_ml (&gst_info, (ml_tensors_info_s *)ml_info);
+  _ml_tensors_info_copy_from_ml (&gst_info, (ml_tensors_info_s *) ml_info);
   EXPECT_STREQ (gst_info.info[0].name, "tn1");
   EXPECT_STREQ (gst_info.info[1].name, "tn2");
 
@@ -7059,13 +7040,12 @@ TEST (nnstreamer_capi_internal, copy_from_ml_02_n)
  * @brief Invoke callback for custom-easy filter.
  */
 static int
-test_custom_easy_cb (const ml_tensors_data_h in, ml_tensors_data_h out,
-    void *user_data)
+test_custom_easy_cb (const ml_tensors_data_h in, ml_tensors_data_h out, void *user_data)
 {
   /* test code, set data size. */
   if (user_data) {
     void *raw_data = NULL;
-    size_t *data_size = (size_t *)user_data;
+    size_t *data_size = (size_t *) user_data;
 
     ml_tensors_data_get_tensor_data (out, 0, &raw_data, data_size);
   }
@@ -7090,8 +7070,8 @@ TEST (nnstreamer_capi_custom, register_filter_01_p)
   gchar *pipeline = g_strdup_printf (
       "appsrc name=srcx ! other/tensor,dimension=(string)2:1:1:1,type=(string)int8,framerate=(fraction)0/1 ! tensor_filter framework=custom-easy model=%s ! tensor_sink name=sinkx",
       test_custom_filter);
-  guint *count_sink = (guint *)g_malloc0 (sizeof (guint));
-  size_t *filter_data_size = (size_t *)g_malloc0 (sizeof (size_t));
+  guint *count_sink = (guint *) g_malloc0 (sizeof (guint));
+  size_t *filter_data_size = (size_t *) g_malloc0 (sizeof (size_t));
   size_t data_size;
   guint i;
 
@@ -7505,7 +7485,7 @@ TEST (nnstreamer_capi_if, custom_01_p)
   const gchar *_tmpdir = g_get_tmp_dir ();
   const gchar *_dirname = "nns-tizen-XXXXXX";
   gchar *fullpath = g_build_path ("/", _tmpdir, _dirname, NULL);
-  gchar *dir = g_mkdtemp ((gchar *)fullpath);
+  gchar *dir = g_mkdtemp ((gchar *) fullpath);
   gchar *file = g_build_path ("/", dir, "output", NULL);
   ml_pipeline_h pipe;
   ml_pipeline_src_h srchandle;
@@ -7524,15 +7504,16 @@ TEST (nnstreamer_capi_if, custom_01_p)
       "appsrc name=appsrc ! other/tensor,dimension=(string)4:1:1:1, type=(string)uint8,framerate=(fraction)0/1 ! "
       "tensor_if name=tif compared-value=CUSTOM compared-value-option=tif_custom_cb_name then=PASSTHROUGH else=PASSTHROUGH "
       "tif.src_0 ! queue ! filesink location=\"%s\" buffer-mode=unbuffered "
-      "tif.src_1 ! queue ! tensor_sink name=sink_false sync=false async=false", file);
+      "tif.src_1 ! queue ! tensor_sink name=sink_false sync=false async=false",
+      file);
 
-  guint *count_sink = (guint *)g_malloc0 (sizeof (guint));
+  guint *count_sink = (guint *) g_malloc0 (sizeof (guint));
   ASSERT_TRUE (count_sink != NULL);
   *count_sink = 0;
 
   /* test code for tensor_if custom */
-  status = ml_pipeline_tensor_if_custom_register ("tif_custom_cb_name",
-      test_if_custom_cb, NULL, &custom);
+  status = ml_pipeline_tensor_if_custom_register (
+      "tif_custom_cb_name", test_if_custom_cb, NULL, &custom);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   status = ml_pipeline_construct (pipeline, NULL, NULL, &pipe);
@@ -7549,7 +7530,7 @@ TEST (nnstreamer_capi_if, custom_01_p)
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   for (i = 0; i < 10; i++) {
-    uintarray[i] = (uint8_t *)g_malloc (4);
+    uintarray[i] = (uint8_t *) g_malloc (4);
     ASSERT_TRUE (uintarray[i] != NULL);
     uintarray[i][0] = i + 4;
     uintarray[i][1] = i + 1;
@@ -7574,8 +7555,7 @@ TEST (nnstreamer_capi_if, custom_01_p)
     status = ml_tensors_data_set_tensor_data (data, 0, uintarray[i], 4);
     EXPECT_EQ (status, ML_ERROR_NONE);
 
-    status = ml_pipeline_src_input_data (srchandle, data,
-        ML_PIPELINE_BUF_POLICY_DO_NOT_FREE);
+    status = ml_pipeline_src_input_data (srchandle, data, ML_PIPELINE_BUF_POLICY_DO_NOT_FREE);
     EXPECT_EQ (status, ML_ERROR_NONE);
 
     g_usleep (50000); /* 50ms. Wait a bit. */
@@ -7596,7 +7576,7 @@ TEST (nnstreamer_capi_if, custom_01_p)
   status = ml_pipeline_tensor_if_custom_unregister (custom);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  EXPECT_TRUE (g_file_get_contents (file, (gchar **)&content, &len, NULL));
+  EXPECT_TRUE (g_file_get_contents (file, (gchar **) &content, &len, NULL));
   EXPECT_EQ (len, 4U * 5);
   EXPECT_TRUE (content != nullptr);
 
@@ -7635,8 +7615,7 @@ TEST (nnstreamer_capi_if, register_01_n)
   int status;
 
   /* test code with null param */
-  status = ml_pipeline_tensor_if_custom_register (NULL, test_if_custom_cb,
-      NULL, &custom);
+  status = ml_pipeline_tensor_if_custom_register (NULL, test_if_custom_cb, NULL, &custom);
   EXPECT_NE (status, ML_ERROR_NONE);
 }
 
@@ -7650,8 +7629,7 @@ TEST (nnstreamer_capi_if, register_02_n)
   int status;
 
   /* test code with null param */
-  status = ml_pipeline_tensor_if_custom_register ("tif_custom_cb_name",
-      NULL, NULL, &custom);
+  status = ml_pipeline_tensor_if_custom_register ("tif_custom_cb_name", NULL, NULL, &custom);
   EXPECT_NE (status, ML_ERROR_NONE);
 }
 
@@ -7664,8 +7642,8 @@ TEST (nnstreamer_capi_if, register_03_n)
   int status;
 
   /* test code with null param */
-  status = ml_pipeline_tensor_if_custom_register ("tif_custom_cb_name",
-      test_if_custom_cb, NULL, NULL);
+  status = ml_pipeline_tensor_if_custom_register (
+      "tif_custom_cb_name", test_if_custom_cb, NULL, NULL);
   EXPECT_NE (status, ML_ERROR_NONE);
 }
 
@@ -7678,13 +7656,13 @@ TEST (nnstreamer_capi_if, register_04_n)
   ml_pipeline_if_h custom1, custom2;
   int status;
 
-  status = ml_pipeline_tensor_if_custom_register ("tif_custom_cb_name",
-      test_if_custom_cb, NULL, &custom1);
+  status = ml_pipeline_tensor_if_custom_register (
+      "tif_custom_cb_name", test_if_custom_cb, NULL, &custom1);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   /* test to register tensor_if custom twice with same name */
-  status = ml_pipeline_tensor_if_custom_register ("tif_custom_cb_name",
-      test_if_custom_cb, NULL, &custom2);
+  status = ml_pipeline_tensor_if_custom_register (
+      "tif_custom_cb_name", test_if_custom_cb, NULL, &custom2);
   EXPECT_NE (status, ML_ERROR_NONE);
 
   status = ml_pipeline_tensor_if_custom_unregister (custom1);
@@ -7719,8 +7697,8 @@ TEST (nnstreamer_capi_if, unregister_02_n)
       "tif.src_0 ! queue ! tensor_sink name=sink_true sync=false async=false "
       "tif.src_1 ! queue ! tensor_sink name=sink_false sync=false async=false");
 
-  status = ml_pipeline_tensor_if_custom_register ("tif_unreg_test",
-      test_if_custom_cb, NULL, &custom);
+  status = ml_pipeline_tensor_if_custom_register (
+      "tif_unreg_test", test_if_custom_cb, NULL, &custom);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   status = ml_pipeline_construct (pipeline, NULL, NULL, &pipe1);
@@ -7753,8 +7731,8 @@ TEST (nnstreamer_capi_if, unregister_02_n)
  * @brief A tensor-sink callback for sink handle in a pipeline
  */
 static void
-test_sink_callback_flush (const ml_tensors_data_h data,
-    const ml_tensors_info_h info, void *user_data)
+test_sink_callback_flush (
+    const ml_tensors_data_h data, const ml_tensors_info_h info, void *user_data)
 {
   guint *count = (guint *) user_data;
 
@@ -7787,10 +7765,11 @@ TEST (nnstreamer_capi_flush, success_01_p)
   ml_tensors_data_h in_data;
   ml_tensor_dimension dim = { 10, 1, 1, 1 };
   int status;
-  gchar pipeline[] = "appsrc name=srcx ! "
-      "other/tensor,dimension=(string)10:1:1:1,type=(string)int32,framerate=(fraction)0/1 ! "
-      "tensor_aggregator frames-in=10 frames-out=3 frames-flush=3 frames-dim=0 ! "
-      "tensor_sink name=sinkx";
+  gchar pipeline[]
+      = "appsrc name=srcx ! "
+        "other/tensor,dimension=(string)10:1:1:1,type=(string)int32,framerate=(fraction)0/1 ! "
+        "tensor_aggregator frames-in=10 frames-out=3 frames-flush=3 frames-dim=0 ! "
+        "tensor_sink name=sinkx";
   gint test_data[10] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
   guint *count_sink = (guint *) g_malloc0 (sizeof (guint));
   ASSERT_TRUE (count_sink != NULL);
@@ -7811,8 +7790,8 @@ TEST (nnstreamer_capi_flush, success_01_p)
   status = ml_pipeline_src_get_handle (handle, "srcx", &srchandle);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  status = ml_pipeline_sink_register (handle, "sinkx",
-      test_sink_callback_flush, count_sink, &sinkhandle);
+  status = ml_pipeline_sink_register (
+      handle, "sinkx", test_sink_callback_flush, count_sink, &sinkhandle);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   status = ml_pipeline_start (handle);
@@ -7820,8 +7799,7 @@ TEST (nnstreamer_capi_flush, success_01_p)
 
   /* push input data */
   *count_sink = 0;
-  status = ml_pipeline_src_input_data (srchandle, in_data,
-        ML_PIPELINE_BUF_POLICY_DO_NOT_FREE);
+  status = ml_pipeline_src_input_data (srchandle, in_data, ML_PIPELINE_BUF_POLICY_DO_NOT_FREE);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   wait_pipeline_process_buffers (*count_sink, 3);
@@ -7834,8 +7812,7 @@ TEST (nnstreamer_capi_flush, success_01_p)
 
   /* push input data again */
   *count_sink = 0;
-  status = ml_pipeline_src_input_data (srchandle, in_data,
-        ML_PIPELINE_BUF_POLICY_DO_NOT_FREE);
+  status = ml_pipeline_src_input_data (srchandle, in_data, ML_PIPELINE_BUF_POLICY_DO_NOT_FREE);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   wait_pipeline_process_buffers (*count_sink, 3);
@@ -7866,8 +7843,8 @@ TEST (nnstreamer_capi_flush, failure_02_n)
  * @brief A tensor-sink callback for sink handle in a pipeline
  */
 static void
-test_sink_callback_flex (const ml_tensors_data_h data,
-    const ml_tensors_info_h info, void *user_data)
+test_sink_callback_flex (
+    const ml_tensors_data_h data, const ml_tensors_info_h info, void *user_data)
 {
   guint *count = (guint *) user_data;
   gint status;
@@ -7912,9 +7889,10 @@ test_sink_callback_flex (const ml_tensors_data_h data,
  */
 TEST (nnstreamer_capi_flex, sink_multi)
 {
-  gchar pipeline[] = "appsrc name=srcx caps=application/octet-stream,framerate=(fraction)10/1 ! "
-      "tensor_converter input-dim=4,2,4 input-type=int32,int32,int32 ! "
-      "other/tensors,format=flexible ! tensor_sink name=sinkx sync=false";
+  gchar pipeline[]
+      = "appsrc name=srcx caps=application/octet-stream,framerate=(fraction)10/1 ! "
+        "tensor_converter input-dim=4,2,4 input-type=int32,int32,int32 ! "
+        "other/tensors,format=flexible ! tensor_sink name=sinkx sync=false";
   guint test_data[10] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
   ml_pipeline_h handle;
   ml_pipeline_src_h srchandle;
@@ -7944,8 +7922,8 @@ TEST (nnstreamer_capi_flex, sink_multi)
   status = ml_pipeline_src_get_handle (handle, "srcx", &srchandle);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  status = ml_pipeline_sink_register (handle, "sinkx",
-      test_sink_callback_flex, count_sink, &sinkhandle);
+  status = ml_pipeline_sink_register (
+      handle, "sinkx", test_sink_callback_flex, count_sink, &sinkhandle);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   status = ml_pipeline_start (handle);
@@ -7955,8 +7933,7 @@ TEST (nnstreamer_capi_flex, sink_multi)
   *count_sink = 0;
   for (i = 0; i < 3; i++) {
     g_usleep (50000);
-    status = ml_pipeline_src_input_data (srchandle, in_data,
-          ML_PIPELINE_BUF_POLICY_DO_NOT_FREE);
+    status = ml_pipeline_src_input_data (srchandle, in_data, ML_PIPELINE_BUF_POLICY_DO_NOT_FREE);
     EXPECT_EQ (status, ML_ERROR_NONE);
   }
 
@@ -7978,8 +7955,8 @@ TEST (nnstreamer_capi_flex, sink_multi)
 TEST (nnstreamer_capi_flex, src_multi)
 {
   gchar pipeline[] = "appsrc name=srcx caps=other/tensors,format=flexible,framerate=(fraction)10/1 ! "
-      "tensor_converter input-dim=4,2,4 input-type=int32,int32,int32 ! "
-      "tensor_sink name=sinkx sync=false";
+                     "tensor_converter input-dim=4,2,4 input-type=int32,int32,int32 ! "
+                     "tensor_sink name=sinkx sync=false";
   guint test_data[10] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
   ml_pipeline_h handle;
   ml_pipeline_src_h srchandle;
@@ -8017,8 +7994,8 @@ TEST (nnstreamer_capi_flex, src_multi)
   status = ml_pipeline_src_get_handle (handle, "srcx", &srchandle);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  status = ml_pipeline_sink_register (handle, "sinkx",
-      test_sink_callback_flex, count_sink, &sinkhandle);
+  status = ml_pipeline_sink_register (
+      handle, "sinkx", test_sink_callback_flex, count_sink, &sinkhandle);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   status = ml_pipeline_start (handle);
@@ -8028,8 +8005,7 @@ TEST (nnstreamer_capi_flex, src_multi)
   *count_sink = 0;
   for (i = 0; i < 3; i++) {
     g_usleep (50000);
-    status = ml_pipeline_src_input_data (srchandle, in_data,
-          ML_PIPELINE_BUF_POLICY_DO_NOT_FREE);
+    status = ml_pipeline_src_input_data (srchandle, in_data, ML_PIPELINE_BUF_POLICY_DO_NOT_FREE);
     EXPECT_EQ (status, ML_ERROR_NONE);
   }
 

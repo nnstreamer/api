@@ -7,27 +7,27 @@
  * @bug         No known bugs
  */
 
-#include <gio/gio.h>
 #include <gtest/gtest.h>
+#include <gio/gio.h>
 
-#include "test-dbus.h"
-#include "dbus-interface.h"
 #include "../dbus/test-dbus-interface.h"
+#include "dbus-interface.h"
+#include "test-dbus.h"
 
 /**
  * @brief Test base class for ML Agent Daemon
  */
-class MLAgentTest : public::testing::Test
+class MLAgentTest : public ::testing::Test
 {
-protected:
+  protected:
   GTestDBus *dbus;
   GDBusProxy *proxy;
 
-public:
+  public:
   /**
    * @brief Setup method for each test case.
    */
-  void SetUp() override
+  void SetUp () override
   {
     gchar *services_dir = g_build_filename (g_get_current_dir (), "tests/services", NULL);
     dbus = g_test_dbus_new (G_TEST_DBUS_NONE);
@@ -35,15 +35,8 @@ public:
     g_test_dbus_up (dbus);
 
     GError *error = NULL;
-    proxy = g_dbus_proxy_new_for_bus_sync (
-      G_BUS_TYPE_SESSION,
-      G_DBUS_PROXY_FLAGS_NONE,
-      NULL,
-      DBUS_ML_BUS_NAME,
-      DBUS_TEST_PATH,
-      DBUS_TEST_INTERFACE,
-      NULL,
-      &error);
+    proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION, G_DBUS_PROXY_FLAGS_NONE,
+        NULL, DBUS_ML_BUS_NAME, DBUS_TEST_PATH, DBUS_TEST_INTERFACE, NULL, &error);
 
     if (!proxy || error) {
       if (error) {
@@ -58,7 +51,7 @@ public:
   /**
    * @brief Teardown method for each test case.
    */
-  void TearDown() override
+  void TearDown () override
   {
     if (proxy)
       g_object_unref (proxy);
@@ -79,15 +72,11 @@ TEST_F (MLAgentTest, call_method)
   int result = 0;
 
   /* Test : Connect to the DBus Interface */
-  proxy = machinelearning_service_test_proxy_new_for_bus_sync (
-    G_BUS_TYPE_SESSION,
-    G_DBUS_PROXY_FLAGS_NONE,
-    DBUS_ML_BUS_NAME,
-    DBUS_TEST_PATH,
-    NULL, &error);
+  proxy = machinelearning_service_test_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
+      G_DBUS_PROXY_FLAGS_NONE, DBUS_ML_BUS_NAME, DBUS_TEST_PATH, NULL, &error);
   if (error != NULL) {
     g_error_free (error);
-    FAIL();
+    FAIL ();
   }
 
   /* Test: Call the DBus method */
@@ -95,7 +84,7 @@ TEST_F (MLAgentTest, call_method)
   if (error != NULL) {
     g_critical ("Error : %s", error->message);
     g_error_free (error);
-    FAIL();
+    FAIL ();
   }
 
   /* Check the return value */

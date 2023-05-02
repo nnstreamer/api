@@ -7,8 +7,8 @@
  * @bug         No known bugs
  */
 
-#include <gio/gio.h>
 #include <gtest/gtest.h>
+#include <gio/gio.h>
 
 #include "service-db.hh"
 
@@ -20,7 +20,7 @@ TEST (serviceDB, set_pipeline_n)
   MLServiceDB &db = MLServiceDB::getInstance ();
   int gotException = 0;
 
-  db.connectDB();
+  db.connectDB ();
   try {
     db.set_pipeline ("", "videotestsrc ! fakesink");
   } catch (const std::exception &e) {
@@ -37,7 +37,7 @@ TEST (serviceDB, set_pipeline_n)
     gotException = 1;
   }
   EXPECT_EQ (gotException, 1);
-  db.disconnectDB();
+  db.disconnectDB ();
 }
 
 /**
@@ -47,7 +47,7 @@ TEST (serviceDB, get_pipeline_n)
 {
   MLServiceDB &db = MLServiceDB::getInstance ();
   int gotException = 0;
-  db.connectDB();
+  db.connectDB ();
 
   try {
     std::string pipeline_description;
@@ -57,8 +57,7 @@ TEST (serviceDB, get_pipeline_n)
     gotException = 1;
   }
   EXPECT_EQ (gotException, 1);
-  db.disconnectDB();
-
+  db.disconnectDB ();
 }
 
 /**
@@ -68,7 +67,7 @@ TEST (serviceDB, delete_pipeline_n)
 {
   MLServiceDB &db = MLServiceDB::getInstance ();
   int gotException = 0;
-  db.connectDB();
+  db.connectDB ();
 
   try {
     db.delete_pipeline ("");
@@ -77,7 +76,7 @@ TEST (serviceDB, delete_pipeline_n)
     gotException = 1;
   }
   EXPECT_EQ (gotException, 1);
-  db.disconnectDB();
+  db.disconnectDB ();
 }
 
 /**
@@ -89,7 +88,7 @@ TEST (serviceDB, set_model_n)
   int gotException = 0;
   guint version;
 
-  db.connectDB();
+  db.connectDB ();
   try {
     db.set_model ("", "model", true, "description", "", &version);
   } catch (const std::exception &e) {
@@ -115,7 +114,7 @@ TEST (serviceDB, set_model_n)
     gotException = 1;
   }
   EXPECT_EQ (gotException, 1);
-  db.disconnectDB();
+  db.disconnectDB ();
 }
 
 /**
@@ -125,7 +124,7 @@ TEST (serviceDB, get_model_n)
 {
   MLServiceDB &db = MLServiceDB::getInstance ();
   int gotException = 0;
-  db.connectDB();
+  db.connectDB ();
 
   try {
     std::string model_description;
@@ -145,7 +144,7 @@ TEST (serviceDB, get_model_n)
     gotException = 1;
   }
   EXPECT_EQ (gotException, 1);
-  db.disconnectDB();
+  db.disconnectDB ();
 }
 
 /**
@@ -155,7 +154,7 @@ TEST (serviceDB, update_model_description_n)
 {
   MLServiceDB &db = MLServiceDB::getInstance ();
   int gotException = 0;
-  db.connectDB();
+  db.connectDB ();
 
   try {
     db.update_model_description ("", 0, "description");
@@ -173,7 +172,7 @@ TEST (serviceDB, update_model_description_n)
     gotException = 1;
   }
   EXPECT_EQ (gotException, 1);
-  db.disconnectDB();
+  db.disconnectDB ();
 }
 
 /**
@@ -183,7 +182,7 @@ TEST (serviceDB, activate_model_n)
 {
   MLServiceDB &db = MLServiceDB::getInstance ();
   int gotException = 0;
-  db.connectDB();
+  db.connectDB ();
 
   try {
     db.activate_model ("", 0);
@@ -192,7 +191,7 @@ TEST (serviceDB, activate_model_n)
     gotException = 1;
   }
   EXPECT_EQ (gotException, 1);
-  db.disconnectDB();
+  db.disconnectDB ();
 }
 
 /**
@@ -202,7 +201,7 @@ TEST (serviceDB, delete_model_n)
 {
   MLServiceDB &db = MLServiceDB::getInstance ();
   int gotException = 0;
-  db.connectDB();
+  db.connectDB ();
 
   try {
     db.delete_model ("", 0);
@@ -211,8 +210,7 @@ TEST (serviceDB, delete_model_n)
     gotException = 1;
   }
   EXPECT_EQ (gotException, 1);
-  db.disconnectDB();
-
+  db.disconnectDB ();
 }
 
 /**

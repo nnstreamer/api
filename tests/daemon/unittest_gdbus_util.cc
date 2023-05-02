@@ -37,10 +37,10 @@ TEST (gdbusInstanceNotInitialized, get_system_connection_n)
   gboolean is_session = true;
   int ret;
 
-  ret = gdbus_get_system_connection(is_session);
+  ret = gdbus_get_system_connection (is_session);
   EXPECT_EQ (-ENOSYS, ret);
 
-  ret = gdbus_get_system_connection(!is_session);
+  ret = gdbus_get_system_connection (!is_session);
   EXPECT_EQ (-ENOSYS, ret);
 }
 
