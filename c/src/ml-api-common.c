@@ -19,10 +19,10 @@
 #include "ml-api-internal.h"
 
 /**
- * @brief Allocates a tensors information handle with default value.
+ * @brief Internal function to create tensors-info handle.
  */
-int
-ml_tensors_info_create (ml_tensors_info_h * info)
+static int
+_ml_tensors_info_create_internal (ml_tensors_info_h * info, bool extended)
 {
   ml_tensors_info_s *tensors_info;
 
@@ -38,10 +38,19 @@ ml_tensors_info_create (ml_tensors_info_h * info)
         "Failed to allocate the tensors info handle. Out of memory?");
 
   g_mutex_init (&tensors_info->lock);
-  tensors_info->is_extended = false;
+  tensors_info->is_extended = extended;
 
   /* init tensors info struct */
   return _ml_tensors_info_initialize (tensors_info);
+}
+
+/**
+ * @brief Allocates a tensors information handle with default value.
+ */
+int
+ml_tensors_info_create (ml_tensors_info_h * info)
+{
+  return _ml_tensors_info_create_internal (info, false);
 }
 
 /**
@@ -50,24 +59,7 @@ ml_tensors_info_create (ml_tensors_info_h * info)
 int
 ml_tensors_info_create_extended (ml_tensors_info_h * info)
 {
-  ml_tensors_info_s *tensors_info;
-
-  check_feature_state (ML_FEATURE);
-
-  if (!info)
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, info, is NULL. Provide a valid pointer.");
-
-  *info = tensors_info = g_new0 (ml_tensors_info_s, 1);
-  if (tensors_info == NULL)
-    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
-        "Failed to allocate the tensors info handle. Out of memory?");
-
-  g_mutex_init (&tensors_info->lock);
-  tensors_info->is_extended = true;
-
-  /* init tensors info struct */
-  return _ml_tensors_info_initialize (tensors_info);
+  return _ml_tensors_info_create_internal (info, true);
 }
 
 /**
