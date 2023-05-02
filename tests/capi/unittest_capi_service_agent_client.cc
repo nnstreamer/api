@@ -390,6 +390,25 @@ TEST_F (MLServiceAgentTest, launch_pipeline_02_n)
 }
 
 /**
+ * @brief Test ml_service_launch_pipeline with invalid tensor_filer.
+ */
+TEST_F (MLServiceAgentTest, launch_pipeline_03_n)
+{
+  int status;
+  ml_service_h h;
+
+  status = ml_service_set_pipeline ("key",
+      "appsrc name=appsrc ! "
+      "other/tensors,dimensions=(string)1:1:1:1:1:1:1:1,types=(string)float32,framerate=(fraction)0/1 ! "
+      "tensor_filter framework=tensorflow-lite model=invalid_path.tflite ! "
+      "tensor_sink");
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_service_launch_pipeline ("key", &h);
+  EXPECT_EQ (ML_ERROR_STREAMS_PIPE, status);
+}
+
+/**
  * @brief Test ml_service_start_pipeline with invalid param.
  */
 TEST_F (MLServiceAgentTest, start_pipeline_00_n)
