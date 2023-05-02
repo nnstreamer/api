@@ -148,7 +148,7 @@ TEST (serviceDB, get_model_n)
 }
 
 /**
- * @brief Negative test for update_model_description. Empty name or description.
+ * @brief Negative test for update_model_description. Invalid param case (empty name or description, invalid version).
  */
 TEST (serviceDB, update_model_description_n)
 {
@@ -157,7 +157,7 @@ TEST (serviceDB, update_model_description_n)
   db.connectDB ();
 
   try {
-    db.update_model_description ("", 0, "description");
+    db.update_model_description ("", 1, "description");
   } catch (const std::exception &e) {
     g_critical ("Got Exception: %s", e.what ());
     gotException = 1;
@@ -166,7 +166,16 @@ TEST (serviceDB, update_model_description_n)
 
   gotException = 0;
   try {
-    db.update_model_description ("test", 0, "");
+    db.update_model_description ("test", 1, "");
+  } catch (const std::exception &e) {
+    g_critical ("Got Exception: %s", e.what ());
+    gotException = 1;
+  }
+  EXPECT_EQ (gotException, 1);
+
+  gotException = 0;
+  try {
+    db.update_model_description ("test", 0, "description");
   } catch (const std::exception &e) {
     g_critical ("Got Exception: %s", e.what ());
     gotException = 1;
@@ -176,7 +185,7 @@ TEST (serviceDB, update_model_description_n)
 }
 
 /**
- * @brief Negative test for activate_model. Empty name
+ * @brief Negative test for activate_model. Invalid param case (empty name or invalid version).
  */
 TEST (serviceDB, activate_model_n)
 {
@@ -185,7 +194,16 @@ TEST (serviceDB, activate_model_n)
   db.connectDB ();
 
   try {
-    db.activate_model ("", 0);
+    db.activate_model ("", 1);
+  } catch (const std::exception &e) {
+    g_critical ("Got Exception: %s", e.what ());
+    gotException = 1;
+  }
+  EXPECT_EQ (gotException, 1);
+
+  gotException = 0;
+  try {
+    db.activate_model ("test", 0);
   } catch (const std::exception &e) {
     g_critical ("Got Exception: %s", e.what ());
     gotException = 1;

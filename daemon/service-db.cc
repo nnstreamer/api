@@ -445,6 +445,9 @@ MLServiceDB::update_model_description (
   if (name.empty () || description.empty ())
     throw std::invalid_argument ("Invalid name or description parameter!");
 
+  if (version == 0U)
+    throw std::invalid_argument ("Invalid version number!");
+
   std::string key_with_prefix = DB_KEY_PREFIX;
   key_with_prefix += name;
 
@@ -490,6 +493,9 @@ MLServiceDB::activate_model (const std::string name, const guint version)
 
   if (name.empty ())
     throw std::invalid_argument ("Invalid name parameter!");
+
+  if (version == 0U)
+    throw std::invalid_argument ("Invalid version number!");
 
   std::string key_with_prefix = DB_KEY_PREFIX;
   key_with_prefix += name;
