@@ -7,25 +7,25 @@
  * @bug         No known bugs
  */
 
-#include <gio/gio.h>
 #include <gtest/gtest.h>
-#include <ml-api-internal.h>
-#include <ml-api-service.h>
-#include <ml-api-service-private.h>
+#include <gio/gio.h>
 #include <ml-api-inference-pipeline-internal.h>
+#include <ml-api-internal.h>
+#include <ml-api-service-private.h>
+#include <ml-api-service.h>
 
-#include <netinet/tcp.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 
 /**
  * @brief Test base class for Database of ML Service API.
  */
-class MLServiceAgentTest : public::testing::Test
+class MLServiceAgentTest : public ::testing::Test
 {
-protected:
+  protected:
   GTestDBus *dbus;
 
-public:
+  public:
   /**
    * @brief Setup method for each test case.
    */
@@ -66,7 +66,7 @@ public:
 
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = INADDR_ANY;
-    sin.sin_port = htons(0);
+    sin.sin_port = htons (0);
 
     sock = socket (AF_INET, SOCK_STREAM, 0);
     EXPECT_TRUE (sock > 0);
@@ -98,7 +98,9 @@ TEST_F (MLServiceAgentTest, usecase_00)
   guint port = _get_available_port ();
 
   /* create server pipeline */
-  pipeline_desc = g_strdup_printf ("tensor_query_serversrc port=%u num-buffers=10 ! other/tensors,num_tensors=1,dimensions=3:4:4:1,types=uint8,format=static,framerate=0/1 ! tensor_query_serversink async=false", port);
+  pipeline_desc = g_strdup_printf (
+      "tensor_query_serversrc port=%u num-buffers=10 ! other/tensors,num_tensors=1,dimensions=3:4:4:1,types=uint8,format=static,framerate=0/1 ! tensor_query_serversink async=false",
+      port);
 
   status = ml_service_set_pipeline (service_name, pipeline_desc);
   EXPECT_EQ (ML_ERROR_NONE, status);
@@ -126,7 +128,9 @@ TEST_F (MLServiceAgentTest, usecase_00)
 
   /* create client pipeline */
   guint sink_port = _get_available_port ();
-  gchar *client_pipeline_desc = g_strdup_printf ("videotestsrc num-buffers=10 ! videoconvert ! videoscale ! video/x-raw,width=4,height=4,format=RGB,framerate=10/1 ! tensor_converter ! other/tensors,num_tensors=1,format=static ! tensor_query_client dest-port=%u port=%u ! fakesink sync=true", port, sink_port);
+  gchar *client_pipeline_desc = g_strdup_printf (
+      "videotestsrc num-buffers=10 ! videoconvert ! videoscale ! video/x-raw,width=4,height=4,format=RGB,framerate=10/1 ! tensor_converter ! other/tensors,num_tensors=1,format=static ! tensor_query_client dest-port=%u port=%u ! fakesink sync=true",
+      port, sink_port);
 
   status = ml_service_set_pipeline ("client", client_pipeline_desc);
   EXPECT_EQ (ML_ERROR_NONE, status);
@@ -190,7 +194,9 @@ TEST_F (MLServiceAgentTest, usecase_01)
   guint port = _get_available_port ();
 
   /* create server pipeline */
-  pipeline_desc = g_strdup_printf ("tensor_query_serversrc port=%u num-buffers=10 ! other/tensors,num_tensors=1,dimensions=3:4:4:1,types=uint8,format=static,framerate=0/1 ! tensor_query_serversink async=false", port);
+  pipeline_desc = g_strdup_printf (
+      "tensor_query_serversrc port=%u num-buffers=10 ! other/tensors,num_tensors=1,dimensions=3:4:4:1,types=uint8,format=static,framerate=0/1 ! tensor_query_serversink async=false",
+      port);
 
   status = ml_service_set_pipeline (service_name, pipeline_desc);
   EXPECT_EQ (ML_ERROR_NONE, status);
@@ -218,7 +224,9 @@ TEST_F (MLServiceAgentTest, usecase_01)
 
   /* create client pipeline */
   guint sink_port = _get_available_port ();
-  gchar *client_pipeline_desc = g_strdup_printf ("videotestsrc num-buffers=10 ! videoconvert ! videoscale ! video/x-raw,width=4,height=4,format=RGB,framerate=10/1 ! tensor_converter ! other/tensors,num_tensors=1,format=static ! tensor_query_client dest-port=%u port=%u ! fakesink sync=true", port, sink_port);
+  gchar *client_pipeline_desc = g_strdup_printf (
+      "videotestsrc num-buffers=10 ! videoconvert ! videoscale ! video/x-raw,width=4,height=4,format=RGB,framerate=10/1 ! tensor_converter ! other/tensors,num_tensors=1,format=static ! tensor_query_client dest-port=%u port=%u ! fakesink sync=true",
+      port, sink_port);
 
   ml_pipeline_h client;
   status = ml_pipeline_construct (client_pipeline_desc, NULL, NULL, &client);
@@ -538,7 +546,9 @@ TEST_F (MLServiceAgentTest, query_client)
   const gchar *service_name = "simple_query_server_for_test";
   int num_buffers = 5;
   guint server_port = _get_available_port ();
-  gchar *server_pipeline_desc = g_strdup_printf ("tensor_query_serversrc port=%u num-buffers=%d ! other/tensors,num_tensors=1,dimensions=3:4:4:1,types=uint8,format=static,framerate=0/1 ! tensor_query_serversink async=false sync=false", server_port, num_buffers);
+  gchar *server_pipeline_desc = g_strdup_printf (
+      "tensor_query_serversrc port=%u num-buffers=%d ! other/tensors,num_tensors=1,dimensions=3:4:4:1,types=uint8,format=static,framerate=0/1 ! tensor_query_serversink async=false sync=false",
+      server_port, num_buffers);
 
   status = ml_service_set_pipeline (service_name, server_pipeline_desc);
   EXPECT_EQ (ML_ERROR_NONE, status);
@@ -595,7 +605,8 @@ TEST_F (MLServiceAgentTest, query_client)
   status = ml_option_set (query_client_option, "timeout", &timeout, NULL);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  gchar *caps_str = g_strdup ("other/tensors,num_tensors=1,format=static,types=uint8,dimensions=3:4:4:1,framerate=0/1");
+  gchar *caps_str = g_strdup (
+      "other/tensors,num_tensors=1,format=static,types=uint8,dimensions=3:4:4:1,framerate=0/1");
   status = ml_option_set (query_client_option, "caps", caps_str, g_free);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
@@ -986,8 +997,8 @@ TEST_F (MLServiceAgentTest, model_ml_option_get_01_n)
   if (root_path == NULL)
     return;
 
-  gchar *test_model = g_build_filename (root_path, "tests", "test_models", "models",
-      "mobilenet_v1_1.0_224_quant.tflite", NULL);
+  gchar *test_model = g_build_filename (root_path, "tests", "test_models",
+      "models", "mobilenet_v1_1.0_224_quant.tflite", NULL);
   ASSERT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
 
   const gchar *key = "some_invalid_key";
@@ -1064,11 +1075,12 @@ TEST_F (MLServiceAgentTest, model_scenario)
   status = ml_service_model_update_description (key, 32U, "updated description");
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  test_model2 = g_build_filename (root_path, "tests", "test_models", "models",
-      "add.tflite", NULL);
+  test_model2 = g_build_filename (
+      root_path, "tests", "test_models", "models", "add.tflite", NULL);
   ASSERT_TRUE (g_file_test (test_model2, G_FILE_TEST_EXISTS));
 
-  status = ml_service_model_register (key, test_model2, false, "this is the temp tflite model", &version);
+  status = ml_service_model_register (
+      key, test_model2, false, "this is the temp tflite model", &version);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_EQ (version, 2U);
 
@@ -1184,10 +1196,10 @@ TEST_F (MLServiceAgentTest, pipeline_gdbus_call_n)
   int ret;
   GError *error = NULL;
 
-  MachinelearningServicePipeline *proxy_for_pipeline = machinelearning_service_pipeline_proxy_new_for_bus_sync (
-    G_BUS_TYPE_SESSION, G_DBUS_PROXY_FLAGS_NONE,
-    "org.tizen.machinelearning.service",
-    "/Org/Tizen/MachineLearning/Service/Pipeline", NULL, &error);
+  MachinelearningServicePipeline *proxy_for_pipeline
+      = machinelearning_service_pipeline_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
+          G_DBUS_PROXY_FLAGS_NONE, "org.tizen.machinelearning.service",
+          "/Org/Tizen/MachineLearning/Service/Pipeline", NULL, &error);
 
   if (!proxy_for_pipeline || error) {
     g_critical ("Failed to create proxy_for_pipeline for machinelearning service pipeline");
@@ -1200,7 +1212,7 @@ TEST_F (MLServiceAgentTest, pipeline_gdbus_call_n)
 
   /* gdbus call with empty string */
   machinelearning_service_pipeline_call_set_pipeline_sync (
-    proxy_for_pipeline, "", "", &ret, nullptr, nullptr);
+      proxy_for_pipeline, "", "", &ret, nullptr, nullptr);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, ret);
 }
 
@@ -1212,10 +1224,10 @@ TEST_F (MLServiceAgentTest, model_gdbus_call_n)
   int ret;
   GError *error = NULL;
 
-  MachinelearningServiceModel *proxy_for_model = machinelearning_service_model_proxy_new_for_bus_sync (
-    G_BUS_TYPE_SESSION, G_DBUS_PROXY_FLAGS_NONE,
-    "org.tizen.machinelearning.service",
-    "/Org/Tizen/MachineLearning/Service/Model", NULL, &error);
+  MachinelearningServiceModel *proxy_for_model
+      = machinelearning_service_model_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
+          G_DBUS_PROXY_FLAGS_NONE, "org.tizen.machinelearning.service",
+          "/Org/Tizen/MachineLearning/Service/Model", NULL, &error);
 
   if (!proxy_for_model || error) {
     g_critical ("Failed to create proxy_for_model for machinelearning service model");
@@ -1228,12 +1240,12 @@ TEST_F (MLServiceAgentTest, model_gdbus_call_n)
 
   /* empty string */
   machinelearning_service_model_call_register_sync (
-    proxy_for_model, "", "", false, "test", "", NULL, &ret, nullptr, nullptr);
+      proxy_for_model, "", "", false, "test", "", NULL, &ret, nullptr, nullptr);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, ret);
 
   /* empty string */
   machinelearning_service_model_call_get_all_sync (
-    proxy_for_model, "", NULL, &ret, nullptr, nullptr);
+      proxy_for_model, "", NULL, &ret, nullptr, nullptr);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, ret);
 
   g_object_unref (proxy_for_model);
@@ -1297,8 +1309,8 @@ TEST (MLServiceAgentTestDbusUnconnected, model_n)
   if (root_path == NULL)
     return;
 
-  gchar *test_model = g_build_filename (root_path, "tests", "test_models", "models",
-      "mobilenet_v1_1.0_224_quant.tflite", NULL);
+  gchar *test_model = g_build_filename (root_path, "tests", "test_models",
+      "models", "mobilenet_v1_1.0_224_quant.tflite", NULL);
   ASSERT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
 
   status = ml_service_model_register ("test", test_model, false, "test", &version);

@@ -14,13 +14,13 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include <nnstreamer.h>
-#include <nnstreamer-single.h>
-#include <nnstreamer_plugin_api.h>
-#include <nnstreamer_plugin_api_filter.h>
-#include <ml-api-internal.h>
 #include <ml-api-inference-internal.h>
 #include <ml-api-inference-pipeline-internal.h>
+#include <ml-api-internal.h>
+#include <nnstreamer-single.h>
+#include <nnstreamer.h>
+#include <nnstreamer_plugin_api.h>
+#include <nnstreamer_plugin_api_filter.h>
 
 /**
  * @brief nnstreamer invoke latency testing base class
@@ -96,7 +96,7 @@ class nnstreamer_capi_singleshot_latency : public ::testing::Test
   {
     /** Find the framework */
     const GstTensorFilterFramework *sp = nnstreamer_filter_find (filter);
-    EXPECT_NE (sp, (void *)NULL);
+    EXPECT_NE (sp, (void *) NULL);
 
     /** Extract the statictics from the framework */
     EXPECT_TRUE (sp->statistics != NULL);
@@ -116,7 +116,7 @@ class nnstreamer_capi_singleshot_latency : public ::testing::Test
   void matchOutput (void *output_data, size_t size)
   {
     size_t idx, max_idx = 0;
-    guint8 *array = (guint8 *)output_data;
+    guint8 *array = (guint8 *) output_data;
     guint8 max_value = 0;
     for (idx = 0; idx < size; idx++) {
       if (max_value < array[idx]) {
@@ -168,12 +168,12 @@ class nnstreamer_capi_singleshot_latency : public ::testing::Test
     EXPECT_TRUE (input != NULL);
 
     /** Load input data into the buffer */
-    status = ml_tensors_data_get_tensor_data (input, 0, (void **)&data, &data_size);
+    status = ml_tensors_data_get_tensor_data (input, 0, (void **) &data, &data_size);
     EXPECT_EQ (status, ML_ERROR_NONE);
     if (fd >= 0) {
       resetDataFile ();
       data_read = read (fd, data, data_size);
-      EXPECT_EQ ((size_t)data_read, data_size);
+      EXPECT_EQ ((size_t) data_read, data_size);
     }
 
     /** Benchmark the invoke duration */
@@ -196,7 +196,7 @@ class nnstreamer_capi_singleshot_latency : public ::testing::Test
 
       /** Match output with the first run */
       if (idx == 0) {
-        status = ml_tensors_data_get_tensor_data (output, 0, (void **)&data, &data_size);
+        status = ml_tensors_data_get_tensor_data (output, 0, (void **) &data, &data_size);
         EXPECT_EQ (status, ML_ERROR_NONE);
         matchOutput (data, data_size);
       }

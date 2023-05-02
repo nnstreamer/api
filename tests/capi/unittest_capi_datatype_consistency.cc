@@ -12,8 +12,8 @@
 #include <tensor_typedef.h>
 
 /* ML API Side */
-#include <nnstreamer.h>
 #include <ml-api-internal.h>
+#include <nnstreamer.h>
 
 /* GStreamer Side */
 #include <gst/gst.h>
