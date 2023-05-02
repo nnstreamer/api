@@ -30,7 +30,6 @@ _pkg_mgr_echo_pkg_path_info (const gchar *pkg_path)
   GDir *dir;
 
   if (g_file_test (pkg_path, G_FILE_TEST_IS_DIR)) {
-
     _I ("package path: %s", pkg_path);
 
     dir = g_dir_open (pkg_path, 0, NULL);
@@ -73,7 +72,7 @@ _pkg_mgr_event_cb (const char *type, const char *package_name,
     return;
   }
 
-  if (g_strcmp0 (type, "rpk") != 0)
+  if (g_ascii_strcasecmp (type, "rpk") != 0)
     return;
 
   /* TODO handle allowed resources. Currently this only supports global resources */
@@ -236,11 +235,11 @@ pkg_mgr_init (void)
   }
 
   /* Monitoring install, uninstall and upgrade events of the resource package. */
+  /** @todo Find when these ACKAGE_MANAGER_STATUS_TYPE_RES_* status called */
   ret = package_manager_set_event_status (pkg_mgr,
       PACKAGE_MANAGER_STATUS_TYPE_INSTALL | PACKAGE_MANAGER_STATUS_TYPE_UNINSTALL
           | PACKAGE_MANAGER_STATUS_TYPE_UPGRADE | PACKAGE_MANAGER_STATUS_TYPE_RES_COPY
-          | /* TODO: Find when these RES_* status called */
-          PACKAGE_MANAGER_STATUS_TYPE_RES_CREATE_DIR | PACKAGE_MANAGER_STATUS_TYPE_RES_REMOVE
+          | PACKAGE_MANAGER_STATUS_TYPE_RES_CREATE_DIR | PACKAGE_MANAGER_STATUS_TYPE_RES_REMOVE
           | PACKAGE_MANAGER_STATUS_TYPE_RES_UNINSTALL);
   if (ret != PACKAGE_MANAGER_ERROR_NONE) {
     _E ("package_manager_set_event_status() failed: %d", ret);

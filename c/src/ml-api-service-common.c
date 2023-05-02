@@ -13,7 +13,7 @@
 #include "ml-api-internal.h"
 #include "ml-api-service.h"
 #include "ml-api-service-private.h"
-#include "../../daemon/includes/ml-agent-dbus-interface.h"
+#include "ml-agent-dbus-interface.h"
 
 /**
  * @brief Destroy the pipeline of given ml_service_h
