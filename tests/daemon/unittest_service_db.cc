@@ -81,16 +81,16 @@ TEST (serviceDB, delete_pipeline_n)
 }
 
 /**
- * @brief Negative test for set_model. Empty name or model or description.
+ * @brief Negative test for set_model. Invalid param case (empty name, model or version).
  */
 TEST (serviceDB, set_model_n)
 {
   MLServiceDB &db = MLServiceDB::getInstance ();
   int gotException = 0;
+  guint version;
 
   db.connectDB();
   try {
-    guint version;
     db.set_model ("", "model", true, "description", "", &version);
   } catch (const std::exception &e) {
     g_critical ("Got Exception: %s", e.what ());
@@ -100,7 +100,6 @@ TEST (serviceDB, set_model_n)
 
   gotException = 0;
   try {
-    guint version;
     db.set_model ("test", "", true, "description", "", &version);
   } catch (const std::exception &e) {
     g_critical ("Got Exception: %s", e.what ());
@@ -110,14 +109,12 @@ TEST (serviceDB, set_model_n)
 
   gotException = 0;
   try {
-    guint version;
-    db.set_model ("test", "model", true, "", "", &version);
+    db.set_model ("test", "model", true, "", "", NULL);
   } catch (const std::exception &e) {
     g_critical ("Got Exception: %s", e.what ());
     gotException = 1;
   }
-  //FIXME: There is no null-checking for app_info in MLServiceDB::set_model()
-  EXPECT_EQ (gotException, 0);
+  EXPECT_EQ (gotException, 1);
   db.disconnectDB();
 }
 

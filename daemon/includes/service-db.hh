@@ -13,6 +13,7 @@
 #ifndef __SERVICE_DB_HH__
 #define __SERVICE_DB_HH__
 
+#include <glib.h>
 #include <sqlite3.h>
 #include <iostream>
 
