@@ -1154,14 +1154,11 @@ TEST_F (MLServiceAgentTest, model_scenario)
 
   g_free (info_list);
 
-  /* delete the active model */
+  /* failed to delete the active model */
   status = ml_service_model_delete (key, 1U);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-
-  /* no active model */
-  status = ml_service_model_get_activated (key, &activated_model_info);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
+  /* activate model with invalid version number */
   status = ml_service_model_activate (key, 91243U);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
@@ -1178,11 +1175,12 @@ TEST_F (MLServiceAgentTest, model_scenario)
   status = ml_option_destroy (activated_model_info);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
+  /* failed to delete the active model */
   status = ml_service_model_delete (key, 2U);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-
-  status = ml_service_model_delete (key, 1U);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_service_model_delete (key, 0U);
+  EXPECT_EQ (ML_ERROR_NONE, status);
 
   g_free (test_model1);
   g_free (test_model2);

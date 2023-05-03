@@ -49,6 +49,8 @@ class MLServiceDB
 
   void initDB ();
   bool set_transaction (bool begin);
+  bool is_model_registered (const std::string key, const guint version);
+  bool is_model_activated (const std::string key, const guint version);
 
   std::string _path;
   bool _initialized;
