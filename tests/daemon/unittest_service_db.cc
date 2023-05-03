@@ -232,6 +232,58 @@ TEST (serviceDB, delete_model_n)
 }
 
 /**
+ * @brief Negative test for delete_model. Model is not registered.
+ */
+TEST (serviceDB, delete_model_unregistered_n)
+{
+  MLServiceDB &db = MLServiceDB::getInstance ();
+  int gotException = 0;
+  guint version;
+
+  db.connectDB ();
+
+  /* Test condition, remove all model with name 'test'. */
+  db.set_model ("test", "test_model", true, "", "", &version);
+  db.delete_model ("test", 0U);
+
+  try {
+    db.delete_model ("test", version);
+  } catch (const std::exception &e) {
+    g_critical ("Got Exception: %s", e.what ());
+    gotException = 1;
+  }
+  EXPECT_EQ (gotException, 1);
+
+  db.disconnectDB ();
+}
+
+/**
+ * @brief Negative test for delete_model. Model is activated.
+ */
+TEST (serviceDB, delete_model_activated_n)
+{
+  MLServiceDB &db = MLServiceDB::getInstance ();
+  int gotException = 0;
+  guint version;
+
+  db.connectDB ();
+
+  /* Test condition, add new model as activated. */
+  db.set_model ("test", "test_model", true, "", "", &version);
+
+  try {
+    db.delete_model ("test", version);
+  } catch (const std::exception &e) {
+    g_critical ("Got Exception: %s", e.what ());
+    gotException = 1;
+  }
+  EXPECT_EQ (gotException, 1);
+
+  db.delete_model ("test", 0U);
+  db.disconnectDB ();
+}
+
+/**
  * @brief Negative test for set_pipline. DB is not initialized.
  */
 TEST (serviceDBNotInitalized, set_pipeline_n)
