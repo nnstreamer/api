@@ -288,7 +288,7 @@ dbus_cb_core_start_pipeline (MachinelearningServicePipeline *obj,
   p = (pipeline_s *) g_hash_table_lookup (pipeline_table, GINT_TO_POINTER (id));
 
   if (!p) {
-    _E ("there is no pipeline with id: %" G_GINT64_FORMAT, id);
+    _E ("The callback start_pipeline is called, but there is no pipeline matched with ID.");
     G_UNLOCK (pipeline_table_lock);
     result = -EINVAL;
   } else {
@@ -298,9 +298,8 @@ dbus_cb_core_start_pipeline (MachinelearningServicePipeline *obj,
     g_mutex_unlock (&p->lock);
 
     if (sc_ret == GST_STATE_CHANGE_FAILURE) {
-      _E ("Failed to set the state of the pipline to PLAYING whose service_name is %s (id: %" G_GINT64_FORMAT
-          ")",
-          p->service_name, id);
+      _E ("Failed to set the state of the pipline to PLAYING whose service name is %s.",
+          p->service_name);
       result = -ESTRPIPE;
     }
   }
@@ -325,7 +324,7 @@ dbus_cb_core_stop_pipeline (MachinelearningServicePipeline *obj,
   p = (pipeline_s *) g_hash_table_lookup (pipeline_table, GINT_TO_POINTER (id));
 
   if (!p) {
-    _E ("there is no pipeline with id: %" G_GINT64_FORMAT, id);
+    _E ("The callback stop_pipeline is called, but there is no pipeline matched with ID.");
     G_UNLOCK (pipeline_table_lock);
     result = -EINVAL;
   } else {
@@ -335,9 +334,8 @@ dbus_cb_core_stop_pipeline (MachinelearningServicePipeline *obj,
     g_mutex_unlock (&p->lock);
 
     if (sc_ret == GST_STATE_CHANGE_FAILURE) {
-      _E ("Failed to set the state of the pipline to PAUSED whose service_name is %s (id: %" G_GINT64_FORMAT
-          ")",
-          p->service_name, id);
+      _E ("Failed to set the state of the pipline to PAUSED whose service name is %s.",
+          p->service_name);
       result = -ESTRPIPE;
     }
   }
@@ -361,25 +359,21 @@ dbus_cb_core_destroy_pipeline (MachinelearningServicePipeline *obj,
   p = (pipeline_s *) g_hash_table_lookup (pipeline_table, GINT_TO_POINTER (id));
 
   if (!p) {
-    _E ("there is no pipeline with id: %" G_GINT64_FORMAT, id);
+    _E ("The callback destroy_pipeline is called, but there is no pipeline matched with ID.");
     result = -EINVAL;
   } else {
-
     /**
      * @todo Fix hanging issue when trying to set GST_STATE_NULL state for pipelines
      * containing tensor_query_*. As a workaround, just unref the pipeline instance.
      * To fix this issue, tensor_query elements and nnstreamer-edge should well-behavior
      * to the state change. And it should properly free socket resources. Revive following code after then.
-     */
-    /**
+     *
      *   GstStateChangeReturn sc_ret;
-
      *   g_mutex_lock (&p->lock);
      *   sc_ret = gst_element_set_state (p->element, GST_STATE_NULL);
      *   g_mutex_unlock (&p->lock);
-
      *   if (sc_ret == GST_STATE_CHANGE_FAILURE) {
-     *     _E ("Failed to set the state of the pipeline to NULL whose service_name is %s (id: %" G_GINT64_FORMAT "). Destroy it anyway.", p->service_name, id);
+     *     _E ("Failed to set the state of the pipeline to NULL whose service name is %s. Destroy it anyway.", p->service_name);
      *     result = -ESTRPIPE;
      *   }
      */
@@ -408,7 +402,7 @@ dbus_cb_core_get_state (MachinelearningServicePipeline *obj,
   p = (pipeline_s *) g_hash_table_lookup (pipeline_table, GINT_TO_POINTER (id));
 
   if (!p) {
-    _E ("there is no pipeline with id: %" G_GINT64_FORMAT, id);
+    _E ("The callback get_state is called, but there is no pipeline matched with ID.");
     result = -EINVAL;
     machinelearning_service_pipeline_complete_get_state (obj, invoc, result, (gint) state);
     G_UNLOCK (pipeline_table_lock);
@@ -421,8 +415,7 @@ dbus_cb_core_get_state (MachinelearningServicePipeline *obj,
   g_mutex_unlock (&p->lock);
 
   if (sc_ret == GST_STATE_CHANGE_FAILURE) {
-    _E ("Failed to get the state of the pipline whose service_name is %s (id: %" G_GINT64_FORMAT ")",
-        p->service_name, id);
+    _E ("Failed to get the state of the pipline whose service name is %s.", p->service_name);
     result = -ESTRPIPE;
     machinelearning_service_pipeline_complete_get_state (obj, invoc, result, (gint) state);
     return TRUE;
