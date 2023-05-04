@@ -48,6 +48,7 @@ class MLServiceDB
   virtual ~MLServiceDB ();
 
   void initDB ();
+  bool set_transaction (bool begin);
 
   std::string _path;
   bool _initialized;
