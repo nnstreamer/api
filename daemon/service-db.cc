@@ -104,12 +104,8 @@ MLServiceDB::initDB ()
    * 2. drop old table
    * 3. create new table and insert records
    */
-  rc = sqlite3_exec (_db, "BEGIN TRANSACTION;", nullptr, nullptr, &errmsg);
-  if (rc != SQLITE_OK) {
-    _W ("Failed to begin transaction: %s (%d)", errmsg, rc);
-    sqlite3_clear_errmsg (errmsg);
+  if (!set_transaction (true))
     return;
-  }
 
   /* Create tables. */
   sql = g_strdup_printf ("CREATE TABLE IF NOT EXISTS %s;", g_mlsvc_table_schema[TBL_DB_INFO]);
@@ -192,12 +188,8 @@ MLServiceDB::initDB ()
     return;
   }
 
-  rc = sqlite3_exec (_db, "END TRANSACTION;", nullptr, nullptr, &errmsg);
-  if (rc != SQLITE_OK) {
-    _W ("Failed to end transaction: %s (%d)", errmsg, rc);
-    sqlite3_clear_errmsg (errmsg);
+  if (!set_transaction (false))
     return;
-  }
 
   _initialized = true;
 }
@@ -238,6 +230,24 @@ MLServiceDB::disconnectDB ()
     sqlite3_close (_db);
     _db = nullptr;
   }
+}
+
+/**
+ * @brief Begin/end transaction.
+ */
+bool
+MLServiceDB::set_transaction (bool begin)
+{
+  int rc;
+  char *errmsg = nullptr;
+
+  rc = sqlite3_exec (_db, begin ? "BEGIN TRANSACTION;" : "END TRANSACTION;",
+      nullptr, nullptr, &errmsg);
+  if (rc != SQLITE_OK)
+    _W ("Failed to %s transaction: %s (%d)", begin ? "begin" : "end", errmsg, rc);
+
+  sqlite3_clear_errmsg (errmsg);
+  return (rc == SQLITE_OK);
 }
 
 /**
@@ -311,7 +321,6 @@ MLServiceDB::get_pipeline (const std::string name, std::string &description)
 void
 MLServiceDB::delete_pipeline (const std::string name)
 {
-  int rc;
   sqlite3_stmt *res;
 
   if (name.empty ())
@@ -329,9 +338,7 @@ MLServiceDB::delete_pipeline (const std::string name)
 
   sqlite3_finalize (res);
 
-  /* count the number of rows modified */
-  rc = sqlite3_changes (_db);
-  if (rc == 0) {
+  if (sqlite3_changes (_db) == 0) {
     throw std::invalid_argument ("There is no pipeline description of " + name);
   }
 }
@@ -348,8 +355,6 @@ void
 MLServiceDB::set_model (const std::string name, const std::string model, const bool is_active,
     const std::string description, const std::string app_info, guint *version)
 {
-  int rc;
-  char *errmsg = nullptr;
   guint _version = 0U;
   sqlite3_stmt *res;
 
@@ -359,12 +364,8 @@ MLServiceDB::set_model (const std::string name, const std::string model, const b
   std::string key_with_prefix = DB_KEY_PREFIX;
   key_with_prefix += name;
 
-  rc = sqlite3_exec (_db, "BEGIN TRANSACTION;", nullptr, nullptr, &errmsg);
-  if (rc != SQLITE_OK) {
-    _E ("Failed to begin transaction: %s (%d)", errmsg, rc);
-    sqlite3_clear_errmsg (errmsg);
+  if (!set_transaction (true))
     throw std::runtime_error ("Failed to begin transaction.");
-  }
 
   /* set other models as NOT active */
   if (is_active) {
@@ -396,13 +397,8 @@ MLServiceDB::set_model (const std::string name, const std::string model, const b
 
   sqlite3_finalize (res);
 
-  /* END TRANSACTION */
-  rc = sqlite3_exec (_db, "END TRANSACTION;", nullptr, nullptr, &errmsg);
-  if (rc != SQLITE_OK) {
-    _E ("Failed to end transaction: %s (%d)", errmsg, rc);
-    sqlite3_clear_errmsg (errmsg);
+  if (!set_transaction (false))
     throw std::runtime_error ("Failed to end transaction.");
-  }
 
   long long int last_id = sqlite3_last_insert_rowid (_db);
   if (last_id == 0) {
@@ -486,8 +482,6 @@ MLServiceDB::update_model_description (
 void
 MLServiceDB::activate_model (const std::string name, const guint version)
 {
-  int rc;
-  char *errmsg = nullptr;
   sqlite3_stmt *res;
 
   if (name.empty ())
@@ -513,12 +507,8 @@ MLServiceDB::activate_model (const std::string name, const guint version)
 
   sqlite3_finalize (res);
 
-  rc = sqlite3_exec (_db, "BEGIN TRANSACTION;", nullptr, nullptr, &errmsg);
-  if (rc != SQLITE_OK) {
-    _E ("Failed to begin transaction: %s (%d)", errmsg, rc);
-    sqlite3_clear_errmsg (errmsg);
+  if (!set_transaction (true))
     throw std::runtime_error ("Failed to begin transaction.");
-  }
 
   /* set other row active as F */
   if (sqlite3_prepare_v2 (_db, "UPDATE tblModel SET active = 'F' WHERE key = ?1", -1, &res, nullptr) != SQLITE_OK
@@ -543,12 +533,8 @@ MLServiceDB::activate_model (const std::string name, const guint version)
 
   sqlite3_finalize (res);
 
-  rc = sqlite3_exec (_db, "END TRANSACTION;", nullptr, nullptr, &errmsg);
-  if (rc != SQLITE_OK) {
-    _E ("Failed to end transaction: %s (%d)", errmsg, rc);
-    sqlite3_clear_errmsg (errmsg);
+  if (!set_transaction (false))
     throw std::runtime_error ("Failed to end transaction.");
-  }
 }
 
 /**
