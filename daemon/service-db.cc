@@ -11,6 +11,7 @@
  */
 
 #include "service-db.hh"
+#include "log.h"
 
 #define sqlite3_clear_errmsg(m) \
   do {                          \
@@ -105,7 +106,7 @@ MLServiceDB::initDB ()
    */
   rc = sqlite3_exec (_db, "BEGIN TRANSACTION;", nullptr, nullptr, &errmsg);
   if (rc != SQLITE_OK) {
-    g_warning ("Failed to begin transaction: %s (%d)", errmsg, rc);
+    _W ("Failed to begin transaction: %s (%d)", errmsg, rc);
     sqlite3_clear_errmsg (errmsg);
     return;
   }
@@ -115,7 +116,7 @@ MLServiceDB::initDB ()
   rc = sqlite3_exec (_db, sql, nullptr, nullptr, &errmsg);
   g_free (sql);
   if (rc != SQLITE_OK) {
-    g_warning ("Failed to create table for database info: %s (%d)", errmsg, rc);
+    _W ("Failed to create table for database info: %s (%d)", errmsg, rc);
     sqlite3_clear_errmsg (errmsg);
     return;
   }
@@ -125,7 +126,7 @@ MLServiceDB::initDB ()
   rc = sqlite3_exec (_db, sql, nullptr, nullptr, &errmsg);
   g_free (sql);
   if (rc != SQLITE_OK) {
-    g_warning ("Failed to create table for pipeline description: %s (%d)", errmsg, rc);
+    _W ("Failed to create table for pipeline description: %s (%d)", errmsg, rc);
     sqlite3_clear_errmsg (errmsg);
     return;
   }
@@ -135,7 +136,7 @@ MLServiceDB::initDB ()
   rc = sqlite3_exec (_db, sql, nullptr, nullptr, &errmsg);
   g_free (sql);
   if (rc != SQLITE_OK) {
-    g_warning ("Failed to create table for model info: %s (%d)", errmsg, rc);
+    _W ("Failed to create table for model info: %s (%d)", errmsg, rc);
     sqlite3_clear_errmsg (errmsg);
     return;
   }
@@ -144,8 +145,7 @@ MLServiceDB::initDB ()
   rc = sqlite3_prepare_v2 (_db,
       "SELECT version FROM tblMLDBInfo WHERE name = 'tblPipeline';", -1, &res, nullptr);
   if (rc != SQLITE_OK) {
-    g_warning ("Failed to get the version of pipeline table: %s (%d)",
-        sqlite3_errmsg (_db), rc);
+    _W ("Failed to get the version of pipeline table: %s (%d)", sqlite3_errmsg (_db), rc);
     return;
   }
 
@@ -162,7 +162,7 @@ MLServiceDB::initDB ()
   rc = sqlite3_exec (_db, sql, nullptr, nullptr, &errmsg);
   g_free (sql);
   if (rc != SQLITE_OK) {
-    g_warning ("Failed to update version of pipeline table: %s (%d)", errmsg, rc);
+    _W ("Failed to update version of pipeline table: %s (%d)", errmsg, rc);
     sqlite3_clear_errmsg (errmsg);
     return;
   }
@@ -171,8 +171,7 @@ MLServiceDB::initDB ()
   rc = sqlite3_prepare_v2 (_db,
       "SELECT version FROM tblMLDBInfo WHERE name = 'tblModel';", -1, &res, nullptr);
   if (rc != SQLITE_OK) {
-    g_warning ("Failed to get the version of model table: %s (%d)",
-        sqlite3_errmsg (_db), rc);
+    _W ("Failed to get the version of model table: %s (%d)", sqlite3_errmsg (_db), rc);
     return;
   }
 
@@ -188,14 +187,14 @@ MLServiceDB::initDB ()
   rc = sqlite3_exec (_db, sql, nullptr, nullptr, &errmsg);
   g_free (sql);
   if (rc != SQLITE_OK) {
-    g_warning ("Failed to update version of model table: %s (%d)", errmsg, rc);
+    _W ("Failed to update version of model table: %s (%d)", errmsg, rc);
     sqlite3_clear_errmsg (errmsg);
     return;
   }
 
   rc = sqlite3_exec (_db, "END TRANSACTION;", nullptr, nullptr, &errmsg);
   if (rc != SQLITE_OK) {
-    g_warning ("Failed to end transaction: %s (%d)", errmsg, rc);
+    _W ("Failed to end transaction: %s (%d)", errmsg, rc);
     sqlite3_clear_errmsg (errmsg);
     return;
   }
@@ -216,7 +215,7 @@ MLServiceDB::connectDB ()
 
   rc = sqlite3_open (_path.c_str (), &_db);
   if (rc != SQLITE_OK) {
-    g_warning ("Failed to open database: %s (%d)", sqlite3_errmsg (_db), rc);
+    _E ("Failed to open database: %s (%d)", sqlite3_errmsg (_db), rc);
     goto error;
   }
 
@@ -261,8 +260,8 @@ MLServiceDB::set_pipeline (const std::string name, const std::string description
   if (sqlite3_prepare_v2 (_db,
           "INSERT OR REPLACE INTO tblPipeline VALUES (?1, ?2)", -1, &res, nullptr)
           != SQLITE_OK
-      || sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, NULL) != SQLITE_OK
-      || sqlite3_bind_text (res, 2, description.c_str (), -1, NULL) != SQLITE_OK
+      || sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, nullptr) != SQLITE_OK
+      || sqlite3_bind_text (res, 2, description.c_str (), -1, nullptr) != SQLITE_OK
       || sqlite3_step (res) != SQLITE_DONE) {
     sqlite3_finalize (res);
     throw std::runtime_error ("Failed to insert pipeline description of " + name);
@@ -291,7 +290,7 @@ MLServiceDB::get_pipeline (const std::string name, std::string &description)
   if (sqlite3_prepare_v2 (_db,
           "SELECT description FROM tblPipeline WHERE key = ?1", -1, &res, nullptr)
           == SQLITE_OK
-      && sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, NULL) == SQLITE_OK
+      && sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, nullptr) == SQLITE_OK
       && sqlite3_step (res) == SQLITE_ROW)
     value = g_strdup_printf ("%s", sqlite3_column_text (res, 0));
 
@@ -322,7 +321,7 @@ MLServiceDB::delete_pipeline (const std::string name)
   key_with_prefix += name;
 
   if (sqlite3_prepare_v2 (_db, "DELETE FROM tblPipeline WHERE key = ?1", -1, &res, nullptr) != SQLITE_OK
-      || sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, NULL) != SQLITE_OK
+      || sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, nullptr) != SQLITE_OK
       || sqlite3_step (res) != SQLITE_DONE) {
     sqlite3_finalize (res);
     throw std::runtime_error ("Failed to delete pipeline description of " + name);
@@ -362,7 +361,7 @@ MLServiceDB::set_model (const std::string name, const std::string model, const b
 
   rc = sqlite3_exec (_db, "BEGIN TRANSACTION;", nullptr, nullptr, &errmsg);
   if (rc != SQLITE_OK) {
-    g_critical ("Failed to begin transaction: %s (%d)", errmsg, rc);
+    _E ("Failed to begin transaction: %s (%d)", errmsg, rc);
     sqlite3_clear_errmsg (errmsg);
     throw std::runtime_error ("Failed to begin transaction.");
   }
@@ -372,7 +371,7 @@ MLServiceDB::set_model (const std::string name, const std::string model, const b
     if (sqlite3_prepare_v2 (_db,
             "UPDATE tblModel SET active = 'F' WHERE key = ?1", -1, &res, nullptr)
             != SQLITE_OK
-        || sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, NULL) != SQLITE_OK
+        || sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, nullptr) != SQLITE_OK
         || sqlite3_step (res) != SQLITE_DONE) {
       sqlite3_finalize (res);
       throw std::runtime_error ("Failed to set other models as NOT active.");
@@ -384,12 +383,12 @@ MLServiceDB::set_model (const std::string name, const std::string model, const b
   if (sqlite3_prepare_v2 (_db, "INSERT OR REPLACE INTO tblModel VALUES (?1, IFNULL ((SELECT version from tblModel WHERE key = ?2 ORDER BY version DESC LIMIT 1) + 1, 1), ?3, ?4, ?5, ?6)",
           -1, &res, nullptr)
           != SQLITE_OK
-      || sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, NULL) != SQLITE_OK
-      || sqlite3_bind_text (res, 2, key_with_prefix.c_str (), -1, NULL) != SQLITE_OK
-      || sqlite3_bind_text (res, 3, is_active ? "T" : "F", -1, NULL) != SQLITE_OK
-      || sqlite3_bind_text (res, 4, model.c_str (), -1, NULL) != SQLITE_OK
-      || sqlite3_bind_text (res, 5, description.c_str (), -1, NULL) != SQLITE_OK
-      || sqlite3_bind_text (res, 6, app_info.c_str (), -1, NULL) != SQLITE_OK
+      || sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, nullptr) != SQLITE_OK
+      || sqlite3_bind_text (res, 2, key_with_prefix.c_str (), -1, nullptr) != SQLITE_OK
+      || sqlite3_bind_text (res, 3, is_active ? "T" : "F", -1, nullptr) != SQLITE_OK
+      || sqlite3_bind_text (res, 4, model.c_str (), -1, nullptr) != SQLITE_OK
+      || sqlite3_bind_text (res, 5, description.c_str (), -1, nullptr) != SQLITE_OK
+      || sqlite3_bind_text (res, 6, app_info.c_str (), -1, nullptr) != SQLITE_OK
       || sqlite3_step (res) != SQLITE_DONE) {
     sqlite3_finalize (res);
     throw std::runtime_error ("Failed to register the model " + name);
@@ -400,14 +399,14 @@ MLServiceDB::set_model (const std::string name, const std::string model, const b
   /* END TRANSACTION */
   rc = sqlite3_exec (_db, "END TRANSACTION;", nullptr, nullptr, &errmsg);
   if (rc != SQLITE_OK) {
-    g_critical ("Failed to end transaction: %s (%d)", errmsg, rc);
+    _E ("Failed to end transaction: %s (%d)", errmsg, rc);
     sqlite3_clear_errmsg (errmsg);
     throw std::runtime_error ("Failed to end transaction.");
   }
 
   long long int last_id = sqlite3_last_insert_rowid (_db);
   if (last_id == 0) {
-    g_critical ("Failed to get last inserted row id: %s", sqlite3_errmsg (_db));
+    _E ("Failed to get last inserted row id: %s", sqlite3_errmsg (_db));
     throw std::runtime_error ("Failed to get last inserted row id.");
   }
 
@@ -422,8 +421,8 @@ MLServiceDB::set_model (const std::string name, const std::string model, const b
   sqlite3_finalize (res);
 
   if (_version == 0) {
-    g_critical ("Failed to get model version with name %s: %s (%d)",
-        name.c_str (), sqlite3_errmsg (_db), rc);
+    _E ("Failed to get model version with name %s: %s", name.c_str (),
+        sqlite3_errmsg (_db));
     throw std::invalid_argument ("Failed to get model version of " + name);
   }
 
@@ -455,7 +454,7 @@ MLServiceDB::update_model_description (
   if (sqlite3_prepare_v2 (_db, "SELECT EXISTS(SELECT 1 FROM tblModel WHERE key = ?1 AND version = ?2)",
           -1, &res, nullptr)
           != SQLITE_OK
-      || sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, NULL) != SQLITE_OK
+      || sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, nullptr) != SQLITE_OK
       || sqlite3_bind_int (res, 2, version) != SQLITE_OK
       || sqlite3_step (res) != SQLITE_ROW || sqlite3_column_int (res, 0) != 1) {
     sqlite3_finalize (res);
@@ -469,8 +468,8 @@ MLServiceDB::update_model_description (
   if (sqlite3_prepare_v2 (_db, "UPDATE tblModel SET description = ?1 WHERE key = ?2 AND version = ?3",
           -1, &res, nullptr)
           != SQLITE_OK
-      || sqlite3_bind_text (res, 1, description.c_str (), -1, NULL) != SQLITE_OK
-      || sqlite3_bind_text (res, 2, key_with_prefix.c_str (), -1, NULL) != SQLITE_OK
+      || sqlite3_bind_text (res, 1, description.c_str (), -1, nullptr) != SQLITE_OK
+      || sqlite3_bind_text (res, 2, key_with_prefix.c_str (), -1, nullptr) != SQLITE_OK
       || sqlite3_bind_int (res, 3, version) != SQLITE_OK || sqlite3_step (res) != SQLITE_DONE) {
     sqlite3_finalize (res);
     throw std::runtime_error ("Failed to update model description.");
@@ -504,7 +503,7 @@ MLServiceDB::activate_model (const std::string name, const guint version)
   if (sqlite3_prepare_v2 (_db, "SELECT EXISTS(SELECT 1 FROM tblModel WHERE key = ?1 AND version = ?2)",
           -1, &res, nullptr)
           != SQLITE_OK
-      || sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, NULL) != SQLITE_OK
+      || sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, nullptr) != SQLITE_OK
       || sqlite3_bind_int (res, 2, version) != SQLITE_OK
       || sqlite3_step (res) != SQLITE_ROW || sqlite3_column_int (res, 0) != 1) {
     sqlite3_finalize (res);
@@ -516,14 +515,14 @@ MLServiceDB::activate_model (const std::string name, const guint version)
 
   rc = sqlite3_exec (_db, "BEGIN TRANSACTION;", nullptr, nullptr, &errmsg);
   if (rc != SQLITE_OK) {
-    g_critical ("Failed to begin transaction: %s (%d)", errmsg, rc);
+    _E ("Failed to begin transaction: %s (%d)", errmsg, rc);
     sqlite3_clear_errmsg (errmsg);
     throw std::runtime_error ("Failed to begin transaction.");
   }
 
   /* set other row active as F */
   if (sqlite3_prepare_v2 (_db, "UPDATE tblModel SET active = 'F' WHERE key = ?1", -1, &res, nullptr) != SQLITE_OK
-      || sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, NULL) != SQLITE_OK
+      || sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, nullptr) != SQLITE_OK
       || sqlite3_step (res) != SQLITE_DONE) {
     sqlite3_finalize (res);
     throw std::runtime_error ("Failed to deactivate other models of " + name);
@@ -535,18 +534,18 @@ MLServiceDB::activate_model (const std::string name, const guint version)
   if (sqlite3_prepare_v2 (_db, "UPDATE tblModel SET active = 'T' WHERE key = ?1 AND version = ?2",
           -1, &res, nullptr)
           != SQLITE_OK
-      || sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, NULL) != SQLITE_OK
+      || sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, nullptr) != SQLITE_OK
       || sqlite3_bind_int (res, 2, version) != SQLITE_OK || sqlite3_step (res) != SQLITE_DONE) {
     sqlite3_finalize (res);
     throw std::runtime_error ("Failed to activate model with name " + name
-                              + " of version " + std::to_string (version));
+                              + " and version " + std::to_string (version));
   }
 
   sqlite3_finalize (res);
 
   rc = sqlite3_exec (_db, "END TRANSACTION;", nullptr, nullptr, &errmsg);
   if (rc != SQLITE_OK) {
-    g_critical ("Failed to end transaction: %s (%d)", errmsg, rc);
+    _E ("Failed to end transaction: %s (%d)", errmsg, rc);
     sqlite3_clear_errmsg (errmsg);
     throw std::runtime_error ("Failed to end transaction.");
   }
@@ -582,7 +581,7 @@ MLServiceDB::get_model (const std::string name, std::string &model, const gint v
     throw std::invalid_argument ("Invalid version parameter!");
 
   if (sqlite3_prepare_v2 (_db, sql, -1, &res, nullptr) == SQLITE_OK
-      && sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, NULL) == SQLITE_OK
+      && sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, nullptr) == SQLITE_OK
       && sqlite3_step (res) == SQLITE_ROW)
     value = g_strdup_printf ("%s", sqlite3_column_text (res, 0));
 
@@ -606,7 +605,6 @@ MLServiceDB::get_model (const std::string name, std::string &model, const gint v
 void
 MLServiceDB::delete_model (const std::string name, const guint version)
 {
-  int rc;
   char *sql;
   sqlite3_stmt *res;
 
@@ -621,7 +619,7 @@ MLServiceDB::delete_model (const std::string name, const guint version)
     if (sqlite3_prepare_v2 (_db, "SELECT EXISTS(SELECT 1 FROM tblModel WHERE key = ?1 AND version = ?2);",
             -1, &res, nullptr)
             != SQLITE_OK
-        || sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, NULL) != SQLITE_OK
+        || sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, nullptr) != SQLITE_OK
         || sqlite3_bind_int (res, 2, version) != SQLITE_OK
         || sqlite3_step (res) != SQLITE_ROW) {
       sqlite3_finalize (res);
@@ -644,7 +642,7 @@ MLServiceDB::delete_model (const std::string name, const guint version)
     sql = g_strdup_printf ("DELETE FROM tblModel WHERE key = ?1 and version = %u", version);
 
   if (sqlite3_prepare_v2 (_db, sql, -1, &res, nullptr) != SQLITE_OK
-      || sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, NULL) != SQLITE_OK
+      || sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, nullptr) != SQLITE_OK
       || sqlite3_step (res) != SQLITE_DONE) {
     sqlite3_finalize (res);
     g_free (sql);
@@ -655,8 +653,7 @@ MLServiceDB::delete_model (const std::string name, const guint version)
   sqlite3_finalize (res);
   g_free (sql);
 
-  rc = sqlite3_changes (_db);
-  if (rc == 0) {
+  if (sqlite3_changes (_db) == 0) {
     throw std::invalid_argument ("There is no model with the given name " + name
                                  + " and version " + std::to_string (version));
   }
