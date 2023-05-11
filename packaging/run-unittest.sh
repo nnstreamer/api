@@ -7,6 +7,7 @@
 ##
 setup() {
     echo "setup start"
+    export MLAPI_SOURCE_ROOT_PATH=/usr/bin/unittest-ml
 }
 
 test_main() {
