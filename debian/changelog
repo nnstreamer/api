@@ -1,6 +1,6 @@
 ml-api (1.8.3.0) unstable xenial bionic focal; urgency=medium
 
-  * Start development of 1.8.3 for Tizen 7.5 release (1.8.4)
+  * Start development of 1.8.3 for Tizen 8.0 release (1.8.4)
 
  -- MyungJoo Ham <myungjoo.ham@samsung.com>  Fri, 30 Sep 2022 12:10:00 +0900
 

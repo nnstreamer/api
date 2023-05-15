@@ -295,7 +295,7 @@ int _ml_tensors_data_clone_no_alloc (const ml_tensors_data_s * data_src, ml_tens
 
 /**
  * @brief Copies the tensor data frame.
- * @since_tizen 7.5
+ * @since_tizen 8.0
  * @param[in] in The handle of tensors data to be cloned.
  * @param[out] out The handle of tensors data. The caller is responsible for freeing the allocated data with ml_tensors_data_destroy().
  * @return @c 0 on success. Otherwise a negative error value.
@@ -303,7 +303,7 @@ int _ml_tensors_data_clone_no_alloc (const ml_tensors_data_s * data_src, ml_tens
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
  * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
- * @todo Consider adding new API from tizen 7.5.
+ * @todo Consider adding new API from tizen 8.0.
  */
 int ml_tensors_data_clone (const ml_tensors_data_h in, ml_tensors_data_h *out);
 
