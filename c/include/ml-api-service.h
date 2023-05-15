@@ -226,7 +226,7 @@ int ml_service_query_request (ml_service_h handle, const ml_tensors_data_h input
 
 /**
  * @brief Registers new information of a neural network model.
- * @since_tizen 7.5
+ * @since_tizen 8.0
  * @remarks Only one model can be activated with given @a name. If same name is already registered in machine learning service, this returns no error and old model will be deactivated when the flag @a activate is true.
  * @remarks %http://tizen.org/privilege/mediastorage is needed if model file is relevant to media storage.
  * @remarks %http://tizen.org/privilege/externalstorage is needed if model file is relevant to external storage.
@@ -246,7 +246,7 @@ int ml_service_model_register (const char *name, const char *path, const bool ac
 
 /**
  * @brief Updates the description of neural network model with given @a name and @a version.
- * @since_tizen 7.5
+ * @since_tizen 8.0
  * @param[in] name The unique name to indicate the model.
  * @param[in] version The version of registered model.
  * @param[in] description The description for neural network model.
@@ -260,7 +260,7 @@ int ml_service_model_update_description (const char *name, const unsigned int ve
 
 /**
  * @brief Activates a neural network model with given @a name and @a version.
- * @since_tizen 7.5
+ * @since_tizen 8.0
  * @param[in] name The unique name to indicate the model.
  * @param[in] version The version of registered model.
  * @return 0 on success. Otherwise a negative error value.
@@ -273,7 +273,7 @@ int ml_service_model_activate (const char *name, const unsigned int version);
 
 /**
  * @brief Gets the information of neural network model with given @a name and @a version.
- * @since_tizen 7.5
+ * @since_tizen 8.0
  * @remarks If the function succeeds, the @a info should be released using ml_option_destroy().
  * @param[in] name The unique name to indicate the model.
  * @param[in] version The version of registered model.
@@ -289,7 +289,7 @@ int ml_service_model_get (const char *name, const unsigned int version, ml_optio
 
 /**
  * @brief Gets the information of activated neural network model with given @a name.
- * @since_tizen 7.5
+ * @since_tizen 8.0
  * @remarks If the function succeeds, the @a info should be released using ml_option_destroy().
  * @param[in] name The unique name to indicate the model.
  * @param[out] info The handle of activated model.
@@ -304,7 +304,7 @@ int ml_service_model_get_activated (const char *name, ml_option_h *info);
 
 /**
  * @brief Gets the list of neural network model with given @a name.
- * @since_tizen 7.5
+ * @since_tizen 8.0
  * @remarks If the function succeeds, each handle in @a info_list should be released using ml_option_destroy().
  * @param[in] name The unique name to indicate the model.
  * @param[out] info_list The handles of registered model.
@@ -320,7 +320,7 @@ int ml_service_model_get_all (const char *name, ml_option_h *info_list[], unsign
 
 /**
  * @brief Deletes a model information with given @a name and @a version from machine learning service.
- * @since_tizen 7.5
+ * @since_tizen 8.0
  * @remarks This does not remove the model file from file system. If @a version is 0, machine learning service will delete all information with given @a name.
  * @param[in] name The unique name to indicate the model.
  * @param[in] version The version of registered model.

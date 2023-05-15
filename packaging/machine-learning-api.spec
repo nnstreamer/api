@@ -551,7 +551,7 @@ install -m 0755 packaging/run-unittest.sh %{buildroot}%{_bindir}/tizen-unittests
 
 %changelog
 * Fri Sep 30 2022 MyungJoo Ham <myungjoo.ham@samsung.com>
-- Start development of 1.8.3 for Tizen 7.5 release (1.8.4)
+- Start development of 1.8.3 for Tizen 8.0 release (1.8.4)
 
 * Mon Sep 26 2022 MyungJoo Ham <myungjoo.ham@samsung.com>
 - Release of 1.8.2

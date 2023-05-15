@@ -97,7 +97,7 @@ typedef enum {
 /**
  * @brief The maximum rank that NNStreamer supports with Tizen APIs.
  * @since_tizen 5.5
- * @remarks The maximum rank in Tizen APIs is 4 until tizen 7.0 and 16 since 7.5.
+ * @remarks The maximum rank in Tizen APIs is 4 until tizen 7.0 and 16 since 8.0.
  */
 #define ML_TENSOR_RANK_LIMIT  (16)
 
@@ -185,7 +185,7 @@ int ml_tensors_info_create (ml_tensors_info_h *info);
 /**
  * @brief Creates an extended tensors information handle with default value.
  * @details An extended tensors support higher rank limit.
- * @since_tizen 7.5
+ * @since_tizen 8.0
  * @remarks The @a info should be released using ml_tensors_info_destroy().
  * @param[out] info The handle of tensors information.
  * @return @c 0 on success. Otherwise a negative error value.
@@ -483,7 +483,7 @@ int ml_option_set (ml_option_h option, const char *key, void *value, ml_data_des
 /**
  * @brief Gets a value of key in ml-option instance.
  * @details This returns the pointer of memory in the handle. Do not deallocate the returned value. If you modify the returned memory (value), the contents of value is updated.
- * @since_tizen 7.5
+ * @since_tizen 8.0
  * @param[in] option The handle of ml-option.
  * @param[in] key The key to get the corresponding value.
  * @param[out] value The value of the key.
