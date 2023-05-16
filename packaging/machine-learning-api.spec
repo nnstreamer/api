@@ -541,7 +541,12 @@ install -m 0755 packaging/run-unittest.sh %{buildroot}%{_bindir}/tizen-unittests
 %if 0%{?gcov:1}
 %files gcov
 %{_datadir}/gcov/obj/*
-%endif
+%if 0%{?enable_ml_service}
+%{_libdir}/libml-agentd-test.so.*
+%{_libdir}/libml-agentd-test.so
+%{_libdir}/libml-agentd-test.a
+%endif #enable_ml_service
+%endif #gcov
 
 %if 0%{?testcoverage}
 %files -n capi-machine-learning-unittest-coverage
