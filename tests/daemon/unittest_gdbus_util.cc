@@ -37,6 +37,13 @@ TEST (gdbusInstanceNotInitialized, get_system_connection_n)
   gboolean is_session = true;
   int ret;
 
+  /**
+   * FIXME: The following line blocks this test from running
+   * with the ml-agent daemon, not the test daemon.
+   */
+  if (!gdbus_get_system_connection (!is_session)) {
+    return;
+  }
   ret = gdbus_get_system_connection (is_session);
   EXPECT_EQ (-ENOSYS, ret);
 
