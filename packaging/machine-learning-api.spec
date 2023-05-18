@@ -533,6 +533,9 @@ install -m 0755 packaging/run-unittest.sh %{buildroot}%{_bindir}/tizen-unittests
 %files -n capi-machine-learning-unittests
 %manifest capi-machine-learning-inference.manifest
 %{_bindir}/unittest-ml
+%{_libdir}/libml-agentd-test.a
+%{_libdir}/libml-agentd-test.so*
+%{_libdir}/libunittest_mock.so*
 %if 0%{?gcov:1}
 %{_bindir}/tizen-unittests/%{name}/run-unittest.sh
 %endif

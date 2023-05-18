@@ -8,6 +8,7 @@
  */
 
 #include <gtest/gtest.h>
+#include <gdbus-util.h>
 #include <gio/gio.h>
 #include <ml-api-inference-pipeline-internal.h>
 #include <ml-api-internal.h>
@@ -1258,6 +1259,14 @@ TEST (MLServiceAgentTestDbusUnconnected, pipeline_n)
 {
   int status;
 
+  /**
+   * FIXME: The following line blocks this test from running
+   * with the ml-agent daemon, not the test daemon.
+   */
+  if (!gdbus_get_system_connection (false)) {
+    return;
+  }
+
   status = ml_service_set_pipeline ("test", "test");
   EXPECT_EQ (ML_ERROR_IO_ERROR, status);
 
@@ -1304,6 +1313,14 @@ TEST (MLServiceAgentTestDbusUnconnected, model_n)
 
   const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   unsigned int version;
+
+  /**
+   * FIXME: The following line blocks this test from running
+   * with the ml-agent daemon, not the test daemon.
+   */
+  if (!gdbus_get_system_connection (false)) {
+    return;
+  }
 
   /* ml_service_model_register() requires absolute path to model, ignore this case. */
   if (root_path == NULL)
