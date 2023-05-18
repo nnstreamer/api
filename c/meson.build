@@ -57,7 +57,7 @@ configure_file(input: 'capi-ml-inference-single.pc.in', output: 'capi-ml-inferen
 if get_option('enable-ml-service')
   ml_inf_service_conf = configuration_data()
   ml_inf_service_conf.merge_from(api_conf)
-  ml_inf_service_conf.set('ML_INFERENCE_SERVICE_REQUIRE', 'capi-nnstreamer')
+  ml_inf_service_conf.set('ML_SERVICE_REQUIRE', 'capi-ml-inference')
   configure_file(input: 'capi-ml-service.pc.in', output: 'capi-ml-service.pc',
     install_dir: join_paths(api_install_libdir, 'pkgconfig'),
     configuration: ml_inf_service_conf
