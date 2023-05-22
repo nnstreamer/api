@@ -18,6 +18,9 @@
 #include "ml-api-service-private.h"
 #include "ml-api-service.h"
 
+#define WARN_MSG_DPTR_SET_OVER "The memory blocks pointed by pipeline_desc will be set over with a new one.\n" \
+        "It is highly suggested that `%s` before it is set."
+
 #if defined(__TIZEN__)
 #include <app_common.h>
 
@@ -143,9 +146,14 @@ ml_service_get_pipeline (const char *name, char **pipeline_desc)
         "The parameter, 'name' is NULL, It should be a valid string");
   }
 
-  if (!pipeline_desc) {
+  if (pipeline_desc == NULL) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter 'pipeline_desc'. It should be a valid char**");
+        "The argument for 'pipeline_desc' should not be NULL");
+  }
+
+  if (*pipeline_desc != NULL) {
+    g_warning (WARN_MSG_DPTR_SET_OVER, "char *pipeline_desc = NULL");
+    *pipeline_desc = NULL;
   }
 
   ret =
@@ -200,9 +208,15 @@ ml_service_launch_pipeline (const char *name, ml_service_h * h)
 
   check_feature_state (ML_FEATURE_SERVICE);
 
-  if (!h)
+  if (h == NULL) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'h' is NULL. It should be a valid ml_service_h");
+        "The argument for 'h' should not be NULL");
+  }
+
+  if (*h != NULL) {
+    g_warning (WARN_MSG_DPTR_SET_OVER, "ml_service_h *h = NULL");
+  }
+  *h = NULL;
 
   ret = ml_agent_dbus_interface_pipeline_launch (name, &out_id, &err);
   if (ret < 0) {
@@ -238,16 +252,18 @@ int
 ml_service_start_pipeline (ml_service_h h)
 {
   int ret = ML_ERROR_NONE;
-  ml_service_s *mls = (ml_service_s *) h;
+  ml_service_s *mls;
   _ml_service_server_s *server;
   GError *err = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
-  if (!h)
+  if (!h) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'h' is NULL. It should be a valid ml_service_h");
+  }
 
+  mls = (ml_service_s *) h;
   server = (_ml_service_server_s *) mls->priv;
   ret = ml_agent_dbus_interface_pipeline_start (server->id, &err);
   if (ret < 0) {
@@ -266,16 +282,18 @@ int
 ml_service_stop_pipeline (ml_service_h h)
 {
   int ret = ML_ERROR_NONE;
-  ml_service_s *mls = (ml_service_s *) h;
-  _ml_service_server_s *server;
   GError *err = NULL;
+  ml_service_s *mls;
+  _ml_service_server_s *server;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
-  if (!h)
+  if (!h) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'h' is NULL. It should be a valid ml_service_h");
+  }
 
+  mls = (ml_service_s *) h;
   server = (_ml_service_server_s *) mls->priv;
   ret = ml_agent_dbus_interface_pipeline_stop (server->id, &err);
   if (ret < 0) {
@@ -294,21 +312,24 @@ int
 ml_service_get_pipeline_state (ml_service_h h, ml_pipeline_state_e * state)
 {
   int ret = ML_ERROR_NONE;
-  gint _state = ML_PIPELINE_STATE_UNKNOWN;
-  ml_service_s *mls = (ml_service_s *) h;
-  _ml_service_server_s *server;
   GError *err = NULL;
+  gint _state = ML_PIPELINE_STATE_UNKNOWN;
+  ml_service_s *mls;
+  _ml_service_server_s *server;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
-  if (!h)
+  if (NULL == state) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter 'state' should not be NULL");
+  }
+  *state = ML_PIPELINE_STATE_UNKNOWN;
+
+  if (!h) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'h' is NULL. It should be a valid ml_service_h");
-
-  if (!state)
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'state' is NULL. It should be a valid ml_pipeline_state_e pointer");
-
+  }
+  mls = (ml_service_s *) h;
   server = (_ml_service_server_s *) mls->priv;
   ret = ml_agent_dbus_interface_pipeline_get_state (server->id, &_state, &err);
   if (ret < 0) {
@@ -329,30 +350,31 @@ ml_service_model_register (const char *name, const char *path,
     const bool activate, const char *description, unsigned int *version)
 {
   int ret = ML_ERROR_NONE;
-
-  g_autofree gchar *dir_name = NULL;
   GError *err = NULL;
-  GStatBuf statbuf;
-
+  g_autofree gchar *dir_name = NULL;
   g_autofree gchar *app_info = NULL;
-
   g_autofree gchar *app_id = NULL;
   g_autoptr (JsonBuilder) builder = NULL;
   g_autoptr (JsonGenerator) gen = NULL;
+  GStatBuf statbuf;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
-  if (!name)
+  if (!name) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'name' is NULL. It should be a valid string");
+  }
 
-  if (!path)
+  if (!path) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'path' is NULL. It should be a valid string");
+  }
 
-  if (!version)
+  if (NULL == version) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'version' is NULL. It should be a valid unsigned int pointer");
+        "The parameter 'version' should not be NULL");
+  }
+  *version = 0U;
 
   dir_name = g_path_get_dirname (path);
   ret = g_stat (dir_name, &statbuf);
@@ -363,10 +385,10 @@ ml_service_model_register (const char *name, const char *path,
 
   if (!g_path_is_absolute (path)
       || !g_file_test (path, (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR))
-      || g_file_test (path, G_FILE_TEST_IS_SYMLINK))
+      || g_file_test (path, G_FILE_TEST_IS_SYMLINK)) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The model file '%s' is not a regular file.", path);
-
+  }
 #if defined(__TIZEN__)
   /* Tizen application info of caller should be provided as a json string */
 
@@ -432,22 +454,24 @@ ml_service_model_update_description (const char *name,
     const unsigned int version, const char *description)
 {
   int ret = ML_ERROR_NONE;
-
   GError *err = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
-  if (!name)
+  if (!name) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'name' is NULL. It should be a valid string");
+  }
 
-  if (version == 0U)
+  if (version == 0U) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'version' is 0. It should be a valid unsigned int");
+  }
 
-  if (!description)
+  if (!description) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'description' is NULL. It should be a valid string");
+  }
 
   ret =
       ml_agent_dbus_interface_model_update_description (name, version,
@@ -474,13 +498,15 @@ ml_service_model_activate (const char *name, const unsigned int version)
 
   check_feature_state (ML_FEATURE_SERVICE);
 
-  if (!name)
+  if (!name) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'name' is NULL. It should be a valid string");
+  }
 
-  if (version == 0U)
+  if (version == 0U) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'version' is 0. It should be a valid unsigned int");
+  }
 
   ret = ml_agent_dbus_interface_model_activate (name, version, &err);
   if (ret < 0) {
@@ -514,13 +540,20 @@ ml_service_model_get (const char *name, const unsigned int version,
 
   check_feature_state (ML_FEATURE_SERVICE);
 
-  if (!name)
+  if (!name) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'name' is NULL. It should be a valid string");
+  }
 
-  if (!info)
+  if (info == NULL) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'info' is NULL. It should be a valid pointer to ml_info_h");
+        "The argument for 'info' should not be NULL");
+  }
+
+  if (*info != NULL) {
+    g_warning (WARN_MSG_DPTR_SET_OVER, "ml_option_h info = NULL");
+  }
+  *info = NULL;
 
   ret = ml_agent_dbus_interface_model_get (name, version, &description, &err);
   if (ret < 0) {
@@ -578,13 +611,13 @@ ml_service_model_get (const char *name, const unsigned int version,
   *info = _info;
 
 error:
-  if (parser)
+  if (parser) {
     g_object_unref (parser);
+  }
   g_free (description);
 
-  if (ret != ML_ERROR_NONE) {
-    if (_info)
-      ml_option_destroy (_info);
+  if (ret != ML_ERROR_NONE && _info) {
+    ml_option_destroy (_info);
   }
 
   return ret;
@@ -610,13 +643,20 @@ ml_service_model_get_activated (const char *name, ml_option_h * info)
 
   check_feature_state (ML_FEATURE_SERVICE);
 
-  if (!name)
+  if (!name) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'name' is NULL. It should be a valid string");
+  }
 
-  if (!info)
+  if (info == NULL) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'info' is NULL. It should be a valid pointer to ml_info_h");
+        "The argument for 'info' should not be NULL");
+  }
+
+  if (*info != NULL) {
+    g_warning (WARN_MSG_DPTR_SET_OVER, "ml_option_h info = NULL");
+  }
+  *info = NULL;
 
   ret = ml_agent_dbus_interface_model_get_activated (name, &description, &err);
   if (ret < 0) {
@@ -674,9 +714,8 @@ ml_service_model_get_activated (const char *name, ml_option_h * info)
   *info = _info;
 
 error:
-  if (ret != ML_ERROR_NONE) {
-    if (_info)
-      ml_option_destroy (_info);
+  if (ret != ML_ERROR_NONE && _info) {
+    ml_option_destroy (_info);
   }
 
   return ret;
@@ -701,18 +740,21 @@ ml_service_model_get_all (const char *name, ml_option_h * info_list[],
 
   check_feature_state (ML_FEATURE_SERVICE);
 
-  if (!name)
+  if (!name) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'name' is NULL. It should be a valid string");
+  }
 
-  if (!info_list)
+  if (NULL == info_list) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'info' is NULL. It should be a valid pointer to array of ml_info_h");
+        "The parameter 'info_list' should not be NULL");
+  }
+  *info_list = NULL;
 
-  if (!num)
+  if (NULL == num) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'num' is NULL. It should be a valid pointer to unsigned int");
-
+        "The parameter 'num' should not be NULL");
+  }
   *num = 0;
 
   ret = ml_agent_dbus_interface_model_get_all (name, &description, &err);
@@ -796,15 +838,17 @@ ml_service_model_get_all (const char *name, ml_option_h * info_list[],
   *num = n;
 
 error:
-  if (parser)
+  if (parser) {
     g_object_unref (parser);
+  }
   g_free (description);
 
   if (ret != ML_ERROR_NONE) {
     if (_info_list) {
       for (i = 0; i < n; i++) {
-        if (_info_list[i])
+        if (_info_list[i]) {
           ml_option_destroy (_info_list[i]);
+        }
       }
 
       g_free (_info_list);
@@ -825,9 +869,10 @@ ml_service_model_delete (const char *name, const unsigned int version)
 
   check_feature_state (ML_FEATURE_SERVICE);
 
-  if (!name)
+  if (!name) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'name' is NULL. It should be a valid string");
+  }
 
   ret = ml_agent_dbus_interface_model_delete (name, version, &err);
   if (ret < 0) {
