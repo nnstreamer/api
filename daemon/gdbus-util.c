@@ -14,8 +14,8 @@
 #include <stdbool.h>
 #include <systemd/sd-daemon.h>
 
-#include <gdbus-util.h>
-#include <log.h>
+#include "gdbus-util.h"
+#include "log.h"
 
 static GDBusConnection *g_dbus_sys_conn = NULL;
 

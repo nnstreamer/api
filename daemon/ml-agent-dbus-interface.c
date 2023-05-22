@@ -7,13 +7,13 @@
  * @bug     No known bugs except for NYI items
  */
 
-#include "includes/ml-agent-dbus-interface.h"
-#include "includes/dbus-interface.h"
+#include <errno.h>
+#include <glib.h>
+
+#include "include/ml-agent-dbus-interface.h"
+#include "dbus-interface.h"
 #include "model-dbus.h"
 #include "pipeline-dbus.h"
-
-#include <glib.h>
-#include <errno.h>
 
 typedef enum
 {
@@ -312,7 +312,7 @@ ml_agent_dbus_interface_pipeline_get_state (gint64 id, gint * state,
  */
 gint
 ml_agent_dbus_interface_model_register (const gchar * name, const gchar * path,
-    const gboolean activate, const gchar * description, const gchar *app_info,
+    const gboolean activate, const gchar * description, const gchar * app_info,
     guint * version, GError ** err)
 {
   MachinelearningServiceModel *mlsm;
