@@ -21,12 +21,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <common.h>
-#include <gdbus-util.h>
-#include <log.h>
-#include <modules.h>
-
+#include "common.h"
 #include "dbus-interface.h"
+#include "gdbus-util.h"
+#include "log.h"
+#include "modules.h"
 #include "pipeline-dbus.h"
 #include "service-db.hh"
 

@@ -1,6 +1,6 @@
 # Machine Learning Agent
 # This file should be included when ml-service feature is enabled.
-ml_agentd_incs = include_directories('includes')
+ml_agentd_incs = include_directories('.', 'include')
 ml_agentd_lib_common_srcs = files('modules.c', 'gdbus-util.c', 'ml-agent-dbus-interface.c',
   'pipeline-dbus-impl.cc', 'model-dbus-impl.cc')
 ml_agentd_lib_service_db_srcs = files('service-db.cc')
@@ -102,7 +102,7 @@ lib_ml_agentd_test_dep = declare_dependency(
   link_with: ml_agentd_test_lib,
 )
 
-subdir('includes')
+subdir('include')
 install_headers(ml_agentd_headers,
   subdir: 'ml-agentd'
 )
