@@ -204,7 +204,6 @@ ml_service_launch_pipeline (const char *name, ml_service_h * h)
   GError *err = NULL;
   ml_service_s *mls;
   _ml_service_server_s *server;
-  gint64 out_id;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
@@ -218,26 +217,31 @@ ml_service_launch_pipeline (const char *name, ml_service_h * h)
   }
   *h = NULL;
 
-  ret = ml_agent_dbus_interface_pipeline_launch (name, &out_id, &err);
+  mls = g_try_new0 (ml_service_s, 1);
+  if (mls == NULL) {
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Failed to allocate memory for the service handle. Out of memory?");
+  }
+
+  server = g_try_new0 (_ml_service_server_s, 1);
+  if (server == NULL) {
+    g_free (mls);
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Failed to allocate memory for the service handle's private data. "
+        "Out of memory?");
+  }
+
+  ret = ml_agent_dbus_interface_pipeline_launch (name, &(server->id), &err);
   if (ret < 0) {
+    g_free (server);
+    g_free (mls);
     _ml_error_report ("Failed to invoke the method launch_pipeline (%s).",
         (err ? err->message : "Unknown error"));
     g_clear_error (&err);
     return ret;
   }
 
-  mls = g_new0 (ml_service_s, 1);
-  server = g_new0 (_ml_service_server_s, 1);
-  if (server == NULL || mls == NULL) {
-    g_free (mls);
-    g_free (server);
-    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
-        "Failed to allocate memory for the service_server. Out of memory?");
-  }
-
-  server->id = out_id;
   server->service_name = g_strdup (name);
-
   mls->type = ML_SERVICE_TYPE_SERVER_PIPELINE;
   mls->priv = server;
   *h = mls;
@@ -798,7 +802,7 @@ ml_service_model_get_all (const char *name, ml_option_h * info_list[],
     goto error;
   }
 
-  _info_list = g_new0 (ml_option_h, n);
+  _info_list = g_try_new0 (ml_option_h, n);
   if (!_info_list) {
     _ml_error_report
         ("Failed to allocate memory for list of ml_info_h. Out of memory?");
