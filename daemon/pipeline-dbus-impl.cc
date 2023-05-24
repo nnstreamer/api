@@ -147,8 +147,6 @@ dbus_cb_core_get_pipeline (MachinelearningServicePipeline *obj,
 
   if (result) {
     _E ("Failed to get pipeline description of %s", service_name);
-    machinelearning_service_pipeline_complete_get_pipeline (obj, invoc, result, NULL);
-    return TRUE;
   }
 
   machinelearning_service_pipeline_complete_get_pipeline (
