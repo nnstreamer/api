@@ -20,6 +20,7 @@
 #include "pipeline-dbus.h"
 #include "model-dbus.h"
 #include "resource-dbus.h"
+#include "nnstreamer-edge.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,12 +30,23 @@ typedef enum {
   ML_SERVICE_TYPE_UNKNOWN = 0,
   ML_SERVICE_TYPE_SERVER_PIPELINE,
   ML_SERVICE_TYPE_CLIENT_QUERY,
+  ML_SERVICE_TYPE_REMOTE,
 
   ML_SERVICE_TYPE_MAX
 } ml_service_type_e;
 
+typedef enum {
+  ML_REMOTE_SERVICE_TYPE_UNKNOWN = 0,
+  ML_REMOTE_SERVICE_TYPE_MODEL_RAW,
+  ML_REMOTE_SERVICE_TYPE_MODEL_URL,
+  ML_REMOTE_SERVICE_TYPE_PIPELINE_RAW,
+  ML_REMOTE_SERVICE_TYPE_PIPELINE_URL,
+
+  ML_REMOTE_SERVICE_TYPE_MAX
+} ml_remote_service_type_e;
+
 /**
- * @brief Structure for ml_service_h
+ * @brief Structure for ml_remote_service_h
  */
 typedef struct
 {
@@ -65,6 +77,15 @@ typedef struct
   guint timeout; /**< in ms unit */
   GAsyncQueue *out_data_queue;
 } _ml_service_query_s;
+
+/**
+ * @brief Structure for ml_remote_service
+ */
+typedef struct
+{
+  nns_edge_h edge_h;
+  nns_edge_node_type_e node_type;
+} _ml_remote_service_s;
 
 /**
  * @brief Creates ml remote service handle with given ml-option handle.
@@ -160,7 +181,7 @@ int ml_remote_service_create (ml_option_h option, ml_service_h *handle);
  * gchar *activate = g_strdup ("true");
  * ml_option_set (remote_service_option_h, "activate", activate, g_free);
  *
- * gchar *description = g_strdup ("temp descriptio for remote model register test");
+ * gchar *description = g_strdup ("temp description for remote model register test");
  * ml_option_set (remote_service_option_h, "description", description, g_free);
  *
  * gchar *name = g_strdup ("model_name.nnfw");
