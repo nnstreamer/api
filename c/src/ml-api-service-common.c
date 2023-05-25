@@ -66,6 +66,10 @@ ml_service_destroy (ml_service_h h)
 
     g_async_queue_unref (query->out_data_queue);
     g_free (query);
+  } else if (ML_SERVICE_TYPE_REMOTE == mls->type) {
+    _ml_remote_service_s *mlrs = (_ml_remote_service_s *) mls->priv;
+    nns_edge_release_handle (mlrs->edge_h);
+    g_free (mlrs);
   } else {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "Invalid type of ml_service_h.");

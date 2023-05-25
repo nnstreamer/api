@@ -41,6 +41,18 @@ if get_option('enable-ml-service')
     include_directories: nns_capi_include,
   )
   test('unittest_capi_service_agent_client', unittest_capi_service_agent_client, env: testenv, timeout: 100)
+
+  if nnstreamer_edge_dep.found()
+    unittest_capi_remote_service = executable('unittest_capi_remote_service',
+      'unittest_capi_remote_service.cc',
+      link_with: nns_capi_service_lib,
+      dependencies: [unittest_common_dep, gdbus_gen_test_dep, lib_ml_agentd_test_dep],
+      install: get_option('install-test'),
+      install_dir: unittest_install_dir,
+      include_directories: nns_capi_include,
+    )
+    test('unittest_capi_remote_service', unittest_capi_remote_service, env: testenv, timeout: 100)
+  endif
 endif
 
 if nnfw_dep.found()

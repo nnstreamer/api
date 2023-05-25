@@ -14,6 +14,7 @@
 %define		tensorflow2_gpu_delegate_support 1
 %define		nnfw_support 1
 %define		armnn_support 0
+%define		nnstreamer_edge_support 1
 
 %define		release_test 0
 %define		test_script $(pwd)/packaging/run_unittests.sh
@@ -160,6 +161,10 @@ BuildRequires:  pkgconfig(json-glib-1.0)
 BuildRequires:  dbus
 BuildRequires:  pkgconfig(capi-appfw-package-manager)
 BuildRequires:	pkgconfig(capi-appfw-app-common)
+%endif
+
+%if 0%{?nnstreamer_edge_support}
+BuildRequires:	nnstreamer-edge-devel
 %endif
 
 %description
@@ -391,6 +396,7 @@ export MLAPI_BUILD_ROOT_PATH=$(pwd)/%{builddir}
 # Run test
 # If gcov package generation is enabled, pass the test from GBS.
 %if 0%{?unit_test} && !0%{?gcov}
+bash %{test_script} ./tests/capi/unittest_capi_remote_service
 bash %{test_script} ./tests/capi/unittest_capi_inference_single
 bash %{test_script} ./tests/capi/unittest_capi_inference
 bash %{test_script} ./tests/capi/unittest_capi_datatype_consistency
