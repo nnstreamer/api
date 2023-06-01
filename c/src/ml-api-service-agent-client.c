@@ -152,7 +152,7 @@ ml_service_get_pipeline (const char *name, char **pipeline_desc)
   }
 
   if (*pipeline_desc != NULL) {
-    g_warning (WARN_MSG_DPTR_SET_OVER, "char *pipeline_desc = NULL");
+    _ml_logw (WARN_MSG_DPTR_SET_OVER, "char *pipeline_desc = NULL");
     *pipeline_desc = NULL;
   }
 
@@ -213,7 +213,7 @@ ml_service_launch_pipeline (const char *name, ml_service_h * h)
   }
 
   if (*h != NULL) {
-    g_warning (WARN_MSG_DPTR_SET_OVER, "ml_service_h *h = NULL");
+    _ml_logw (WARN_MSG_DPTR_SET_OVER, "ml_service_h *h = NULL");
   }
   *h = NULL;
 
@@ -546,7 +546,7 @@ ml_service_model_get (const char *name, const unsigned int version,
   }
 
   if (*info != NULL) {
-    g_warning (WARN_MSG_DPTR_SET_OVER, "ml_option_h info = NULL");
+    _ml_logw (WARN_MSG_DPTR_SET_OVER, "ml_option_h info = NULL");
   }
   *info = NULL;
 
@@ -648,7 +648,7 @@ ml_service_model_get_activated (const char *name, ml_option_h * info)
   }
 
   if (*info != NULL) {
-    g_warning (WARN_MSG_DPTR_SET_OVER, "ml_option_h info = NULL");
+    _ml_logw (WARN_MSG_DPTR_SET_OVER, "ml_option_h info = NULL");
   }
   *info = NULL;
 
@@ -840,7 +840,6 @@ ml_service_model_get_all (const char *name, ml_option_h * info_list[],
       }
     }
   }
-
 
   *info_list = _info_list;
   *num = n;
