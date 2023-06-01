@@ -248,7 +248,7 @@ class nnstreamer_capi_singleshot_latency : public ::testing::Test
   float single_invoke_duration_f, direct_invoke_duration_f;
 };
 
-#if defined(ENABLE_TENSORFLOW_LITE)
+#if defined(ENABLE_TENSORFLOW_LITE) || defined(ENABLE_TENSORFLOW2_LITE)
 /**
  * @brief Measure latency for NNStreamer single shot (tensorflow-lite)
  * @note Measure the invoke latency added by NNStreamer single shot

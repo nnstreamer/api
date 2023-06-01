@@ -707,7 +707,7 @@ TEST_F (MLAPIInferenceNNFW, multimodel_01_p)
   MLAPIInferenceNNFW::wait_for_sink (&call_cnt2, 1);
 }
 
-#ifdef ENABLE_TENSORFLOW_LITE
+#if defined(ENABLE_TENSORFLOW_LITE) || defined(ENABLE_TENSORFLOW2_LITE)
 /**
  * @brief Test nnfw subplugin multi-model (pipeline, ML-API)
  * @detail Invoke two models which have different framework via Pipeline API, sharing a single input stream
