@@ -63,7 +63,7 @@ gst_info_is_extended (const GstTensorsInfo * gst_info)
     GstTensorInfo *_gst_tensor_info =
         gst_tensors_info_get_nth_info ((GstTensorsInfo *) gst_info, i);
     for (j = ML_TENSOR_RANK_LIMIT_PREV; j < NNS_TENSOR_RANK_LIMIT; j++) {
-      if (_gst_tensor_info->dimension[j] != 1)
+      if (_gst_tensor_info->dimension[j] > 1)
         return TRUE;
     }
   }
@@ -158,12 +158,12 @@ _ml_tensors_info_copy_from_gst (ml_tensors_info_s * ml_info,
     }
 
     for (; j < ML_TENSOR_RANK_LIMIT; j++) {
-      _ml_tensor_info->dimension[j] = 1U;
+      _ml_tensor_info->dimension[j] = 0U;
     }
 
     if (!ml_info->is_extended) {
       for (j = ML_TENSOR_RANK_LIMIT_PREV; j < ML_TENSOR_RANK_LIMIT; j++) {
-        _ml_tensor_info->dimension[j] = 1U;
+        _ml_tensor_info->dimension[j] = 0U;
       }
     }
   }
@@ -215,12 +215,12 @@ _ml_tensors_info_copy_from_ml (GstTensorsInfo * gst_info,
     }
 
     for (; j < NNS_TENSOR_RANK_LIMIT; j++) {
-      _gst_tensor_info->dimension[j] = 1;
+      _gst_tensor_info->dimension[j] = 0;
     }
 
     if (!ml_info->is_extended) {
       for (j = ML_TENSOR_RANK_LIMIT_PREV; j < NNS_TENSOR_RANK_LIMIT; j++) {
-        _gst_tensor_info->dimension[j] = 1;
+        _gst_tensor_info->dimension[j] = 0;
       }
     }
   }
