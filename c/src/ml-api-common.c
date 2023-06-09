@@ -217,13 +217,58 @@ ml_tensors_info_get_nth_info (ml_tensors_info_s * info, guint nth)
 }
 
 /**
+ * @brief Get the rank of tensor dimension.
+ */
+static guint
+_ml_tensor_dimension_get_rank (const ml_tensor_dimension dim)
+{
+  guint i;
+
+  for (i = 0; i < ML_TENSOR_RANK_LIMIT; i++) {
+    if (dim[i] == 0)
+      break;
+  }
+
+  return i;
+}
+
+/**
+ * @brief Check the tensor dimension is valid
+ */
+static gboolean
+_ml_tensor_dimension_is_valid (const ml_tensor_dimension dim)
+{
+  guint i;
+  gboolean is_valid = FALSE;
+
+  i = _ml_tensor_dimension_get_rank (dim);
+  if (i == 0)
+    goto done;
+
+  for (; i < ML_TENSOR_RANK_LIMIT; i++) {
+    if (dim[i] > 0)
+      goto done;
+  }
+
+  is_valid = TRUE;
+
+done:
+  if (!is_valid) {
+    _ml_error_report
+        ("Failed to validate tensor dimension. The dimension string should be in the form of d1:...:d8, d1:d2:d3:d4, d1:d2:d3, d1:d2, or d1. Here, dN is a positive integer.");
+  }
+
+  return is_valid;
+}
+
+/**
  * @brief Compares the given tensor info.
  */
 static gboolean
 ml_tensor_info_compare (const ml_tensor_info_s * i1,
-    const ml_tensor_info_s * i2, bool is_extended)
+    const ml_tensor_info_s * i2)
 {
-  guint i, valid_rank = ML_TENSOR_RANK_LIMIT;
+  guint i;
 
   if (i1 == NULL || i2 == NULL)
     return FALSE;
@@ -231,12 +276,16 @@ ml_tensor_info_compare (const ml_tensor_info_s * i1,
   if (i1->type != i2->type)
     return FALSE;
 
-  if (!is_extended)
-    valid_rank = ML_TENSOR_RANK_LIMIT_PREV;
+  if (!_ml_tensor_dimension_is_valid (i1->dimension)
+      || !_ml_tensor_dimension_is_valid (i2->dimension))
+    return FALSE;
 
-  for (i = 0; i < valid_rank; i++) {
-    if (i1->dimension[i] != i2->dimension[i])
-      return FALSE;
+  for (i = 0; i < ML_TENSOR_RANK_LIMIT; i++) {
+    if (i1->dimension[i] != i2->dimension[i]) {
+      /* Supposed dimension is same if remained dimension is 1. */
+      if (i1->dimension[i] > 1 || i2->dimension[i] > 1)
+        return FALSE;
+    }
   }
 
   return TRUE;
@@ -257,14 +306,9 @@ ml_tensor_info_validate (const ml_tensor_info_s * info, bool is_extended)
   if (info->type < 0 || info->type >= ML_TENSOR_TYPE_UNKNOWN)
     return FALSE;
 
-  for (i = 0; i < ML_TENSOR_RANK_LIMIT; i++) {
-    if (info->dimension[i] == 0)
-      return FALSE;
-  }
-
   if (!is_extended) {
     for (i = ML_TENSOR_RANK_LIMIT_PREV; i < ML_TENSOR_RANK_LIMIT; i++) {
-      if (info->dimension[i] != 1)
+      if (info->dimension[i] > 1)
         return FALSE;
     }
   }
@@ -366,13 +410,10 @@ _ml_tensors_info_compare (const ml_tensors_info_h info1,
   if (i1->num_tensors != i2->num_tensors)
     goto done;
 
-  if (i1->is_extended != i2->is_extended)
-    goto done;
-
   for (i = 0; i < i1->num_tensors; i++) {
     ml_tensor_info_s *ti1 = ml_tensors_info_get_nth_info (i1, i);
     ml_tensor_info_s *ti2 = ml_tensors_info_get_nth_info (i2, i);
-    if (!ml_tensor_info_compare (ti1, ti2, i1->is_extended))
+    if (!ml_tensor_info_compare (ti1, ti2))
       goto done;
   }
 
@@ -648,7 +689,7 @@ ml_tensors_info_set_tensor_dimension (ml_tensors_info_h info,
   }
 
   for (i = ML_TENSOR_RANK_LIMIT_PREV; i < ML_TENSOR_RANK_LIMIT; i++) {
-    _tensor_info->dimension[i] = (tensors_info->is_extended ? dimension[i] : 1);
+    _tensor_info->dimension[i] = (tensors_info->is_extended ? dimension[i] : 0);
   }
 
   G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
@@ -695,6 +736,9 @@ ml_tensors_info_get_tensor_dimension (ml_tensors_info_h info,
     dimension[i] = _tensor_info->dimension[i];
   }
 
+  for (; i < ML_TENSOR_RANK_LIMIT; i++)
+    dimension[i] = 0;
+
   G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
   return ML_ERROR_NONE;
 }
@@ -740,6 +784,8 @@ _ml_tensor_info_get_size (const ml_tensor_info_s * info, bool is_extended)
     valid_rank = ML_TENSOR_RANK_LIMIT_PREV;
 
   for (i = 0; i < valid_rank; i++) {
+    if (info->dimension[i] == 0)
+      break;
     tensor_size *= info->dimension[i];
   }
 
