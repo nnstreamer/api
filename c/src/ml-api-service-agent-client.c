@@ -23,6 +23,7 @@
 
 #if defined(__TIZEN__)
 #include <app_common.h>
+#include <app_common_internal.h>
 
 /**
  * @brief Parse app_info and update path (for model from rpk). Only for Tizen Applications.
