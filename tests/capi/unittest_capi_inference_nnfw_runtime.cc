@@ -14,6 +14,7 @@
 #include <ml-api-internal.h>
 #include <nnstreamer-single.h>
 #include <nnstreamer.h>
+#include <nnstreamer_plugin_api_util.h>
 
 /**
  * @brief Test Fixture class for ML API of the NNFW Inference
@@ -145,20 +146,24 @@ class MLAPIInferenceNNFW : public ::testing::Test
       const ml_tensors_info_h info, void *user_data)
   {
     unsigned int cnt = 0;
-    int status;
+    int status, i;
     float *data_ptr;
     size_t data_size;
     int *checks = (int *) user_data;
-    ml_tensor_dimension out_dim;
+    ml_tensor_dimension out_dim, res_dim;
+
+    out_dim[0] = 1001;
+    out_dim[1] = 1;
+    out_dim[2] = 1;
+    out_dim[3] = 1;
+    for (i = 4; i < ML_TENSOR_RANK_LIMIT; i++)
+      out_dim[i] = 0;
 
     ml_tensors_info_get_count (info, &cnt);
     EXPECT_EQ (cnt, 1U);
 
-    ml_tensors_info_get_tensor_dimension (info, 0, out_dim);
-    EXPECT_EQ (out_dim[0], 1001U);
-    EXPECT_EQ (out_dim[1], 1U);
-    EXPECT_EQ (out_dim[2], 1U);
-    EXPECT_EQ (out_dim[3], 1U);
+    ml_tensors_info_get_tensor_dimension (info, 0, res_dim);
+    EXPECT_TRUE (gst_tensor_dimension_is_equal (out_dim, res_dim));
 
     status = ml_tensors_data_get_tensor_data (data, 0, (void **) &data_ptr, &data_size);
     EXPECT_EQ (status, ML_ERROR_NONE);
@@ -228,10 +233,7 @@ TEST_F (MLAPIInferenceNNFW, invoke_single_00)
   EXPECT_EQ (type, ML_TENSOR_TYPE_FLOAT32);
 
   ml_tensors_info_get_tensor_dimension (in_res, 0, res_dim);
-  EXPECT_TRUE (in_dim[0] == res_dim[0]);
-  EXPECT_TRUE (in_dim[1] == res_dim[1]);
-  EXPECT_TRUE (in_dim[2] == res_dim[2]);
-  EXPECT_TRUE (in_dim[3] == res_dim[3]);
+  EXPECT_TRUE (gst_tensor_dimension_is_equal (in_dim, res_dim));
 
   /* output tensor in filter */
   status = ml_single_get_output_info (single_h, &out_res);
@@ -246,10 +248,7 @@ TEST_F (MLAPIInferenceNNFW, invoke_single_00)
   EXPECT_EQ (type, ML_TENSOR_TYPE_FLOAT32);
 
   ml_tensors_info_get_tensor_dimension (out_res, 0, res_dim);
-  EXPECT_TRUE (out_dim[0] == res_dim[0]);
-  EXPECT_TRUE (out_dim[1] == res_dim[1]);
-  EXPECT_TRUE (out_dim[2] == res_dim[2]);
-  EXPECT_TRUE (out_dim[3] == res_dim[3]);
+  EXPECT_TRUE (gst_tensor_dimension_is_equal (out_dim, res_dim));
 
   /* generate data */
   status = ml_tensors_data_create (in_info, &input);
@@ -350,10 +349,7 @@ TEST_F (MLAPIInferenceNNFW, invoke_single_02_n)
   EXPECT_EQ (type, ML_TENSOR_TYPE_FLOAT32);
 
   ml_tensors_info_get_tensor_dimension (in_res, 0, res_dim);
-  EXPECT_TRUE (in_dim[0] == res_dim[0]);
-  EXPECT_TRUE (in_dim[1] == res_dim[1]);
-  EXPECT_TRUE (in_dim[2] == res_dim[2]);
-  EXPECT_TRUE (in_dim[3] == res_dim[3]);
+  EXPECT_TRUE (gst_tensor_dimension_is_equal (in_dim, res_dim));
 
   /* Change and update dimension for mismatch */
   in_dim[0] = in_dim[1] = in_dim[2] = in_dim[3] = 2;
@@ -388,8 +384,7 @@ TEST_F (MLAPIInferenceNNFW, invoke_pipeline_00)
 
   ASSERT_TRUE (valid_model != nullptr);
 
-  pipeline = g_strdup_printf ("appsrc name=appsrc ! "
-                              "other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! "
+  pipeline = g_strdup_printf ("appsrc name=appsrc caps=other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! "
                               "tensor_filter framework=nnfw model=%s ! "
                               "tensor_sink name=tensor_sink",
       valid_model);
@@ -458,8 +453,7 @@ TEST_F (MLAPIInferenceNNFW, invoke_pipeline_01_n)
   EXPECT_FALSE (g_file_test (invalid_model, G_FILE_TEST_EXISTS));
 
   pipeline = g_strdup_printf (
-      "appsrc name=appsrc ! "
-      "other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! "
+      "appsrc name=appsrc caps=other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! "
       "tensor_filter framework=nnfw model=%s ! tensor_sink name=tensor_sink",
       invalid_model);
 
@@ -485,8 +479,7 @@ TEST_F (MLAPIInferenceNNFW, invoke_pipeline_02_n)
   g_autofree gchar *pipeline = nullptr;
 
   pipeline = g_strdup_printf (
-      "appsrc name=appsrc ! "
-      "other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! "
+      "appsrc name=appsrc caps=other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! "
       "tensor_filter framework=nnfw model=%s ! tensor_sink name=tensor_sink",
       valid_model);
 
@@ -653,8 +646,7 @@ TEST_F (MLAPIInferenceNNFW, multimodel_01_p)
   int status;
 
   pipeline = g_strdup_printf (
-      "appsrc name=appsrc ! "
-      "other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! tee name=t "
+      "appsrc name=appsrc caps=other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! tee name=t "
       "t. ! queue ! tensor_filter framework=nnfw model=%s ! tensor_sink name=tensor_sink_0 "
       "t. ! queue ! tensor_filter framework=nnfw model=%s ! tensor_sink name=tensor_sink_1",
       valid_model, valid_model);
@@ -726,8 +718,7 @@ TEST_F (MLAPIInferenceNNFW, multimodel_02_p)
   int status;
 
   pipeline = g_strdup_printf (
-      "appsrc name=appsrc ! "
-      "other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! tee name=t "
+      "appsrc name=appsrc caps=other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! tee name=t "
       "t. ! queue ! tensor_filter framework=nnfw model=%s ! tensor_sink name=tensor_sink_0 "
       "t. ! queue ! tensor_filter framework=tensorflow-lite model=%s ! tensor_sink name=tensor_sink_1",
       valid_model, valid_model);

@@ -15,6 +15,7 @@
 #include <nnstreamer-tizen-internal.h>
 #include <nnstreamer.h>
 #include <nnstreamer_internal.h>
+#include <nnstreamer_plugin_api_util.h>
 
 #if defined(__APPLE__)
 #define SO_FILE_EXTENSION ".dylib"
@@ -178,7 +179,7 @@ TEST (nnstreamer_capi_singleshot, invoke_01)
   ml_tensor_type_e type = ML_TENSOR_TYPE_UNKNOWN;
   unsigned int count = 0;
   char *name = NULL;
-  int status;
+  int status, i;
 
   const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
@@ -198,14 +199,17 @@ TEST (nnstreamer_capi_singleshot, invoke_01)
   in_dim[1] = 224;
   in_dim[2] = 224;
   in_dim[3] = 1;
+  for (i = 4; i < ML_TENSOR_RANK_LIMIT; i++)
+    in_dim[i] = 0;
+
   ml_tensors_info_set_count (in_info, 1);
   ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_UINT8);
   ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
 
   out_dim[0] = 1001;
-  out_dim[1] = 1;
-  out_dim[2] = 1;
-  out_dim[3] = 1;
+  for (i = 1; i < ML_TENSOR_RANK_LIMIT; i++)
+    out_dim[i] = 0;
+
   ml_tensors_info_set_count (out_info, 1);
   ml_tensors_info_set_tensor_type (out_info, 0, ML_TENSOR_TYPE_UINT8);
   ml_tensors_info_set_tensor_dimension (out_info, 0, out_dim);
@@ -236,10 +240,7 @@ TEST (nnstreamer_capi_singleshot, invoke_01)
   EXPECT_EQ (type, ML_TENSOR_TYPE_UINT8);
 
   ml_tensors_info_get_tensor_dimension (in_res, 0, res_dim);
-  EXPECT_TRUE (in_dim[0] == res_dim[0]);
-  EXPECT_TRUE (in_dim[1] == res_dim[1]);
-  EXPECT_TRUE (in_dim[2] == res_dim[2]);
-  EXPECT_TRUE (in_dim[3] == res_dim[3]);
+  EXPECT_TRUE (gst_tensor_dimension_is_equal (in_dim, res_dim));
 
   /* output tensor in filter */
   status = ml_single_get_output_info (single, &out_res);
@@ -258,10 +259,7 @@ TEST (nnstreamer_capi_singleshot, invoke_01)
   EXPECT_EQ (type, ML_TENSOR_TYPE_UINT8);
 
   ml_tensors_info_get_tensor_dimension (out_res, 0, res_dim);
-  EXPECT_TRUE (out_dim[0] == res_dim[0]);
-  EXPECT_TRUE (out_dim[1] == res_dim[1]);
-  EXPECT_TRUE (out_dim[2] == res_dim[2]);
-  EXPECT_TRUE (out_dim[3] == res_dim[3]);
+  EXPECT_TRUE (gst_tensor_dimension_is_equal (out_dim, res_dim));
 
   input = output = NULL;
 
@@ -359,7 +357,7 @@ benchmark_single (const gboolean no_alloc, const gboolean no_timeout, const int 
   ml_tensors_info_h in_info, out_info;
   ml_tensors_data_h input, output;
   ml_tensor_dimension in_dim, out_dim;
-  int status;
+  int status, i;
   unsigned long open_duration = 0, invoke_duration = 0, close_duration = 0;
   gint64 start, end;
 
@@ -381,6 +379,8 @@ benchmark_single (const gboolean no_alloc, const gboolean no_timeout, const int 
   in_dim[1] = 224;
   in_dim[2] = 224;
   in_dim[3] = 1;
+  for (i = 4; i < ML_TENSOR_RANK_LIMIT; i++)
+    in_dim[i] = 0;
   ml_tensors_info_set_count (in_info, 1);
   ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_UINT8);
   ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
@@ -389,6 +389,8 @@ benchmark_single (const gboolean no_alloc, const gboolean no_timeout, const int 
   out_dim[1] = 1;
   out_dim[2] = 1;
   out_dim[3] = 1;
+  for (i = 4; i < ML_TENSOR_RANK_LIMIT; i++)
+    out_dim[i] = 0;
   ml_tensors_info_set_count (out_info, 1);
   ml_tensors_info_set_tensor_type (out_info, 0, ML_TENSOR_TYPE_UINT8);
   ml_tensors_info_set_tensor_dimension (out_info, 0, out_dim);
@@ -593,7 +595,7 @@ TEST (nnstreamer_capi_singleshot, invoke_04)
   ml_tensor_type_e type = ML_TENSOR_TYPE_UNKNOWN;
   unsigned int count = 0;
   char *name = NULL;
-  int status, max_score_index;
+  int status, max_score_index, i;
   float score, max_score;
   void *data_ptr;
   size_t data_size;
@@ -621,6 +623,8 @@ TEST (nnstreamer_capi_singleshot, invoke_04)
   in_dim[1] = 16022;
   in_dim[2] = 1;
   in_dim[3] = 1;
+  for (i = 4; i < ML_TENSOR_RANK_LIMIT; i++)
+    in_dim[i] = 0;
   ml_tensors_info_set_count (in_info, 1);
   ml_tensors_info_set_tensor_name (in_info, 0, "wav_data");
   ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_INT16);
@@ -630,6 +634,8 @@ TEST (nnstreamer_capi_singleshot, invoke_04)
   out_dim[1] = 1;
   out_dim[2] = 1;
   out_dim[3] = 1;
+  for (i = 4; i < ML_TENSOR_RANK_LIMIT; i++)
+    out_dim[i] = 0;
   ml_tensors_info_set_count (out_info, 1);
   ml_tensors_info_set_tensor_name (out_info, 0, "labels_softmax");
   ml_tensors_info_set_tensor_type (out_info, 0, ML_TENSOR_TYPE_FLOAT32);
@@ -662,10 +668,7 @@ TEST (nnstreamer_capi_singleshot, invoke_04)
   EXPECT_EQ (type, ML_TENSOR_TYPE_INT16);
 
   ml_tensors_info_get_tensor_dimension (in_res, 0, res_dim);
-  EXPECT_TRUE (in_dim[0] == res_dim[0]);
-  EXPECT_TRUE (in_dim[1] == res_dim[1]);
-  EXPECT_TRUE (in_dim[2] == res_dim[2]);
-  EXPECT_TRUE (in_dim[3] == res_dim[3]);
+  EXPECT_TRUE (gst_tensor_dimension_is_equal (in_dim, res_dim));
 
   /* output tensor in filter */
   status = ml_single_get_output_info (single, &out_res);
@@ -685,10 +688,7 @@ TEST (nnstreamer_capi_singleshot, invoke_04)
   EXPECT_EQ (type, ML_TENSOR_TYPE_FLOAT32);
 
   ml_tensors_info_get_tensor_dimension (out_res, 0, res_dim);
-  EXPECT_TRUE (out_dim[0] == res_dim[0]);
-  EXPECT_TRUE (out_dim[1] == res_dim[1]);
-  EXPECT_TRUE (out_dim[2] == res_dim[2]);
-  EXPECT_TRUE (out_dim[3] == res_dim[3]);
+  EXPECT_TRUE (gst_tensor_dimension_is_equal (out_dim, res_dim));
 
   input = output = NULL;
 
@@ -966,7 +966,7 @@ TEST (nnstreamer_capi_singleshot, open_dynamic)
   ml_tensor_dimension in_dim, out_dim;
   ml_tensor_type_e type = ML_TENSOR_TYPE_UNKNOWN;
   unsigned int count = 0;
-  int status;
+  int status, i;
 
   const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
@@ -986,6 +986,8 @@ TEST (nnstreamer_capi_singleshot, open_dynamic)
   in_dim[1] = 1;
   in_dim[2] = 1;
   in_dim[3] = 1;
+  for (i = 4; i < ML_TENSOR_RANK_LIMIT; i++)
+    in_dim[i] = 0;
   ml_tensors_info_set_count (in_info, 1);
   ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_FLOAT32);
   ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
@@ -1013,10 +1015,7 @@ TEST (nnstreamer_capi_singleshot, open_dynamic)
   EXPECT_EQ (type, ML_TENSOR_TYPE_FLOAT32);
 
   ml_tensors_info_get_tensor_dimension (out_info, 0, out_dim);
-  EXPECT_EQ (out_dim[0], 5U);
-  EXPECT_EQ (out_dim[1], 1U);
-  EXPECT_EQ (out_dim[2], 1U);
-  EXPECT_EQ (out_dim[3], 1U);
+  EXPECT_TRUE (gst_tensor_dimension_is_equal (out_dim, in_dim));
 
   status = ml_single_close (single);
   EXPECT_EQ (status, ML_ERROR_NONE);
@@ -1080,6 +1079,8 @@ single_shot_loop_test (void *arg)
   in_dim[1] = 224;
   in_dim[2] = 224;
   in_dim[3] = 1;
+  for (i = 4; i < ML_TENSOR_RANK_LIMIT; i++)
+    in_dim[i] = 0;
   ml_tensors_info_set_count (in_info, 1);
   ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_UINT8);
   ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
@@ -1524,7 +1525,7 @@ TEST (nnstreamer_capi_singleshot, set_input_info_success_01)
   ml_tensor_dimension in_dim, out_dim, res_dim;
   ml_tensor_type_e type = ML_TENSOR_TYPE_UNKNOWN;
   unsigned int count = 0;
-  int status, tensor_size;
+  int status, tensor_size, i;
   size_t data_size;
   float *data;
 
@@ -1549,6 +1550,8 @@ TEST (nnstreamer_capi_singleshot, set_input_info_success_01)
   in_dim[1] = 1;
   in_dim[2] = 1;
   in_dim[3] = 1;
+  for (i = 4; i < ML_TENSOR_RANK_LIMIT; i++)
+    in_dim[i] = 0;
   ml_tensors_info_set_count (in_info, 1);
   ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_FLOAT32);
   ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
@@ -1557,6 +1560,8 @@ TEST (nnstreamer_capi_singleshot, set_input_info_success_01)
   out_dim[1] = 1;
   out_dim[2] = 1;
   out_dim[3] = 1;
+  for (i = 4; i < ML_TENSOR_RANK_LIMIT; i++)
+    out_dim[i] = 0;
   ml_tensors_info_set_count (out_info, 1);
   ml_tensors_info_set_tensor_type (out_info, 0, ML_TENSOR_TYPE_FLOAT32);
   ml_tensors_info_set_tensor_dimension (out_info, 0, out_dim);
@@ -1581,10 +1586,7 @@ TEST (nnstreamer_capi_singleshot, set_input_info_success_01)
    */
 
   ml_tensors_info_get_tensor_dimension (in_res, 0, res_dim);
-  EXPECT_FALSE (in_dim[0] == res_dim[0]);
-  EXPECT_TRUE (in_dim[1] == res_dim[1]);
-  EXPECT_TRUE (in_dim[2] == res_dim[2]);
-  EXPECT_TRUE (in_dim[3] == res_dim[3]);
+  EXPECT_FALSE (gst_tensor_dimension_is_equal (in_dim, res_dim));
 
   /** set the same original input dimension */
   status = ml_single_set_input_info (single, in_info);
@@ -1604,10 +1606,7 @@ TEST (nnstreamer_capi_singleshot, set_input_info_success_01)
     EXPECT_EQ (type, ML_TENSOR_TYPE_FLOAT32);
 
     ml_tensors_info_get_tensor_dimension (in_res, 0, res_dim);
-    EXPECT_TRUE (in_dim[0] == res_dim[0]);
-    EXPECT_TRUE (in_dim[1] == res_dim[1]);
-    EXPECT_TRUE (in_dim[2] == res_dim[2]);
-    EXPECT_TRUE (in_dim[3] == res_dim[3]);
+    EXPECT_TRUE (gst_tensor_dimension_is_equal (in_dim, res_dim));
 
     /* output tensor in filter */
     status = ml_single_get_output_info (single, &out_res);
@@ -1622,10 +1621,7 @@ TEST (nnstreamer_capi_singleshot, set_input_info_success_01)
     EXPECT_EQ (type, ML_TENSOR_TYPE_FLOAT32);
 
     ml_tensors_info_get_tensor_dimension (out_res, 0, res_dim);
-    EXPECT_TRUE (out_dim[0] == res_dim[0]);
-    EXPECT_TRUE (out_dim[1] == res_dim[1]);
-    EXPECT_TRUE (out_dim[2] == res_dim[2]);
-    EXPECT_TRUE (out_dim[3] == res_dim[3]);
+    EXPECT_TRUE (gst_tensor_dimension_is_equal (out_dim, res_dim));
 
     input = output = NULL;
 
@@ -1680,12 +1676,11 @@ TEST (nnstreamer_capi_singleshot, set_input_info_extended_success)
   ml_tensors_info_h in_info, out_info;
   ml_tensors_info_h in_res = nullptr, out_res = nullptr;
   ml_tensors_data_h input, output;
-  ml_tensor_dimension in_dim = { 4, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
-  ml_tensor_dimension out_dim = { 4, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+  ml_tensor_dimension in_dim, out_dim;
   ml_tensor_dimension res_dim;
   ml_tensor_type_e type = ML_TENSOR_TYPE_UNKNOWN;
   unsigned int count = 0;
-  int status, i, tensor_size = 4 * 4 * 4 * 4 * 4;
+  int i, status, tensor_size = 4 * 4 * 4 * 4 * 4;
   size_t data_size;
   float *input0, *input1, *output0;
 
@@ -1703,6 +1698,14 @@ TEST (nnstreamer_capi_singleshot, set_input_info_extended_success)
 
   ml_tensors_info_create_extended (&in_info);
   ml_tensors_info_create_extended (&out_info);
+
+  in_dim[0] = in_dim[1] = in_dim[2] = in_dim[3] = in_dim[4] = 4;
+  for (i = 5; i < ML_TENSOR_RANK_LIMIT; i++)
+    in_dim[i] = 0;
+
+  out_dim[0] = out_dim[1] = out_dim[2] = out_dim[3] = out_dim[4] = 4;
+  for (i = 5; i < ML_TENSOR_RANK_LIMIT; i++)
+    out_dim[i] = 0;
 
   ml_tensors_info_set_count (in_info, 2);
   ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_FLOAT32);
@@ -1727,8 +1730,7 @@ TEST (nnstreamer_capi_singleshot, set_input_info_extended_success)
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   ml_tensors_info_get_tensor_dimension (in_res, 0, res_dim);
-  for (i = 0; i < ML_TENSOR_RANK_LIMIT; i++)
-    EXPECT_EQ (in_dim[i], res_dim[i]);
+  EXPECT_TRUE (gst_tensor_dimension_is_equal (in_dim, res_dim));
 
   status = ml_single_set_input_info (single, in_info);
   EXPECT_TRUE (status == ML_ERROR_NOT_SUPPORTED || status == ML_ERROR_NONE);
@@ -1747,8 +1749,7 @@ TEST (nnstreamer_capi_singleshot, set_input_info_extended_success)
     EXPECT_EQ (type, ML_TENSOR_TYPE_FLOAT32);
 
     ml_tensors_info_get_tensor_dimension (in_res, 0, res_dim);
-    for (i = 0; i < ML_TENSOR_RANK_LIMIT; i++)
-      EXPECT_EQ (in_dim[i], res_dim[i]);
+    EXPECT_TRUE (gst_tensor_dimension_is_equal (in_dim, res_dim));
 
     /* output tensor in filter */
     status = ml_single_get_output_info (single, &out_res);
@@ -1763,8 +1764,7 @@ TEST (nnstreamer_capi_singleshot, set_input_info_extended_success)
     EXPECT_EQ (type, ML_TENSOR_TYPE_FLOAT32);
 
     ml_tensors_info_get_tensor_dimension (out_res, 0, res_dim);
-    for (i = 0; i < ML_TENSOR_RANK_LIMIT; i++)
-      EXPECT_EQ (out_dim[i], res_dim[i]);
+    EXPECT_TRUE (gst_tensor_dimension_is_equal (out_dim, res_dim));
 
     input = output = NULL;
 
@@ -1998,10 +1998,10 @@ TEST (nnstreamer_capi_singleshot, property_03_n)
 {
   ml_single_h single;
   ml_tensors_info_h in_info, out_info;
-  ml_tensor_dimension in_dim, out_dim;
+  ml_tensor_dimension in_dim, out_dim, res_dim;
   ml_tensors_data_h input, output;
   ml_tensor_type_e type = ML_TENSOR_TYPE_UNKNOWN;
-  int status;
+  int status, i;
   unsigned int count = 0;
   char *name = NULL;
   char *prop_value = NULL;
@@ -2027,6 +2027,20 @@ TEST (nnstreamer_capi_singleshot, property_03_n)
     EXPECT_NE (status, ML_ERROR_NONE);
     goto skip_test;
   }
+
+  in_dim[0] = 3;
+  in_dim[1] = 224;
+  in_dim[2] = 224;
+  in_dim[3] = 1;
+  for (i = 4; i < ML_TENSOR_RANK_LIMIT; i++)
+    in_dim[i] = 0;
+
+  out_dim[0] = 1001;
+  out_dim[1] = 1;
+  out_dim[2] = 1;
+  out_dim[3] = 1;
+  for (i = 4; i < ML_TENSOR_RANK_LIMIT; i++)
+    out_dim[i] = 0;
 
   /* failed to set dimension */
   status = ml_single_set_property (single, "input", "3:4:4:1");
@@ -2054,11 +2068,8 @@ TEST (nnstreamer_capi_singleshot, property_03_n)
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (type, ML_TENSOR_TYPE_UINT8);
 
-  ml_tensors_info_get_tensor_dimension (in_info, 0, in_dim);
-  EXPECT_EQ (in_dim[0], 3U);
-  EXPECT_EQ (in_dim[1], 224U);
-  EXPECT_EQ (in_dim[2], 224U);
-  EXPECT_EQ (in_dim[3], 1U);
+  ml_tensors_info_get_tensor_dimension (in_info, 0, res_dim);
+  EXPECT_TRUE (gst_tensor_dimension_is_equal (in_dim, res_dim));
 
   /* output tensor in filter */
   status = ml_single_get_output_info (single, &out_info);
@@ -2076,11 +2087,8 @@ TEST (nnstreamer_capi_singleshot, property_03_n)
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (type, ML_TENSOR_TYPE_UINT8);
 
-  ml_tensors_info_get_tensor_dimension (out_info, 0, out_dim);
-  EXPECT_EQ (out_dim[0], 1001U);
-  EXPECT_EQ (out_dim[1], 1U);
-  EXPECT_EQ (out_dim[2], 1U);
-  EXPECT_EQ (out_dim[3], 1U);
+  ml_tensors_info_get_tensor_dimension (out_info, 0, res_dim);
+  EXPECT_TRUE (gst_tensor_dimension_is_equal (out_dim, res_dim));
 
   /* invoke */
   input = output = NULL;
@@ -2122,9 +2130,9 @@ TEST (nnstreamer_capi_singleshot, property_04_p)
   ml_single_h single;
   ml_tensors_info_h in_info, out_info;
   ml_tensors_data_h input, output;
-  ml_tensor_dimension in_dim, out_dim;
+  ml_tensor_dimension in_dim, out_dim, res_dim;
   char *prop_value;
-  int status;
+  int status, i;
   size_t data_size;
   float *data;
 
@@ -2149,6 +2157,13 @@ TEST (nnstreamer_capi_singleshot, property_04_p)
     goto skip_test;
   }
 
+  in_dim[0] = out_dim[0] = 5;
+  in_dim[1] = out_dim[1] = 1;
+  in_dim[2] = out_dim[2] = 1;
+  in_dim[3] = out_dim[3] = 1;
+  for (i = 4; i < ML_TENSOR_RANK_LIMIT; i++)
+    in_dim[i] = out_dim[i] = 0;
+
   status = ml_single_set_property (single, "input", "5:1:1:1");
   EXPECT_EQ (status, ML_ERROR_NONE);
 
@@ -2162,20 +2177,14 @@ TEST (nnstreamer_capi_singleshot, property_04_p)
   status = ml_single_get_input_info (single, &in_info);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  ml_tensors_info_get_tensor_dimension (in_info, 0, in_dim);
-  EXPECT_EQ (in_dim[0], 5U);
-  EXPECT_EQ (in_dim[1], 1U);
-  EXPECT_EQ (in_dim[2], 1U);
-  EXPECT_EQ (in_dim[3], 1U);
+  ml_tensors_info_get_tensor_dimension (in_info, 0, res_dim);
+  EXPECT_TRUE (gst_tensor_dimension_is_equal (in_dim, res_dim));
 
   status = ml_single_get_output_info (single, &out_info);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  ml_tensors_info_get_tensor_dimension (out_info, 0, out_dim);
-  EXPECT_EQ (out_dim[0], 5U);
-  EXPECT_EQ (out_dim[1], 1U);
-  EXPECT_EQ (out_dim[2], 1U);
-  EXPECT_EQ (out_dim[3], 1U);
+  ml_tensors_info_get_tensor_dimension (out_info, 0, res_dim);
+  EXPECT_TRUE (gst_tensor_dimension_is_equal (out_dim, res_dim));
 
   /* invoke */
   input = output = NULL;
@@ -2280,33 +2289,6 @@ TEST (nnstreamer_capi_singleshot, property_05_p)
   EXPECT_STREQ (prop_value, "5");
   g_free (prop_value);
 
-  status = ml_single_set_property (single, "output", "5:1:1:1");
-  EXPECT_EQ (status, ML_ERROR_NONE);
-
-  status = ml_single_get_property (single, "output", &prop_value);
-  EXPECT_EQ (status, ML_ERROR_NONE);
-
-  EXPECT_STREQ (prop_value, "5:1:1:1");
-  g_free (prop_value);
-
-  status = ml_single_set_property (single, "output", "5:1:1");
-  EXPECT_EQ (status, ML_ERROR_NONE);
-
-  status = ml_single_get_property (single, "output", &prop_value);
-  EXPECT_EQ (status, ML_ERROR_NONE);
-
-  EXPECT_STREQ (prop_value, "5:1:1");
-  g_free (prop_value);
-
-  status = ml_single_set_property (single, "output", "5:1");
-  EXPECT_EQ (status, ML_ERROR_NONE);
-
-  status = ml_single_get_property (single, "output", &prop_value);
-  EXPECT_EQ (status, ML_ERROR_NONE);
-
-  EXPECT_STREQ (prop_value, "5:1");
-  g_free (prop_value);
-
   status = ml_single_set_property (single, "output", "5");
   EXPECT_EQ (status, ML_ERROR_NONE);
 
@@ -2334,7 +2316,7 @@ TEST (nnstreamer_capi_singleshot, invoke_05)
   ml_tensor_type_e type = ML_TENSOR_TYPE_UNKNOWN;
   unsigned int count = 0;
   char *name = NULL;
-  int status;
+  int status, i;
 
   const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
@@ -2354,6 +2336,8 @@ TEST (nnstreamer_capi_singleshot, invoke_05)
   in_dim[1] = 1;
   in_dim[2] = 1;
   in_dim[3] = 1;
+  for (i = 4; i < ML_TENSOR_RANK_LIMIT; i++)
+    in_dim[i] = 0;
   ml_tensors_info_set_count (in_info, 1);
   ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_FLOAT32);
   ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
@@ -2362,6 +2346,8 @@ TEST (nnstreamer_capi_singleshot, invoke_05)
   out_dim[1] = 1;
   out_dim[2] = 1;
   out_dim[3] = 1;
+  for (i = 4; i < ML_TENSOR_RANK_LIMIT; i++)
+    out_dim[i] = 0;
   ml_tensors_info_set_count (out_info, 1);
   ml_tensors_info_set_tensor_type (out_info, 0, ML_TENSOR_TYPE_FLOAT32);
   ml_tensors_info_set_tensor_dimension (out_info, 0, out_dim);
@@ -2387,10 +2373,7 @@ TEST (nnstreamer_capi_singleshot, invoke_05)
   EXPECT_EQ (type, ML_TENSOR_TYPE_FLOAT32);
 
   ml_tensors_info_get_tensor_dimension (in_res, 0, res_dim);
-  EXPECT_TRUE (in_dim[0] == res_dim[0]);
-  EXPECT_TRUE (in_dim[1] == res_dim[1]);
-  EXPECT_TRUE (in_dim[2] == res_dim[2]);
-  EXPECT_TRUE (in_dim[3] == res_dim[3]);
+  EXPECT_TRUE (gst_tensor_dimension_is_equal (in_dim, res_dim));
 
   /* output tensor in filter */
   status = ml_single_get_output_info (single, &out_res);
@@ -2409,10 +2392,7 @@ TEST (nnstreamer_capi_singleshot, invoke_05)
   EXPECT_EQ (type, ML_TENSOR_TYPE_FLOAT32);
 
   ml_tensors_info_get_tensor_dimension (out_res, 0, res_dim);
-  EXPECT_TRUE (out_dim[0] == res_dim[0]);
-  EXPECT_TRUE (out_dim[1] == res_dim[1]);
-  EXPECT_TRUE (out_dim[2] == res_dim[2]);
-  EXPECT_TRUE (out_dim[3] == res_dim[3]);
+  EXPECT_TRUE (gst_tensor_dimension_is_equal (out_dim, res_dim));
 
   input = output = NULL;
 
@@ -3440,14 +3420,14 @@ skip_test:
 TEST (nnstreamer_capi_singleshot, invoke_dynamic_success_01_p)
 {
   ml_single_h single;
-  int status;
+  int status, i;
   ml_tensors_info_h in_info, out_info;
   ml_tensors_data_h input, output;
   size_t data_size;
 
   unsigned int tmp_count;
   ml_tensor_type_e tmp_type = ML_TENSOR_TYPE_UNKNOWN;
-  ml_tensor_dimension tmp_dim;
+  ml_tensor_dimension in_dim, out_dim, tmp_dim;
 
   const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
@@ -3484,12 +3464,16 @@ TEST (nnstreamer_capi_singleshot, invoke_dynamic_success_01_p)
     ml_tensors_info_get_tensor_type (in_info, 0, &tmp_type);
     ml_tensors_info_get_tensor_dimension (in_info, 0, tmp_dim);
 
+    in_dim[0] = out_dim[0] = 1;
+    in_dim[1] = out_dim[1] = 1;
+    in_dim[2] = out_dim[2] = 1;
+    in_dim[3] = out_dim[3] = 1;
+    for (i = 4; i < ML_TENSOR_RANK_LIMIT; i++)
+      in_dim[i] = out_dim[i] = 0;
+
     EXPECT_EQ (tmp_count, 1U);
     EXPECT_EQ (tmp_type, ML_TENSOR_TYPE_FLOAT32);
-    EXPECT_EQ (tmp_dim[0], 1U);
-    EXPECT_EQ (tmp_dim[1], 1U);
-    EXPECT_EQ (tmp_dim[2], 1U);
-    EXPECT_EQ (tmp_dim[3], 1U);
+    EXPECT_TRUE (gst_tensor_dimension_is_equal (in_dim, tmp_dim));
 
     status = ml_single_invoke_dynamic (single, input, in_info, &output, &out_info);
     EXPECT_EQ (status, ML_ERROR_NONE);
@@ -3505,10 +3489,7 @@ TEST (nnstreamer_capi_singleshot, invoke_dynamic_success_01_p)
 
     EXPECT_EQ (tmp_count, 1U);
     EXPECT_EQ (tmp_type, ML_TENSOR_TYPE_FLOAT32);
-    EXPECT_EQ (tmp_dim[0], 1U);
-    EXPECT_EQ (tmp_dim[1], 1U);
-    EXPECT_EQ (tmp_dim[2], 1U);
-    EXPECT_EQ (tmp_dim[3], 1U);
+    EXPECT_TRUE (gst_tensor_dimension_is_equal (out_dim, tmp_dim));
 
     ml_tensors_data_destroy (output);
     ml_tensors_data_destroy (input);
@@ -3516,6 +3497,7 @@ TEST (nnstreamer_capi_singleshot, invoke_dynamic_success_01_p)
     ml_tensors_info_destroy (out_info);
   }
 
+  in_dim[0] = out_dim[0] = 5;
   status = ml_single_set_property (single, "input", "5:1:1:1");
   EXPECT_EQ (status, ML_ERROR_NONE);
 
@@ -3536,10 +3518,7 @@ TEST (nnstreamer_capi_singleshot, invoke_dynamic_success_01_p)
 
     EXPECT_EQ (tmp_count, 1U);
     EXPECT_EQ (tmp_type, ML_TENSOR_TYPE_FLOAT32);
-    EXPECT_EQ (tmp_dim[0], 5U);
-    EXPECT_EQ (tmp_dim[1], 1U);
-    EXPECT_EQ (tmp_dim[2], 1U);
-    EXPECT_EQ (tmp_dim[3], 1U);
+    EXPECT_TRUE (gst_tensor_dimension_is_equal (in_dim, tmp_dim));
 
     status = ml_single_invoke_dynamic (single, input, in_info, &output, &out_info);
     EXPECT_EQ (status, ML_ERROR_NONE);
@@ -3559,10 +3538,7 @@ TEST (nnstreamer_capi_singleshot, invoke_dynamic_success_01_p)
 
     EXPECT_EQ (tmp_count, 1U);
     EXPECT_EQ (tmp_type, ML_TENSOR_TYPE_FLOAT32);
-    EXPECT_EQ (tmp_dim[0], 5U);
-    EXPECT_EQ (tmp_dim[1], 1U);
-    EXPECT_EQ (tmp_dim[2], 1U);
-    EXPECT_EQ (tmp_dim[3], 1U);
+    EXPECT_TRUE (gst_tensor_dimension_is_equal (out_dim, tmp_dim));
 
     status = ml_single_close (single);
     EXPECT_EQ (status, ML_ERROR_NONE);
@@ -3590,7 +3566,7 @@ TEST (nnstreamer_capi_singleshot, invoke_dynamic_success_02_p)
 
   unsigned int tmp_count;
   ml_tensor_type_e tmp_type = ML_TENSOR_TYPE_UNKNOWN;
-  ml_tensor_dimension tmp_dim, in_dim;
+  ml_tensor_dimension tmp_dim, in_dim, out_dim;
 
   const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
@@ -3620,6 +3596,7 @@ TEST (nnstreamer_capi_singleshot, invoke_dynamic_success_02_p)
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   {
+    int i;
     float tmp_input[] = { 1.0 };
     float *output_buf;
 
@@ -3629,12 +3606,16 @@ TEST (nnstreamer_capi_singleshot, invoke_dynamic_success_02_p)
     ml_tensors_info_get_tensor_type (in_info, 0, &tmp_type);
     ml_tensors_info_get_tensor_dimension (in_info, 0, tmp_dim);
 
+    in_dim[0] = out_dim[0] = 1;
+    in_dim[1] = out_dim[1] = 1;
+    in_dim[2] = out_dim[2] = 1;
+    in_dim[3] = out_dim[3] = 1;
+    for (i = 4; i < ML_TENSOR_RANK_LIMIT; i++)
+      in_dim[i] = out_dim[i] = 0;
+
     EXPECT_EQ (tmp_count, 1U);
     EXPECT_EQ (tmp_type, ML_TENSOR_TYPE_FLOAT32);
-    EXPECT_EQ (tmp_dim[0], 1U);
-    EXPECT_EQ (tmp_dim[1], 1U);
-    EXPECT_EQ (tmp_dim[2], 1U);
-    EXPECT_EQ (tmp_dim[3], 1U);
+    EXPECT_TRUE (gst_tensor_dimension_is_equal (in_dim, tmp_dim));
 
     status = ml_single_invoke_dynamic (single, input, in_info, &output, &out_info);
     EXPECT_EQ (status, ML_ERROR_NONE);
@@ -3649,10 +3630,7 @@ TEST (nnstreamer_capi_singleshot, invoke_dynamic_success_02_p)
 
     EXPECT_EQ (tmp_count, 1U);
     EXPECT_EQ (tmp_type, ML_TENSOR_TYPE_FLOAT32);
-    EXPECT_EQ (tmp_dim[0], 1U);
-    EXPECT_EQ (tmp_dim[1], 1U);
-    EXPECT_EQ (tmp_dim[2], 1U);
-    EXPECT_EQ (tmp_dim[3], 1U);
+    EXPECT_TRUE (gst_tensor_dimension_is_equal (out_dim, tmp_dim));
 
     ml_tensors_data_destroy (output);
     ml_tensors_data_destroy (input);
@@ -3663,10 +3641,7 @@ TEST (nnstreamer_capi_singleshot, invoke_dynamic_success_02_p)
   status = ml_single_get_input_info (single, &in_info);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  in_dim[0] = 5;
-  in_dim[1] = 1;
-  in_dim[2] = 1;
-  in_dim[3] = 1;
+  in_dim[0] = out_dim[0] = 5;
 
   status = ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
   EXPECT_EQ (status, ML_ERROR_NONE);
@@ -3685,10 +3660,7 @@ TEST (nnstreamer_capi_singleshot, invoke_dynamic_success_02_p)
 
     EXPECT_EQ (tmp_count, 1U);
     EXPECT_EQ (tmp_type, ML_TENSOR_TYPE_FLOAT32);
-    EXPECT_EQ (tmp_dim[0], 5U);
-    EXPECT_EQ (tmp_dim[1], 1U);
-    EXPECT_EQ (tmp_dim[2], 1U);
-    EXPECT_EQ (tmp_dim[3], 1U);
+    EXPECT_TRUE (gst_tensor_dimension_is_equal (in_dim, tmp_dim));
 
     status = ml_single_invoke_dynamic (single, input, in_info, &output, &out_info);
     EXPECT_EQ (status, ML_ERROR_NONE);
@@ -3708,10 +3680,7 @@ TEST (nnstreamer_capi_singleshot, invoke_dynamic_success_02_p)
 
     EXPECT_EQ (tmp_count, 1U);
     EXPECT_EQ (tmp_type, ML_TENSOR_TYPE_FLOAT32);
-    EXPECT_EQ (tmp_dim[0], 5U);
-    EXPECT_EQ (tmp_dim[1], 1U);
-    EXPECT_EQ (tmp_dim[2], 1U);
-    EXPECT_EQ (tmp_dim[3], 1U);
+    EXPECT_TRUE (gst_tensor_dimension_is_equal (out_dim, tmp_dim));
 
     status = ml_single_close (single);
     EXPECT_EQ (status, ML_ERROR_NONE);
@@ -3839,22 +3808,27 @@ TEST (nnstreamer_capi_singleshot, many_in_many_out)
     float *output_buf;
 
     for (int i = 0; i < 32; i++) {
+      ml_tensor_dimension res_dim;
+      res_dim[0] = res_dim[1] = res_dim[2] = res_dim[3] = 1;
+      for (guint32 j = 4; j < ML_TENSOR_RANK_LIMIT; ++j)
+        res_dim[j] = 0;
       status = ml_tensors_data_set_tensor_data (input, i, tmp_input, 1 * sizeof (float));
 
       ml_tensors_info_get_tensor_type (in_info, i, &tmp_type);
       ml_tensors_info_get_tensor_dimension (in_info, i, tmp_dim);
 
       EXPECT_EQ (tmp_type, ML_TENSOR_TYPE_FLOAT32);
-      EXPECT_EQ (tmp_dim[0], 1U);
-      EXPECT_EQ (tmp_dim[1], 1U);
-      EXPECT_EQ (tmp_dim[2], 1U);
-      EXPECT_EQ (tmp_dim[3], 1U);
+      EXPECT_TRUE (gst_tensor_dimension_is_equal (tmp_dim, res_dim));
     }
 
     status = ml_single_invoke (single, input, &output);
     EXPECT_EQ (status, ML_ERROR_NONE);
 
     for (int i = 0; i < 32; i++) {
+      ml_tensor_dimension res_dim;
+      res_dim[0] = res_dim[1] = res_dim[2] = res_dim[3] = 1;
+      for (guint32 j = 4; j < ML_TENSOR_RANK_LIMIT; ++j)
+        res_dim[j] = 0;
       ml_tensors_data_get_tensor_data (output, i, (void **) &output_buf, &data_size);
       EXPECT_FLOAT_EQ (output_buf[0], 17.0f);
       EXPECT_EQ (data_size, sizeof (float));
@@ -3863,10 +3837,7 @@ TEST (nnstreamer_capi_singleshot, many_in_many_out)
       ml_tensors_info_get_tensor_dimension (out_info, i, tmp_dim);
 
       EXPECT_EQ (tmp_type, ML_TENSOR_TYPE_FLOAT32);
-      EXPECT_EQ (tmp_dim[0], 1U);
-      EXPECT_EQ (tmp_dim[1], 1U);
-      EXPECT_EQ (tmp_dim[2], 1U);
-      EXPECT_EQ (tmp_dim[3], 1U);
+      EXPECT_TRUE (gst_tensor_dimension_is_equal (tmp_dim, res_dim));
     }
 
     ml_tensors_data_destroy (output);
