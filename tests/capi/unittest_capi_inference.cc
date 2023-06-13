@@ -1488,7 +1488,7 @@ check_orange_output (const ml_tensors_data_h data, const ml_tensors_info_h info,
  */
 TEST (nnstreamer_capi_src, pngfile)
 {
-  int status;
+  int status, i;
 
   ml_pipeline_h handle;
   ml_pipeline_sink_h sinkhandle;
@@ -1536,6 +1536,8 @@ TEST (nnstreamer_capi_src, pngfile)
   in_dim[1] = 1;
   in_dim[2] = 1;
   in_dim[3] = 1;
+  for (i = 4; i < ML_TENSOR_RANK_LIMIT; i++)
+    in_dim[i] = 0;
 
   ml_tensors_info_set_count (in_info, 1);
   ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_UINT8);
@@ -2677,11 +2679,6 @@ TEST (nnstreamer_capi_util, compare_info)
   /* validate info */
   EXPECT_TRUE (ml_tensors_info_is_valid (info2));
 
-  /* validate invalid dimension */
-  dim[3] = 0;
-  ml_tensors_info_set_tensor_dimension (info2, 0, dim);
-  EXPECT_FALSE (ml_tensors_info_is_valid (info2));
-
   status = ml_tensors_info_destroy (info1);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
@@ -2725,11 +2722,6 @@ TEST (nnstreamer_capi_util, compare_info_extended)
 
   /* validate info */
   EXPECT_TRUE (ml_tensors_info_is_valid (info2));
-
-  /* validate invalid dimension */
-  dim[3] = 0;
-  ml_tensors_info_set_tensor_dimension (info2, 0, dim);
-  EXPECT_FALSE (ml_tensors_info_is_valid (info2));
 
   status = ml_tensors_info_destroy (info1);
   EXPECT_EQ (status, ML_ERROR_NONE);
@@ -4630,8 +4622,7 @@ TEST (nnstreamer_capi_element, set_property_string_01_p)
   EXPECT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
 
   pipeline = g_strdup_printf (
-      "appsrc name=appsrc ! "
-      "other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! "
+      "appsrc name=appsrc caps=other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! "
       "tensor_filter name=filter_h framework=tensorflow-lite model=%s ! tensor_sink name=tensor_sink",
       test_model);
 
@@ -4694,8 +4685,7 @@ TEST (nnstreamer_capi_element, set_property_string_03_n)
   EXPECT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
 
   pipeline = g_strdup_printf (
-      "appsrc name=appsrc ! "
-      "other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! "
+      "appsrc name=appsrc caps=other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! "
       "tensor_filter name=filter_h framework=tensorflow-lite model=%s ! tensor_sink name=tensor_sink",
       test_model);
 
@@ -4781,8 +4771,7 @@ TEST (nnstreamer_capi_element, get_property_string_01_p)
   EXPECT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
 
   pipeline = g_strdup_printf (
-      "appsrc name=appsrc ! "
-      "other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! "
+      "appsrc name=appsrc caps=other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! "
       "tensor_filter name=filter_h framework=tensorflow-lite model=%s ! tensor_sink name=tensor_sink",
       test_model);
 
@@ -4860,8 +4849,7 @@ TEST (nnstreamer_capi_element, get_property_string_03_n)
   EXPECT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
 
   pipeline = g_strdup_printf (
-      "appsrc name=appsrc ! "
-      "other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! "
+      "appsrc name=appsrc caps=other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! "
       "tensor_filter name=filter_h framework=tensorflow-lite model=%s ! tensor_sink name=tensor_sink",
       test_model);
 
@@ -4911,8 +4899,7 @@ TEST (nnstreamer_capi_element, get_property_string_04_n)
   EXPECT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
 
   pipeline = g_strdup_printf (
-      "appsrc name=appsrc ! "
-      "other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! "
+      "appsrc name=appsrc caps=other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! "
       "tensor_filter name=filter_h framework=tensorflow-lite model=%s ! tensor_sink name=tensor_sink",
       test_model);
 
@@ -8195,13 +8182,13 @@ test_sink_callback_many (ml_tensors_data_h data, const ml_tensors_info_h info, v
   EXPECT_EQ (num_tensors, 32U);
 
   for (guint32 i = 0; i < num_tensors; ++i) {
-    ml_tensor_dimension out_dim;
+    ml_tensor_dimension out_dim, res_dim;
+    res_dim[0] = res_dim[1] = res_dim[2] = res_dim[3] = 1;
+    for (guint32 j = 4; j < ML_TENSOR_RANK_LIMIT; ++j)
+      res_dim[j] = 0;
     status = ml_tensors_info_get_tensor_dimension (info, i, out_dim);
     EXPECT_EQ (status, ML_ERROR_NONE);
-    EXPECT_EQ (out_dim[0], 1U);
-    EXPECT_EQ (out_dim[1], 1U);
-    EXPECT_EQ (out_dim[2], 1U);
-    EXPECT_EQ (out_dim[3], 1U);
+    EXPECT_TRUE (gst_tensor_dimension_is_equal (out_dim, res_dim));
 
     float *data_ptr;
     size_t data_size;
