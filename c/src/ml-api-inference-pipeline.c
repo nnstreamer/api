@@ -271,8 +271,11 @@ get_tensors_info_from_caps (GstCaps * caps, ml_tensors_info_s * info,
     if (found) {
       _ml_tensors_info_copy_from_gst (info, &config.info);
       *is_flexible = gst_tensors_config_is_flexible (&config);
-      break;
     }
+
+    gst_tensors_config_free (&config);
+    if (found)
+      break;
   }
 
   return found;
@@ -1547,6 +1550,7 @@ ml_pipeline_src_parse_tensors_info (ml_pipeline_element * elem)
     return ML_ERROR_TRY_AGAIN;
   }
 
+  _ml_tensors_info_free (_info);
   found = get_tensors_info_from_caps (caps, _info, &flexible);
 
   if (found) {
