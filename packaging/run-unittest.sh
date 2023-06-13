@@ -8,6 +8,7 @@
 setup() {
     echo "setup start"
     export MLAPI_SOURCE_ROOT_PATH=/usr/bin/unittest-ml
+    pushd /usr/bin/unittest-ml
 }
 
 test_main() {
@@ -20,6 +21,7 @@ test_main() {
 
 teardown() {
     echo "teardown start"
+    popd
 }
 
 main() {
