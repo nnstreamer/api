@@ -52,8 +52,9 @@ _build_ml_opt_from_json_cstr (const gchar * jcstring, ml_option_h * opt)
     return ML_ERROR_OUT_OF_MEMORY;
   }
 
-  if (!json_parser_load_from_data (parser, jcstring, -1, NULL)) {
-    _ml_error_report ("Failed to parse the json string. %s", err->message);
+  if (!json_parser_load_from_data (parser, jcstring, -1, &err)) {
+    _ml_error_report ("Failed to parse the json string. %s",
+        err ? err->message : "unknown error");
     return ML_ERROR_INVALID_PARAMETER;
   }
 
