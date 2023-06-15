@@ -702,6 +702,9 @@ ml_single_set_gst_info (ml_single * single_h, const ml_tensors_info_h info)
     status = ML_ERROR_INVALID_PARAMETER;
   }
 
+  gst_tensors_info_free (&gst_in_info);
+  gst_tensors_info_free (&gst_out_info);
+
   return status;
 }
 
@@ -1314,6 +1317,9 @@ ml_single_close (ml_single_h single)
 
   g_cond_clear (&single_h->cond);
   g_mutex_clear (&single_h->mutex);
+
+  ml_tensors_info_destroy (single_h->in_tensors.info);
+  ml_tensors_info_destroy (single_h->out_tensors.info);
 
   g_free (single_h);
   return ML_ERROR_NONE;
@@ -1939,6 +1945,8 @@ ml_single_get_property (ml_single_h single, const char *name, char **value)
       dim_str = g_strdup ("");
     }
     *value = dim_str;
+
+    gst_tensors_info_free (&gst_info);
   } else {
     _ml_error_report
         ("The property key, '%s', is not available for get_property and not recognized by the API. It should be one of {input, inputtype, inputname, inputlayout, output, outputtype, outputname, outputlayout, accelerator, custom, is-updatable}.",
