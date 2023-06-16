@@ -9,15 +9,14 @@
 
 #include <gtest/gtest.h>
 #include <glib.h>
-#include <nnstreamer.h>
-#include <nnstreamer-single.h>
-#include <nnstreamer_plugin_api.h>
-#include <nnstreamer_internal.h>
-#include <nnstreamer-tizen-internal.h>
 #include <ml-api-inference-internal.h>
 #include <ml-api-inference-single-internal.h>
+#include <nnstreamer-single.h>
+#include <nnstreamer-tizen-internal.h>
+#include <nnstreamer.h>
+#include <nnstreamer_internal.h>
 
-#if defined (__APPLE__)
+#if defined(__APPLE__)
 #define SO_FILE_EXTENSION ".dylib"
 #else
 #define SO_FILE_EXTENSION ".so"
@@ -25,7 +24,7 @@
 
 static const unsigned int SINGLE_DEF_TIMEOUT_MSEC = 10000U;
 
-#if defined (ENABLE_TENSORFLOW_LITE) || defined (ENABLE_TENSORFLOW2_LITE)
+#if defined(ENABLE_TENSORFLOW_LITE) || defined(ENABLE_TENSORFLOW2_LITE)
 constexpr bool is_enabled_tensorflow_lite = true;
 #else
 constexpr bool is_enabled_tensorflow_lite = false;
@@ -41,7 +40,7 @@ TEST (nnstreamer_capi_singleshot, invoke_invalid_param_01_n)
   ml_tensors_info_h in_info;
   ml_tensors_data_h input, output;
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
 
   /* supposed to run test in build directory */
@@ -97,7 +96,7 @@ TEST (nnstreamer_capi_singleshot, invoke_invalid_param_02_n)
   ml_tensors_data_h input, output;
   ml_tensor_dimension in_dim;
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
 
   /* supposed to run test in build directory */
@@ -181,7 +180,7 @@ TEST (nnstreamer_capi_singleshot, invoke_01)
   char *name = NULL;
   int status;
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
 
   /* supposed to run test in build directory */
@@ -303,7 +302,7 @@ TEST (nnstreamer_capi_singleshot, invoke_02)
   ml_tensors_data_h input, output;
   int status;
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
 
   /* supposed to run test in build directory */
@@ -364,7 +363,7 @@ benchmark_single (const gboolean no_alloc, const gboolean no_timeout, const int 
   unsigned long open_duration = 0, invoke_duration = 0, close_duration = 0;
   gint64 start, end;
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
 
   /* supposed to run test in build directory */
@@ -535,15 +534,15 @@ TEST (nnstreamer_capi_singleshot, invoke_03)
 
   for (i = 0; i < 10; i++) {
     int16_t i16 = (int16_t) (i + 1);
-    float f32 = (float)(i + .1);
+    float f32 = (float) (i + .1);
 
     status = ml_tensors_data_get_tensor_data (input, 0, &data_ptr, &data_size);
     EXPECT_EQ (status, ML_ERROR_NONE);
-    ((int16_t *)data_ptr)[i] = i16;
+    ((int16_t *) data_ptr)[i] = i16;
 
     status = ml_tensors_data_get_tensor_data (input, 1, &data_ptr, &data_size);
     EXPECT_EQ (status, ML_ERROR_NONE);
-    ((float *)data_ptr)[i] = f32;
+    ((float *) data_ptr)[i] = f32;
   }
 
   status = ml_single_set_timeout (single, SINGLE_DEF_TIMEOUT_MSEC);
@@ -555,15 +554,15 @@ TEST (nnstreamer_capi_singleshot, invoke_03)
 
   for (i = 0; i < 10; i++) {
     int16_t i16 = (int16_t) (i + 1);
-    float f32 = (float)(i + .1);
+    float f32 = (float) (i + .1);
 
     status = ml_tensors_data_get_tensor_data (output, 0, &data_ptr, &data_size);
     EXPECT_EQ (status, ML_ERROR_NONE);
-    EXPECT_EQ (((int16_t *)data_ptr)[i], i16);
+    EXPECT_EQ (((int16_t *) data_ptr)[i], i16);
 
     status = ml_tensors_data_get_tensor_data (output, 1, &data_ptr, &data_size);
     EXPECT_EQ (status, ML_ERROR_NONE);
-    EXPECT_FLOAT_EQ (((float *)data_ptr)[i], f32);
+    EXPECT_FLOAT_EQ (((float *) data_ptr)[i], f32);
   }
 
   status = ml_single_close (single);
@@ -599,7 +598,7 @@ TEST (nnstreamer_capi_singleshot, invoke_04)
   void *data_ptr;
   size_t data_size;
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model, *test_file;
   gchar *contents = NULL;
   gsize len = 0;
@@ -612,8 +611,7 @@ TEST (nnstreamer_capi_singleshot, invoke_04)
       "conv_actions_frozen.pb", NULL);
   ASSERT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
 
-  test_file = g_build_filename (root_path, "tests", "test_models", "data",
-      "yes.wav", NULL);
+  test_file = g_build_filename (root_path, "tests", "test_models", "data", "yes.wav", NULL);
   ASSERT_TRUE (g_file_test (test_file, G_FILE_TEST_EXISTS));
 
   ml_tensors_info_create (&in_info);
@@ -719,7 +717,7 @@ TEST (nnstreamer_capi_singleshot, invoke_04)
   max_score = .0;
   max_score_index = 0;
   for (gint i = 0; i < 12; i++) {
-    score = ((float *)data_ptr)[i];
+    score = ((float *) data_ptr)[i];
     if (score > max_score) {
       max_score = score;
       max_score_index = i;
@@ -752,7 +750,7 @@ TEST (nnstreamer_capi_singleshot, unavailable_fw_tf_n)
   ml_tensor_dimension in_dim, out_dim;
   int status;
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
 
   /* supposed to run test in build directory */
@@ -804,7 +802,7 @@ TEST (nnstreamer_capi_singleshot, open_fail_01_n)
   ml_single_h single;
   int status;
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
 
   /* supposed to run test in build directory */
@@ -866,7 +864,7 @@ TEST (nnstreamer_capi_singleshot, open_fail_02_n)
   ml_tensor_dimension in_dim, out_dim;
   int status;
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
 
   /* supposed to run test in build directory */
@@ -970,7 +968,7 @@ TEST (nnstreamer_capi_singleshot, open_dynamic)
   unsigned int count = 0;
   int status;
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
 
   /* supposed to run test in build directory */
@@ -1050,7 +1048,7 @@ single_shot_loop_test (void *arg)
   guint i;
   int status = ML_ERROR_NONE;
   ml_single_h single;
-  single_shot_thread_data *ss_data = (single_shot_thread_data *)arg;
+  single_shot_thread_data *ss_data = (single_shot_thread_data *) arg;
   int timeout_cond, no_error_cond;
 
   status = ml_single_open (&single, ss_data->test_model, NULL, NULL,
@@ -1101,8 +1099,8 @@ single_shot_loop_test (void *arg)
       no_error_cond = status == ML_ERROR_NONE && output != NULL;
       if (ss_data->timeout < ss_data->min_time_to_run) {
         /** Default timeout can return timed out with many parallel runs */
-        timeout_cond = output == NULL && (status == ML_ERROR_TIMED_OUT
-                                             || status == ML_ERROR_TRY_AGAIN);
+        timeout_cond = output == NULL
+                       && (status == ML_ERROR_TIMED_OUT || status == ML_ERROR_TRY_AGAIN);
         EXPECT_TRUE (timeout_cond || no_error_cond);
       } else {
         EXPECT_TRUE (no_error_cond);
@@ -1132,7 +1130,7 @@ TEST (nnstreamer_capi_singleshot, invoke_timeout)
   ml_single_h single;
   int status;
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
 
   /* supposed to run test in build directory */
@@ -1215,7 +1213,7 @@ skip_test:
  */
 TEST (nnstreamer_capi_singleshot, parallel_runs)
 {
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
   const gint num_threads = 3;
   const gint num_cases = 3;
@@ -1256,7 +1254,7 @@ TEST (nnstreamer_capi_singleshot, parallel_runs)
   for (j = 0; j < num_cases; j++) {
     for (i = 0; i < num_threads; i++) {
       pthread_create (&thread[i + j * num_threads], NULL, single_shot_loop_test,
-          (void *)&ss_data[j]);
+          (void *) &ss_data[j]);
     }
   }
 
@@ -1274,7 +1272,7 @@ TEST (nnstreamer_capi_singleshot, parallel_runs)
  */
 TEST (nnstreamer_capi_singleshot, close_while_running)
 {
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
   pthread_t thread;
   single_shot_thread_data ss_data;
@@ -1298,7 +1296,7 @@ TEST (nnstreamer_capi_singleshot, close_while_running)
   ss_data.timeout = SINGLE_DEF_TIMEOUT_MSEC;
   ss_data.single = NULL;
 
-  pthread_create (&thread, NULL, single_shot_loop_test, (void *)&ss_data);
+  pthread_create (&thread, NULL, single_shot_loop_test, (void *) &ss_data);
 
   /** Start the thread and let the code start */
   g_usleep (100000); /** 100 msec */
@@ -1330,7 +1328,7 @@ TEST (nnstreamer_capi_singleshot, set_input_info_fail_01_n)
   ml_tensors_info_h in_info;
   ml_tensor_dimension in_dim;
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
 
   /* supposed to run test in build directory */
@@ -1388,7 +1386,7 @@ TEST (nnstreamer_capi_singleshot, set_input_info_fail_02_n)
   unsigned int count = 0;
   int status;
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
 
   /* supposed to run test in build directory */
@@ -1454,7 +1452,7 @@ TEST (nnstreamer_capi_singleshot, set_input_info_success)
   ml_tensor_dimension in_dim;
   ml_tensors_data_h input, output;
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
 
   /* supposed to run test in build directory */
@@ -1530,7 +1528,7 @@ TEST (nnstreamer_capi_singleshot, set_input_info_success_01)
   size_t data_size;
   float *data;
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
 
   /* supposed to run test in build directory */
@@ -1636,7 +1634,7 @@ TEST (nnstreamer_capi_singleshot, set_input_info_success_01)
     EXPECT_EQ (status, ML_ERROR_NONE);
     EXPECT_TRUE (input != NULL);
 
-    status = ml_tensors_data_get_tensor_data (input, 0, (void **)&data, &data_size);
+    status = ml_tensors_data_get_tensor_data (input, 0, (void **) &data, &data_size);
     EXPECT_EQ (status, ML_ERROR_NONE);
     EXPECT_EQ (data_size, tensor_size * sizeof (int));
     for (int idx = 0; idx < tensor_size; idx++)
@@ -1646,17 +1644,168 @@ TEST (nnstreamer_capi_singleshot, set_input_info_success_01)
     EXPECT_EQ (status, ML_ERROR_NONE);
     EXPECT_TRUE (output != NULL);
 
-    status = ml_tensors_data_get_tensor_data (input, 0, (void **)&data, &data_size);
+    status = ml_tensors_data_get_tensor_data (input, 0, (void **) &data, &data_size);
     EXPECT_EQ (status, ML_ERROR_NONE);
     EXPECT_EQ (data_size, tensor_size * sizeof (int));
     for (int idx = 0; idx < tensor_size; idx++)
       EXPECT_EQ (data[idx], idx);
 
-    status = ml_tensors_data_get_tensor_data (output, 0, (void **)&data, &data_size);
+    status = ml_tensors_data_get_tensor_data (output, 0, (void **) &data, &data_size);
     EXPECT_EQ (status, ML_ERROR_NONE);
     EXPECT_EQ (data_size, tensor_size * sizeof (int));
     for (int idx = 0; idx < tensor_size; idx++)
       EXPECT_EQ (data[idx], idx + 2);
+
+    ml_tensors_data_destroy (output);
+    ml_tensors_data_destroy (input);
+  }
+
+  status = ml_single_close (single);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+skip_test:
+  g_free (test_model);
+  ml_tensors_info_destroy (in_info);
+  ml_tensors_info_destroy (out_info);
+  ml_tensors_info_destroy (in_res);
+  ml_tensors_info_destroy (out_res);
+}
+
+/**
+ * @brief Test NNStreamer single shot with extended tensors info
+ */
+TEST (nnstreamer_capi_singleshot, set_input_info_extended_success)
+{
+  ml_single_h single;
+  ml_tensors_info_h in_info, out_info;
+  ml_tensors_info_h in_res = nullptr, out_res = nullptr;
+  ml_tensors_data_h input, output;
+  ml_tensor_dimension in_dim = { 4, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+  ml_tensor_dimension out_dim = { 4, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+  ml_tensor_dimension res_dim;
+  ml_tensor_type_e type = ML_TENSOR_TYPE_UNKNOWN;
+  unsigned int count = 0;
+  int status, i, tensor_size = 4 * 4 * 4 * 4 * 4;
+  size_t data_size;
+  float *input0, *input1, *output0;
+
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
+  gchar *test_model;
+
+  /* supposed to run test in build directory */
+  if (root_path == NULL)
+    root_path = "..";
+
+  /** add_extended.tflite adds two input tensors and makes one output tensor */
+  test_model = g_build_filename (
+      root_path, "tests", "test_models", "models", "add_extended.tflite", NULL);
+  ASSERT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
+
+  ml_tensors_info_create_extended (&in_info);
+  ml_tensors_info_create_extended (&out_info);
+
+  ml_tensors_info_set_count (in_info, 2);
+  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_FLOAT32);
+  ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
+  ml_tensors_info_set_tensor_type (in_info, 1, ML_TENSOR_TYPE_FLOAT32);
+  ml_tensors_info_set_tensor_dimension (in_info, 1, in_dim);
+
+  ml_tensors_info_set_count (out_info, 1);
+  ml_tensors_info_set_tensor_type (out_info, 0, ML_TENSOR_TYPE_FLOAT32);
+  ml_tensors_info_set_tensor_dimension (out_info, 0, out_dim);
+
+  status = ml_single_open (&single, test_model, in_info, out_info,
+      ML_NNFW_TYPE_TENSORFLOW_LITE, ML_NNFW_HW_ANY);
+  if (is_enabled_tensorflow_lite) {
+    EXPECT_EQ (status, ML_ERROR_NONE);
+  } else {
+    EXPECT_NE (status, ML_ERROR_NONE);
+    goto skip_test;
+  }
+
+  status = ml_single_get_input_info (single, &in_res);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  ml_tensors_info_get_tensor_dimension (in_res, 0, res_dim);
+  for (i = 0; i < ML_TENSOR_RANK_LIMIT; i++)
+    EXPECT_EQ (in_dim[i], res_dim[i]);
+
+  status = ml_single_set_input_info (single, in_info);
+  EXPECT_TRUE (status == ML_ERROR_NOT_SUPPORTED || status == ML_ERROR_NONE);
+  if (status == ML_ERROR_NONE) {
+    /* input tensor in filter */
+    ml_tensors_info_destroy (in_res);
+    status = ml_single_get_input_info (single, &in_res);
+    EXPECT_EQ (status, ML_ERROR_NONE);
+
+    status = ml_tensors_info_get_count (in_res, &count);
+    EXPECT_EQ (status, ML_ERROR_NONE);
+    EXPECT_EQ (count, 2U);
+
+    status = ml_tensors_info_get_tensor_type (in_res, 0, &type);
+    EXPECT_EQ (status, ML_ERROR_NONE);
+    EXPECT_EQ (type, ML_TENSOR_TYPE_FLOAT32);
+
+    ml_tensors_info_get_tensor_dimension (in_res, 0, res_dim);
+    for (i = 0; i < ML_TENSOR_RANK_LIMIT; i++)
+      EXPECT_EQ (in_dim[i], res_dim[i]);
+
+    /* output tensor in filter */
+    status = ml_single_get_output_info (single, &out_res);
+    EXPECT_EQ (status, ML_ERROR_NONE);
+
+    status = ml_tensors_info_get_count (out_res, &count);
+    EXPECT_EQ (status, ML_ERROR_NONE);
+    EXPECT_EQ (count, 1U);
+
+    status = ml_tensors_info_get_tensor_type (out_res, 0, &type);
+    EXPECT_EQ (status, ML_ERROR_NONE);
+    EXPECT_EQ (type, ML_TENSOR_TYPE_FLOAT32);
+
+    ml_tensors_info_get_tensor_dimension (out_res, 0, res_dim);
+    for (i = 0; i < ML_TENSOR_RANK_LIMIT; i++)
+      EXPECT_EQ (out_dim[i], res_dim[i]);
+
+    input = output = NULL;
+
+    /* generate dummy data */
+    status = ml_tensors_data_create (in_info, &input);
+    EXPECT_EQ (status, ML_ERROR_NONE);
+    EXPECT_TRUE (input != NULL);
+
+    status = ml_tensors_data_get_tensor_data (input, 0, (void **) &input0, &data_size);
+    EXPECT_EQ (status, ML_ERROR_NONE);
+    EXPECT_EQ (data_size, tensor_size * sizeof (float));
+    for (int idx = 0; idx < tensor_size; idx++)
+      input0[idx] = idx;
+
+    status = ml_tensors_data_get_tensor_data (input, 1, (void **) &input1, &data_size);
+    EXPECT_EQ (status, ML_ERROR_NONE);
+    EXPECT_EQ (data_size, tensor_size * sizeof (float));
+    for (int idx = 0; idx < tensor_size; idx++)
+      input1[idx] = idx + 1;
+
+    status = ml_single_invoke (single, input, &output);
+    EXPECT_EQ (status, ML_ERROR_NONE);
+    EXPECT_TRUE (output != NULL);
+
+    status = ml_tensors_data_get_tensor_data (input, 0, (void **) &input0, &data_size);
+    EXPECT_EQ (status, ML_ERROR_NONE);
+    EXPECT_EQ (data_size, tensor_size * sizeof (float));
+    for (int idx = 0; idx < tensor_size; idx++)
+      EXPECT_EQ (input0[idx], idx);
+
+    status = ml_tensors_data_get_tensor_data (input, 1, (void **) &input1, &data_size);
+    EXPECT_EQ (status, ML_ERROR_NONE);
+    EXPECT_EQ (data_size, tensor_size * sizeof (float));
+    for (int idx = 0; idx < tensor_size; idx++)
+      EXPECT_EQ (input1[idx], idx + 1);
+
+    status = ml_tensors_data_get_tensor_data (output, 0, (void **) &output0, &data_size);
+    EXPECT_EQ (status, ML_ERROR_NONE);
+    EXPECT_EQ (data_size, tensor_size * sizeof (float));
+    for (int idx = 0; idx < tensor_size; idx++)
+      EXPECT_EQ (output0[idx], input0[idx] + input1[idx]);
 
     ml_tensors_data_destroy (output);
     ml_tensors_data_destroy (input);
@@ -1687,7 +1836,7 @@ TEST (nnstreamer_capi_singleshot, property_01_p)
   void *data;
   size_t data_size;
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
 
   /* supposed to run test in build directory */
@@ -1721,6 +1870,25 @@ TEST (nnstreamer_capi_singleshot, property_01_p)
   EXPECT_STREQ (prop_value, "false");
   g_free (prop_value);
 
+  /* set updatable */
+  status = ml_single_set_property (single, "is-updatable", "true");
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_single_get_property (single, "is-updatable", &prop_value);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  EXPECT_STREQ (prop_value, "true");
+  g_free (prop_value);
+
+  status = ml_single_set_property (single, "is-updatable", "false");
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_single_get_property (single, "is-updatable", &prop_value);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  EXPECT_STREQ (prop_value, "false");
+  g_free (prop_value);
+
   /* get input info */
   status = ml_single_get_input_info (single, &in_info);
   EXPECT_EQ (status, ML_ERROR_NONE);
@@ -1740,7 +1908,7 @@ TEST (nnstreamer_capi_singleshot, property_01_p)
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_TRUE (output != NULL);
 
-  status = ml_tensors_data_get_tensor_data (output, 0, (void **)&data, &data_size);
+  status = ml_tensors_data_get_tensor_data (output, 0, (void **) &data, &data_size);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (data_size, 1001U);
 
@@ -1765,7 +1933,7 @@ TEST (nnstreamer_capi_singleshot, property_02_n)
   int status;
   char *prop_value = NULL;
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
 
   /* supposed to run test in build directory */
@@ -1840,7 +2008,7 @@ TEST (nnstreamer_capi_singleshot, property_03_n)
   void *data;
   size_t data_size;
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
 
   /* supposed to run test in build directory */
@@ -1929,7 +2097,7 @@ TEST (nnstreamer_capi_singleshot, property_03_n)
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_TRUE (output != NULL);
 
-  status = ml_tensors_data_get_tensor_data (output, 0, (void **)&data, &data_size);
+  status = ml_tensors_data_get_tensor_data (output, 0, (void **) &data, &data_size);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (data_size, 1001U);
 
@@ -1960,7 +2128,7 @@ TEST (nnstreamer_capi_singleshot, property_04_p)
   size_t data_size;
   float *data;
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
 
   /* supposed to run test in build directory */
@@ -2017,7 +2185,7 @@ TEST (nnstreamer_capi_singleshot, property_04_p)
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_TRUE (input != NULL);
 
-  status = ml_tensors_data_get_tensor_data (input, 0, (void **)&data, &data_size);
+  status = ml_tensors_data_get_tensor_data (input, 0, (void **) &data, &data_size);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (data_size, 5 * sizeof (float));
   for (int idx = 0; idx < 5; idx++)
@@ -2027,7 +2195,7 @@ TEST (nnstreamer_capi_singleshot, property_04_p)
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_TRUE (output != NULL);
 
-  status = ml_tensors_data_get_tensor_data (output, 0, (void **)&data, &data_size);
+  status = ml_tensors_data_get_tensor_data (output, 0, (void **) &data, &data_size);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (data_size, 5 * sizeof (float));
   for (int idx = 0; idx < 5; idx++)
@@ -2040,6 +2208,113 @@ TEST (nnstreamer_capi_singleshot, property_04_p)
 
   status = ml_single_close (single);
   EXPECT_EQ (status, ML_ERROR_NONE);
+
+skip_test:
+  g_free (test_model);
+}
+
+/**
+ * @brief Test for input_ranks and output_ranks property of the ml_single
+ * @details Given dimension string, check its value.
+ */
+TEST (nnstreamer_capi_singleshot, property_05_p)
+{
+  ml_single_h single;
+  char *prop_value;
+  int status;
+
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
+  gchar *test_model;
+
+  /* supposed to run test in build directory */
+  if (root_path == NULL)
+    root_path = "..";
+
+  /** add.tflite adds value 2 to all the values in the input */
+  test_model = g_build_filename (
+      root_path, "tests", "test_models", "models", "add.tflite", NULL);
+  ASSERT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
+
+  status = ml_single_open (&single, test_model, NULL, NULL,
+      ML_NNFW_TYPE_TENSORFLOW_LITE, ML_NNFW_HW_ANY);
+  if (is_enabled_tensorflow_lite) {
+    EXPECT_EQ (status, ML_ERROR_NONE);
+  } else {
+    EXPECT_NE (status, ML_ERROR_NONE);
+    goto skip_test;
+  }
+
+  status = ml_single_set_property (single, "input", "5:1:1:1");
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_single_get_property (single, "input", &prop_value);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  EXPECT_STREQ (prop_value, "5:1:1:1");
+  g_free (prop_value);
+
+  status = ml_single_set_property (single, "input", "5:1:1");
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_single_get_property (single, "input", &prop_value);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  EXPECT_STREQ (prop_value, "5:1:1");
+  g_free (prop_value);
+
+  status = ml_single_set_property (single, "input", "5:1");
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_single_get_property (single, "input", &prop_value);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  EXPECT_STREQ (prop_value, "5:1");
+  g_free (prop_value);
+
+  status = ml_single_set_property (single, "input", "5");
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_single_get_property (single, "input", &prop_value);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  EXPECT_STREQ (prop_value, "5");
+  g_free (prop_value);
+
+  status = ml_single_set_property (single, "output", "5:1:1:1");
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_single_get_property (single, "output", &prop_value);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  EXPECT_STREQ (prop_value, "5:1:1:1");
+  g_free (prop_value);
+
+  status = ml_single_set_property (single, "output", "5:1:1");
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_single_get_property (single, "output", &prop_value);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  EXPECT_STREQ (prop_value, "5:1:1");
+  g_free (prop_value);
+
+  status = ml_single_set_property (single, "output", "5:1");
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_single_get_property (single, "output", &prop_value);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  EXPECT_STREQ (prop_value, "5:1");
+  g_free (prop_value);
+
+  status = ml_single_set_property (single, "output", "5");
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_single_get_property (single, "output", &prop_value);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  EXPECT_STREQ (prop_value, "5");
+  g_free (prop_value);
 
 skip_test:
   g_free (test_model);
@@ -2061,7 +2336,7 @@ TEST (nnstreamer_capi_singleshot, invoke_05)
   char *name = NULL;
   int status;
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
 
   /* supposed to run test in build directory */
@@ -2174,7 +2449,7 @@ TEST (nnstreamer_capi_singleshot, open_dir)
   ml_single_h single;
   int status;
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
 
   /* supposed to run test in build directory */
@@ -2215,7 +2490,7 @@ TEST (nnstreamer_capi_singleshot, invoke_06)
   void *data_ptr;
   size_t data_size;
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model, *test_file;
   guint8 *contents_uint8 = NULL;
   gfloat *contents_float = NULL;
@@ -2253,14 +2528,14 @@ TEST (nnstreamer_capi_singleshot, invoke_06)
   ml_tensors_info_set_tensor_type (out_info, 0, ML_TENSOR_TYPE_FLOAT32);
   ml_tensors_info_set_tensor_dimension (out_info, 0, out_dim);
 
-  ASSERT_TRUE (g_file_get_contents (test_file, (gchar **)&contents_uint8, &len, NULL));
+  ASSERT_TRUE (g_file_get_contents (test_file, (gchar **) &contents_uint8, &len, NULL));
   status = ml_tensors_info_get_tensor_size (in_info, 0, &data_size);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   ASSERT_TRUE (len == data_size / sizeof (float));
 
   /** Convert uint8 data with range [0, 255] to float with range [-1, 1] */
-  contents_float = (gfloat *)g_malloc (data_size);
+  contents_float = (gfloat *) g_malloc (data_size);
   for (unsigned int idx = 0; idx < len; idx++) {
     contents_float[idx] = static_cast<float> (contents_uint8[idx]);
     contents_float[idx] -= 127.5;
@@ -2343,7 +2618,7 @@ TEST (nnstreamer_capi_singleshot, invoke_06)
   max_score = .0;
   max_score_index = 0;
   for (gint i = 0; i < 10; i++) {
-    score = ((float *)data_ptr)[i];
+    score = ((float *) data_ptr)[i];
     if (score > max_score) {
       max_score = score;
       max_score_index = i;
@@ -2386,7 +2661,7 @@ TEST (nnstreamer_capi_singleshot, invoke_07)
   void *data_ptr;
   size_t data_size;
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
 
   /* supposed to run test in build directory */
@@ -2472,7 +2747,7 @@ TEST (nnstreamer_capi_singleshot, invoke_07)
 
   status = ml_tensors_data_get_tensor_data (input, 0, &data_ptr, &data_size);
   EXPECT_EQ (status, ML_ERROR_NONE);
-  ((float *)data_ptr)[0] = 10.0;
+  ((float *) data_ptr)[0] = 10.0;
 
   status = ml_single_set_timeout (single, SINGLE_DEF_TIMEOUT_MSEC);
   EXPECT_TRUE (status == ML_ERROR_NOT_SUPPORTED || status == ML_ERROR_NONE);
@@ -2483,7 +2758,7 @@ TEST (nnstreamer_capi_singleshot, invoke_07)
 
   status = ml_tensors_data_get_tensor_data (output, 0, &data_ptr, &data_size);
   EXPECT_EQ (status, ML_ERROR_NONE);
-  EXPECT_EQ (((float *)data_ptr)[0], 12.0);
+  EXPECT_EQ (((float *) data_ptr)[0], 12.0);
 
   status = ml_single_close (single);
   EXPECT_EQ (status, ML_ERROR_NONE);
@@ -2508,7 +2783,7 @@ TEST (nnstreamer_capi_singleshot, open_fail_03_n)
   ml_tensors_info_h in_info, out_info;
   ml_tensor_dimension in_dim, out_dim;
   int status;
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
 
   /* supposed to run test in build directory */
@@ -2583,7 +2858,7 @@ TEST (nnstreamer_capi_singleshot, invoke_08_n)
   int status;
   size_t data_size;
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
   gfloat *contents_float = NULL;
 
@@ -2630,7 +2905,7 @@ TEST (nnstreamer_capi_singleshot, invoke_08_n)
 
   status = ml_tensors_info_get_tensor_size (in_info, 0, &data_size);
   EXPECT_EQ (status, ML_ERROR_NONE);
-  contents_float = (gfloat *)g_malloc (data_size);
+  contents_float = (gfloat *) g_malloc (data_size);
   status = ml_tensors_data_set_tensor_data (input, 0, contents_float, data_size);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
@@ -2666,7 +2941,7 @@ TEST (nnstreamer_capi_singleshot, invoke_09_n)
   int status;
   size_t data_size;
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
   gfloat *contents_float = NULL;
 
@@ -2714,7 +2989,7 @@ TEST (nnstreamer_capi_singleshot, invoke_09_n)
 
   status = ml_tensors_info_get_tensor_size (out_info, 0, &data_size);
   EXPECT_EQ (status, ML_ERROR_NONE);
-  contents_float = (gfloat *)g_malloc (data_size);
+  contents_float = (gfloat *) g_malloc (data_size);
   status = ml_tensors_data_set_tensor_data (input, 0, contents_float, data_size);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
@@ -2797,7 +3072,7 @@ TEST (nnstreamer_capi_singleshot, invoke_10_p)
   status = ml_tensors_data_get_tensor_data (input, 0, &data_ptr, &data_size);
   EXPECT_EQ (status, ML_ERROR_NONE);
   for (i = 0; i < 10; i++) {
-    ((int16_t *)data_ptr)[i] = (int16_t) (i + 1);
+    ((int16_t *) data_ptr)[i] = (int16_t) (i + 1);
   }
 
   status = ml_single_invoke (single, input, &output);
@@ -2882,7 +3157,7 @@ TEST (nnstreamer_capi_singleshot, invoke_11_p)
   status = ml_tensors_data_get_tensor_data (input, 0, &data_ptr, &data_size);
   EXPECT_EQ (status, ML_ERROR_NONE);
   for (i = 0; i < 10; i++) {
-    ((int16_t *)data_ptr)[i] = (int16_t) (i + 1);
+    ((int16_t *) data_ptr)[i] = (int16_t) (i + 1);
   }
 
   status = ml_single_invoke (single, input, &output);
@@ -2969,7 +3244,7 @@ TEST (nnstreamer_capi_singleshot, invoke_12_p)
   status = ml_tensors_data_get_tensor_data (input, 0, &data_ptr, &data_size);
   EXPECT_EQ (status, ML_ERROR_NONE);
   for (i = 0; i < 10; i++) {
-    ((int16_t *)data_ptr)[i] = (int16_t) (i + 1);
+    ((int16_t *) data_ptr)[i] = (int16_t) (i + 1);
   }
 
   status = ml_single_invoke (single, input, &output1);
@@ -3174,7 +3449,7 @@ TEST (nnstreamer_capi_singleshot, invoke_dynamic_success_01_p)
   ml_tensor_type_e tmp_type = ML_TENSOR_TYPE_UNKNOWN;
   ml_tensor_dimension tmp_dim;
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
 
   /* supposed to run test in build directory */
@@ -3219,7 +3494,7 @@ TEST (nnstreamer_capi_singleshot, invoke_dynamic_success_01_p)
     status = ml_single_invoke_dynamic (single, input, in_info, &output, &out_info);
     EXPECT_EQ (status, ML_ERROR_NONE);
 
-    ml_tensors_data_get_tensor_data (output, 0, (void **)&output_buf, &data_size);
+    ml_tensors_data_get_tensor_data (output, 0, (void **) &output_buf, &data_size);
 
     EXPECT_FLOAT_EQ (output_buf[0], 3.0f);
     EXPECT_EQ (data_size, sizeof (float));
@@ -3269,7 +3544,7 @@ TEST (nnstreamer_capi_singleshot, invoke_dynamic_success_01_p)
     status = ml_single_invoke_dynamic (single, input, in_info, &output, &out_info);
     EXPECT_EQ (status, ML_ERROR_NONE);
 
-    ml_tensors_data_get_tensor_data (output, 0, (void **)&output_buf2, &data_size);
+    ml_tensors_data_get_tensor_data (output, 0, (void **) &output_buf2, &data_size);
 
     EXPECT_FLOAT_EQ (output_buf2[0], 3.0f);
     EXPECT_FLOAT_EQ (output_buf2[1], 4.0f);
@@ -3317,7 +3592,7 @@ TEST (nnstreamer_capi_singleshot, invoke_dynamic_success_02_p)
   ml_tensor_type_e tmp_type = ML_TENSOR_TYPE_UNKNOWN;
   ml_tensor_dimension tmp_dim, in_dim;
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
 
   /* supposed to run test in build directory */
@@ -3364,7 +3639,7 @@ TEST (nnstreamer_capi_singleshot, invoke_dynamic_success_02_p)
     status = ml_single_invoke_dynamic (single, input, in_info, &output, &out_info);
     EXPECT_EQ (status, ML_ERROR_NONE);
 
-    ml_tensors_data_get_tensor_data (output, 0, (void **)&output_buf, &data_size);
+    ml_tensors_data_get_tensor_data (output, 0, (void **) &output_buf, &data_size);
     EXPECT_FLOAT_EQ (output_buf[0], 3.0f);
     EXPECT_EQ (data_size, sizeof (float));
 
@@ -3418,7 +3693,7 @@ TEST (nnstreamer_capi_singleshot, invoke_dynamic_success_02_p)
     status = ml_single_invoke_dynamic (single, input, in_info, &output, &out_info);
     EXPECT_EQ (status, ML_ERROR_NONE);
 
-    ml_tensors_data_get_tensor_data (output, 0, (void **)&output_buf2, &data_size);
+    ml_tensors_data_get_tensor_data (output, 0, (void **) &output_buf2, &data_size);
 
     EXPECT_FLOAT_EQ (output_buf2[0], 3.0f);
     EXPECT_FLOAT_EQ (output_buf2[1], 4.0f);
@@ -3462,7 +3737,7 @@ TEST (nnstreamer_capi_singleshot, invoke_dynamic_fail_n)
   ml_tensors_info_h in_info, out_info;
   ml_tensors_data_h input, output;
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
 
   /* supposed to run test in build directory */
@@ -3578,20 +3853,24 @@ TEST (nnstreamer_capi_ml_option, test03_n)
 {
   int status;
   ml_option_h option;
+  gchar *value = g_strdup ("value");
 
   status = ml_option_create (&option);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  gchar *value = g_strdup ("value");
+  status = ml_option_set (NULL, "key", value, NULL);
+  EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
+
   status = ml_option_set (option, NULL, value, NULL);
   EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
-  g_free (value);
 
   status = ml_option_set (option, "key", NULL, NULL);
   EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
 
   status = ml_option_destroy (option);
   EXPECT_EQ (status, ML_ERROR_NONE);
+
+  g_free (value);
 }
 
 /**
@@ -3627,7 +3906,7 @@ TEST (nnstreamer_capi_ml_option, tensorflow_lite)
   status = ml_option_create (&option);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
 
   /* supposed to run test in build directory */
@@ -3710,7 +3989,7 @@ skip_test:
   g_free (test_model);
 }
 
-#if defined (ENABLE_TENSORFLOW_LITE) && defined (ENABLE_TENSORFLOW2_LITE)
+#if defined(ENABLE_TENSORFLOW_LITE) && defined(ENABLE_TENSORFLOW2_LITE)
 /**
  * @brief Test ml_option with tensorflow1-lite (manually set by ml_option_se, NULLt)
  */
@@ -3725,7 +4004,7 @@ TEST (nnstreamer_capi_ml_option, tensorflow1_lite)
   status = ml_option_create (&option);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
 
   /* supposed to run test in build directory */
@@ -3814,7 +4093,8 @@ TEST (nnstreamer_capi_ml_option, tensorflow1_lite)
 TEST (nnstreamer_capi_util, nnfw_name_01_p)
 {
   EXPECT_STREQ (_ml_get_nnfw_subplugin_name (ML_NNFW_TYPE_TENSORFLOW_LITE), "tensorflow-lite");
-  EXPECT_EQ (_ml_get_nnfw_type_by_subplugin_name ("tensorflow-lite"), ML_NNFW_TYPE_TENSORFLOW_LITE);
+  EXPECT_EQ (_ml_get_nnfw_type_by_subplugin_name ("tensorflow-lite"),
+      ML_NNFW_TYPE_TENSORFLOW_LITE);
   EXPECT_STREQ (_ml_get_nnfw_subplugin_name (ML_NNFW_TYPE_TENSORFLOW), "tensorflow");
   EXPECT_EQ (_ml_get_nnfw_type_by_subplugin_name ("tensorflow"), ML_NNFW_TYPE_TENSORFLOW);
   EXPECT_STREQ (_ml_get_nnfw_subplugin_name (ML_NNFW_TYPE_NNFW), "nnfw");
@@ -3882,7 +4162,7 @@ skip_test:
  */
 TEST (nnstreamer_capi_internal, validate_model_file_02_n)
 {
-  const gchar *sroot_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *sroot_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   const gchar cf_name[] = "libnnstreamer_customfilter_passthrough_variable" SO_FILE_EXTENSION;
   gchar *lib_path = NULL;
   gchar *test_model1 = NULL;
@@ -3963,7 +4243,7 @@ skip_test:
  */
 TEST (nnstreamer_capi_internal, validate_model_file_03_n)
 {
-  const gchar *root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   int status;
   ml_nnfw_type_e nnfw;
   gchar *test_dir1, *test_dir2;

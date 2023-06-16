@@ -1,24 +1,11 @@
-unittest_util_static = static_library('unittest_util',
-  join_paths(meson.current_source_dir(), 'unittest_util.c'),
-  dependencies: [glib_dep],
-  install: false,
-)
-
 unittest_capi_inference_single = executable('unittest_capi_inference_single',
   'unittest_capi_inference_single.cc',
-  dependencies: [nns_capi_single_dep, gtest_dep, nns_capi_test_deps],
+  dependencies: [nns_capi_single_dep, gtest_dep],
   install: get_option('install-test'),
   install_dir: unittest_install_dir,
   include_directories: nns_capi_include,
 )
 test('unittest_capi_inference_single', unittest_capi_inference_single, env: testenv, timeout: 100)
-
-unittest_common_dep = declare_dependency(
-  link_with: [unittest_util_static],
-  dependencies: [nns_capi_dep, gtest_dep, nns_capi_test_deps],
-  compile_args: ['-DFAKEDLOG=1'],
-  include_directories: nns_capi_include,
-)
 
 unittest_capi_inference = executable('unittest_capi_inference',
   'unittest_capi_inference.cc',
@@ -47,9 +34,11 @@ test('unittest_capi_datatype_consistency', unittest_capi_datatype_consistency, e
 if get_option('enable-ml-service')
   unittest_capi_service_agent_client = executable('unittest_capi_service_agent_client',
     'unittest_capi_service_agent_client.cc',
-    dependencies: [unittest_common_dep, nns_capi_service_dep, gdbus_gen_header_test_dep],
+    link_with: nns_capi_service_lib,
+    dependencies: [unittest_common_dep, gdbus_gen_test_dep, lib_ml_agentd_test_dep],
     install: get_option('install-test'),
-    install_dir: unittest_install_dir
+    install_dir: unittest_install_dir,
+    include_directories: nns_capi_include,
   )
   test('unittest_capi_service_agent_client', unittest_capi_service_agent_client, env: testenv, timeout: 100)
 endif

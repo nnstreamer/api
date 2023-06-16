@@ -18,6 +18,7 @@
 #include <gst/gst.h>
 #include <nnstreamer_internal.h>
 
+#include "nnstreamer.h"
 #include "ml-api-internal.h"
 
 #ifdef __cplusplus

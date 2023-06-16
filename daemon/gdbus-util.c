@@ -14,8 +14,8 @@
 #include <stdbool.h>
 #include <systemd/sd-daemon.h>
 
-#include <gdbus-util.h>
-#include <log.h>
+#include "gdbus-util.h"
+#include "log.h"
 
 static GDBusConnection *g_dbus_sys_conn = NULL;
 
@@ -115,34 +115,6 @@ gdbus_disconnect_signal (gpointer instance, int num_signals,
 }
 
 /**
- * @brief Cleanup the instance of the DBus interface.
- */
-static void
-put_instance (gpointer * instance)
-{
-  g_object_unref (*instance);
-  *instance = NULL;
-}
-
-/**
- * @brief Get the skeleton object of the DBus interface.
- */
-MachinelearningServicePipeline *
-gdbus_get_instance_pipeline (void)
-{
-  return machinelearning_service_pipeline_skeleton_new ();
-}
-
-/**
- * @brief Put the obtained skeleton object and release the resource.
- */
-void
-gdbus_put_instance_pipeline (MachinelearningServicePipeline ** instance)
-{
-  put_instance ((gpointer *) instance);
-}
-
-/**
  * @brief Connect to the DBus message bus, which type is SYSTEM.
  */
 int
@@ -154,7 +126,7 @@ gdbus_get_system_connection (gboolean is_session)
   g_dbus_sys_conn = g_bus_get_sync (bus_type, NULL, &error);
   if (g_dbus_sys_conn == NULL) {
     _E ("cannot connect to the system message bus: %s\n", error->message);
-    g_clear_error(&error);
+    g_clear_error (&error);
     return -ENOSYS;
   }
 

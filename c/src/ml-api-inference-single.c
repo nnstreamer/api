@@ -134,6 +134,10 @@ typedef struct
   ml_tensors_data_s in_tensors;    /**< input tensor wrapper for processing */
   ml_tensors_data_s out_tensors;   /**< output tensor wrapper for processing */
 
+  /** @todo Use only ml_tensor_info_s dimension instead of saving ranks value */
+  guint input_ranks[ML_TENSOR_SIZE_LIMIT];   /**< the rank list of input tensors, it is calculated based on the dimension string. */
+  guint output_ranks[ML_TENSOR_SIZE_LIMIT];  /**< the rank list of output tensors, it is calculated based on the dimension string. */
+
   GList *destroy_data_list;         /**< data to be freed by filter */
 } ml_single;
 
@@ -283,21 +287,29 @@ __setup_in_out_tensors (ml_single * single_h)
   ml_tensors_data_s *out_tensors = &single_h->out_tensors;
 
   /** Setup input buffer */
+  _ml_tensors_info_free (in_tensors->info);
+  ml_tensors_info_clone (in_tensors->info, &single_h->in_info);
+
   in_tensors->num_tensors = single_h->in_info.num_tensors;
   for (i = 0; i < single_h->in_info.num_tensors; i++) {
     /** memory will be allocated by tensor_filter_single */
     in_tensors->tensors[i].tensor = NULL;
     in_tensors->tensors[i].size =
-        _ml_tensor_info_get_size (&single_h->in_info.info[i]);
+        _ml_tensor_info_get_size (&single_h->in_info.info[i],
+        single_h->in_info.is_extended);
   }
 
   /** Setup output buffer */
+  _ml_tensors_info_free (out_tensors->info);
+  ml_tensors_info_clone (out_tensors->info, &single_h->out_info);
+
   out_tensors->num_tensors = single_h->out_info.num_tensors;
   for (i = 0; i < single_h->out_info.num_tensors; i++) {
     /** memory will be allocated by tensor_filter_single */
     out_tensors->tensors[i].tensor = NULL;
     out_tensors->tensors[i].size =
-        _ml_tensor_info_get_size (&single_h->out_info.info[i]);
+        _ml_tensor_info_get_size (&single_h->out_info.info[i],
+        single_h->out_info.is_extended);
   }
 }
 
@@ -443,6 +455,44 @@ __process_output (ml_single * single_h, ml_tensors_data_h output)
     out_data = (ml_tensors_data_s *) output;
     set_destroy_notify (single_h, out_data, FALSE);
   }
+}
+
+/**
+ * @brief Initializes the rank information with default value.
+ */
+static int
+_ml_tensors_rank_initialize (guint * rank)
+{
+  guint i;
+
+  if (!rank)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, rank, is NULL. Provide a valid pointer.");
+
+  for (i = 0; i < ML_TENSOR_SIZE_LIMIT; i++) {
+    rank[i] = 0;
+  }
+
+  return ML_ERROR_NONE;
+}
+
+/**
+ * @brief Sets the rank information with given value.
+ */
+static int
+_ml_tensors_set_rank (guint * rank, guint val)
+{
+  guint i;
+
+  if (!rank)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, rank, is NULL. Provide a valid pointer.");
+
+  for (i = 0; i < ML_TENSOR_SIZE_LIMIT; i++) {
+    rank[i] = val;
+  }
+
+  return ML_ERROR_NONE;
 }
 
 /**
@@ -812,6 +862,8 @@ ml_single_create_handle (ml_nnfw_type_e nnfw)
 
   _ml_tensors_info_initialize (&single_h->in_info);
   _ml_tensors_info_initialize (&single_h->out_info);
+  _ml_tensors_rank_initialize (single_h->input_ranks);
+  _ml_tensors_rank_initialize (single_h->output_ranks);
   g_mutex_init (&single_h->mutex);
   g_cond_init (&single_h->cond);
 
@@ -1086,6 +1138,22 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
   }
 
   /* Setup input and output memory buffers for invoke */
+  if (in_tensors_info && in_tensors_info->is_extended) {
+    ml_tensors_info_create_extended (&single_h->in_tensors.info);
+    _ml_tensors_set_rank (single_h->input_ranks, ML_TENSOR_RANK_LIMIT);
+  } else {
+    ml_tensors_info_create (&single_h->in_tensors.info);
+    _ml_tensors_set_rank (single_h->input_ranks, ML_TENSOR_RANK_LIMIT_PREV);
+  }
+
+  if (out_tensors_info && out_tensors_info->is_extended) {
+    ml_tensors_info_create_extended (&single_h->out_tensors.info);
+    _ml_tensors_set_rank (single_h->output_ranks, ML_TENSOR_RANK_LIMIT);
+  } else {
+    ml_tensors_info_create (&single_h->out_tensors.info);
+    _ml_tensors_set_rank (single_h->output_ranks, ML_TENSOR_RANK_LIMIT_PREV);
+  }
+
   __setup_in_out_tensors (single_h);
 
   *single = single_h;
@@ -1737,8 +1805,33 @@ ml_single_set_property (ml_single_h single, const char *name, const char *value)
       num = gst_tensors_info_parse_types_string (&gst_info, value);
     else if (g_str_has_suffix (name, "name"))
       num = gst_tensors_info_parse_names_string (&gst_info, value);
-    else
-      num = gst_tensors_info_parse_dimensions_string (&gst_info, value);
+    else {
+      guint *rank;
+      gchar **str_dims;
+      guint i;
+
+      if (is_input) {
+        rank = single_h->input_ranks;
+      } else {
+        rank = single_h->output_ranks;
+      }
+
+      str_dims = g_strsplit_set (value, ",.", -1);
+      num = g_strv_length (str_dims);
+
+      if (num > ML_TENSOR_SIZE_LIMIT) {
+        _ml_error_report ("Invalid param, dimensions (%d) max (%d)\n",
+            num, ML_TENSOR_SIZE_LIMIT);
+
+        num = ML_TENSOR_SIZE_LIMIT;
+      }
+
+      for (i = 0; i < num; ++i) {
+        rank[i] = gst_tensor_parse_dimension (str_dims[i],
+            gst_info.info[i].dimension);
+      }
+      g_strfreev (str_dims);
+    }
 
     if (num == gst_info.num_tensors) {
       ml_tensors_info_h ml_info;
@@ -1800,9 +1893,8 @@ ml_single_get_property (ml_single_h single, const char *name, char **value)
 
   ML_SINGLE_GET_VALID_HANDLE_LOCKED (single_h, single, 0);
 
-  if (g_str_equal (name, "input") || g_str_equal (name, "inputtype") ||
-      g_str_equal (name, "inputname") || g_str_equal (name, "inputlayout") ||
-      g_str_equal (name, "output") || g_str_equal (name, "outputtype") ||
+  if (g_str_equal (name, "inputtype") || g_str_equal (name, "inputname") ||
+      g_str_equal (name, "inputlayout") || g_str_equal (name, "outputtype") ||
       g_str_equal (name, "outputname") || g_str_equal (name, "outputlayout") ||
       g_str_equal (name, "accelerator") || g_str_equal (name, "custom")) {
     /* string */
@@ -1813,6 +1905,40 @@ ml_single_get_property (ml_single_h single, const char *name, char **value)
     /* boolean */
     g_object_get (G_OBJECT (single_h->filter), name, &bool_value, NULL);
     *value = (bool_value) ? g_strdup ("true") : g_strdup ("false");
+  } else if (g_str_equal (name, "input") || g_str_equal (name, "output")) {
+    gchar *dim_str = NULL;
+    const guint *rank;
+    gboolean is_input = g_str_has_prefix (name, "input");
+    GstTensorsInfo gst_info;
+
+    if (is_input) {
+      rank = single_h->input_ranks;
+    } else {
+      rank = single_h->output_ranks;
+    }
+
+    ml_single_get_gst_info (single_h, is_input, &gst_info);
+
+    if (gst_info.num_tensors > 0) {
+      guint i;
+      GString *dimensions = g_string_new (NULL);
+
+      for (i = 0; i < gst_info.num_tensors; ++i) {
+        dim_str =
+            gst_tensor_get_rank_dimension_string (gst_info.info[i].dimension,
+            *(rank + i));
+        g_string_append (dimensions, dim_str);
+
+        if (i < gst_info.num_tensors - 1) {
+          g_string_append (dimensions, ",");
+        }
+        g_free (dim_str);
+      }
+      dim_str = g_string_free (dimensions, FALSE);
+    } else {
+      dim_str = g_strdup ("");
+    }
+    *value = dim_str;
   } else {
     _ml_error_report
         ("The property key, '%s', is not available for get_property and not recognized by the API. It should be one of {input, inputtype, inputname, inputlayout, output, outputtype, outputname, outputlayout, accelerator, custom, is-updatable}.",

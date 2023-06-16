@@ -13,6 +13,7 @@
 ##@@  - ANDROID_NDK_ROOT: Android NDK
 ##@@  - GSTREAMER_ROOT_ANDROID: GStreamer prebuilt libraries for Android
 ##@@  - NNSTREAMER_ROOT: The source root directory of NNStreamer
+##@@  - NNSTREAMER_EDGE_ROOT: The source root directory of nnstreamer-edge
 ##@@  - ML_API_ROOT: The source root directory of ML API
 ##@@ 
 ##@@ usage: build-nnstreamer-android.sh [OPTIONS]
@@ -71,6 +72,11 @@
 ##@@       'yes'      : [default]
 ##@@       'no'       : build without the sub-plugin for FlatBuffers and FlexBuffers
 ##@@ 
+##@@ options for tensor_query:
+##@@   --enable_tensor_query=(yes|no)
+##@@       'yes'      : [default] build with tensor_query elements.
+##@@       'no'       : build without the tensor_query elements.
+##@@
 ##@@ options for mqtt:
 ##@@   --enable_mqtt=(yes|no)
 ##@@       'yes'      : [default] build with paho.mqtt.c prebuilt libs. This option supports the mqtt plugin
@@ -122,12 +128,15 @@ enable_mxnet="no"
 mxnet_ver="1.9.1"
 
 # Enable the flatbuffer converter/decoder by default
-enable_flatbuf="yes"
+enable_flatbuf="no"
 flatbuf_ver="1.12.0"
 
 # Enable option for MQTT
 enable_mqtt="no"
 paho_mqtt_c_ver="1.3.7"
+
+# Enable option for tensor_query
+enable_tensor_query="yes"
 
 # Set tensorflow-lite version (available: 1.9.0 / 1.13.1 / 1.15.2 / 2.3.0 / 2.7.0 / 2.8.1)
 tf_lite_ver="2.8.1"
@@ -159,6 +168,9 @@ for arg in "$@"; do
             ;;
         --nnstreamer_dir=*)
             nnstreamer_dir=${arg#*=}
+            ;;
+        --nnstreamer_edge_dir=*)
+            nnstreamer_edge_dir=${arg#*=}
             ;;
         --ml_api_dir=*)
             ml_api_dir=${arg#*=}
@@ -237,6 +249,9 @@ for arg in "$@"; do
             ;;
         --enable_flatbuf=*)
             enable_flatbuf=${arg#*=}
+            ;;
+        --enable_tensor_query=*)
+            enable_tensor_query=${arg#*=}
             ;;
         --enable_mqtt=*)
             enable_mqtt=${arg#*=}
@@ -372,6 +387,16 @@ fi
 
 echo "NNStreamer root directory: $nnstreamer_dir"
 
+# nnstreamer-edge root directory
+
+if [[ $enable_tensor_query == "yes" ]]; then
+    if [[ -z "$nnstreamer_edge_dir" ]]; then
+        [ -z "$NNSTREAMER_EDGE_ROOT" ] && echo "Need to set NNSTREAMER_EDGE_ROOT." && exit 1
+        nnstreamer_edge_dir=$NNSTREAMER_EDGE_ROOT
+    fi
+    echo "nnstreamer-edge root directory: $nnstreamer_edge_dir"
+fi
+
 # ML API root directory
 if [[ -z "$ml_api_dir" ]]; then
     [ -z "$ML_API_ROOT" ] && echo "Need to set ML_API_ROOT." && exit 1
@@ -467,8 +492,9 @@ if [[ $include_assets == "yes" ]]; then
     sed -i "s|GSTREAMER_INCLUDE_CA_CERTIFICATES := no|GSTREAMER_INCLUDE_CA_CERTIFICATES := yes|" nnstreamer/src/main/jni/Android.mk
 fi
 
-# Update ML_API, NNStreamer, GStreamer and Android SDK
+# Update ML_API, nnstreamer-edge, NNStreamer, GStreamer and Android SDK
 sed -i "s|mlApiRoot=ml-api-path|mlApiRoot=$ml_api_dir|" gradle.properties
+sed -i "s|nnstreamerEdgeRoot=nnstreamer-edge-path|nnstreamerEdgeRoot=$nnstreamer_edge_dir|" gradle.properties
 sed -i "s|nnstreamerRoot=nnstreamer-path|nnstreamerRoot=$nnstreamer_dir|" gradle.properties
 sed -i "s|gstAndroidRoot=gstreamer-path|gstAndroidRoot=$gstreamer_dir|" gradle.properties
 sed -i "s|ndk.dir=ndk-path|ndk.dir=$android_ndk_dir|" local.properties
@@ -552,6 +578,12 @@ if [[ $enable_flatbuf == "yes" ]]; then
     sed -i "s|ENABLE_FLATBUF := false|ENABLE_FLATBUF := true|" nnstreamer/src/main/jni/Android.mk
     sed -i "s|FLATBUF_VER := @FLATBUF_VER@|FLATBUF_VER := ${flatbuf_ver}|" nnstreamer/src/main/jni/Android-flatbuf.mk
     tar -xJf ./external/flatbuffers-${flatbuf_ver}.tar.xz -C ./nnstreamer/src/main/jni
+fi
+
+if [[ $enable_tensor_query == "yes" ]]; then
+    sed -i "s|ENABLE_TENSOR_QUERY := false|ENABLE_TENSOR_QUERY := true|" nnstreamer/src/main/jni/Android.mk
+else
+    sed -i "s|ENABLE_TENSOR_QUERY := true|ENABLE_TENSOR_QUERY := false|" nnstreamer/src/main/jni/Android.mk
 fi
 
 if [[ $enable_mqtt == "yes" ]]; then

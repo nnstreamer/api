@@ -97,8 +97,9 @@ typedef enum {
 /**
  * @brief The maximum rank that NNStreamer supports with Tizen APIs.
  * @since_tizen 5.5
+ * @remarks The maximum rank in Tizen APIs is 4 until tizen 7.0 and 16 since 8.0.
  */
-#define ML_TENSOR_RANK_LIMIT  (4)
+#define ML_TENSOR_RANK_LIMIT  (16)
 
 /**
  * @brief The maximum number of other/tensor instances that other/tensors may have.
@@ -171,6 +172,7 @@ typedef int (*ml_custom_easy_invoke_cb) (const ml_tensors_data_h in, ml_tensors_
 /**
  * @brief Creates a tensors information handle with default value.
  * @since_tizen 5.5
+ * @remarks The @a info should be released using ml_tensors_info_destroy().
  * @param[out] info The handle of tensors information.
  * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
@@ -179,6 +181,20 @@ typedef int (*ml_custom_easy_invoke_cb) (const ml_tensors_data_h in, ml_tensors_
  * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
  */
 int ml_tensors_info_create (ml_tensors_info_h *info);
+
+/**
+ * @brief Creates an extended tensors information handle with default value.
+ * @details An extended tensors support higher rank limit.
+ * @since_tizen 8.0
+ * @remarks The @a info should be released using ml_tensors_info_destroy().
+ * @param[out] info The handle of tensors information.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
+ * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
+ */
+int ml_tensors_info_create_extended (ml_tensors_info_h *info);
 
 /**
  * @brief Frees the given handle of a tensors information.
@@ -462,7 +478,21 @@ int ml_option_destroy (ml_option_h option);
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
  */
-int ml_option_set (ml_option_h option, const char* key, void *value, ml_data_destroy_cb destroy);
+int ml_option_set (ml_option_h option, const char *key, void *value, ml_data_destroy_cb destroy);
+
+/**
+ * @brief Gets a value of key in ml-option instance.
+ * @details This returns the pointer of memory in the handle. Do not deallocate the returned value. If you modify the returned memory (value), the contents of value is updated.
+ * @since_tizen 8.0
+ * @param[in] option The handle of ml-option.
+ * @param[in] key The key to get the corresponding value.
+ * @param[out] value The value of the key.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
+ */
+int ml_option_get (ml_option_h option, const char *key, void **value);
 
 /**
  * @}

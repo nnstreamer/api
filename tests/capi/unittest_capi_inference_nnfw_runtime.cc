@@ -9,18 +9,18 @@
 
 #include <gtest/gtest.h>
 #include <glib.h>
-#include <nnstreamer.h>
-#include <nnstreamer-single.h>
-#include <ml-api-internal.h>
 #include <ml-api-inference-internal.h>
 #include <ml-api-inference-pipeline-internal.h>
+#include <ml-api-internal.h>
+#include <nnstreamer-single.h>
+#include <nnstreamer.h>
 
 /**
  * @brief Test Fixture class for ML API of the NNFW Inference
  */
 class MLAPIInferenceNNFW : public ::testing::Test
 {
-protected:
+  protected:
   ml_single_h single_h;
   ml_pipeline_h pipeline_h;
   ml_tensors_info_h in_info, out_info;
@@ -34,13 +34,16 @@ protected:
    * @brief Get the valid model file for NNFW test
    * @return gchar* the path of the model file
    */
-  gchar *GetVaildModelFile () {
+  gchar *GetVaildModelFile ()
+  {
     gchar *model_file;
 
     /* nnfw needs a directory with model file and metadata in that directory */
-    g_autofree gchar *model_path = g_build_filename (root_path, "tests", "test_models", "models", NULL);
+    g_autofree gchar *model_path
+        = g_build_filename (root_path, "tests", "test_models", "models", NULL);
 
-    g_autofree gchar *meta_file = g_build_filename (model_path, "metadata", "MANIFEST", NULL);
+    g_autofree gchar *meta_file
+        = g_build_filename (model_path, "metadata", "MANIFEST", NULL);
     if (!g_file_test (meta_file, G_FILE_TEST_EXISTS)) {
       return NULL;
     }
@@ -53,14 +56,14 @@ protected:
     return model_file;
   }
 
-protected:
+  protected:
   /**
    * @brief Construct a new MLAPIInferenceNNFW object
    */
   MLAPIInferenceNNFW ()
-    : single_h(nullptr), pipeline_h(nullptr), in_info(nullptr), out_info(nullptr),
-      in_res(nullptr), out_res(nullptr), input(nullptr), input2(nullptr), output(nullptr),
-      root_path(nullptr), valid_model(nullptr)
+      : single_h (nullptr), pipeline_h (nullptr), in_info (nullptr),
+        out_info (nullptr), in_res (nullptr), out_res (nullptr), input (nullptr),
+        input2 (nullptr), output (nullptr), root_path (nullptr), valid_model (nullptr)
   {
     for (int i = 0; i < ML_TENSOR_RANK_LIMIT; ++i)
       in_dim[i] = out_dim[i] = res_dim[i] = 1;
@@ -77,11 +80,11 @@ protected:
     ml_tensors_info_create (&out_res);
 
     /* supposed to run test in build directory */
-    root_path = g_getenv ("NNSTREAMER_SOURCE_ROOT_PATH");
+    root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
     if (root_path == NULL) {
       root_path = "..";
     }
-    valid_model = GetVaildModelFile();
+    valid_model = GetVaildModelFile ();
   }
 
   /**
@@ -112,22 +115,22 @@ protected:
     ml_tensors_info_destroy (out_info);
     ml_tensors_info_destroy (in_res);
     ml_tensors_info_destroy (out_res);
-    g_free (const_cast<gchar *>(valid_model));
+    g_free (const_cast<gchar *> (valid_model));
   }
 
   /**
    * @brief Signal handler for new data of tensor_sink element
    * @note This handler checks the number of received tensor counts.
    */
-  static void
-  cb_new_data (const ml_tensors_data_h data, const ml_tensors_info_h info, void *user_data)
+  static void cb_new_data (const ml_tensors_data_h data,
+      const ml_tensors_info_h info, void *user_data)
   {
     int status;
     float *data_ptr;
     size_t data_size;
-    int *checks = (int *)user_data;
+    int *checks = (int *) user_data;
 
-    status = ml_tensors_data_get_tensor_data (data, 0, (void **)&data_ptr, &data_size);
+    status = ml_tensors_data_get_tensor_data (data, 0, (void **) &data_ptr, &data_size);
     EXPECT_EQ (status, ML_ERROR_NONE);
     EXPECT_FLOAT_EQ (*data_ptr, 12.0);
 
@@ -138,14 +141,14 @@ protected:
    * @brief Signal handler for new data of tensor_sink element and check its shape and payload.
    * @note This handler checks the rank, dimension, and payload of the received tensor.
    */
-  static void
-  cb_new_data_checker (const ml_tensors_data_h data, const ml_tensors_info_h info, void *user_data)
+  static void cb_new_data_checker (const ml_tensors_data_h data,
+      const ml_tensors_info_h info, void *user_data)
   {
     unsigned int cnt = 0;
     int status;
     float *data_ptr;
     size_t data_size;
-    int *checks = (int *)user_data;
+    int *checks = (int *) user_data;
     ml_tensor_dimension out_dim;
 
     ml_tensors_info_get_count (info, &cnt);
@@ -157,7 +160,7 @@ protected:
     EXPECT_EQ (out_dim[2], 1U);
     EXPECT_EQ (out_dim[3], 1U);
 
-    status = ml_tensors_data_get_tensor_data (data, 0, (void **)&data_ptr, &data_size);
+    status = ml_tensors_data_get_tensor_data (data, 0, (void **) &data_ptr, &data_size);
     EXPECT_EQ (status, ML_ERROR_NONE);
     EXPECT_EQ (data_size, 1001U);
 
@@ -167,8 +170,7 @@ protected:
   /**
    * @brief Synchronization function for the pipeline execution.
    */
-  static void
-  wait_for_sink (guint* call_cnt, const guint expected_cnt)
+  static void wait_for_sink (guint *call_cnt, const guint expected_cnt)
   {
     guint waiting_time = 0U;
     guint unit_time = 1000U * 1000; /* 1 second */
@@ -205,8 +207,8 @@ TEST_F (MLAPIInferenceNNFW, invoke_single_00)
   ml_tensors_info_set_tensor_type (out_info, 0, ML_TENSOR_TYPE_FLOAT32);
   ml_tensors_info_set_tensor_dimension (out_info, 0, out_dim);
 
-  status = ml_single_open (
-      &single_h, valid_model, in_info, out_info, ML_NNFW_TYPE_NNFW, ML_NNFW_HW_CPU);
+  status = ml_single_open (&single_h, valid_model, in_info, out_info,
+      ML_NNFW_TYPE_NNFW, ML_NNFW_HW_CPU);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   /* let's ignore timeout (30 sec) */
@@ -254,7 +256,7 @@ TEST_F (MLAPIInferenceNNFW, invoke_single_00)
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_TRUE (input != NULL);
 
-  status = ml_tensors_data_get_tensor_data (input, 0, (void **)&data, &data_size);
+  status = ml_tensors_data_get_tensor_data (input, 0, (void **) &data, &data_size);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (data_size, sizeof (float));
   *data = 10.0;
@@ -263,7 +265,7 @@ TEST_F (MLAPIInferenceNNFW, invoke_single_00)
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_TRUE (output != NULL);
 
-  status = ml_tensors_data_get_tensor_data (output, 0, (void **)&data, &data_size);
+  status = ml_tensors_data_get_tensor_data (output, 0, (void **) &data, &data_size);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (data_size, sizeof (float));
   EXPECT_FLOAT_EQ (*data, 12.0);
@@ -291,8 +293,8 @@ TEST_F (MLAPIInferenceNNFW, invoke_single_01_n)
   ml_tensors_info_set_tensor_type (out_info, 0, ML_TENSOR_TYPE_FLOAT32);
   ml_tensors_info_set_tensor_dimension (out_info, 0, out_dim);
 
-  status = ml_single_open (
-      &single_h, invalid_model, in_info, out_info, ML_NNFW_TYPE_NNFW, ML_NNFW_HW_ANY);
+  status = ml_single_open (&single_h, invalid_model, in_info, out_info,
+      ML_NNFW_TYPE_NNFW, ML_NNFW_HW_ANY);
   EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
 
   /* generate data */
@@ -327,8 +329,8 @@ TEST_F (MLAPIInferenceNNFW, invoke_single_02_n)
   ml_tensors_info_set_tensor_dimension (out_info, 0, out_dim);
 
   /* Open model with proper dimension */
-  status = ml_single_open (
-      &single_h, valid_model, in_info, out_info, ML_NNFW_TYPE_NNFW, ML_NNFW_HW_ANY);
+  status = ml_single_open (&single_h, valid_model, in_info, out_info,
+      ML_NNFW_TYPE_NNFW, ML_NNFW_HW_ANY);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   /* let's ignore timeout (30 sec) */
@@ -361,7 +363,7 @@ TEST_F (MLAPIInferenceNNFW, invoke_single_02_n)
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_TRUE (input != NULL);
 
-  status = ml_tensors_data_get_tensor_data (input, 0, (void **)&data, &data_size);
+  status = ml_tensors_data_get_tensor_data (input, 0, (void **) &data, &data_size);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (data_size, sizeof (float) * 16);
   data[0] = 10.0;
@@ -389,7 +391,8 @@ TEST_F (MLAPIInferenceNNFW, invoke_pipeline_00)
   pipeline = g_strdup_printf ("appsrc name=appsrc ! "
                               "other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! "
                               "tensor_filter framework=nnfw model=%s ! "
-                              "tensor_sink name=tensor_sink", valid_model);
+                              "tensor_sink name=tensor_sink",
+      valid_model);
 
   status = ml_pipeline_construct (pipeline, NULL, NULL, &pipeline_h);
   EXPECT_EQ (status, ML_ERROR_NONE);
@@ -398,8 +401,8 @@ TEST_F (MLAPIInferenceNNFW, invoke_pipeline_00)
   status = ml_pipeline_src_get_handle (pipeline_h, "appsrc", &src_handle);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  status = ml_pipeline_sink_register (
-      pipeline_h, "tensor_sink", MLAPIInferenceNNFW::cb_new_data, &call_cnt, &sink_handle);
+  status = ml_pipeline_sink_register (pipeline_h, "tensor_sink",
+      MLAPIInferenceNNFW::cb_new_data, &call_cnt, &sink_handle);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   ml_tensors_info_set_count (in_info, 1);
@@ -419,7 +422,7 @@ TEST_F (MLAPIInferenceNNFW, invoke_pipeline_00)
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_TRUE (input != NULL);
 
-  status = ml_tensors_data_get_tensor_data (input, 0, (void **)&data, &data_size);
+  status = ml_tensors_data_get_tensor_data (input, 0, (void **) &data, &data_size);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (data_size, sizeof (float));
   *data = 10.0;
@@ -495,7 +498,7 @@ TEST_F (MLAPIInferenceNNFW, invoke_pipeline_02_n)
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   ml_tensors_info_set_count (in_info, 1);
-    ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_UINT8);
+  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_UINT8);
   ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
 
   status = ml_pipeline_start (pipeline_h);
@@ -583,8 +586,8 @@ TEST_F (MLAPIInferenceNNFW, multimodal_01_p)
   status = ml_pipeline_src_get_handle (pipeline_h, "appsrc_1", &src_handle_1);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  status = ml_pipeline_sink_register (
-      pipeline_h, "tensor_sink", MLAPIInferenceNNFW::cb_new_data_checker, &call_cnt, &sink_handle);
+  status = ml_pipeline_sink_register (pipeline_h, "tensor_sink",
+      MLAPIInferenceNNFW::cb_new_data_checker, &call_cnt, &sink_handle);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   in_dim[0] = 3;
@@ -608,14 +611,14 @@ TEST_F (MLAPIInferenceNNFW, multimodal_01_p)
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_TRUE (input != NULL);
 
-  status = ml_tensors_data_get_tensor_data (input, 0, (void **)&data1, &data_size1);
+  status = ml_tensors_data_get_tensor_data (input, 0, (void **) &data1, &data_size1);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (data_size1, 3U * 112U * 224U);
 
   status = ml_tensors_data_create (in_info, &input2);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_TRUE (input != NULL);
-  status = ml_tensors_data_get_tensor_data (input2, 0, (void **)&data2, &data_size2);
+  status = ml_tensors_data_get_tensor_data (input2, 0, (void **) &data2, &data_size2);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   /* Push data to the source pad */
@@ -664,11 +667,11 @@ TEST_F (MLAPIInferenceNNFW, multimodel_01_p)
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   /* register call back function when new data is arrived on sink pad */
-  status = ml_pipeline_sink_register (
-      pipeline_h, "tensor_sink_0", MLAPIInferenceNNFW::cb_new_data, &call_cnt1, &sink_handle_0);
+  status = ml_pipeline_sink_register (pipeline_h, "tensor_sink_0",
+      MLAPIInferenceNNFW::cb_new_data, &call_cnt1, &sink_handle_0);
   EXPECT_EQ (status, ML_ERROR_NONE);
-  status = ml_pipeline_sink_register (
-      pipeline_h, "tensor_sink_1", MLAPIInferenceNNFW::cb_new_data, &call_cnt2, &sink_handle_1);
+  status = ml_pipeline_sink_register (pipeline_h, "tensor_sink_1",
+      MLAPIInferenceNNFW::cb_new_data, &call_cnt2, &sink_handle_1);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   ml_tensors_info_set_count (in_info, 1);
@@ -688,7 +691,7 @@ TEST_F (MLAPIInferenceNNFW, multimodel_01_p)
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_TRUE (input != NULL);
 
-  status = ml_tensors_data_get_tensor_data (input, 0, (void **)&data, &data_size);
+  status = ml_tensors_data_get_tensor_data (input, 0, (void **) &data, &data_size);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (data_size, sizeof (float));
   *data = 10.0;
@@ -704,7 +707,7 @@ TEST_F (MLAPIInferenceNNFW, multimodel_01_p)
   MLAPIInferenceNNFW::wait_for_sink (&call_cnt2, 1);
 }
 
-#ifdef ENABLE_TENSORFLOW_LITE
+#if defined(ENABLE_TENSORFLOW_LITE) || defined(ENABLE_TENSORFLOW2_LITE)
 /**
  * @brief Test nnfw subplugin multi-model (pipeline, ML-API)
  * @detail Invoke two models which have different framework via Pipeline API, sharing a single input stream
@@ -737,11 +740,11 @@ TEST_F (MLAPIInferenceNNFW, multimodel_02_p)
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   /* register call back function when new data is arrived on sink pad */
-  status = ml_pipeline_sink_register (
-      pipeline_h, "tensor_sink_0", MLAPIInferenceNNFW::cb_new_data, &call_cnt1, &sink_handle_0);
+  status = ml_pipeline_sink_register (pipeline_h, "tensor_sink_0",
+      MLAPIInferenceNNFW::cb_new_data, &call_cnt1, &sink_handle_0);
   EXPECT_EQ (status, ML_ERROR_NONE);
-  status = ml_pipeline_sink_register (
-      pipeline_h, "tensor_sink_1", MLAPIInferenceNNFW::cb_new_data, &call_cnt2, &sink_handle_1);
+  status = ml_pipeline_sink_register (pipeline_h, "tensor_sink_1",
+      MLAPIInferenceNNFW::cb_new_data, &call_cnt2, &sink_handle_1);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   ml_tensors_info_set_count (in_info, 1);
@@ -761,7 +764,7 @@ TEST_F (MLAPIInferenceNNFW, multimodel_02_p)
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_TRUE (input != NULL);
 
-  status = ml_tensors_data_get_tensor_data (input, 0, (void **)&data, &data_size);
+  status = ml_tensors_data_get_tensor_data (input, 0, (void **) &data, &data_size);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (data_size, sizeof (float));
   *data = 10.0;

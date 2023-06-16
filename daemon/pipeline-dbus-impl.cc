@@ -5,7 +5,7 @@
  */
 
 /**
- * @file    pipeline-module.cc
+ * @file    pipeline-dbus-impl.cc
  * @date    20 Jul 2022
  * @brief   Implementation of pipeline dbus interface.
  * @see     https://github.com/nnstreamer/api
@@ -16,21 +16,21 @@
  */
 
 #include <glib.h>
+#include <gst/gst.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <gst/gst.h>
 
-#include <common.h>
-#include <modules.h>
-#include <gdbus-util.h>
-#include <log.h>
-
-#include "service-db.hh"
+#include "common.h"
 #include "dbus-interface.h"
+#include "gdbus-util.h"
+#include "log.h"
+#include "modules.h"
+#include "pipeline-dbus.h"
+#include "service-db.hh"
 
 static MachinelearningServicePipeline *g_gdbus_instance = NULL;
-static GHashTable *pipeline_table;
+static GHashTable *pipeline_table = NULL;
 G_LOCK_DEFINE_STATIC (pipeline_table_lock);
 
 /**
@@ -47,7 +47,8 @@ typedef struct _pipeline {
 /**
  * @brief Internal function to destroy pipeline instances.
  */
-static void _pipeline_free (gpointer data)
+static void
+_pipeline_free (gpointer data)
 {
   pipeline_s *p;
 
@@ -69,23 +70,39 @@ static void _pipeline_free (gpointer data)
 }
 
 /**
+ * @brief Get the skeleton object of the DBus interface.
+ */
+static MachinelearningServicePipeline *
+gdbus_get_pipeline_instance (void)
+{
+  return machinelearning_service_pipeline_skeleton_new ();
+}
+
+/**
+ * @brief Put the obtained skeleton object and release the resource.
+ */
+static void
+gdbus_put_pipeline_instance (MachinelearningServicePipeline **instance)
+{
+  g_clear_object (instance);
+}
+
+/**
  * @brief Set the service with given description. Return the call result.
  */
-static gboolean dbus_cb_core_set_pipeline (MachinelearningServicePipeline *obj,
-        GDBusMethodInvocation *invoc, const gchar *service_name, const gchar *pipeline_desc, gpointer user_data)
+static gboolean
+dbus_cb_core_set_pipeline (MachinelearningServicePipeline *obj, GDBusMethodInvocation *invoc,
+    const gchar *service_name, const gchar *pipeline_desc, gpointer user_data)
 {
   gint result = 0;
-  IMLServiceDB &db = MLServiceLevelDB::getInstance ();
+  MLServiceDB &db = MLServiceDB::getInstance ();
 
   try {
     db.connectDB ();
-    db.put (service_name, pipeline_desc);
+    db.set_pipeline (service_name, pipeline_desc);
   } catch (const std::invalid_argument &e) {
     _E ("An exception occurred during write to the DB. Error message: %s", e.what ());
     result = -EINVAL;
-  } catch (const std::runtime_error &e) {
-    _E ("An exception occurred during write to the DB. Error message: %s", e.what ());
-    result = -EIO;
   } catch (const std::exception &e) {
     _E ("An exception occurred during write to the DB. Error message: %s", e.what ());
     result = -EIO;
@@ -107,22 +124,20 @@ static gboolean dbus_cb_core_set_pipeline (MachinelearningServicePipeline *obj,
 /**
  * @brief Get the pipeline description of the given service. Return the call result and the pipeline description.
  */
-static gboolean dbus_cb_core_get_pipeline (MachinelearningServicePipeline *obj,
-        GDBusMethodInvocation *invoc, const gchar *service_name, gpointer user_data)
+static gboolean
+dbus_cb_core_get_pipeline (MachinelearningServicePipeline *obj,
+    GDBusMethodInvocation *invoc, const gchar *service_name, gpointer user_data)
 {
   gint result = 0;
   std::string stored_pipeline_description;
-  IMLServiceDB &db = MLServiceLevelDB::getInstance ();
+  MLServiceDB &db = MLServiceDB::getInstance ();
 
   try {
     db.connectDB ();
-    db.get (service_name, stored_pipeline_description);
+    db.get_pipeline (service_name, stored_pipeline_description);
   } catch (const std::invalid_argument &e) {
     _E ("An exception occurred during read the DB. Error message: %s", e.what ());
     result = -EINVAL;
-  } catch (const std::runtime_error &e) {
-    _E ("An exception occurred during read the DB. Error message: %s", e.what ());
-    result = -EIO;
   } catch (const std::exception &e) {
     _E ("An exception occurred during read the DB. Error message: %s", e.what ());
     result = -EIO;
@@ -132,11 +147,10 @@ static gboolean dbus_cb_core_get_pipeline (MachinelearningServicePipeline *obj,
 
   if (result) {
     _E ("Failed to get pipeline description of %s", service_name);
-    machinelearning_service_pipeline_complete_get_pipeline (obj, invoc, result, NULL);
-    return TRUE;
   }
 
-  machinelearning_service_pipeline_complete_get_pipeline (obj, invoc, result, stored_pipeline_description.c_str ());
+  machinelearning_service_pipeline_complete_get_pipeline (
+      obj, invoc, result, stored_pipeline_description.c_str ());
 
   return TRUE;
 }
@@ -144,23 +158,23 @@ static gboolean dbus_cb_core_get_pipeline (MachinelearningServicePipeline *obj,
 /**
  * @brief Delete the pipeline description of the given service. Return the call result.
  */
-static gboolean dbus_cb_core_delete_pipeline (MachinelearningServicePipeline *obj,
-        GDBusMethodInvocation *invoc, const gchar *service_name, gpointer user_data)
+static gboolean
+dbus_cb_core_delete_pipeline (MachinelearningServicePipeline *obj,
+    GDBusMethodInvocation *invoc, const gchar *service_name, gpointer user_data)
 {
   gint result = 0;
-  IMLServiceDB &db = MLServiceLevelDB::getInstance ();
+  MLServiceDB &db = MLServiceDB::getInstance ();
 
   try {
     db.connectDB ();
-    db.del (service_name);
+    db.delete_pipeline (service_name);
   } catch (const std::invalid_argument &e) {
-    _E ("An exception occurred during delete an item in the DB. Error message: %s", e.what ());
+    _E ("An exception occurred during delete an item in the DB. Error message: %s",
+        e.what ());
     result = -EINVAL;
-  } catch (const std::runtime_error &e) {
-    _E ("An exception occurred during delete an item in the DB. Error message: %s", e.what ());
-    result = -EIO;
   } catch (const std::exception &e) {
-    _E ("An exception occurred during delete an item in the DB. Error message: %s", e.what ());
+    _E ("An exception occurred during delete an item in the DB. Error message: %s",
+        e.what ());
     result = -EIO;
   }
 
@@ -180,8 +194,9 @@ static gboolean dbus_cb_core_delete_pipeline (MachinelearningServicePipeline *ob
 /**
  * @brief Launch the pipeline with given description. Return the call result and its id.
  */
-static gboolean dbus_cb_core_launch_pipeline (MachinelearningServicePipeline *obj,
-        GDBusMethodInvocation *invoc, const gchar *service_name, gpointer user_data)
+static gboolean
+dbus_cb_core_launch_pipeline (MachinelearningServicePipeline *obj,
+    GDBusMethodInvocation *invoc, const gchar *service_name, gpointer user_data)
 {
   gint result = 0;
   GError *err = NULL;
@@ -189,19 +204,16 @@ static gboolean dbus_cb_core_launch_pipeline (MachinelearningServicePipeline *ob
   GstElement *pipeline = NULL;
   pipeline_s *p;
 
-  IMLServiceDB &db = MLServiceLevelDB::getInstance ();
+  MLServiceDB &db = MLServiceDB::getInstance ();
   std::string stored_pipeline_description;
 
   /** get pipeline description from the DB */
   try {
     db.connectDB ();
-    db.get (service_name, stored_pipeline_description);
+    db.get_pipeline (service_name, stored_pipeline_description);
   } catch (const std::invalid_argument &e) {
     _E ("An exception occurred during read the DB. Error message: %s", e.what ());
     result = -EINVAL;
-  } catch (const std::runtime_error &e) {
-    _E ("An exception occurred during read the DB. Error message: %s", e.what ());
-    result = -EIO;
   } catch (const std::exception &e) {
     _E ("An exception occurred during read the DB. Error message: %s", e.what ());
     result = -EIO;
@@ -217,7 +229,8 @@ static gboolean dbus_cb_core_launch_pipeline (MachinelearningServicePipeline *ob
 
   pipeline = gst_parse_launch (stored_pipeline_description.c_str (), &err);
   if (!pipeline || err) {
-    _E ("gst_parse_launch with %s Failed. error msg: %s", stored_pipeline_description.c_str (), (err) ? err->message : "unknown reason");
+    _E ("gst_parse_launch with %s Failed. error msg: %s",
+        stored_pipeline_description.c_str (), (err) ? err->message : "unknown reason");
     g_clear_error (&err);
 
     if (pipeline)
@@ -231,7 +244,8 @@ static gboolean dbus_cb_core_launch_pipeline (MachinelearningServicePipeline *ob
   /** now set pipeline as paused state */
   sc_ret = gst_element_set_state (pipeline, GST_STATE_PAUSED);
   if (sc_ret == GST_STATE_CHANGE_FAILURE) {
-    _E ("Failed to set the state of the pipeline to PAUSED. For the detail, please check the GStreamer log message. The input pipeline was %s", stored_pipeline_description.c_str ());
+    _E ("Failed to set the state of the pipeline to PAUSED. For the detail, please check the GStreamer log message. The input pipeline was %s",
+        stored_pipeline_description.c_str ());
 
     gst_object_unref (pipeline);
     result = -ESTRPIPE;
@@ -259,9 +273,9 @@ static gboolean dbus_cb_core_launch_pipeline (MachinelearningServicePipeline *ob
 /**
  * @brief Start the pipeline with given id. Return the call result.
  */
-static gboolean dbus_cb_core_start_pipeline (MachinelearningServicePipeline *obj,
-        GDBusMethodInvocation *invoc,
-        gint64 id, gpointer user_data)
+static gboolean
+dbus_cb_core_start_pipeline (MachinelearningServicePipeline *obj,
+    GDBusMethodInvocation *invoc, gint64 id, gpointer user_data)
 {
   gint result = 0;
   GstStateChangeReturn sc_ret;
@@ -271,7 +285,7 @@ static gboolean dbus_cb_core_start_pipeline (MachinelearningServicePipeline *obj
   p = (pipeline_s *) g_hash_table_lookup (pipeline_table, GINT_TO_POINTER (id));
 
   if (!p) {
-    _E ("there is no pipeline with id: %" G_GINT64_FORMAT, id);
+    _E ("The callback start_pipeline is called, but there is no pipeline matched with ID.");
     G_UNLOCK (pipeline_table_lock);
     result = -EINVAL;
   } else {
@@ -281,7 +295,8 @@ static gboolean dbus_cb_core_start_pipeline (MachinelearningServicePipeline *obj
     g_mutex_unlock (&p->lock);
 
     if (sc_ret == GST_STATE_CHANGE_FAILURE) {
-      _E ("Failed to set the state of the pipline to PLAYING whose service_name is %s (id: %" G_GINT64_FORMAT ")", p->service_name, id);
+      _E ("Failed to set the state of the pipline to PLAYING whose service name is %s.",
+          p->service_name);
       result = -ESTRPIPE;
     }
   }
@@ -294,9 +309,9 @@ static gboolean dbus_cb_core_start_pipeline (MachinelearningServicePipeline *obj
 /**
  * @brief Stop the pipeline with given id. Return the call result.
  */
-static gboolean dbus_cb_core_stop_pipeline (MachinelearningServicePipeline *obj,
-        GDBusMethodInvocation *invoc,
-        gint64 id, gpointer user_data)
+static gboolean
+dbus_cb_core_stop_pipeline (MachinelearningServicePipeline *obj,
+    GDBusMethodInvocation *invoc, gint64 id, gpointer user_data)
 {
   gint result = 0;
   GstStateChangeReturn sc_ret;
@@ -306,7 +321,7 @@ static gboolean dbus_cb_core_stop_pipeline (MachinelearningServicePipeline *obj,
   p = (pipeline_s *) g_hash_table_lookup (pipeline_table, GINT_TO_POINTER (id));
 
   if (!p) {
-    _E ("there is no pipeline with id: %" G_GINT64_FORMAT, id);
+    _E ("The callback stop_pipeline is called, but there is no pipeline matched with ID.");
     G_UNLOCK (pipeline_table_lock);
     result = -EINVAL;
   } else {
@@ -316,7 +331,8 @@ static gboolean dbus_cb_core_stop_pipeline (MachinelearningServicePipeline *obj,
     g_mutex_unlock (&p->lock);
 
     if (sc_ret == GST_STATE_CHANGE_FAILURE) {
-      _E ("Failed to set the state of the pipline to PAUSED whose service_name is %s (id: %" G_GINT64_FORMAT ")", p->service_name, id);
+      _E ("Failed to set the state of the pipline to PAUSED whose service name is %s.",
+          p->service_name);
       result = -ESTRPIPE;
     }
   }
@@ -329,9 +345,9 @@ static gboolean dbus_cb_core_stop_pipeline (MachinelearningServicePipeline *obj,
 /**
  * @brief Destroy the pipeline with given id. Return the call result.
  */
-static gboolean dbus_cb_core_destroy_pipeline (MachinelearningServicePipeline *obj,
-        GDBusMethodInvocation *invoc,
-        gint64 id, gpointer user_data)
+static gboolean
+dbus_cb_core_destroy_pipeline (MachinelearningServicePipeline *obj,
+    GDBusMethodInvocation *invoc, gint64 id, gpointer user_data)
 {
   gint result = 0;
   pipeline_s *p = NULL;
@@ -340,25 +356,24 @@ static gboolean dbus_cb_core_destroy_pipeline (MachinelearningServicePipeline *o
   p = (pipeline_s *) g_hash_table_lookup (pipeline_table, GINT_TO_POINTER (id));
 
   if (!p) {
-    _E ("there is no pipeline with id: %" G_GINT64_FORMAT, id);
+    _E ("The callback destroy_pipeline is called, but there is no pipeline matched with ID.");
     result = -EINVAL;
   } else {
-
-/**
- * @todo Fix hanging issue when trying to set GST_STATE_NULL state for pipelines containing tensor_query_*. As a workaround, just unref the pipeline instance. To fix this issue, tensor_query elements and nnstreamer-edge should well-behavior to the state change. And it should properly free socket resources. Revive following code after then.
- */
-/**
- *   GstStateChangeReturn sc_ret;
-
- *   g_mutex_lock (&p->lock);
- *   sc_ret = gst_element_set_state (p->element, GST_STATE_NULL);
- *   g_mutex_unlock (&p->lock);
-
- *   if (sc_ret == GST_STATE_CHANGE_FAILURE) {
- *     _E ("Failed to set the state of the pipeline to NULL whose service_name is %s (id: %" G_GINT64_FORMAT "). Destroy it anyway.", p->service_name, id);
- *     result = -ESTRPIPE;
- *   }
- */
+    /**
+     * @todo Fix hanging issue when trying to set GST_STATE_NULL state for pipelines
+     * containing tensor_query_*. As a workaround, just unref the pipeline instance.
+     * To fix this issue, tensor_query elements and nnstreamer-edge should well-behavior
+     * to the state change. And it should properly free socket resources. Revive following code after then.
+     *
+     *   GstStateChangeReturn sc_ret;
+     *   g_mutex_lock (&p->lock);
+     *   sc_ret = gst_element_set_state (p->element, GST_STATE_NULL);
+     *   g_mutex_unlock (&p->lock);
+     *   if (sc_ret == GST_STATE_CHANGE_FAILURE) {
+     *     _E ("Failed to set the state of the pipeline to NULL whose service name is %s. Destroy it anyway.", p->service_name);
+     *     result = -ESTRPIPE;
+     *   }
+     */
     g_hash_table_remove (pipeline_table, GINT_TO_POINTER (id));
   }
 
@@ -371,8 +386,9 @@ static gboolean dbus_cb_core_destroy_pipeline (MachinelearningServicePipeline *o
 /**
  * @brief Get the state of pipeline with given id. Return the call result and its state.
  */
-static gboolean dbus_cb_core_get_state (MachinelearningServicePipeline *obj,
-        GDBusMethodInvocation *invoc, gint64 id, gpointer user_data)
+static gboolean
+dbus_cb_core_get_state (MachinelearningServicePipeline *obj,
+    GDBusMethodInvocation *invoc, gint64 id, gpointer user_data)
 {
   gint result = 0;
   GstStateChangeReturn sc_ret;
@@ -383,7 +399,7 @@ static gboolean dbus_cb_core_get_state (MachinelearningServicePipeline *obj,
   p = (pipeline_s *) g_hash_table_lookup (pipeline_table, GINT_TO_POINTER (id));
 
   if (!p) {
-    _E ("there is no pipeline with id: %" G_GINT64_FORMAT, id);
+    _E ("The callback get_state is called, but there is no pipeline matched with ID.");
     result = -EINVAL;
     machinelearning_service_pipeline_complete_get_state (obj, invoc, result, (gint) state);
     G_UNLOCK (pipeline_table_lock);
@@ -396,7 +412,7 @@ static gboolean dbus_cb_core_get_state (MachinelearningServicePipeline *obj,
   g_mutex_unlock (&p->lock);
 
   if (sc_ret == GST_STATE_CHANGE_FAILURE) {
-    _E ("Failed to get the state of the pipline whose service_name is %s (id: %" G_GINT64_FORMAT ")", p->service_name, id);
+    _E ("Failed to get the state of the pipline whose service name is %s.", p->service_name);
     result = -ESTRPIPE;
     machinelearning_service_pipeline_complete_get_state (obj, invoc, result, (gint) state);
     return TRUE;
@@ -409,67 +425,72 @@ static gboolean dbus_cb_core_get_state (MachinelearningServicePipeline *obj,
 
 static struct gdbus_signal_info handler_infos[] = {
   {
-    .signal_name = DBUS_PIPELINE_I_SET_HANDLER,
-    .cb = G_CALLBACK (dbus_cb_core_set_pipeline),
-    .cb_data = NULL,
-    .handler_id = 0,
-  }, {
-    .signal_name = DBUS_PIPELINE_I_GET_HANDLER,
-    .cb = G_CALLBACK (dbus_cb_core_get_pipeline),
-    .cb_data = NULL,
-    .handler_id = 0,
-  }, {
-    .signal_name = DBUS_PIPELINE_I_DELETE_HANDLER,
-    .cb = G_CALLBACK (dbus_cb_core_delete_pipeline),
-    .cb_data = NULL,
-    .handler_id = 0,
-  }, {
-    .signal_name = DBUS_PIPELINE_I_LAUNCH_HANDLER,
-    .cb = G_CALLBACK (dbus_cb_core_launch_pipeline),
-    .cb_data = NULL,
-    .handler_id = 0,
-  }, {
-    .signal_name = DBUS_PIPELINE_I_START_HANDLER,
-    .cb = G_CALLBACK (dbus_cb_core_start_pipeline),
-    .cb_data = NULL,
-    .handler_id = 0,
-  }, {
-    .signal_name = DBUS_PIPELINE_I_STOP_HANDLER,
-    .cb = G_CALLBACK (dbus_cb_core_stop_pipeline),
-    .cb_data = NULL,
-    .handler_id = 0,
-  }, {
-    .signal_name = DBUS_PIPELINE_I_DESTROY_HANDLER,
-    .cb = G_CALLBACK (dbus_cb_core_destroy_pipeline),
-    .cb_data = NULL,
-    .handler_id = 0,
-  }, {
-    .signal_name = DBUS_PIPELINE_I_GET_STATE_HANDLER,
-    .cb = G_CALLBACK (dbus_cb_core_get_state),
-    .cb_data = NULL,
-    .handler_id = 0,
+      .signal_name = DBUS_PIPELINE_I_SET_HANDLER,
+      .cb = G_CALLBACK (dbus_cb_core_set_pipeline),
+      .cb_data = NULL,
+      .handler_id = 0,
+  },
+  {
+      .signal_name = DBUS_PIPELINE_I_GET_HANDLER,
+      .cb = G_CALLBACK (dbus_cb_core_get_pipeline),
+      .cb_data = NULL,
+      .handler_id = 0,
+  },
+  {
+      .signal_name = DBUS_PIPELINE_I_DELETE_HANDLER,
+      .cb = G_CALLBACK (dbus_cb_core_delete_pipeline),
+      .cb_data = NULL,
+      .handler_id = 0,
+  },
+  {
+      .signal_name = DBUS_PIPELINE_I_LAUNCH_HANDLER,
+      .cb = G_CALLBACK (dbus_cb_core_launch_pipeline),
+      .cb_data = NULL,
+      .handler_id = 0,
+  },
+  {
+      .signal_name = DBUS_PIPELINE_I_START_HANDLER,
+      .cb = G_CALLBACK (dbus_cb_core_start_pipeline),
+      .cb_data = NULL,
+      .handler_id = 0,
+  },
+  {
+      .signal_name = DBUS_PIPELINE_I_STOP_HANDLER,
+      .cb = G_CALLBACK (dbus_cb_core_stop_pipeline),
+      .cb_data = NULL,
+      .handler_id = 0,
+  },
+  {
+      .signal_name = DBUS_PIPELINE_I_DESTROY_HANDLER,
+      .cb = G_CALLBACK (dbus_cb_core_destroy_pipeline),
+      .cb_data = NULL,
+      .handler_id = 0,
+  },
+  {
+      .signal_name = DBUS_PIPELINE_I_GET_STATE_HANDLER,
+      .cb = G_CALLBACK (dbus_cb_core_get_state),
+      .cb_data = NULL,
+      .handler_id = 0,
   },
 };
 
 /**
  * @brief Probe the D-BUS and connect this module.
  */
-static int probe_pipeline_module (void *data)
+static int
+probe_pipeline_module (void *data)
 {
   int ret = 0;
 
-  g_gdbus_instance = gdbus_get_instance_pipeline ();
+  g_gdbus_instance = gdbus_get_pipeline_instance ();
   if (g_gdbus_instance == NULL) {
-    _E ("cannot get a dbus instance for the %s interface\n",
-        DBUS_PIPELINE_INTERFACE);
+    _E ("cannot get a dbus instance for the %s interface\n", DBUS_PIPELINE_INTERFACE);
     return -ENOSYS;
   }
 
-  ret = gdbus_connect_signal (g_gdbus_instance,
-      ARRAY_SIZE (handler_infos), handler_infos);
+  ret = gdbus_connect_signal (g_gdbus_instance, ARRAY_SIZE (handler_infos), handler_infos);
   if (ret < 0) {
-    _E ("cannot register callbacks as the dbus method invocation handlers\n ret: %d",
-        ret);
+    _E ("cannot register callbacks as the dbus method invocation handlers\n ret: %d", ret);
     ret = -ENOSYS;
     goto out;
   }
@@ -485,10 +506,9 @@ static int probe_pipeline_module (void *data)
   return 0;
 
 out_disconnect:
-  gdbus_disconnect_signal (g_gdbus_instance,
-      ARRAY_SIZE (handler_infos), handler_infos);
+  gdbus_disconnect_signal (g_gdbus_instance, ARRAY_SIZE (handler_infos), handler_infos);
 out:
-  gdbus_put_instance_pipeline (&g_gdbus_instance);
+  gdbus_put_pipeline_instance (&g_gdbus_instance);
 
   return ret;
 }
@@ -496,7 +516,8 @@ out:
 /**
  * @brief Initialize this module.
  */
-static void init_pipeline_module (void *data)
+static void
+init_pipeline_module (void *data)
 {
   GError *err = NULL;
 
@@ -519,23 +540,24 @@ static void init_pipeline_module (void *data)
 /**
  * @brief Finalize this module.
  */
-static void exit_pipeline_module (void *data)
+static void
+exit_pipeline_module (void *data)
 {
   G_LOCK (pipeline_table_lock);
   g_assert (pipeline_table); /** Internal error */
   g_hash_table_destroy (pipeline_table);
+  pipeline_table = NULL;
   G_UNLOCK (pipeline_table_lock);
 
-  gdbus_disconnect_signal (g_gdbus_instance,
-      ARRAY_SIZE (handler_infos), handler_infos);
-  gdbus_put_instance_pipeline (&g_gdbus_instance);
+  gdbus_disconnect_signal (g_gdbus_instance, ARRAY_SIZE (handler_infos), handler_infos);
+  gdbus_put_pipeline_instance (&g_gdbus_instance);
 }
 
 static const struct module_ops pipeline_ops = {
-  .name	= "pipeline",
-  .probe	= probe_pipeline_module,
-  .init	= init_pipeline_module,
-  .exit	= exit_pipeline_module,
+  .name = "pipeline",
+  .probe = probe_pipeline_module,
+  .init = init_pipeline_module,
+  .exit = exit_pipeline_module,
 };
 
 MODULE_OPS_REGISTER (&pipeline_ops)

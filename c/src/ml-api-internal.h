@@ -106,6 +106,9 @@ typedef enum {
 #define TIZENMMCONF 1
 #endif
 #endif
+#if ((TIZENVERSION < 7) || (TIZENVERSION == 7 && TIZENVERSIONMINOR < 5))
+#define TIZENPPM 1
+#endif
 
 #else /* __TIZEN__ */
 #define check_feature_state(...)
@@ -118,9 +121,18 @@ typedef enum {
 #ifndef TIZENMMCONF
 #define TIZENMMCONF 0
 #endif /* TIZENMMCONF */
+#ifndef TIZENPPM
+#define TIZENPPM 0
+#endif /* TIZENPPM */
 
 #define EOS_MESSAGE_TIME_LIMIT 100
 #define WAIT_PAUSED_TIME_LIMIT 100
+
+/**
+ * @brief The previous maximum rank that NNStreamer supports.
+ * @details NNStreamer supports max rank 4 before 2.3.1
+ */
+#define ML_TENSOR_RANK_LIMIT_PREV  (4)
 
 /**
  * @brief Data structure for tensor information.
@@ -141,6 +153,7 @@ typedef struct {
   ml_tensor_info_s info[ML_TENSOR_SIZE_LIMIT];  /**< The list of tensor info. */
   GMutex lock; /**< Lock for thread safety */
   int nolock; /**< Set non-zero to avoid using m (giving up thread safety) */
+  bool is_extended; /**< True if tensors are extended */
 } ml_tensors_info_s;
 
 /**
@@ -249,7 +262,7 @@ typedef struct {
  * @brief Gets the byte size of the given tensor info.
  * @note This is not thread safe.
  */
-size_t _ml_tensor_info_get_size (const ml_tensor_info_s *info);
+size_t _ml_tensor_info_get_size (const ml_tensor_info_s *info, bool is_extended);
 
 /**
  * @brief Initializes the tensors information with default value.
@@ -282,7 +295,7 @@ int _ml_tensors_data_clone_no_alloc (const ml_tensors_data_s * data_src, ml_tens
 
 /**
  * @brief Copies the tensor data frame.
- * @since_tizen 7.5
+ * @since_tizen 8.0
  * @param[in] in The handle of tensors data to be cloned.
  * @param[out] out The handle of tensors data. The caller is responsible for freeing the allocated data with ml_tensors_data_destroy().
  * @return @c 0 on success. Otherwise a negative error value.
@@ -290,7 +303,7 @@ int _ml_tensors_data_clone_no_alloc (const ml_tensors_data_s * data_src, ml_tens
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
  * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
- * @todo Consider adding new API from tizen 7.5.
+ * @todo Consider adding new API from tizen 8.0.
  */
 int ml_tensors_data_clone (const ml_tensors_data_h in, ml_tensors_data_h *out);
 

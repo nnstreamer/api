@@ -15,6 +15,7 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
+import java.net.ServerSocket;
 
 import static org.junit.Assert.*;
 
@@ -463,6 +464,25 @@ public class APITestCommon {
 
         return false;
     }
+
+    /**
+     * Returns available port number.
+     */
+    public static int getAvailablePort() {
+        int port = 0;
+
+        try (ServerSocket socket = new ServerSocket(0)) {
+            socket.setReuseAddress(true);
+            port = socket.getLocalPort();
+        } catch (Exception ignored) {}
+
+        if (port > 0) {
+            return port;
+        }
+
+        throw new RuntimeException("Could not find any available port");
+    }
+
 
     @Before
     public void setUp() {

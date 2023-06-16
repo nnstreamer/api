@@ -25,7 +25,7 @@ $(error Target arch ABI not supported: $(TARGET_ARCH_ABI))
 endif
 
 # Set ML API Version
-ML_API_VERSION  := 1.8.2
+ML_API_VERSION  := 1.8.3
 ML_API_VERSION_MAJOR := $(word 1,$(subst ., ,${ML_API_VERSION}))
 ML_API_VERSION_MINOR := $(word 2,$(subst ., ,${ML_API_VERSION}))
 ML_API_VERSION_MICRO := $(word 3,$(subst ., ,${ML_API_VERSION}))
@@ -36,6 +36,9 @@ ML_API_VERSION_MICRO := $(word 3,$(subst ., ,${ML_API_VERSION}))
 include $(NNSTREAMER_ROOT)/jni/nnstreamer.mk
 
 NNSTREAMER_API_OPTION := all
+
+# tensor-query support
+ENABLE_TENSOR_QUERY := true
 
 # tensorflow-lite (nnstreamer tf-lite subplugin)
 ENABLE_TF_LITE := false

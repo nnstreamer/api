@@ -7,26 +7,26 @@
  * @bug         No known bugs
  */
 
-#include <gio/gio.h>
 #include <gtest/gtest.h>
-#include <ml-api-internal.h>
-#include <ml-api-service.h>
-#include <ml-api-service-private.h>
+#include <gdbus-util.h>
+#include <gio/gio.h>
 #include <ml-api-inference-pipeline-internal.h>
+#include <ml-api-internal.h>
+#include <ml-api-service-private.h>
+#include <ml-api-service.h>
 
-#include <netinet/tcp.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 
 /**
  * @brief Test base class for Database of ML Service API.
  */
-class MLServiceAgentTest : public::testing::Test
+class MLServiceAgentTest : public ::testing::Test
 {
-protected:
+  protected:
   GTestDBus *dbus;
-  GDBusProxy *proxy;
 
-public:
+  public:
   /**
    * @brief Setup method for each test case.
    */
@@ -42,20 +42,6 @@ public:
     g_free (services_dir);
 
     g_test_dbus_up (dbus);
-
-    GError *error = NULL;
-    proxy = g_dbus_proxy_new_for_bus_sync (
-        G_BUS_TYPE_SESSION,
-        G_DBUS_PROXY_FLAGS_NONE,
-        NULL,
-        "org.tizen.machinelearning.service",
-        "/Org/Tizen/MachineLearning/Service/Pipeline",
-        "org.tizen.machinelearning.service.pipeline",
-        NULL,
-        &error);
-
-    ASSERT_EQ (nullptr, error);
-    ASSERT_NE (nullptr, proxy);
   }
 
   /**
@@ -63,9 +49,6 @@ public:
    */
   void TearDown () override
   {
-    if (proxy)
-      g_object_unref (proxy);
-
     if (dbus) {
       g_test_dbus_down (dbus);
       g_object_unref (dbus);
@@ -84,7 +67,7 @@ public:
 
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = INADDR_ANY;
-    sin.sin_port = htons(0);
+    sin.sin_port = htons (0);
 
     sock = socket (AF_INET, SOCK_STREAM, 0);
     EXPECT_TRUE (sock > 0);
@@ -116,7 +99,9 @@ TEST_F (MLServiceAgentTest, usecase_00)
   guint port = _get_available_port ();
 
   /* create server pipeline */
-  pipeline_desc = g_strdup_printf ("tensor_query_serversrc port=%u num-buffers=10 ! other/tensors,num_tensors=1,dimensions=3:4:4:1,types=uint8,format=static,framerate=0/1 ! tensor_query_serversink async=false", port);
+  pipeline_desc = g_strdup_printf (
+      "tensor_query_serversrc port=%u num-buffers=10 ! other/tensors,num_tensors=1,dimensions=3:4:4:1,types=uint8,format=static,framerate=0/1 ! tensor_query_serversink async=false",
+      port);
 
   status = ml_service_set_pipeline (service_name, pipeline_desc);
   EXPECT_EQ (ML_ERROR_NONE, status);
@@ -144,7 +129,9 @@ TEST_F (MLServiceAgentTest, usecase_00)
 
   /* create client pipeline */
   guint sink_port = _get_available_port ();
-  gchar *client_pipeline_desc = g_strdup_printf ("videotestsrc num-buffers=10 ! videoconvert ! videoscale ! video/x-raw,width=4,height=4,format=RGB,framerate=10/1 ! tensor_converter ! other/tensors,num_tensors=1,format=static ! tensor_query_client dest-port=%u port=%u ! fakesink sync=true", port, sink_port);
+  gchar *client_pipeline_desc = g_strdup_printf (
+      "videotestsrc num-buffers=10 ! videoconvert ! videoscale ! video/x-raw,width=4,height=4,format=RGB,framerate=10/1 ! tensor_converter ! other/tensors,num_tensors=1,format=static ! tensor_query_client dest-port=%u port=%u ! fakesink sync=true",
+      port, sink_port);
 
   status = ml_service_set_pipeline ("client", client_pipeline_desc);
   EXPECT_EQ (ML_ERROR_NONE, status);
@@ -193,7 +180,6 @@ TEST_F (MLServiceAgentTest, usecase_00)
 
   g_free (pipeline_desc);
   g_free (client_pipeline_desc);
-  g_free (ret_pipeline);
 }
 
 /**
@@ -209,7 +195,9 @@ TEST_F (MLServiceAgentTest, usecase_01)
   guint port = _get_available_port ();
 
   /* create server pipeline */
-  pipeline_desc = g_strdup_printf ("tensor_query_serversrc port=%u num-buffers=10 ! other/tensors,num_tensors=1,dimensions=3:4:4:1,types=uint8,format=static,framerate=0/1 ! tensor_query_serversink async=false", port);
+  pipeline_desc = g_strdup_printf (
+      "tensor_query_serversrc port=%u num-buffers=10 ! other/tensors,num_tensors=1,dimensions=3:4:4:1,types=uint8,format=static,framerate=0/1 ! tensor_query_serversink async=false",
+      port);
 
   status = ml_service_set_pipeline (service_name, pipeline_desc);
   EXPECT_EQ (ML_ERROR_NONE, status);
@@ -237,7 +225,9 @@ TEST_F (MLServiceAgentTest, usecase_01)
 
   /* create client pipeline */
   guint sink_port = _get_available_port ();
-  gchar *client_pipeline_desc = g_strdup_printf ("videotestsrc num-buffers=10 ! videoconvert ! videoscale ! video/x-raw,width=4,height=4,format=RGB,framerate=10/1 ! tensor_converter ! other/tensors,num_tensors=1,format=static ! tensor_query_client dest-port=%u port=%u ! fakesink sync=true", port, sink_port);
+  gchar *client_pipeline_desc = g_strdup_printf (
+      "videotestsrc num-buffers=10 ! videoconvert ! videoscale ! video/x-raw,width=4,height=4,format=RGB,framerate=10/1 ! tensor_converter ! other/tensors,num_tensors=1,format=static ! tensor_query_client dest-port=%u port=%u ! fakesink sync=true",
+      port, sink_port);
 
   ml_pipeline_h client;
   status = ml_pipeline_construct (client_pipeline_desc, NULL, NULL, &client);
@@ -283,7 +273,6 @@ TEST_F (MLServiceAgentTest, usecase_01)
 
   g_free (pipeline_desc);
   g_free (client_pipeline_desc);
-  g_free (ret_pipeline);
 }
 
 /**
@@ -338,6 +327,35 @@ TEST_F (MLServiceAgentTest, delete_pipeline_00_n)
 }
 
 /**
+ * @brief Test ml_service_delete_pipeline with invalid param.
+ */
+TEST_F (MLServiceAgentTest, delete_pipeline_01_n)
+{
+  int status;
+  status = ml_service_set_pipeline ("some key", "videotestsrc ! fakesink");
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_service_delete_pipeline ("invalid key");
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+}
+
+/**
+ * @brief Test ml_service_delete_pipeline with invalid param.
+ */
+TEST_F (MLServiceAgentTest, delete_pipeline_02_n)
+{
+  int status;
+  status = ml_service_set_pipeline ("some key", "videotestsrc ! fakesink");
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_service_delete_pipeline ("some key");
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_service_delete_pipeline ("some key");
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+}
+
+/**
  * @brief Test ml_service_launch_pipeline with invalid param.
  */
 TEST_F (MLServiceAgentTest, launch_pipeline_00_n)
@@ -363,6 +381,40 @@ TEST_F (MLServiceAgentTest, launch_pipeline_01_n)
   /* service_h is still NULL */
   status = ml_service_destroy (service_h);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+}
+
+/**
+ * @brief Test ml_service_launch_pipeline with invalid pipeline.
+ */
+TEST_F (MLServiceAgentTest, launch_pipeline_02_n)
+{
+  int status;
+  ml_service_h h;
+
+  status = ml_service_set_pipeline ("key", "invalid_element ! invalid_element");
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_service_launch_pipeline ("key", &h);
+  EXPECT_EQ (ML_ERROR_STREAMS_PIPE, status);
+}
+
+/**
+ * @brief Test ml_service_launch_pipeline with invalid tensor_filer.
+ */
+TEST_F (MLServiceAgentTest, launch_pipeline_03_n)
+{
+  int status;
+  ml_service_h h;
+
+  status = ml_service_set_pipeline ("key",
+      "appsrc name=appsrc ! "
+      "other/tensors,dimensions=(string)1:1:1:1:1:1:1:1,types=(string)float32,framerate=(fraction)0/1 ! "
+      "tensor_filter framework=tensorflow-lite model=invalid_path.tflite ! "
+      "tensor_sink");
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_service_launch_pipeline ("key", &h);
+  EXPECT_EQ (ML_ERROR_STREAMS_PIPE, status);
 }
 
 /**
@@ -424,6 +476,27 @@ TEST_F (MLServiceAgentTest, destroy_00_n)
 }
 
 /**
+ * @brief Test ml_service_destroy with explicit invalid param.
+ */
+TEST_F (MLServiceAgentTest, destroy_01_n)
+{
+  int status;
+  ml_service_h h;
+
+  ml_service_s *mls = g_new0 (ml_service_s, 1);
+  _ml_service_server_s *server = g_new0 (_ml_service_server_s, 1);
+  mls->priv = server;
+  mls->type = ML_SERVICE_TYPE_MAX;
+
+  h = (ml_service_h) mls;
+  status = ml_service_destroy (h);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  g_free (server);
+  g_free (mls);
+}
+
+/**
  * @brief Test ml_service APIs with invalid handle.
  */
 TEST_F (MLServiceAgentTest, explicit_invalid_handle_00_n)
@@ -474,7 +547,9 @@ TEST_F (MLServiceAgentTest, query_client)
   const gchar *service_name = "simple_query_server_for_test";
   int num_buffers = 5;
   guint server_port = _get_available_port ();
-  gchar *server_pipeline_desc = g_strdup_printf ("tensor_query_serversrc port=%u num-buffers=%d ! other/tensors,num_tensors=1,dimensions=3:4:4:1,types=uint8,format=static,framerate=0/1 ! tensor_query_serversink async=false sync=false", server_port, num_buffers);
+  gchar *server_pipeline_desc = g_strdup_printf (
+      "tensor_query_serversrc port=%u num-buffers=%d ! other/tensors,num_tensors=1,dimensions=3:4:4:1,types=uint8,format=static,framerate=0/1 ! tensor_query_serversink async=false sync=false",
+      server_port, num_buffers);
 
   status = ml_service_set_pipeline (service_name, server_pipeline_desc);
   EXPECT_EQ (ML_ERROR_NONE, status);
@@ -531,7 +606,8 @@ TEST_F (MLServiceAgentTest, query_client)
   status = ml_option_set (query_client_option, "timeout", &timeout, NULL);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  gchar *caps_str = g_strdup ("other/tensors,num_tensors=1,format=static,types=uint8,dimensions=3:4:4:1,framerate=0/1");
+  gchar *caps_str = g_strdup (
+      "other/tensors,num_tensors=1,format=static,types=uint8,dimensions=3:4:4:1,framerate=0/1");
   status = ml_option_set (query_client_option, "caps", caps_str, g_free);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
@@ -604,7 +680,6 @@ TEST_F (MLServiceAgentTest, query_client)
   /** it would fail if get the removed service */
   status = ml_service_get_pipeline (service_name, &ret_pipeline);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
-  g_free (ret_pipeline);
 
   ml_option_destroy (query_client_option);
   ml_tensors_data_destroy (input);
@@ -693,6 +768,591 @@ TEST_F (MLServiceAgentTest, query_request_00_n)
 }
 
 /**
+ * @brief Test ml_service_model_register with invalid param.
+ */
+TEST_F (MLServiceAgentTest, model_register_00_n)
+{
+  int status;
+
+  const gchar *name = "some_model_name";
+  const gchar *path = "/valid/path/to/some/model.tflite";
+
+  const bool is_active = true;
+  const gchar *desc = "some valid description";
+  guint version;
+
+  status = ml_service_model_register (NULL, path, is_active, desc, &version);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_service_model_register (name, NULL, is_active, desc, &version);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_service_model_register (name, path, is_active, desc, NULL);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+}
+
+/**
+ * @brief Test ml_service_model_update_description with invalid param.
+ */
+TEST_F (MLServiceAgentTest, model_update_description_00_n)
+{
+  int status;
+
+  const gchar *name = "some_model_name";
+  const gchar *desc = "some valid description";
+  guint version = 12345U;
+
+  status = ml_service_model_update_description (NULL, version, desc);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_service_model_update_description (name, 0U, desc);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_service_model_update_description (name, version, NULL);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_service_model_update_description (name, version, desc);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+}
+
+/**
+ * @brief Test ml_service_model_activate with invalid param.
+ */
+TEST_F (MLServiceAgentTest, model_activate_00_n)
+{
+  int status;
+  status = ml_service_model_activate (NULL, 0U);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_service_model_activate ("some_model_name", 0U);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_service_model_activate ("some_model_name", 12345U);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+}
+
+/**
+ * @brief Test ml_service_model_get with invalid param.
+ */
+TEST_F (MLServiceAgentTest, model_get_00_n)
+{
+  int status;
+
+  const gchar *name = "some_model_name";
+  guint version = 12345U;
+  ml_option_h info_h;
+
+  status = ml_service_model_get (NULL, version, &info_h);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_service_model_get (name, version, NULL);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_service_model_get (name, version, &info_h);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+}
+
+/**
+ * @brief Test ml_service_model_get with invalid param.
+ */
+TEST_F (MLServiceAgentTest, model_get_01_n)
+{
+  int status;
+
+  const gchar *model_name = "some_invalid_model_name";
+
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
+  gchar *test_model;
+  unsigned int version;
+
+  /* ml_service_model_register() requires absolute path to model, ignore this case. */
+  if (root_path == NULL)
+    return;
+
+  test_model = g_build_filename (root_path, "tests", "test_models", "models",
+      "some_invalid_model_name", NULL);
+  ASSERT_FALSE (g_file_test (test_model, G_FILE_TEST_EXISTS));
+
+  status = ml_service_model_delete (model_name, 0U);
+  EXPECT_TRUE (status == ML_ERROR_NONE || status == ML_ERROR_INVALID_PARAMETER);
+
+  status = ml_service_model_register (model_name, test_model, true, NULL, &version);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  ml_option_h info_h;
+  status = ml_service_model_get (model_name, 987654321U, &info_h);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_service_model_delete (model_name, version);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  g_free (test_model);
+}
+
+/**
+ * @brief Test ml_service_model_get_activated with invalid param.
+ */
+TEST_F (MLServiceAgentTest, model_get_activated_00_n)
+{
+  int status;
+
+  const gchar *name = "some_model_name";
+  ml_option_h info_h;
+
+  status = ml_service_model_get_activated (NULL, &info_h);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_service_model_get_activated (name, NULL);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_service_model_get_activated (name, &info_h);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+}
+
+/**
+ * @brief Test ml_service_model_get_all with invalid param.
+ */
+TEST_F (MLServiceAgentTest, model_get_all_00_n)
+{
+  int status;
+
+  const gchar *name = "some_model_name";
+  ml_option_h *info_list_h;
+  guint list_size;
+
+  status = ml_service_model_get_all (NULL, &info_list_h, &list_size);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_service_model_get_all (name, NULL, &list_size);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_service_model_get_all (name, &info_list_h, NULL);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_service_model_get_all (name, &info_list_h, &list_size);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+}
+
+/**
+ * @brief Test ml_service_model_delete with invalid param.
+ */
+TEST_F (MLServiceAgentTest, model_delete_00_n)
+{
+  int status;
+
+  const gchar *name = "some_model_name";
+  guint version = 12345U;
+
+  status = ml_service_model_delete (NULL, version);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_service_model_delete (name, version);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_service_model_delete (name, 0U);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+}
+
+/**
+ * @brief Test ml_option_get with invalid param.
+ */
+TEST_F (MLServiceAgentTest, model_ml_option_get_00_n)
+{
+  int status;
+
+  const gchar *key = "some_key";
+  ml_option_h info_h;
+  gchar *value;
+
+  status = ml_option_create (&info_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_option_get (NULL, key, (void **) &value);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_option_get (info_h, NULL, (void **) &value);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_option_get (info_h, key, NULL);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_option_get (info_h, key, (void **) &value);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_option_destroy (info_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+}
+
+/**
+ * @brief Test ml_option_get with invalid param.
+ */
+TEST_F (MLServiceAgentTest, model_ml_option_get_01_n)
+{
+  int status;
+
+  const gchar *model_name = "some_model_name";
+  guint version;
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
+
+  /* ml_service_model_register() requires absolute path to model, ignore this case. */
+  if (root_path == NULL)
+    return;
+
+  gchar *test_model = g_build_filename (root_path, "tests", "test_models",
+      "models", "mobilenet_v1_1.0_224_quant.tflite", NULL);
+  ASSERT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
+
+  const gchar *key = "some_invalid_key";
+  ml_option_h info_h = NULL;
+  gchar *value;
+
+  status = ml_service_model_delete (model_name, 0U);
+  EXPECT_TRUE (status == ML_ERROR_NONE || status == ML_ERROR_INVALID_PARAMETER);
+
+  status = ml_service_model_register (model_name, test_model, true, NULL, &version);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_service_model_get (model_name, version, &info_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  gchar *path;
+  status = ml_option_get (info_h, "path", (void **) &path);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  EXPECT_STREQ (test_model, path);
+
+  gchar *description;
+  status = ml_option_get (info_h, "description", (void **) &description);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  EXPECT_STREQ ("", description);
+
+  status = ml_option_get (info_h, key, NULL);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_option_get (info_h, key, (void **) &value);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_option_get (NULL, key, (void **) &value);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_option_destroy (info_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_service_model_delete (model_name, 0U);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  g_free (test_model);
+}
+
+/**
+ * @brief Test the usecase of ml_servive for model. TBU.
+ */
+TEST_F (MLServiceAgentTest, model_scenario)
+{
+  int status;
+  const gchar *key = "mobilenet_v1";
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
+  gchar *test_model1, *test_model2;
+  unsigned int version;
+
+  /* ml_service_model_register() requires absolute path to model, ignore this case. */
+  if (root_path == NULL)
+    return;
+
+  /* delete all model with the key before test */
+  status = ml_service_model_delete (key, 0U);
+  EXPECT_TRUE (status == ML_ERROR_NONE || status == ML_ERROR_INVALID_PARAMETER);
+
+  test_model1 = g_build_filename (root_path, "tests", "test_models", "models",
+      "mobilenet_v1_1.0_224_quant.tflite", NULL);
+  ASSERT_TRUE (g_file_test (test_model1, G_FILE_TEST_EXISTS));
+
+  status = ml_service_model_register (key, test_model1, true, "temp description", &version);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  EXPECT_EQ (1U, version);
+
+  status = ml_service_model_update_description (key, version, "updated description");
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_service_model_update_description (key, 32U, "updated description");
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  test_model2 = g_build_filename (
+      root_path, "tests", "test_models", "models", "add.tflite", NULL);
+  ASSERT_TRUE (g_file_test (test_model2, G_FILE_TEST_EXISTS));
+
+  status = ml_service_model_register (
+      key, test_model2, false, "this is the temp tflite model", &version);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  EXPECT_EQ (version, 2U);
+
+  ml_option_h activated_model_info;
+  status = ml_service_model_get_activated (key, &activated_model_info);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  EXPECT_NE (activated_model_info, nullptr);
+
+  gchar *test_description;
+  status = ml_option_get (activated_model_info, "path", (void **) &test_description);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  EXPECT_STREQ (test_description, test_model1);
+  status = ml_option_destroy (activated_model_info);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  ml_option_h _model_info;
+  status = ml_service_model_get (key, 2U, &_model_info);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  EXPECT_NE (_model_info, nullptr);
+
+  status = ml_option_get (_model_info, "path", (void **) &test_description);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  EXPECT_STREQ (test_description, test_model2);
+  status = ml_option_destroy (_model_info);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  ml_option_h *info_list;
+  guint info_num;
+
+  status = ml_service_model_get_all (key, &info_list, &info_num);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  EXPECT_EQ (info_num, 2U);
+
+  for (guint i = 0; i < info_num; i++) {
+    gchar *version_str;
+
+    status = ml_option_get (info_list[i], "version", (void **) &version_str);
+    EXPECT_EQ (ML_ERROR_NONE, status);
+    if (g_ascii_strcasecmp (version_str, "1") == 0) {
+      gchar *is_active;
+      status = ml_option_get (info_list[i], "active", (void **) &is_active);
+      EXPECT_EQ (ML_ERROR_NONE, status);
+      EXPECT_STREQ (is_active, "T");
+
+      gchar *path;
+      status = ml_option_get (info_list[i], "path", (void **) &path);
+      EXPECT_EQ (ML_ERROR_NONE, status);
+      EXPECT_STREQ (path, test_model1);
+
+      gchar *app_info;
+      status = ml_option_get (info_list[i], "app_info", (void **) &app_info);
+      EXPECT_EQ (ML_ERROR_NONE, status);
+      EXPECT_STREQ (app_info, "");
+    } else if (g_ascii_strcasecmp (version_str, "2") == 0) {
+      gchar *is_active;
+      status = ml_option_get (info_list[i], "active", (void **) &is_active);
+      EXPECT_EQ (ML_ERROR_NONE, status);
+      EXPECT_STREQ (is_active, "F");
+
+      gchar *path;
+      status = ml_option_get (info_list[i], "path", (void **) &path);
+      EXPECT_EQ (ML_ERROR_NONE, status);
+      EXPECT_STREQ (path, test_model2);
+    } else {
+      EXPECT_TRUE (false);
+    }
+
+    status = ml_option_destroy (info_list[i]);
+    EXPECT_EQ (ML_ERROR_NONE, status);
+  }
+
+  g_free (info_list);
+
+  /* failed to delete the active model */
+  status = ml_service_model_delete (key, 1U);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  /* activate model with invalid version number */
+  status = ml_service_model_activate (key, 91243U);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_service_model_activate (key, 2U);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_service_model_get_activated (key, &activated_model_info);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_option_get (activated_model_info, "path", (gpointer *) &test_description);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  EXPECT_STREQ (test_description, test_model2);
+
+  status = ml_option_destroy (activated_model_info);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  /* failed to delete the active model */
+  status = ml_service_model_delete (key, 2U);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_service_model_delete (key, 0U);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  g_free (test_model1);
+  g_free (test_model2);
+}
+
+/**
+ * @brief Negative testcase of pipeline gdbus call.
+ */
+TEST_F (MLServiceAgentTest, pipeline_gdbus_call_n)
+{
+  int ret;
+  GError *error = NULL;
+
+  MachinelearningServicePipeline *proxy_for_pipeline
+      = machinelearning_service_pipeline_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
+          G_DBUS_PROXY_FLAGS_NONE, "org.tizen.machinelearning.service",
+          "/Org/Tizen/MachineLearning/Service/Pipeline", NULL, &error);
+
+  if (!proxy_for_pipeline || error) {
+    g_critical ("Failed to create proxy_for_pipeline for machinelearning service pipeline");
+    if (error) {
+      g_critical ("Error Message : %s", error->message);
+      g_clear_error (&error);
+    }
+    ASSERT_TRUE (false);
+  }
+
+  /* gdbus call with empty string */
+  machinelearning_service_pipeline_call_set_pipeline_sync (
+      proxy_for_pipeline, "", "", &ret, nullptr, nullptr);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, ret);
+}
+
+/**
+ * @brief Negative testcase of model gdbus call.
+ */
+TEST_F (MLServiceAgentTest, model_gdbus_call_n)
+{
+  int ret;
+  GError *error = NULL;
+
+  MachinelearningServiceModel *proxy_for_model
+      = machinelearning_service_model_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
+          G_DBUS_PROXY_FLAGS_NONE, "org.tizen.machinelearning.service",
+          "/Org/Tizen/MachineLearning/Service/Model", NULL, &error);
+
+  if (!proxy_for_model || error) {
+    g_critical ("Failed to create proxy_for_model for machinelearning service model");
+    if (error) {
+      g_critical ("Error Message : %s", error->message);
+      g_clear_error (&error);
+    }
+    ASSERT_TRUE (false);
+  }
+
+  /* empty string */
+  machinelearning_service_model_call_register_sync (
+      proxy_for_model, "", "", false, "test", "", NULL, &ret, nullptr, nullptr);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, ret);
+
+  /* empty string */
+  machinelearning_service_model_call_get_all_sync (
+      proxy_for_model, "", NULL, &ret, nullptr, nullptr);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, ret);
+
+  g_object_unref (proxy_for_model);
+}
+
+/**
+ * @brief Negative test for pipeline. With DBus unconnected.
+ */
+TEST (MLServiceAgentTestDbusUnconnected, pipeline_n)
+{
+  int status;
+
+  /**
+   * FIXME: The following line blocks this test from running
+   * with the ml-agent daemon, not the test daemon.
+   */
+  if (!gdbus_get_system_connection (false)) {
+    return;
+  }
+
+  status = ml_service_set_pipeline ("test", "test");
+  EXPECT_EQ (ML_ERROR_IO_ERROR, status);
+
+  gchar *ret_pipeline;
+  status = ml_service_get_pipeline ("test", &ret_pipeline);
+  EXPECT_EQ (ML_ERROR_IO_ERROR, status);
+
+
+  ml_service_h service;
+  status = ml_service_launch_pipeline ("test", &service);
+  EXPECT_EQ (ML_ERROR_IO_ERROR, status);
+
+  ml_service_s *mls = g_new0 (ml_service_s, 1);
+  _ml_service_server_s *server = g_new0 (_ml_service_server_s, 1);
+  mls->priv = server;
+
+  server->id = -987654321; /* explicitly set id as invalid number */
+
+  service = (ml_service_h) mls;
+  status = ml_service_start_pipeline (service);
+  EXPECT_EQ (ML_ERROR_IO_ERROR, status);
+
+  status = ml_service_stop_pipeline (service);
+  EXPECT_EQ (ML_ERROR_IO_ERROR, status);
+
+  ml_pipeline_state_e state;
+  status = ml_service_get_pipeline_state (service, &state);
+  EXPECT_EQ (ML_ERROR_IO_ERROR, status);
+
+  mls->type = ML_SERVICE_TYPE_SERVER_PIPELINE;
+  status = ml_service_destroy (service);
+  EXPECT_EQ (ML_ERROR_IO_ERROR, status);
+
+  g_free (server);
+  g_free (mls);
+}
+
+/**
+ * @brief Negative test for model. With DBus unconnected.
+ */
+TEST (MLServiceAgentTestDbusUnconnected, model_n)
+{
+  int status;
+
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
+  unsigned int version;
+
+  /**
+   * FIXME: The following line blocks this test from running
+   * with the ml-agent daemon, not the test daemon.
+   */
+  if (!gdbus_get_system_connection (false)) {
+    return;
+  }
+
+  /* ml_service_model_register() requires absolute path to model, ignore this case. */
+  if (root_path == NULL)
+    return;
+
+  gchar *test_model = g_build_filename (root_path, "tests", "test_models",
+      "models", "mobilenet_v1_1.0_224_quant.tflite", NULL);
+  ASSERT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
+
+  status = ml_service_model_register ("test", test_model, false, "test", &version);
+  EXPECT_EQ (ML_ERROR_IO_ERROR, status);
+
+  g_free (test_model);
+
+  status = ml_service_model_update_description ("test", 1U, "test");
+  EXPECT_EQ (ML_ERROR_IO_ERROR, status);
+
+  status = ml_service_model_activate ("test", 1U);
+  EXPECT_EQ (ML_ERROR_IO_ERROR, status);
+
+  ml_option_h model_info;
+  status = ml_service_model_get ("test", 1U, &model_info);
+  EXPECT_EQ (ML_ERROR_IO_ERROR, status);
+
+  status = ml_service_model_get_activated ("test", &model_info);
+  EXPECT_EQ (ML_ERROR_IO_ERROR, status);
+
+  ml_option_h *info_list;
+  guint info_num;
+  status = ml_service_model_get_all ("test", &info_list, &info_num);
+  EXPECT_EQ (ML_ERROR_IO_ERROR, status);
+}
+
+/**
  * @brief Main gtest
  */
 int
@@ -720,6 +1380,7 @@ main (int argc, char **argv)
   }
 
   set_feature_state (ML_FEATURE, NOT_CHECKED_YET);
+  set_feature_state (ML_FEATURE_INFERENCE, NOT_CHECKED_YET);
   set_feature_state (ML_FEATURE_SERVICE, NOT_CHECKED_YET);
 
   return result;

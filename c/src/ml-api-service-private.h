@@ -18,13 +18,14 @@
 #include <ml-api-inference-internal.h>
 
 #include "pipeline-dbus.h"
+#include "model-dbus.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
 
 typedef enum {
-  ML_SERVICE_TYPE = 0,
+  ML_SERVICE_TYPE_UNKNOWN = 0,
   ML_SERVICE_TYPE_SERVER_PIPELINE,
   ML_SERVICE_TYPE_CLIENT_QUERY,
 
@@ -63,12 +64,6 @@ typedef struct
   guint timeout; /**< in ms unit */
   GAsyncQueue *out_data_queue;
 } _ml_service_query_s;
-
-
-/**
- * @brief Internal function to get proxy of the pipeline d-bus interface
- */
-MachinelearningServicePipeline * _get_proxy_new_for_bus_sync (void);
 
 #ifdef __cplusplus
 }

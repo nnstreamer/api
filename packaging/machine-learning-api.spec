@@ -56,7 +56,7 @@ Summary:	Tizen native API for NNStreamer
 # 2. Tizen   : ./packaging/machine-learning-api.spec
 # 3. Meson   : ./meson.build
 # 4. Android : ./java/android/nnstreamer/src/main/jni/Android.mk
-Version:	1.8.2
+Version:	1.8.3
 Release:	0
 Group:		Machine Learning/ML Framework
 Packager:	MyungJoo Ham <myungjoo.ham@samsung.com>
@@ -68,7 +68,7 @@ Source1002:	machine-learning-agent.manifest
 ## Define build requirements ##
 Requires:	capi-machine-learning-common = %{version}-%{release}
 Requires:	capi-machine-learning-inference-single = %{version}-%{release}
-%ifarch aarch64 x86_64
+%ifarch aarch64 x86_64 riscv64
 Provides:	libcapi-nnstreamer.so(64bit)
 %else
 Provides:	libcapi-nnstreamer.so
@@ -79,22 +79,30 @@ BuildRequires:	glib2-devel
 BuildRequires:	gstreamer-devel
 BuildRequires:	gst-plugins-base-devel
 BuildRequires:	meson >= 0.50.0
-BuildRequires:  pkgconfig(leveldb)
 
 %if %{with tizen}
 %if 0%{?enable_tizen_privilege}
 BuildRequires:	pkgconfig(dpm)
+%if (0%{tizen_version_major} < 7) || (0%{?tizen_version_major} == 7 && 0%{?tizen_version_minor} < 5)
 BuildRequires:	pkgconfig(capi-privacy-privilege-manager)
+%endif
 BuildRequires:	pkgconfig(mm-camcorder)
 %if 0%{tizen_version_major} >= 5
 BuildRequires:	pkgconfig(mm-resource-manager)
 %endif
-%endif
+%endif # enable_tizen_privilege
 BuildRequires:	pkgconfig(capi-system-info)
 BuildRequires:	pkgconfig(capi-base-common)
 BuildRequires:	pkgconfig(dlog)
 BuildRequires:	pkgconfig(libtzplatform-config)
 %endif # tizen
+
+# To generage gcov package, --define "gcov 1"
+%if 0%{?gcov:1}
+%define		unit_test 1
+%define		release_test 1
+%define		testcoverage 1
+%endif
 
 # For test
 %if 0%{?unit_test}
@@ -147,7 +155,11 @@ BuildConflicts:	libarmcl-release
 
 %if 0%{?enable_ml_service}
 BuildRequires:  pkgconfig(libsystemd)
+BuildRequires:  pkgconfig(sqlite3)
+BuildRequires:  pkgconfig(json-glib-1.0)
 BuildRequires:  dbus
+BuildRequires:  pkgconfig(capi-appfw-package-manager)
+BuildRequires:	pkgconfig(capi-appfw-app-common)
 %endif
 
 %description
@@ -221,10 +233,23 @@ Requires:	capi-machine-learning-inference-devel = %{version}-%{release}
 Tizen internal headers for Tizen Machine Learning API.
 
 %if 0%{?enable_ml_service}
+%package -n libmachine-learning-agent
+Summary:	Library that exports interfaces provided by Machine Learning Agent Service
+Group:		Machine Learning/ML Framework = %{version}-%{release}
+%description -n libmachine-learning-agent
+Shared library to export interfaces provided by the Machine Learning Agent Service.
+
+%package -n libmachine-learning-agent-devel
+Summary:	Development headers and static library for interfaces provided by Machine Learning Agent Service
+Group:		Machine Learning/ML Framework
+Requires:	libmachine-learning-agent  = %{version}-%{release}
+%description -n libmachine-learning-agent-devel
+Development headers and static library for interfaces provided by Machine Learning Agent Service.
+
 %package -n machine-learning-agent
 Summary:    AI Service Daemon
 Group:		Machine Learning/ML Framework
-Requires:	capi-machine-learning-service = %{version}-%{release}
+Requires:	libmachine-learning-agent = %{version}-%{release}
 %description -n machine-learning-agent
 AI Service Daemon
 
@@ -260,7 +285,6 @@ Requires:	capi-machine-learning-inference = %{version}-%{release}
 Unittests for Tizen Machine Learning API.
 %endif
 
-# To generage gcov package, --define "gcov ON"
 %if 0%{?gcov:1}
 %package gcov
 Summary:    Tizen Machine Learning API gcov objects
@@ -338,10 +362,6 @@ CXXFLAGS=`echo $CXXFLAGS | sed -e "s|-Wp,-D_FORTIFY_SOURCE=[1-9]||g"`
 %define enable_test_coverage -Db_coverage=false
 %endif
 
-%if 0%{?gcov:1}
-export CFLAGS+=" -fprofile-arcs -ftest-coverage"
-export CXXFLAGS+=" -fprofile-arcs -ftest-coverage"
-%endif
 %else # unit_test
 %define enable_test -Denable-test=false
 %define install_test -Dinstall-test=false
@@ -359,25 +379,24 @@ meson --buildtype=plain --prefix=%{_prefix} --sysconfdir=%{_sysconfdir} --libdir
 
 ninja -C build %{?_smp_mflags}
 
+export MLAPI_SOURCE_ROOT_PATH=$(pwd)
+export MLAPI_BUILD_ROOT_PATH=$(pwd)/%{builddir}
+
 # Run test
 %if 0%{?unit_test}
 bash %{test_script} ./tests/capi/unittest_capi_inference_single
 bash %{test_script} ./tests/capi/unittest_capi_inference
-bash %{test_script} ./tests/capi/unittest_datatype_consistency
+bash %{test_script} ./tests/capi/unittest_capi_datatype_consistency
 
 %if 0%{?enable_ml_service}
 bash %{test_script} ./tests/daemon/unittest_ml_agent
-bash %{test_script} ./tests/daemon/unittest_dbus_model
+bash %{test_script} ./tests/daemon/unittest_service_db
+bash %{test_script} ./tests/daemon/unittest_gdbus_util
 bash %{test_script} ./tests/capi/unittest_capi_service_agent_client
 %endif
 
 %if 0%{?nnfw_support}
 bash %{test_script} ./tests/capi/unittest_capi_inference_nnfw_runtime
-%endif
-
-%if 0%{?gcov:1}
-mkdir -p gcov-obj
-find . -name '*.gcno' -exec cp '{}' gcov-obj ';'
 %endif
 %endif # unit_test
 
@@ -385,10 +404,6 @@ find . -name '*.gcno' -exec cp '{}' gcov-obj ';'
 DESTDIR=%{buildroot} ninja -C build %{?_smp_mflags} install
 
 %if 0%{?unit_test}
-%if 0%{?gcov:1}
-mkdir -p %{buildroot}%{_datadir}/gcov/obj/%{name}
-install -m 0644 gcov-obj/* %{buildroot}%{_datadir}/gcov/obj/%{name}
-%endif
 
 %if 0%{?testcoverage}
 # 'lcov' generates the date format with UTC time zone by default. Let's replace UTC with KST.
@@ -407,6 +422,7 @@ find . -name "CMakeCXXCompilerId*.gcda" -delete
 # Generate report
 # TODO: the --no-external option is removed to include machine-learning-agent related source files.
 # Restore this option when there is proper way to include those source files.
+pushd build
 lcov -t 'ML API unittest coverage' -o unittest.info -c -d . -b $(pwd)
 # Exclude generated files (e.g., Orc, Protobuf) and device-dependent files.
 # Exclude files which are generated by gdbus-codegen and external files in /usr/*.
@@ -416,6 +432,18 @@ genhtml -o result unittest-filtered.info -t "ML API %{version}-%{release} ${VCS}
 
 mkdir -p %{buildroot}%{_datadir}/ml-api/unittest/
 cp -r result %{buildroot}%{_datadir}/ml-api/unittest/
+popd
+
+%if 0%{?gcov:1}
+builddir=$(basename $PWD)
+gcno_obj_dir=%{buildroot}%{_datadir}/gcov/obj/%{name}/"$builddir"
+mkdir -p "$gcno_obj_dir"
+find . -name '*.gcno' ! -path "*/tests/*" ! -name "meson-generated*" ! -name "sanitycheck*" ! -path "*tizen*" -exec cp --parents '{}' "$gcno_obj_dir" ';'
+
+mkdir -p %{buildroot}%{_bindir}/tizen-unittests/%{name}
+install -m 0755 packaging/run-unittest.sh %{buildroot}%{_bindir}/tizen-unittests/%{name}
+%endif
+
 %endif # test coverage
 %endif # unit_test
 
@@ -467,6 +495,18 @@ cp -r result %{buildroot}%{_datadir}/ml-api/unittest/
 %{_includedir}/nnstreamer/nnstreamer-tizen-internal.h
 
 %if 0%{?enable_ml_service}
+%files -n libmachine-learning-agent
+%manifest machine-learning-agent.manifest
+%{_libdir}/libml-agentd.so.*
+
+#TODO: Need to provide a pkg-config file
+%files -n libmachine-learning-agent-devel
+%manifest machine-learning-agent.manifest
+%{_libdir}/libml-agentd.so
+%{_libdir}/libml-agentd.a
+%{_includedir}/ml-agentd/ml-agent-dbus-interface.h
+
+
 %files -n machine-learning-agent
 %manifest machine-learning-agent.manifest
 %attr(0755,root,root) %{_bindir}/machine-learning-agent
@@ -493,6 +533,12 @@ cp -r result %{buildroot}%{_datadir}/ml-api/unittest/
 %files -n capi-machine-learning-unittests
 %manifest capi-machine-learning-inference.manifest
 %{_bindir}/unittest-ml
+%{_libdir}/libml-agentd-test.a
+%{_libdir}/libml-agentd-test.so*
+%{_libdir}/libunittest_mock.so*
+%if 0%{?gcov:1}
+%{_bindir}/tizen-unittests/%{name}/run-unittest.sh
+%endif
 %endif
 
 %if 0%{?gcov:1}
@@ -507,6 +553,9 @@ cp -r result %{buildroot}%{_datadir}/ml-api/unittest/
 %endif #unit_test
 
 %changelog
+* Fri Sep 30 2022 MyungJoo Ham <myungjoo.ham@samsung.com>
+- Start development of 1.8.3 for Tizen 8.0 release (1.8.4)
+
 * Mon Sep 26 2022 MyungJoo Ham <myungjoo.ham@samsung.com>
 - Release of 1.8.2
 

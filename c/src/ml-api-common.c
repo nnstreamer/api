@@ -19,10 +19,10 @@
 #include "ml-api-internal.h"
 
 /**
- * @brief Allocates a tensors information handle with default value.
+ * @brief Internal function to create tensors-info handle.
  */
-int
-ml_tensors_info_create (ml_tensors_info_h * info)
+static int
+_ml_tensors_info_create_internal (ml_tensors_info_h * info, bool extended)
 {
   ml_tensors_info_s *tensors_info;
 
@@ -38,9 +38,28 @@ ml_tensors_info_create (ml_tensors_info_h * info)
         "Failed to allocate the tensors info handle. Out of memory?");
 
   g_mutex_init (&tensors_info->lock);
+  tensors_info->is_extended = extended;
 
   /* init tensors info struct */
   return _ml_tensors_info_initialize (tensors_info);
+}
+
+/**
+ * @brief Allocates a tensors information handle with default value.
+ */
+int
+ml_tensors_info_create (ml_tensors_info_h * info)
+{
+  return _ml_tensors_info_create_internal (info, false);
+}
+
+/**
+ * @brief Allocates an extended tensors information handle with default value.
+ */
+int
+ml_tensors_info_create_extended (ml_tensors_info_h * info)
+{
+  return _ml_tensors_info_create_internal (info, true);
 }
 
 /**
@@ -100,9 +119,9 @@ _ml_tensors_info_initialize (ml_tensors_info_s * info)
  */
 static gboolean
 ml_tensor_info_compare (const ml_tensor_info_s * i1,
-    const ml_tensor_info_s * i2)
+    const ml_tensor_info_s * i2, bool is_extended)
 {
-  guint i;
+  guint i, valid_rank = ML_TENSOR_RANK_LIMIT;
 
   if (i1 == NULL || i2 == NULL)
     return FALSE;
@@ -110,7 +129,10 @@ ml_tensor_info_compare (const ml_tensor_info_s * i1,
   if (i1->type != i2->type)
     return FALSE;
 
-  for (i = 0; i < ML_TENSOR_RANK_LIMIT; i++) {
+  if (!is_extended)
+    valid_rank = ML_TENSOR_RANK_LIMIT_PREV;
+
+  for (i = 0; i < valid_rank; i++) {
     if (i1->dimension[i] != i2->dimension[i])
       return FALSE;
   }
@@ -123,7 +145,7 @@ ml_tensor_info_compare (const ml_tensor_info_s * i1,
  * @note info should be locked by caller if nolock == 0.
  */
 static gboolean
-ml_tensor_info_validate (const ml_tensor_info_s * info)
+ml_tensor_info_validate (const ml_tensor_info_s * info, bool is_extended)
 {
   guint i;
 
@@ -136,6 +158,13 @@ ml_tensor_info_validate (const ml_tensor_info_s * info)
   for (i = 0; i < ML_TENSOR_RANK_LIMIT; i++) {
     if (info->dimension[i] == 0)
       return FALSE;
+  }
+
+  if (!is_extended) {
+    for (i = ML_TENSOR_RANK_LIMIT_PREV; i < ML_TENSOR_RANK_LIMIT; i++) {
+      if (info->dimension[i] != 1)
+        return FALSE;
+    }
   }
 
   return TRUE;
@@ -161,7 +190,7 @@ _ml_tensors_info_validate_nolock (const ml_tensors_info_s * info, bool *valid)
   }
 
   for (i = 0; i < info->num_tensors; i++) {
-    if (!ml_tensor_info_validate (&info->info[i]))
+    if (!ml_tensor_info_validate (&info->info[i], info->is_extended))
       goto done;
   }
 
@@ -233,8 +262,11 @@ _ml_tensors_info_compare (const ml_tensors_info_h info1,
   if (i1->num_tensors != i2->num_tensors)
     goto done;
 
+  if (i1->is_extended != i2->is_extended)
+    goto done;
+
   for (i = 0; i < i1->num_tensors; i++) {
-    if (!ml_tensor_info_compare (&i1->info[i], &i2->info[i]))
+    if (!ml_tensor_info_compare (&i1->info[i], &i2->info[i], i1->is_extended))
       goto done;
   }
 
@@ -387,12 +419,12 @@ ml_tensors_info_set_tensor_type (ml_tensors_info_h info,
         "The parameter, type, ML_TENSOR_TYPE_UNKNOWN or out of bound. The value of type should be between 0 and ML_TENSOR_TYPE_UNKNOWN - 1. type = %d, ML_TENSOR_TYPE_UNKNOWN = %d.",
         type, ML_TENSOR_TYPE_UNKNOWN);
 
-#ifndef SUPPORT_FLOAT16
+#ifndef FLOAT16_SUPPORT
   if (type == ML_TENSOR_TYPE_FLOAT16)
     _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
         "Float16 (IEEE 754) is not supported by the machine (or the compiler or your build configuration). You cannot configure ml_tensors_info instance with Float16 type.");
 #endif
- /** @todo add BFLOAT16 when nnstreamer is ready for it. */
+  /** @todo add BFLOAT16 when nnstreamer is ready for it. */
 
   tensors_info = (ml_tensors_info_s *) info;
   G_LOCK_UNLESS_NOLOCK (*tensors_info);
@@ -466,8 +498,13 @@ ml_tensors_info_set_tensor_dimension (ml_tensors_info_h info,
         tensors_info->num_tensors, index, index);
   }
 
-  for (i = 0; i < ML_TENSOR_RANK_LIMIT; i++) {
+  for (i = 0; i < ML_TENSOR_RANK_LIMIT_PREV; i++) {
     tensors_info->info[index].dimension[i] = dimension[i];
+  }
+
+  for (i = ML_TENSOR_RANK_LIMIT_PREV; i < ML_TENSOR_RANK_LIMIT; i++) {
+    tensors_info->info[index].dimension[i] =
+        (tensors_info->is_extended ? dimension[i] : 1);
   }
 
   G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
@@ -482,7 +519,7 @@ ml_tensors_info_get_tensor_dimension (ml_tensors_info_h info,
     unsigned int index, ml_tensor_dimension dimension)
 {
   ml_tensors_info_s *tensors_info;
-  guint i;
+  guint i, valid_rank = ML_TENSOR_RANK_LIMIT;
 
   check_feature_state (ML_FEATURE);
 
@@ -498,7 +535,10 @@ ml_tensors_info_get_tensor_dimension (ml_tensors_info_h info,
     return ML_ERROR_INVALID_PARAMETER;
   }
 
-  for (i = 0; i < ML_TENSOR_RANK_LIMIT; i++) {
+  if (!tensors_info->is_extended)
+    valid_rank = ML_TENSOR_RANK_LIMIT_PREV;
+
+  for (i = 0; i < valid_rank; i++) {
     dimension[i] = tensors_info->info[index].dimension[i];
   }
 
@@ -510,10 +550,10 @@ ml_tensors_info_get_tensor_dimension (ml_tensors_info_h info,
  * @brief Gets the byte size of the given tensor info.
  */
 size_t
-_ml_tensor_info_get_size (const ml_tensor_info_s * info)
+_ml_tensor_info_get_size (const ml_tensor_info_s * info, bool is_extended)
 {
   size_t tensor_size;
-  gint i;
+  gint i, valid_rank = ML_TENSOR_RANK_LIMIT;
 
   if (!info)
     return 0;
@@ -525,6 +565,7 @@ _ml_tensor_info_get_size (const ml_tensor_info_s * info)
       break;
     case ML_TENSOR_TYPE_INT16:
     case ML_TENSOR_TYPE_UINT16:
+    case ML_TENSOR_TYPE_FLOAT16:
       tensor_size = 2;
       break;
     case ML_TENSOR_TYPE_INT32:
@@ -542,7 +583,10 @@ _ml_tensor_info_get_size (const ml_tensor_info_s * info)
       return 0;
   }
 
-  for (i = 0; i < ML_TENSOR_RANK_LIMIT; i++) {
+  if (!is_extended)
+    valid_rank = ML_TENSOR_RANK_LIMIT_PREV;
+
+  for (i = 0; i < valid_rank; i++) {
     tensor_size *= info->dimension[i];
   }
 
@@ -578,7 +622,9 @@ ml_tensors_info_get_tensor_size (ml_tensors_info_h info,
 
     /* get total byte size */
     for (i = 0; i < tensors_info->num_tensors; i++) {
-      *data_size += _ml_tensor_info_get_size (&tensors_info->info[i]);
+      *data_size +=
+          _ml_tensor_info_get_size (&tensors_info->info[i],
+          tensors_info->is_extended);
     }
   } else {
     if (tensors_info->num_tensors <= index) {
@@ -588,7 +634,9 @@ ml_tensors_info_get_tensor_size (ml_tensors_info_h info,
           index, tensors_info->num_tensors);
     }
 
-    *data_size = _ml_tensor_info_get_size (&tensors_info->info[index]);
+    *data_size =
+        _ml_tensor_info_get_size (&tensors_info->info[index],
+        tensors_info->is_extended);
   }
 
   G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
@@ -693,7 +741,7 @@ _ml_tensors_data_create_no_alloc (const ml_tensors_info_h info,
 
   if (data == NULL)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, data, is NULL. It should be a valid ml_tensors_info_h handle, which is usually created by ml_tensors_info_create ().");
+        "The parameter, data, is NULL. It should be a valid ml_tensors_info_h handle that may hold a space for ml_tensors_info_h. E.g., ml_tensors_data_h data; _ml_tensors_data_create_no_alloc (info, &data);.");
 
   /* init null */
   *data = NULL;
@@ -707,13 +755,17 @@ _ml_tensors_data_create_no_alloc (const ml_tensors_info_h info,
 
   _info = (ml_tensors_info_s *) info;
   if (_info != NULL) {
-    ml_tensors_info_create (&_data->info);
+    if (_info->is_extended)
+      ml_tensors_info_create_extended (&_data->info);
+    else
+      ml_tensors_info_create (&_data->info);
     ml_tensors_info_clone (_data->info, info);
 
     G_LOCK_UNLESS_NOLOCK (*_info);
     _data->num_tensors = _info->num_tensors;
     for (i = 0; i < _data->num_tensors; i++) {
-      _data->tensors[i].size = _ml_tensor_info_get_size (&_info->info[i]);
+      _data->tensors[i].size =
+          _ml_tensor_info_get_size (&_info->info[i], _info->is_extended);
       _data->tensors[i].tensor = NULL;
     }
     G_UNLOCK_UNLESS_NOLOCK (*_info);
@@ -779,7 +831,7 @@ ml_tensors_data_clone (const ml_tensors_data_h in, ml_tensors_data_h * out)
 
   if (out == NULL)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, out, is NULL. It should be a valid pointer to ml_tensors_data_h handle.");
+        "The parameter, out, is NULL. It should be a valid pointer to a space that can hold a ml_tensors_data_h handle. E.g., ml_tensors_data_h out; ml_tensors_data_clone (in, &out);.");
 
   _in = (ml_tensors_data_s *) in;
   G_LOCK_UNLESS_NOLOCK (*_in);
@@ -820,13 +872,13 @@ ml_tensors_data_create (const ml_tensors_info_h info, ml_tensors_data_h * data)
         "The parameter, info, is NULL. It should be a valid pointer of ml_tensors_info_h, which is usually created by ml_tensors_info_create().");
   if (data == NULL)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, data, is NULL. It should be a valid ml_tensors_data_h handle, which is usually created by ml_tensors_data_create ().");
+        "The parameter, data, is NULL. It should be a valid space to hold a ml_tensors_data_h handle. E.g., ml_tensors_data_h data; ml_tensors_data_create (info, &data);.");
 
   status = ml_tensors_info_validate (info, &valid);
   if (status != ML_ERROR_NONE)
     _ml_error_report_return_continue (status,
         "_ml_error_report_return_continue has reported that the parameter, info, is not NULL, but its contents are not valid. The user must provide a valid tensor information with it.");
-  if (valid == FALSE)
+  if (!valid)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, info, is not NULL, but its contents are not valid. The user must provide a valid tensor information with it. Probably, there is an entry that is not allocated or dimension/type information not available. The given info should have valid number of tensors, entries of every tensor along with its type and dimension info.");
 
@@ -850,10 +902,7 @@ ml_tensors_data_create (const ml_tensors_info_h info, ml_tensors_data_h * data)
   return ML_ERROR_NONE;
 
 failed_oom:
-  for (i = 0; i < _data->num_tensors; i++) {
-    g_free (_data->tensors[i].tensor);
-  }
-  g_free (_data);
+  _ml_tensors_data_destroy_internal (_data, TRUE);
 
   _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
       "Failed to allocate memory blocks for tensors data. Check if it's out-of-memory.");
@@ -989,14 +1038,16 @@ ml_tensors_info_clone (ml_tensors_info_h dest, const ml_tensors_info_h src)
   _ml_tensors_info_initialize (dest_info);
 
   dest_info->num_tensors = src_info->num_tensors;
+  dest_info->is_extended = src_info->is_extended;
 
   for (i = 0; i < dest_info->num_tensors; i++) {
     dest_info->info[i].name =
         (src_info->info[i].name) ? g_strdup (src_info->info[i].name) : NULL;
     dest_info->info[i].type = src_info->info[i].type;
 
-    for (j = 0; j < ML_TENSOR_RANK_LIMIT; j++)
+    for (j = 0; j < ML_TENSOR_RANK_LIMIT; j++) {
       dest_info->info[i].dimension[j] = src_info->info[i].dimension[j];
+    }
   }
 
 done:
@@ -1324,6 +1375,44 @@ ml_option_set (ml_option_h option, const char *key, void *value,
   _option_value->destroy = destroy;
   g_hash_table_insert (_option->option_table, g_strdup (key),
       (gpointer) _option_value);
+
+  return ML_ERROR_NONE;
+}
+
+/**
+ * @brief Gets a value of key in ml_option instance.
+ */
+int
+ml_option_get (ml_option_h option, const char *key, void **value)
+{
+  ml_option_s *_option;
+  ml_option_value_s *_option_value;
+
+  check_feature_state (ML_FEATURE);
+
+  if (!option) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'option' is NULL. It should be a valid ml_option_h, which should be created by ml_option_create().");
+  }
+
+  if (!key) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'key' is NULL. It should be a valid const char*");
+  }
+
+  if (!value) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'value' is NULL. It should be a valid void**");
+  }
+
+  _option = (ml_option_s *) option;
+  _option_value = (ml_option_value_s *)
+      g_hash_table_lookup (_option->option_table, key);
+  if (_option_value == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The key - %s - is not found in the option table.", key);
+
+  *value = _option_value->value;
 
   return ML_ERROR_NONE;
 }

@@ -1,21 +1,52 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <node name="/Org/Tizen/MachineLearning/Service">
   <interface name="org.tizen.machinelearning.service.model">
-    <!-- Set the file path of the designated neural network model -->
-    <method name="SetPath">
+    <!-- Register the given model -->
+    <method name="Register">
       <arg type="s" name="name" direction="in" />
       <arg type="s" name="path" direction="in" />
+      <arg type="b" name="active" direction="in" />
+      <arg type="s" name="description" direction="in" />
+      <arg type="s" name="app_info" direction="in" />
+      <arg type="u" name="version" direction="out" />
       <arg type="i" name="result" direction="out" />
     </method>
-    <!-- Get the file path of the designated neural network model -->
-    <method name="GetPath">
+    <!-- Update the model description -->
+    <method name="UpdateDescription">
       <arg type="s" name="name" direction="in" />
-      <arg type="s" name="path" direction="out" />
+      <arg type="u" name="version" direction="in" />
+      <arg type="s" name="description" direction="in" />
       <arg type="i" name="result" direction="out" />
     </method>
-    <!-- Delete the file path of the designated neural network model -->
+    <!-- Activate the model -->
+    <method name="Activate">
+      <arg type="s" name="name" direction="in" />
+      <arg type="u" name="version" direction="in" />
+      <arg type="i" name="result" direction="out" />
+    </method>
+    <!-- Get the model of given version -->
+    <method name="Get">
+      <arg type="s" name="name" direction="in" />
+      <arg type="u" name="version" direction="in" />
+      <arg type="s" name="info" direction="out" />
+      <arg type="i" name="result" direction="out" />
+    </method>
+    <!-- Get the activated model -->
+    <method name="GetActivated">
+      <arg type="s" name="name" direction="in" />
+      <arg type="s" name="info" direction="out" />
+      <arg type="i" name="result" direction="out" />
+    </method>
+    <!-- Get list of models -->
+    <method name="GetAll">
+      <arg type="s" name="name" direction="in" />
+      <arg type="s" name="info_list" direction="out" />
+      <arg type="i" name="result" direction="out" />
+    </method>
+    <!-- Delete model -->
     <method name="Delete">
       <arg type="s" name="name" direction="in" />
+      <arg type="u" name="version" direction="in" />
       <arg type="i" name="result" direction="out" />
     </method>
   </interface>

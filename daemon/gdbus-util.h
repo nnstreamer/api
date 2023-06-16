@@ -22,8 +22,6 @@
 #include <gio/gio.h>
 #include <stdbool.h>
 
-#include "pipeline-dbus.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
@@ -41,7 +39,6 @@ struct gdbus_signal_info
 
 /**
  * @brief Export the DBus interface at the Object path on the bus connection.
- * 
  * @param instance The instance of the DBus interface to export.
  * @param obj_path The path to export the interface at.
  * @return @c 0 on success. Otherwise a negative error value.
@@ -76,22 +73,8 @@ void gdbus_disconnect_signal (gpointer instance, int num_signals,
     struct gdbus_signal_info *signal_infos);
 
 /**
- * @brief Get the skeleton object of the DBus interface.
- * @remarks If the function succeeds, @a MachinelearningServicePipeline*
- * should be released using gdbus_put_instance_pipeline().
- * @return MachinelearningServiceProcess* The skeleton object.
- */
-MachinelearningServicePipeline *gdbus_get_instance_pipeline (void);
-
-/**
- * @brief Put the obtained skeleton object and release the resource.
- * @param instance The obtained skeleton object of the DBus interface.
- */
-void gdbus_put_instance_pipeline (MachinelearningServicePipeline ** instance);
-
-/**
  * @brief Connect to the DBus message bus
- * @param is_session Ture is DBus Bus type is session.
+ * @param is_session True is DBus Bus type is session.
  * @return @c 0 on success. Otherwise a negative error value.
  */
 int gdbus_get_system_connection (gboolean is_session);
