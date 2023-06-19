@@ -141,3 +141,10 @@ configure_file(input: '../dbus/machine-learning-agent.service.in',
   install_dir: systemd_service_dir,
   configuration: systemd_conf
 )
+
+ml_agentd_conf = configuration_data()
+ml_agentd_conf.merge_from(api_conf)
+configure_file(input: 'ml-agentd.pc.in', output: 'ml-agentd.pc',
+  install_dir: join_paths(api_install_libdir, 'pkgconfig'),
+  configuration: ml_agentd_conf
+)
