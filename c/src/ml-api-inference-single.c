@@ -295,8 +295,8 @@ __setup_in_out_tensors (ml_single * single_h)
     /** memory will be allocated by tensor_filter_single */
     in_tensors->tensors[i].tensor = NULL;
     in_tensors->tensors[i].size =
-        _ml_tensor_info_get_size (&single_h->in_info.info[i],
-        single_h->in_info.is_extended);
+        _ml_tensor_info_get_size (ml_tensors_info_get_nth_info
+        (&single_h->in_info, i), single_h->in_info.is_extended);
   }
 
   /** Setup output buffer */
@@ -308,8 +308,8 @@ __setup_in_out_tensors (ml_single * single_h)
     /** memory will be allocated by tensor_filter_single */
     out_tensors->tensors[i].tensor = NULL;
     out_tensors->tensors[i].size =
-        _ml_tensor_info_get_size (&single_h->out_info.info[i],
-        single_h->out_info.is_extended);
+        _ml_tensor_info_get_size (ml_tensors_info_get_nth_info
+        (&single_h->out_info, i), single_h->out_info.is_extended);
   }
 }
 
@@ -1367,7 +1367,7 @@ _ml_single_invoke_validate_data (ml_single_h single,
       _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
           "The size of %d-th %s tensor is not compatible with model. Given: %zu, Expected: %zu (type: %d).",
           i, (is_input) ? "input" : "output", _data->tensors[i].size, raw_size,
-          single_h->in_info.info[i].type);
+          ml_tensors_info_get_nth_info (&single_h->in_info, i)->type);
   }
 
   return ML_ERROR_NONE;
@@ -1834,7 +1834,7 @@ ml_single_set_property (ml_single_h single, const char *name, const char *value)
 
       for (i = 0; i < num; ++i) {
         rank[i] = gst_tensor_parse_dimension (str_dims[i],
-            gst_info.info[i].dimension);
+            gst_tensors_info_get_nth_info (&gst_info, i)->dimension);
       }
       g_strfreev (str_dims);
     }
@@ -1931,8 +1931,8 @@ ml_single_get_property (ml_single_h single, const char *name, char **value)
 
       for (i = 0; i < gst_info.num_tensors; ++i) {
         dim_str =
-            gst_tensor_get_rank_dimension_string (gst_info.info[i].dimension,
-            *(rank + i));
+            gst_tensor_get_rank_dimension_string (gst_tensors_info_get_nth_info
+            (&gst_info, i)->dimension, *(rank + i));
         g_string_append (dimensions, dim_str);
 
         if (i < gst_info.num_tensors - 1) {
