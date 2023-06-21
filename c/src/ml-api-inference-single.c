@@ -469,7 +469,7 @@ _ml_tensors_rank_initialize (guint * rank)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, rank, is NULL. Provide a valid pointer.");
 
-  for (i = 0; i < ML_TENSOR_SIZE_LIMIT; i++) {
+  for (i = 0; i < ML_TENSOR_RANK_LIMIT; i++) {
     rank[i] = 0;
   }
 
@@ -488,7 +488,7 @@ _ml_tensors_set_rank (guint * rank, guint val)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, rank, is NULL. Provide a valid pointer.");
 
-  for (i = 0; i < ML_TENSOR_SIZE_LIMIT; i++) {
+  for (i = 0; i < ML_TENSOR_RANK_LIMIT; i++) {
     rank[i] = val;
   }
 
