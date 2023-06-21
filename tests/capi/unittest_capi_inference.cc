@@ -8180,6 +8180,219 @@ TEST (nnstreamer_capi_flex, src_multi)
 }
 
 /**
+ * @brief Callback for check output of tflite model with 32 in/out tensors.
+ */
+static void
+test_sink_callback_many (ml_tensors_data_h data, const ml_tensors_info_h info, void *user_data)
+{
+  int status;
+
+  guint32 *count = (guint32 *) user_data;
+  *count = *count + 1;
+
+  unsigned int num_tensors = 0U;
+  ml_tensors_info_get_count (info, &num_tensors);
+  EXPECT_EQ (num_tensors, 32U);
+
+  for (guint32 i = 0; i < num_tensors; ++i) {
+    ml_tensor_dimension out_dim;
+    status = ml_tensors_info_get_tensor_dimension (info, i, out_dim);
+    EXPECT_EQ (status, ML_ERROR_NONE);
+    EXPECT_EQ (out_dim[0], 1U);
+    EXPECT_EQ (out_dim[1], 1U);
+    EXPECT_EQ (out_dim[2], 1U);
+    EXPECT_EQ (out_dim[3], 1U);
+
+    float *data_ptr;
+    size_t data_size;
+    status = ml_tensors_data_get_tensor_data (data, i, (void **) &data_ptr, &data_size);
+    EXPECT_EQ (status, ML_ERROR_NONE);
+    EXPECT_EQ (data_size, 4U);
+
+    float *output = (float *) data_ptr;
+    EXPECT_EQ (*output, 17.0f);
+  }
+}
+
+/**
+ * @brief Test NNStreamer pipeline for tflite model with 32 input / 32 output tensors. using videotestsrc
+ */
+TEST (nnstreamer_capi_pipeline, many_in_many_out_videotestsrc)
+{
+  /* Skip this test if enable-tensorflow-lite is false */
+  if (!is_enabled_tensorflow_lite)
+    return;
+
+  int status;
+
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
+  /* supposed to run test in build directory */
+  if (root_path == NULL)
+    root_path = "..";
+
+  /* start pipeline test with valid model file */
+  g_autofree gchar *test_model = g_build_filename (root_path, "tests",
+      "test_models", "models", "simple_32_in_32_out.tflite", NULL);
+  EXPECT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
+
+  /* make 32 "t. ! queue ! mux.sink_## " */
+  gchar *tee_queue_mux = g_strdup ("");
+  for (int i = 0; i < 32; i++) {
+    gchar *aux = g_strdup (tee_queue_mux);
+    g_free (tee_queue_mux);
+    tee_queue_mux = g_strdup_printf ("%s t. ! queue ! mux.sink_%d ", aux, i);
+    g_free (aux);
+  }
+
+  g_autofree gchar *pipeline = g_strdup_printf (
+      "videotestsrc pattern=2 num-buffers=10 is-live=true ! "
+      "videoscale ! videoconvert ! video/x-raw,format=GRAY8,width=1,height=1,framerate=30/1 ! "
+      "tensor_converter ! tensor_transform mode=typecast option=float32 ! tee name=t "
+      "%s"
+      "tensor_mux name=mux ! other/tensors,format=static,num_tensors=32 ! "
+      "tensor_filter framework=tensorflow-lite model=\"%s\" latency=1 ! tensor_sink name=sinkx",
+      tee_queue_mux, test_model);
+
+  g_free (tee_queue_mux);
+
+  ml_pipeline_h handle = nullptr;
+  status = ml_pipeline_construct (pipeline, nullptr, nullptr, &handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  guint32 count_sink = 0U;
+  ml_pipeline_sink_h sink_handle = nullptr;
+  status = ml_pipeline_sink_register (
+      handle, "sinkx", test_sink_callback_many, &count_sink, &sink_handle);
+
+  status = ml_pipeline_start (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  g_usleep (5000000); // 5 sec
+
+  EXPECT_EQ (count_sink, 10U);
+
+  status = ml_pipeline_destroy (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+}
+
+/**
+ * @brief Test NNStreamer pipeline for tflite model with 32 input / 32 output tensors. using appsrc
+ */
+TEST (nnstreamer_capi_pipeline, many_in_many_out_appsrc)
+{
+  /* Skip this test if enable-tensorflow-lite is false */
+  if (!is_enabled_tensorflow_lite)
+    return;
+
+  int status;
+
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
+  /* supposed to run test in build directory */
+  if (root_path == NULL)
+    root_path = "..";
+
+  /* start pipeline test with valid model file */
+  g_autofree gchar *test_model = g_build_filename (root_path, "tests",
+      "test_models", "models", "simple_32_in_32_out.tflite", NULL);
+  EXPECT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
+
+
+  gchar *dims_string = g_strdup ("1");
+  for (int i = 0; i < 31; i++) {
+    gchar *aux = g_strdup (dims_string);
+    g_free (dims_string);
+    dims_string = g_strdup_printf ("%s.1", aux);
+    g_free (aux);
+  }
+
+  gchar *types_string = g_strdup ("float32");
+  for (int i = 0; i < 31; i++) {
+    gchar *aux = g_strdup (types_string);
+    g_free (types_string);
+    types_string = g_strdup_printf ("%s.float32", aux);
+    g_free (aux);
+  }
+
+  g_autofree gchar *pipeline = g_strdup_printf (
+      "appsrc name=srcx caps=other/tensors,format=static,num_tensors=32,dimensions=%s,types=%s,framerate=0/1 ! "
+      "tensor_filter framework=tensorflow-lite model=\"%s\" latency=1 ! tensor_sink name=sinkx",
+      dims_string, types_string, test_model);
+
+  g_free (dims_string);
+  g_free (types_string);
+
+  ml_pipeline_h handle = nullptr;
+  status = ml_pipeline_construct (pipeline, nullptr, nullptr, &handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  g_usleep (100000);
+
+  guint32 count_sink = 0U;
+  ml_pipeline_sink_h sink_handle = nullptr;
+  status = ml_pipeline_sink_register (
+      handle, "sinkx", test_sink_callback_many, &count_sink, &sink_handle);
+
+  ml_pipeline_src_h src_handle = nullptr;
+  status = ml_pipeline_src_get_handle (handle, "srcx", &src_handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  ml_tensors_info_h in_info;
+  ml_tensors_info_create (&in_info);
+  ml_tensors_info_set_count (in_info, 32);
+
+  ml_tensor_dimension in_dim;
+  in_dim[0] = 1;
+  in_dim[1] = 1;
+  in_dim[2] = 1;
+  in_dim[3] = 1;
+
+  for (unsigned int i = 0; i < 32; i++) {
+    ml_tensors_info_set_tensor_type (in_info, i, ML_TENSOR_TYPE_FLOAT32);
+    ml_tensors_info_set_tensor_dimension (in_info, i, in_dim);
+  }
+
+  ml_tensors_data_h input_data;
+  ml_tensors_data_create (in_info, &input_data);
+
+  float input_raw_value = 16.0f;
+  for (unsigned int i = 0; i < 32; i++) {
+    ml_tensors_data_set_tensor_data (input_data, i, &input_raw_value, sizeof (float));
+  }
+
+  status = ml_pipeline_start (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  g_usleep (100000);
+
+  for (int i = 0; i < 5; i++) {
+    status = ml_pipeline_src_input_data (
+        src_handle, input_data, ML_PIPELINE_BUF_POLICY_DO_NOT_FREE);
+    EXPECT_EQ (status, ML_ERROR_NONE);
+    g_usleep (50000);
+  }
+
+  EXPECT_EQ (count_sink, 5U);
+
+  status = ml_pipeline_stop (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  g_usleep (100000);
+
+  /* release handles and allocated memory */
+  status = ml_pipeline_src_release_handle (src_handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_sink_unregister (sink_handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_destroy (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  ml_tensors_info_destroy (in_info);
+  ml_tensors_data_destroy (input_data);
+}
+
+/**
  * @brief Main gtest
  */
 int
