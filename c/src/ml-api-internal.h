@@ -135,6 +135,16 @@ typedef enum {
 #define ML_TENSOR_RANK_LIMIT_PREV  (4)
 
 /**
+ * @brief The tensor size limit with static gst buffer.
+ */
+#define ML_TENSOR_SIZE_LIMIT_STATIC  (16)
+
+/**
+ * @brief The size limit of "extra" tensors.
+ */
+#define ML_TENSOR_SIZE_EXTRA_LIMIT (ML_TENSOR_SIZE_LIMIT - ML_TENSOR_SIZE_LIMIT_STATIC)
+
+/**
  * @brief Data structure for tensor information.
  * @since_tizen 5.5
  */
