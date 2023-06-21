@@ -104,8 +104,9 @@ typedef enum {
 /**
  * @brief The maximum number of other/tensor instances that other/tensors may have.
  * @since_tizen 5.5
+ * @remarks The maximum size in Tizen APIs is 16 until tizen 7.0 and 256 since 8.0.
  */
-#define ML_TENSOR_SIZE_LIMIT  (16)
+#define ML_TENSOR_SIZE_LIMIT  (256)
 
 /**
  * @brief The dimensions of a tensor that NNStreamer supports.
@@ -337,7 +338,7 @@ int ml_tensors_info_get_tensor_dimension (ml_tensors_info_h info, unsigned int i
 
 /**
  * @brief Gets the size of tensors data in the given tensors information handle in bytes.
- * @details If an application needs to get the total byte size of tensors, set the @a index '-1'. Note that the maximum number of tensors is 16 (#ML_TENSOR_SIZE_LIMIT).
+ * @details If an application needs to get the total byte size of tensors, set the @a index '-1'. Note that the maximum number of tensors is #ML_TENSOR_SIZE_LIMIT.
  * @since_tizen 5.5
  * @param[in] info The handle of tensors information.
  * @param[in] index The index of the tensor.
