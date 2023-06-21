@@ -293,7 +293,7 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
   GstMemory *mem[ML_TENSOR_SIZE_LIMIT];
   GstMapInfo map[ML_TENSOR_SIZE_LIMIT];
   guint i;
-  guint num_mems;
+  guint num_mems, num_tensors;
   GList *l;
   ml_tensors_data_s *_data = NULL;
   ml_tensors_info_s *_info;
@@ -303,11 +303,12 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
 
   _info = &elem->tensors_info;
   num_mems = gst_buffer_n_memory (b);
+  num_tensors = gst_tensor_buffer_get_count (b);
 
-  if (num_mems > ML_TENSOR_SIZE_LIMIT) {
+  if (num_mems > ML_TENSOR_SIZE_LIMIT_STATIC) {
     _ml_loge (_ml_detail
         ("Number of memory chunks in a GstBuffer exceed the limit: %u > %u. Please check the version or variants of GStreamer you use. If you have modified the maximum number of memory chunks of a GST-Buffer, this might happen. Please update nnstreamer and ml-api code to make them consistent with your modification of GStreamer.",
-            num_mems, ML_TENSOR_SIZE_LIMIT));
+            num_mems, ML_TENSOR_SIZE_LIMIT_STATIC));
     return;
   }
 
@@ -322,9 +323,9 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
 
   g_mutex_lock (&elem->lock);
 
-  _data->num_tensors = num_mems;
-  for (i = 0; i < num_mems; i++) {
-    mem[i] = gst_buffer_peek_memory (b, i);
+  _data->num_tensors = num_tensors;
+  for (i = 0; i < num_tensors; i++) {
+    mem[i] = gst_tensor_buffer_get_nth_memory (b, i);
     if (!gst_memory_map (mem[i], &map[i], GST_MAP_READ)) {
       _ml_loge (_ml_detail
           ("Failed to map the output in sink '%s' callback, which is registered by ml_pipeline_sink_register ()",
@@ -363,7 +364,7 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
             goto send_cb;
           }
 
-          if (_info->num_tensors != num_mems) {
+          if (_info->num_tensors != num_tensors) {
             _ml_loge (_ml_detail
                 ("The sink event of [%s] cannot be handled because the number of tensors mismatches.",
                     elem->name));
@@ -403,15 +404,6 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
         }
       }
     }
-  }
-
-  /* Get the data! */
-  if (gst_buffer_get_size (b) != total_size ||
-      (elem->size > 0 && total_size != elem->size)) {
-    _ml_loge (_ml_detail
-        ("The buffersize mismatches. All the three values must be the same: %zu, %zu, %zu",
-            total_size, elem->size, gst_buffer_get_size (b)));
-    goto error;
   }
 
 send_cb:
@@ -456,8 +448,9 @@ send_cb:
 error:
   g_mutex_unlock (&elem->lock);
 
-  for (i = 0; i < num_mems; i++) {
+  for (i = 0; i < num_tensors; i++) {
     gst_memory_unmap (mem[i], &map[i]);
+    gst_memory_unref (mem[i]);
   }
 
   _ml_tensors_data_destroy_internal (_data, FALSE);
@@ -1763,7 +1756,7 @@ ml_pipeline_src_input_data (ml_pipeline_src_h h, ml_tensors_data_h data,
       gst_memory_unref (tmp);
     }
 
-    gst_buffer_append_memory (buffer, mem);
+    gst_tensor_buffer_append_memory (buffer, mem, _gst_tensor_info);
     /** @todo Verify that gst_buffer_append lists tensors/gstmem in the correct order */
   }
 
