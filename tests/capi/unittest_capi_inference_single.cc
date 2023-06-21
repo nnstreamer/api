@@ -3790,6 +3790,97 @@ skip_test:
 }
 
 /**
+ * @brief Test Single for tflite model with 32 input / 32 output tensors.
+ */
+TEST (nnstreamer_capi_singleshot, many_in_many_out)
+{
+  if (!is_enabled_tensorflow_lite)
+    return;
+
+  ml_single_h single;
+  int status;
+  ml_tensors_info_h in_info, out_info;
+  ml_tensors_data_h input, output;
+  size_t data_size;
+
+  unsigned int tmp_count;
+  ml_tensor_type_e tmp_type = ML_TENSOR_TYPE_UNKNOWN;
+  ml_tensor_dimension tmp_dim;
+
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
+
+  /* supposed to run test in build directory */
+  if (root_path == NULL)
+    root_path = "..";
+
+  g_autofree gchar *test_model = g_build_filename (root_path, "tests",
+      "test_models", "models", "simple_32_in_32_out.tflite", NULL);
+  ASSERT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
+
+  status = ml_single_open (&single, test_model, NULL, NULL,
+      ML_NNFW_TYPE_TENSORFLOW_LITE, ML_NNFW_HW_ANY);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_single_get_input_info (single, &in_info);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  ml_tensors_info_get_count (in_info, &tmp_count);
+  EXPECT_EQ (tmp_count, 32U);
+
+  status = ml_single_get_output_info (single, &out_info);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  ml_tensors_info_get_count (out_info, &tmp_count);
+  EXPECT_EQ (tmp_count, 32U);
+
+  status = ml_tensors_data_create (in_info, &input);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  for (int j = 0; j < 5; j++) {
+    float tmp_input[] = { 16.0f };
+    float *output_buf;
+
+    for (int i = 0; i < 32; i++) {
+      status = ml_tensors_data_set_tensor_data (input, i, tmp_input, 1 * sizeof (float));
+
+      ml_tensors_info_get_tensor_type (in_info, i, &tmp_type);
+      ml_tensors_info_get_tensor_dimension (in_info, i, tmp_dim);
+
+      EXPECT_EQ (tmp_type, ML_TENSOR_TYPE_FLOAT32);
+      EXPECT_EQ (tmp_dim[0], 1U);
+      EXPECT_EQ (tmp_dim[1], 1U);
+      EXPECT_EQ (tmp_dim[2], 1U);
+      EXPECT_EQ (tmp_dim[3], 1U);
+    }
+
+    status = ml_single_invoke (single, input, &output);
+    EXPECT_EQ (status, ML_ERROR_NONE);
+
+    for (int i = 0; i < 32; i++) {
+      ml_tensors_data_get_tensor_data (output, i, (void **) &output_buf, &data_size);
+      EXPECT_FLOAT_EQ (output_buf[0], 17.0f);
+      EXPECT_EQ (data_size, sizeof (float));
+
+      ml_tensors_info_get_tensor_type (out_info, i, &tmp_type);
+      ml_tensors_info_get_tensor_dimension (out_info, i, tmp_dim);
+
+      EXPECT_EQ (tmp_type, ML_TENSOR_TYPE_FLOAT32);
+      EXPECT_EQ (tmp_dim[0], 1U);
+      EXPECT_EQ (tmp_dim[1], 1U);
+      EXPECT_EQ (tmp_dim[2], 1U);
+      EXPECT_EQ (tmp_dim[3], 1U);
+    }
+
+    ml_tensors_data_destroy (output);
+  }
+
+  ml_tensors_data_destroy (input);
+  ml_tensors_info_destroy (in_info);
+  ml_tensors_info_destroy (out_info);
+
+  status = ml_single_close (single);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+}
+
+/**
  * @brief Test ml_option
  */
 TEST (nnstreamer_capi_ml_option, test00)
