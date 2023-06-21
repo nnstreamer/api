@@ -57,8 +57,10 @@ gst_info_is_extended (const GstTensorsInfo * gst_info)
 {
   int i, j;
   for (i = 0; i < gst_info->num_tensors; i++) {
+    GstTensorInfo *_gst_tensor_info =
+        gst_tensors_info_get_nth_info ((GstTensorsInfo *) gst_info, i);
     for (j = ML_TENSOR_RANK_LIMIT_PREV; j < NNS_TENSOR_RANK_LIMIT; j++) {
-      if (gst_info->info[i].dimension[j] != 1)
+      if (_gst_tensor_info->dimension[j] != 1)
         return TRUE;
     }
   }
@@ -120,28 +122,45 @@ _ml_tensors_info_copy_from_gst (ml_tensors_info_s * ml_info,
 
   ml_info->num_tensors = gst_info->num_tensors;
   ml_info->is_extended = gst_info_is_extended (gst_info);
+  if (gst_info->extra) {
+    /* create ml_info_extra in ml_tensors_info_s */
+    _ml_tensors_info_create_extra (ml_info);
+  }
 
   for (i = 0; i < gst_info->num_tensors; i++) {
-    /* Copy name string */
-    if (gst_info->info[i].name) {
-      ml_info->info[i].name = g_strdup (gst_info->info[i].name);
+    GstTensorInfo *_gst_tensor_info =
+        gst_tensors_info_get_nth_info ((GstTensorsInfo *) gst_info, i);
+    ml_tensor_info_s *_ml_tensor_info =
+        ml_tensors_info_get_nth_info (ml_info, i);
+    if (!_gst_tensor_info) {
+      _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+          "The parameter, gst_info, is invalid. It should be a valid GstTensorsInfo instance. This is probably an internal bug of ML API.");
     }
 
-    ml_info->info[i].type =
-        convert_ml_tensor_type_from (gst_info->info[i].type);
+    if (!_ml_tensor_info) {
+      _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+          "The parameter, ml_info, is invalid. It should be a valid ml_tensors_info_s instance, usually created by ml_tensors_info_create(). This is probably an internal bug of ML API.");
+    }
+
+    if (_gst_tensor_info->name) {
+      _ml_tensor_info->name = g_strdup (_gst_tensor_info->name);
+    }
+
+    _ml_tensor_info->type =
+        convert_ml_tensor_type_from (_gst_tensor_info->type);
 
     /* Set dimension */
     for (j = 0; j < max_dim; j++) {
-      ml_info->info[i].dimension[j] = gst_info->info[i].dimension[j];
+      _ml_tensor_info->dimension[j] = _gst_tensor_info->dimension[j];
     }
 
     for (; j < ML_TENSOR_RANK_LIMIT; j++) {
-      ml_info->info[i].dimension[j] = 1;
+      _ml_tensor_info->dimension[j] = 1U;
     }
 
     if (!ml_info->is_extended) {
       for (j = ML_TENSOR_RANK_LIMIT_PREV; j < ML_TENSOR_RANK_LIMIT; j++) {
-        ml_info->info[i].dimension[j] = 1;
+        _ml_tensor_info->dimension[j] = 1U;
       }
     }
   }
@@ -174,25 +193,31 @@ _ml_tensors_info_copy_from_ml (GstTensorsInfo * gst_info,
   gst_info->num_tensors = ml_info->num_tensors;
 
   for (i = 0; i < ml_info->num_tensors; i++) {
+    ml_tensor_info_s *_ml_tensor_info =
+        ml_tensors_info_get_nth_info ((ml_tensors_info_s *) ml_info, i);
+    GstTensorInfo *_gst_tensor_info =
+        gst_tensors_info_get_nth_info (gst_info, i);
+
     /* Copy name string */
-    if (ml_info->info[i].name) {
-      gst_info->info[i].name = g_strdup (ml_info->info[i].name);
+    if (_ml_tensor_info->name) {
+      _gst_tensor_info->name = g_strdup (_ml_tensor_info->name);
     }
 
-    gst_info->info[i].type = convert_tensor_type_from (ml_info->info[i].type);
+    /* Copy type */
+    _gst_tensor_info->type = convert_tensor_type_from (_ml_tensor_info->type);
 
     /* Set dimension */
     for (j = 0; j < max_dim; j++) {
-      gst_info->info[i].dimension[j] = ml_info->info[i].dimension[j];
+      _gst_tensor_info->dimension[j] = _ml_tensor_info->dimension[j];
     }
 
     for (; j < NNS_TENSOR_RANK_LIMIT; j++) {
-      gst_info->info[i].dimension[j] = 1;
+      _gst_tensor_info->dimension[j] = 1;
     }
 
     if (!ml_info->is_extended) {
       for (j = ML_TENSOR_RANK_LIMIT_PREV; j < NNS_TENSOR_RANK_LIMIT; j++) {
-        gst_info->info[i].dimension[j] = 1;
+        _gst_tensor_info->dimension[j] = 1;
       }
     }
   }

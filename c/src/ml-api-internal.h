@@ -160,7 +160,8 @@ typedef struct {
  */
 typedef struct {
   unsigned int num_tensors; /**< The number of tensors. */
-  ml_tensor_info_s info[ML_TENSOR_SIZE_LIMIT];  /**< The list of tensor info. */
+  ml_tensor_info_s info[ML_TENSOR_SIZE_LIMIT_STATIC];  /**< The list of tensor info. */
+  ml_tensor_info_s *extra; /**< The list of extra tensor info. */
   GMutex lock; /**< Lock for thread safety */
   int nolock; /**< Set non-zero to avoid using m (giving up thread safety) */
   bool is_extended; /**< True if tensors are extended */
@@ -293,6 +294,16 @@ typedef struct {
 size_t _ml_tensor_info_get_size (const ml_tensor_info_s *info, bool is_extended);
 
 /**
+ * @brief Allocates memory in given tensors_info for extra tensor infos.
+ */
+gboolean _ml_tensors_info_create_extra (ml_tensors_info_s * ml_info);
+
+/**
+ * @brief Initializes given tensor_info with default value.
+ */
+int _ml_tensor_info_initialize (ml_tensor_info_s * info);
+
+/**
  * @brief Initializes the tensors information with default value.
  * @since_tizen 5.5
  * @param[in] info The tensors info pointer to be initialized.
@@ -308,6 +319,11 @@ int _ml_tensors_info_initialize (ml_tensors_info_s *info);
  * @param[in] info The tensors info pointer to be freed.
  */
 void _ml_tensors_info_free (ml_tensors_info_s *info);
+
+/**
+ * @brief Get the pointer of nth tensor info.
+ */
+ml_tensor_info_s * ml_tensors_info_get_nth_info (ml_tensors_info_s *info, guint nth);
 
 /**
  * @brief Creates a tensor data frame without allocating new buffer cloning the given tensors data.
