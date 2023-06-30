@@ -105,6 +105,7 @@ if get_option('enable-ml-service')
   ml_service_deps = [nns_capi_dep, ml_agentd_deps]
   if nnstreamer_edge_dep.found()
     ml_service_deps += nnstreamer_edge_dep
+    ml_service_deps += curl_dep
   endif
 
   nns_capi_service_shared_lib = shared_library ('capi-ml-service',

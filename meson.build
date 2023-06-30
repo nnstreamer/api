@@ -32,6 +32,7 @@ nnstreamer_internal_dep = dependency('nnstreamer-internal')
 nnstreamer_single_dep = dependency('nnstreamer-single')
 nnstreamer_dep = dependency('nnstreamer')
 nnstreamer_edge_dep = dependency('nnstreamer-edge', required: false)
+curl_dep = cc.find_library('curl', required: false)
 
 if get_option('enable-ml-service')
   libsystemd_dep = dependency('libsystemd')

@@ -10,6 +10,7 @@
 #include <gtest/gtest.h>
 #include <gdbus-util.h>
 #include <gio/gio.h>
+#include <glib/gstdio.h>
 #include <ml-api-inference-pipeline-internal.h>
 #include <ml-api-internal.h>
 #include <ml-api-service-private.h>
@@ -104,12 +105,12 @@ TEST_F (MLRemoteService, registerPipeline)
   status = ml_option_set (client_option_h, "node-type", client_node_type, g_free);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  gchar *client_dest_host = g_strdup ("127.0.0.1");
-  status = ml_option_set (client_option_h, "host", client_dest_host, g_free);
+  gchar *client_host = g_strdup ("127.0.0.1");
+  status = ml_option_set (client_option_h, "host", client_host, g_free);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  guint dest_port = 3000;
-  status = ml_option_set (client_option_h, "port", &dest_port, NULL);
+  guint port = _get_available_port ();
+  status = ml_option_set (client_option_h, "port", &port, NULL);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   gchar *client_connect_type = g_strdup ("TCP");
@@ -139,7 +140,7 @@ TEST_F (MLRemoteService, registerPipeline)
   status = ml_option_set (server_option_h, "topic", topic, g_free);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_option_set (server_option_h, "dest-port", &dest_port, NULL);
+  status = ml_option_set (server_option_h, "dest-port", &port, NULL);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   gchar *server_connect_type = g_strdup ("TCP");
@@ -174,6 +175,119 @@ TEST_F (MLRemoteService, registerPipeline)
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_STREQ (pipeline_desc, ret_pipeline);
 
+  status = ml_service_destroy (server_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  status = ml_service_destroy (client_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  status = ml_option_destroy (server_option_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  status = ml_option_destroy (remote_service_option_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  status = ml_option_destroy (client_option_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+}
+
+
+/**
+ * @brief use case of pipeline registration using ml remote service.
+ */
+TEST_F (MLRemoteService, registerPipelineURI)
+{
+  int status;
+
+  /**============= Prepare client ============= **/
+  ml_service_h client_h;
+  ml_option_h client_option_h = NULL;
+
+  status = ml_option_create (&client_option_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  gchar *client_node_type = g_strdup ("remote_sender");
+  status = ml_option_set (client_option_h, "node-type", client_node_type, g_free);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  gchar *client_host = g_strdup ("127.0.0.1");
+  status = ml_option_set (client_option_h, "host", client_host, g_free);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  guint port = _get_available_port ();
+  status = ml_option_set (client_option_h, "port", &port, NULL);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  gchar *client_connect_type = g_strdup ("TCP");
+  status = ml_option_set (client_option_h, "connect-type", client_connect_type, g_free);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  gchar *topic = g_strdup ("remote_service_test_topic");
+  status = ml_option_set (client_option_h, "topic", topic, NULL);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_remote_service_create (client_option_h, &client_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  /**============= Prepare server ============= **/
+  ml_service_h server_h;
+  ml_option_h server_option_h = NULL;
+  status = ml_option_create (&server_option_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  gchar *server_node_type = g_strdup ("remote_receiver");
+  status = ml_option_set (server_option_h, "node-type", server_node_type, g_free);
+
+  gchar *dest_host = g_strdup ("127.0.0.1");
+  status = ml_option_set (server_option_h, "dest-host", dest_host, g_free);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_option_set (server_option_h, "topic", topic, g_free);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_option_set (server_option_h, "dest-port", &port, NULL);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  gchar *server_connect_type = g_strdup ("TCP");
+  status = ml_option_set (server_option_h, "connect-type", server_connect_type, g_free);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_remote_service_create (server_option_h, &server_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  ml_option_h remote_service_option_h = NULL;
+  status = ml_option_create (&remote_service_option_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  gchar *service_type = g_strdup ("pipeline_uri");
+  ml_option_set (remote_service_option_h, "service-type", service_type, g_free);
+
+  gchar *service_key = g_strdup ("pipeline_test_key");
+  ml_option_set (remote_service_option_h, "service-key", service_key, g_free);
+
+  gchar *current_dir = g_get_current_dir ();
+  gchar *test_file_path = g_build_path ("/", current_dir, "test.pipeline", NULL);
+  const gchar *pipeline_desc = "fakesrc ! fakesink";
+
+  EXPECT_TRUE (g_file_set_contents (
+      test_file_path, pipeline_desc, strlen (pipeline_desc) + 1, NULL));
+
+  gchar *pipeline_uri = g_strdup_printf ("file://%s", test_file_path);
+  g_free (test_file_path);
+
+  status = ml_remote_service_register (client_h, remote_service_option_h,
+      pipeline_uri, strlen (pipeline_uri) + 1);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  /** Wait for the server to register the pipeline. */
+  g_usleep (1000000);
+
+  gchar *ret_pipeline = NULL;
+  status = ml_service_get_pipeline (service_key, &ret_pipeline);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  EXPECT_STREQ (pipeline_desc, ret_pipeline);
+
+  status = ml_service_delete_pipeline (service_key);
+  EXPECT_TRUE (status == ML_ERROR_NONE);
+
+  g_free (ret_pipeline);
+  g_free (pipeline_uri);
   status = ml_service_destroy (server_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
   status = ml_service_destroy (client_h);
@@ -226,41 +340,337 @@ TEST_F (MLRemoteService, registerInvalidParam_n)
   status = ml_option_set (option_h, "node-type", client_node_type, g_free);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  gchar *client_dest_host = g_strdup ("127.0.0.1");
-  status = ml_option_set (option_h, "dest-host", client_dest_host, g_free);
+  gchar *client_host = g_strdup ("127.0.0.1");
+  status = ml_option_set (option_h, "host", client_host, g_free);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  guint dest_port = 1883;
-  status = ml_option_set (option_h, "dest-port", &dest_port, NULL);
+  guint port = _get_available_port ();
+  status = ml_option_set (option_h, "port", &port, NULL);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  gchar *client_connect_type = g_strdup ("HYBRID");
+  gchar *client_connect_type = g_strdup ("TCP");
   status = ml_option_set (option_h, "connect-type", client_connect_type, g_free);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-
-  gchar *topic = g_strdup ("temp_test_topic");
-  status = ml_option_set (option_h, "topic", topic, NULL);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   status = ml_remote_service_create (option_h, &service_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_remote_service_register (NULL, option_h, str, len);
+  status = ml_option_destroy (option_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  ml_option_h remote_service_option_h = NULL;
+  status = ml_option_create (&remote_service_option_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  gchar *service_type = g_strdup ("pipeline_raw");
+  ml_option_set (remote_service_option_h, "service-type", service_type, g_free);
+
+  gchar *service_key = g_strdup ("pipeline_test_key");
+  ml_option_set (remote_service_option_h, "service-key", service_key, g_free);
+
+  g_autofree gchar *pipeline_desc = g_strdup ("fakesrc ! fakesink");
+  status = ml_remote_service_register (NULL, remote_service_option_h, str, len);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
   status = ml_remote_service_register (service_h, NULL, str, len);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = ml_remote_service_register (service_h, option_h, NULL, len);
+  status = ml_remote_service_register (service_h, remote_service_option_h, NULL, len);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = ml_remote_service_register (service_h, option_h, str, 0);
+  status = ml_remote_service_register (service_h, remote_service_option_h, str, 0);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = ml_option_destroy (option_h);
+  status = ml_option_destroy (remote_service_option_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  status = ml_service_destroy (service_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+}
+
+
+/**
+ * @brief use case of model registration using ml remote service.
+ */
+TEST_F (MLRemoteService, registerModel)
+{
+  int status;
+
+  /**============= Prepare client ============= **/
+  ml_service_h client_h;
+  ml_option_h client_option_h = NULL;
+
+  status = ml_option_create (&client_option_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_service_destroy (service_h);
+  gchar *client_node_type = g_strdup ("remote_sender");
+  status = ml_option_set (client_option_h, "node-type", client_node_type, g_free);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  gchar *client_host = g_strdup ("127.0.0.1");
+  status = ml_option_set (client_option_h, "host", client_host, g_free);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  guint port = _get_available_port ();
+  status = ml_option_set (client_option_h, "port", &port, NULL);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  gchar *client_connect_type = g_strdup ("TCP");
+  status = ml_option_set (client_option_h, "connect-type", client_connect_type, g_free);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  gchar *topic = g_strdup ("remote_service_test_topic");
+  status = ml_option_set (client_option_h, "topic", topic, NULL);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_remote_service_create (client_option_h, &client_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  /**============= Prepare server ============= **/
+  ml_service_h server_h;
+  ml_option_h server_option_h = NULL;
+  status = ml_option_create (&server_option_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  gchar *server_node_type = g_strdup ("remote_receiver");
+  status = ml_option_set (server_option_h, "node-type", server_node_type, g_free);
+
+  gchar *dest_host = g_strdup ("127.0.0.1");
+  status = ml_option_set (server_option_h, "dest-host", dest_host, g_free);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_option_set (server_option_h, "topic", topic, g_free);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_option_set (server_option_h, "dest-port", &port, NULL);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  gchar *server_connect_type = g_strdup ("TCP");
+  status = ml_option_set (server_option_h, "connect-type", server_connect_type, g_free);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_remote_service_create (server_option_h, &server_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  /** Set service option */
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
+  /* ml_remote_service_register () requires absolute path to model, ignore this case. */
+  if (root_path == NULL)
+    return;
+
+  gchar *test_model = g_build_filename (root_path, "tests", "test_models",
+      "models", "mobilenet_v1_1.0_224_quant.tflite", NULL);
+  EXPECT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
+
+  gchar *contents = NULL;
+  gsize len = 0;
+  EXPECT_TRUE (g_file_get_contents (test_model, &contents, &len, NULL));
+
+  ml_option_h remote_service_option_h = NULL;
+  status = ml_option_create (&remote_service_option_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  gchar *service_key = g_strdup ("model_registration_test_key");
+  ml_option_set (remote_service_option_h, "service-key", service_key, g_free);
+
+  gchar *service_type = g_strdup ("model_raw");
+  ml_option_set (remote_service_option_h, "service-type", service_type, g_free);
+
+  gchar *activate = g_strdup ("true");
+  ml_option_set (remote_service_option_h, "activate", activate, g_free);
+
+  gchar *description = g_strdup ("temp description for remote model registeration test");
+  ml_option_set (remote_service_option_h, "description", description, g_free);
+
+  gchar *name = g_strdup ("mobilenet_v1_1.0_224_quant.tflite");
+  ml_option_set (remote_service_option_h, "name", name, g_free);
+
+  status = ml_remote_service_register (client_h, remote_service_option_h, contents, len);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  /** Wait for the server to register the pipeline. */
+  g_usleep (1000000);
+
+  // Get model file
+  ml_information_h activated_model_info;
+  status = ml_service_model_get_activated (service_key, &activated_model_info);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  EXPECT_NE (activated_model_info, nullptr);
+
+  gchar *activated_model_path;
+  status = ml_information_get (activated_model_info, "path", (void **) &activated_model_path);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  gchar *activated_model_contents = NULL;
+  gsize activated_model_len = 0;
+  EXPECT_TRUE (g_file_get_contents (activated_model_path,
+      &activated_model_contents, &activated_model_len, NULL));
+  EXPECT_EQ (len, activated_model_len);
+  EXPECT_EQ (memcmp (contents, activated_model_contents, len), 0);
+
+  status = ml_service_model_delete (service_key, 0U);
+  EXPECT_TRUE (status == ML_ERROR_NONE);
+
+  g_remove (activated_model_path);
+
+  g_free (contents);
+  g_free (test_model);
+  g_free (activated_model_contents);
+  status = ml_service_destroy (server_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  status = ml_service_destroy (client_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  status = ml_option_destroy (server_option_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  status = ml_option_destroy (remote_service_option_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  status = ml_option_destroy (client_option_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  status = ml_information_destroy (activated_model_info);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+}
+
+/**
+ * @brief use case of model registration from URI using ml remote service.
+ */
+TEST_F (MLRemoteService, registerModelURI)
+{
+  int status;
+
+  /**============= Prepare client ============= **/
+  ml_service_h client_h;
+  ml_option_h client_option_h = NULL;
+
+  status = ml_option_create (&client_option_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  gchar *client_node_type = g_strdup ("remote_sender");
+  status = ml_option_set (client_option_h, "node-type", client_node_type, g_free);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  gchar *client_host = g_strdup ("127.0.0.1");
+  status = ml_option_set (client_option_h, "host", client_host, g_free);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  guint port = _get_available_port ();
+  status = ml_option_set (client_option_h, "port", &port, NULL);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  gchar *client_connect_type = g_strdup ("TCP");
+  status = ml_option_set (client_option_h, "connect-type", client_connect_type, g_free);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  gchar *topic = g_strdup ("remote_service_test_topic");
+  status = ml_option_set (client_option_h, "topic", topic, NULL);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_remote_service_create (client_option_h, &client_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  /**============= Prepare server ============= **/
+  ml_service_h server_h;
+  ml_option_h server_option_h = NULL;
+  status = ml_option_create (&server_option_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  gchar *server_node_type = g_strdup ("remote_receiver");
+  status = ml_option_set (server_option_h, "node-type", server_node_type, g_free);
+
+  gchar *dest_host = g_strdup ("127.0.0.1");
+  status = ml_option_set (server_option_h, "dest-host", dest_host, g_free);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_option_set (server_option_h, "topic", topic, g_free);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_option_set (server_option_h, "dest-port", &port, NULL);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  gchar *server_connect_type = g_strdup ("TCP");
+  status = ml_option_set (server_option_h, "connect-type", server_connect_type, g_free);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_remote_service_create (server_option_h, &server_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  /** Prepare model register service */
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
+  /* ml_remote_service_register () requires absolute path to model, ignore this case. */
+  if (root_path == NULL)
+    return;
+
+  gchar *test_model_path = g_build_filename (root_path, "tests", "test_models",
+      "models", "mobilenet_v1_1.0_224_quant.tflite", NULL);
+  EXPECT_TRUE (g_file_test (test_model_path, G_FILE_TEST_EXISTS));
+
+  ml_option_h remote_service_option_h = NULL;
+  status = ml_option_create (&remote_service_option_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  gchar *service_type = g_strdup ("model_uri");
+  ml_option_set (remote_service_option_h, "service-type", service_type, g_free);
+
+  gchar *service_key = g_strdup ("pipeline_test_key");
+  ml_option_set (remote_service_option_h, "service-key", service_key, g_free);
+
+  gchar *model_uri = g_strdup_printf ("file://%s", test_model_path);
+
+  gchar *activate = g_strdup ("true");
+  ml_option_set (remote_service_option_h, "activate", activate, g_free);
+
+  gchar *description = g_strdup ("temp descriptio for remote model register test");
+  ml_option_set (remote_service_option_h, "description", description, g_free);
+
+  gchar *name = g_strdup ("mobilenet_v1_1.0_224_quant.tflite");
+  ml_option_set (remote_service_option_h, "name", name, g_free);
+
+  status = ml_remote_service_register (
+      client_h, remote_service_option_h, model_uri, strlen (model_uri) + 1);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  g_free (model_uri);
+
+  /** Wait for the server to register the pipeline. */
+  g_usleep (1000000);
+
+  gchar *contents = NULL;
+  gsize len = 0;
+  EXPECT_TRUE (g_file_get_contents (test_model_path, &contents, &len, NULL));
+
+  ml_information_h activated_model_info;
+  status = ml_service_model_get_activated (service_key, &activated_model_info);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  EXPECT_NE (activated_model_info, nullptr);
+
+  gchar *activated_model_path;
+  status = ml_information_get (activated_model_info, "path", (void **) &activated_model_path);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  gchar *activated_model_contents = NULL;
+  gsize activated_model_len = 0;
+  EXPECT_TRUE (g_file_get_contents (activated_model_path,
+      &activated_model_contents, &activated_model_len, NULL));
+  EXPECT_EQ (len, activated_model_len);
+  EXPECT_EQ (memcmp (contents, activated_model_contents, len), 0);
+
+  status = ml_service_model_delete (service_key, 0U);
+  EXPECT_TRUE (status == ML_ERROR_NONE);
+
+  status = g_remove (activated_model_path);
+  EXPECT_TRUE (status == 0);
+
+  g_free (contents);
+  g_free (activated_model_contents);
+  g_free (test_model_path);
+  status = ml_service_destroy (server_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  status = ml_service_destroy (client_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  status = ml_option_destroy (server_option_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  status = ml_option_destroy (remote_service_option_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  status = ml_option_destroy (client_option_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  status = ml_information_destroy (activated_model_info);
   EXPECT_EQ (ML_ERROR_NONE, status);
 }
 
