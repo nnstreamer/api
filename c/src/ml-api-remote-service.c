@@ -15,6 +15,7 @@
 #include <gst/gstbuffer.h>
 #include <gst/app/app.h>
 #include <string.h>
+#include <curl/curl.h>
 
 #include "ml-api-internal.h"
 #include "ml-api-service.h"
@@ -152,17 +153,134 @@ _mlrs_get_service_type (gchar * service_str)
 
   if (g_ascii_strcasecmp (service_str, "model_raw") == 0) {
     service_type = ML_REMOTE_SERVICE_TYPE_MODEL_RAW;
-  } else if (g_ascii_strcasecmp (service_str, "model_url") == 0) {
-    service_type = ML_REMOTE_SERVICE_TYPE_MODEL_URL;
+  } else if (g_ascii_strcasecmp (service_str, "model_uri") == 0) {
+    service_type = ML_REMOTE_SERVICE_TYPE_MODEL_URI;
   } else if (g_ascii_strcasecmp (service_str, "pipeline_raw") == 0) {
     service_type = ML_REMOTE_SERVICE_TYPE_PIPELINE_RAW;
-  } else if (g_ascii_strcasecmp (service_str, "pipeline_url") == 0) {
-    service_type = ML_REMOTE_SERVICE_TYPE_PIPELINE_URL;
+  } else if (g_ascii_strcasecmp (service_str, "pipeline_uri") == 0) {
+    service_type = ML_REMOTE_SERVICE_TYPE_PIPELINE_URI;
   } else {
     _ml_error_report ("Invalid service type: %s, Please check service type.",
         service_str);
   }
   return service_type;
+}
+
+/**
+ * @brief Get ml remote service activation type.
+ */
+static gboolean
+_mlrs_parse_activate (gchar * activate)
+{
+  gboolean ret = TRUE;
+
+  if (g_ascii_strcasecmp (activate, "false") == 0) {
+    ret = FALSE;
+  }
+
+  return ret;
+}
+
+/**
+ * @brief Callback function for receving data using curl.
+ */
+static size_t
+curl_mem_write_cb (void *data, size_t size, size_t nmemb, void *clientp)
+{
+  size_t recv_size = size * nmemb;
+  GByteArray *array = (GByteArray *) clientp;
+
+  if (!array || !data || recv_size == 0)
+    return 0;
+
+  g_byte_array_append (array, data, recv_size);
+
+  return recv_size;
+}
+
+/**
+ * @brief Register model file given by the remote sender.
+ */
+static gboolean
+_mlrs_model_register (gchar * service_key, nns_edge_data_h data_h,
+    void *data, nns_size_t data_len)
+{
+  guint version = -1;
+  gchar *description = NULL;
+  gchar *name = NULL;
+  gchar *current_dir = g_get_current_dir ();
+  gchar *dir_path = NULL;
+  gchar *model_path = NULL;
+  gchar *activate = NULL;
+  gboolean active_bool = TRUE;
+  GError *error = NULL;
+  gboolean ret = TRUE;
+
+  nns_edge_data_get_info (data_h, "description", &description);
+  nns_edge_data_get_info (data_h, "name", &name);
+  nns_edge_data_get_info (data_h, "activate", &activate);
+  active_bool = _mlrs_parse_activate (activate);
+
+  dir_path = g_build_path ("/", current_dir, service_key, NULL);
+  g_mkdir_with_parents (dir_path, 0755);
+  model_path = g_build_path ("/", dir_path, name, NULL);
+
+  if (!g_file_set_contents (model_path, (char *) data, data_len, &error)) {
+    _ml_loge ("Failed to write data to file: %s",
+        error ? error->message : "unknown error");
+    g_clear_error (&error);
+    ret = FALSE;
+    goto error;
+  }
+
+  /**
+   * @todo Hashing the path. Where is the default path to save the model file?
+   */
+  if (ML_ERROR_NONE != ml_service_model_register (service_key, model_path,
+          active_bool, description, &version)) {
+    _ml_loge ("Failed to register model, service ket:%s", service_key);
+    ret = FALSE;
+  }
+error:
+  g_free (current_dir);
+  g_free (dir_path);
+  g_free (activate);
+  g_free (model_path);
+  g_free (description);
+  g_free (name);
+
+  return ret;
+}
+
+/**
+ * @brief Get data from gievn uri
+ */
+static gboolean
+_mlrs_get_data_from_uri (gchar * uri, GByteArray * array)
+{
+  CURL *curl;
+  CURLcode res;
+  gboolean ret = FALSE;
+
+  curl = curl_easy_init ();
+  if (curl) {
+    curl_easy_setopt (curl, CURLOPT_URL, (gchar *) uri);
+    curl_easy_setopt (curl, CURLOPT_FOLLOWLOCATION, 1L);
+    curl_easy_setopt (curl, CURLOPT_WRITEFUNCTION, curl_mem_write_cb);
+    curl_easy_setopt (curl, CURLOPT_WRITEDATA, (void *) array);
+
+    res = curl_easy_perform (curl);
+
+    if (res != CURLE_OK) {
+      _ml_loge ("curl_easy_perform failed: %s\n", curl_easy_strerror (res));
+      return FALSE;
+    }
+
+    curl_easy_cleanup (curl);
+    ret = TRUE;
+  }
+
+  return ret;
 }
 
 /**
@@ -197,20 +315,50 @@ _mlrs_process_remote_service (nns_edge_data_h data_h)
   }
 
   switch (service_type) {
-    case ML_REMOTE_SERVICE_TYPE_MODEL_URL:
-      /** @todo Download the model file from given URL */
-    case ML_REMOTE_SERVICE_TYPE_MODEL_RAW:
-      /** @todo Save model file to given path and register the model */
+    case ML_REMOTE_SERVICE_TYPE_MODEL_URI:
+    {
+      GByteArray *array = g_byte_array_new ();
+
+      if (!_mlrs_get_data_from_uri ((gchar *) data, array)) {
+        _ml_error_report_return (NNS_EDGE_ERROR_IO,
+            "Failed to get data from uri: %s.", (gchar *) data);
+      }
+      if (!_mlrs_model_register (service_key, data_h, array->data, array->len)) {
+        _ml_error_report ("Failed to register model downloaded from: %s.",
+            (gchar *) data);
+        ret = NNS_EDGE_ERROR_UNKNOWN;
+      }
+      g_byte_array_free (array, TRUE);
       break;
-    case ML_REMOTE_SERVICE_TYPE_PIPELINE_URL:
-      /** @todo Download the pipeline description from given URL */
+    }
+    case ML_REMOTE_SERVICE_TYPE_MODEL_RAW:
+    {
+      if (!_mlrs_model_register (service_key, data_h, data, data_len)) {
+        _ml_error_report ("Failed to register model downloaded from: %s.",
+            (gchar *) data);
+        ret = NNS_EDGE_ERROR_UNKNOWN;
+      }
+      break;
+    }
+    case ML_REMOTE_SERVICE_TYPE_PIPELINE_URI:
+    {
+      GByteArray *array = g_byte_array_new ();
+
+      ret = _mlrs_get_data_from_uri ((gchar *) data, array);
+      if (!ret) {
+        _ml_error_report_return (ret,
+            "Failed to get data from uri: %s.", (gchar *) data);
+      }
+      ret = ml_service_set_pipeline (service_key, (gchar *) array->data);
+      g_byte_array_free (array, TRUE);
+      break;
+    }
     case ML_REMOTE_SERVICE_TYPE_PIPELINE_RAW:
-      ml_service_set_pipeline (service_key, (gchar *) data);
+      ret = ml_service_set_pipeline (service_key, (gchar *) data);
       break;
     default:
-      _ml_error_report
-          ("Unknown service type or not supported yet. Service num: %d",
-          service_type);
+      _ml_error_report ("Unknown service type or not supported yet. "
+          "Service num: %d", service_type);
       break;
   }
   return ret;
@@ -364,6 +512,9 @@ ml_remote_service_register (ml_service_h handle, ml_option_h option, void *data,
   nns_edge_data_h data_h = NULL;
   int ret = NNS_EDGE_ERROR_NONE;
   gchar *service_str = NULL;
+  gchar *description = NULL;
+  gchar *name = NULL;
+  gchar *activate = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
   check_feature_state (ML_FEATURE_INFERENCE);
@@ -411,11 +562,18 @@ ml_remote_service_register (ml_service_h handle, ml_option_h option, void *data,
 
   nns_edge_data_set_info (data_h, "service-type", service_str);
   nns_edge_data_set_info (data_h, "service-key", service_key);
+  ml_option_get (option, "description", (void **) &description);
+  nns_edge_data_set_info (data_h, "description", description);
+  ml_option_get (option, "name", (void **) &name);
+  nns_edge_data_set_info (data_h, "name", name);
+  ml_option_get (option, "activate", (void **) &activate);
+  nns_edge_data_set_info (data_h, "activate", activate);
 
   ret = nns_edge_data_add (data_h, data, data_len, NULL);
   if (NNS_EDGE_ERROR_NONE != ret) {
     _ml_error_report ("Failed to add camera data to the edge data.\n");
     nns_edge_data_destroy (data_h);
+    return ret;
   }
 
   ret = nns_edge_send (remote_s->edge_h, data_h);
