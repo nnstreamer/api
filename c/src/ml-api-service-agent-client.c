@@ -863,3 +863,192 @@ ml_service_model_delete (const char *name, const unsigned int version)
 
   return ret;
 }
+
+/**
+ * @brief Adds new information of machine learning resources.
+ */
+int
+ml_service_resource_add (const char *name, const char *path,
+    const char *description)
+{
+  int ret = ML_ERROR_NONE;
+  g_autoptr (GError) err = NULL;
+
+  check_feature_state (ML_FEATURE_SERVICE);
+
+  if (!name) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'name' is NULL. It should be a valid string.");
+  }
+
+  ret = _ml_service_check_path (path);
+  if (ret != ML_ERROR_NONE)
+    return ret;
+
+  /**
+   * @todo Check whether the given path is in the app's resource directory.
+   * Implement common function later, see ml_service_model_register().
+   */
+  ret = ml_agent_dbus_interface_resource_add (name, path,
+      description ? description : "", &err);
+  if (ret < 0) {
+    _ml_error_report ("Failed to invoke the method resource_add (%s).",
+        err ? err->message : "Unknown error");
+  }
+
+  return ret;
+}
+
+/**
+ * @brief Deletes the information of the resources from machine learning service.
+ */
+int
+ml_service_resource_delete (const char *name)
+{
+  int ret = ML_ERROR_NONE;
+  g_autoptr (GError) err = NULL;
+
+  check_feature_state (ML_FEATURE_SERVICE);
+
+  if (!name) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'name' is NULL. It should be a valid string.");
+  }
+
+  ret = ml_agent_dbus_interface_resource_delete (name, &err);
+  if (ret < 0) {
+    _ml_error_report ("Failed to invoke the method resource_delete (%s).",
+        err ? err->message : "Unknown error");
+  }
+
+  return ret;
+}
+
+/**
+ * @brief Gets the information of the resources from machine learning service.
+ */
+int
+ml_service_resource_get (const char *name, ml_information_list_h * res)
+{
+  int ret = ML_ERROR_NONE;
+  ml_info_list_s *_info_list = NULL;
+  g_autofree gchar *res_info = NULL;
+  g_autoptr (GError) err = NULL;
+  guint i, n;
+
+  check_feature_state (ML_FEATURE_SERVICE);
+
+  if (!name) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'name' is NULL. It should be a valid string.");
+  }
+
+  if (res == NULL) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The argument for 'res' should not be NULL.");
+  }
+
+  if (*res != NULL) {
+    _ml_logw (WARN_MSG_DPTR_SET_OVER, "ml_information_list_h res = NULL");
+  }
+  *res = NULL;
+
+  ret = ml_agent_dbus_interface_resource_get (name, &res_info, &err);
+  if (ML_ERROR_NONE != ret || !res_info) {
+    _ml_error_report_return (ret,
+        "Failed to invoke the method resource_get (%s).",
+        err ? err->message : "Unknown error");
+  }
+
+  _info_list = g_try_new0 (ml_info_list_s, 1);
+  if (NULL == _info_list) {
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Failed to allocate memory for ml_information_list_h. Out of memory?");
+  }
+
+  /* Parse json string (res_info). */
+  {
+    g_autoptr (JsonParser) parser = NULL;
+    JsonNode *rnode = NULL;
+    JsonArray *array = NULL;
+
+    parser = json_parser_new ();
+    if (!parser) {
+      _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+          "Failed to allocate memory for JsonParser. Out of memory?");
+    }
+
+    if (!json_parser_load_from_data (parser, res_info, -1, &err)) {
+      _ml_error_report ("Failed to parse the json string (%s).",
+          err ? err->message : "Unknown error");
+      return ML_ERROR_INVALID_PARAMETER;
+    }
+
+    rnode = json_parser_get_root (parser);
+    if (!rnode) {
+      _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+          "Failed to get the root node of json string.");
+    }
+
+    array =
+        (JSON_NODE_HOLDS_ARRAY (rnode) ? json_node_get_array (rnode) : NULL);
+    if (!array) {
+      _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+          "Failed to get array from json string.");
+    }
+
+    n = json_array_get_length (array);
+    if (n == 0U) {
+      _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+          "Failed to retrieve the length of the json array.");
+    }
+
+    _info_list->info = g_try_new0 (ml_info_s *, n);
+    if (!_info_list->info) {
+      g_free (_info_list);
+      _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+          "Failed to allocate memory for list of ml_information_list_h. Out of memory?");
+    }
+    _info_list->length = n;
+
+    for (i = 0; i < n; i++) {
+      g_autoptr (GList) members = NULL;
+      JsonObject *jobj = NULL;
+      GList *l;
+
+      ret = ml_option_create ((ml_information_h *) (&_info_list->info[i]));
+      if (ret != ML_ERROR_NONE) {
+        _ml_error_report
+            ("Failed to allocate memory for ml_information_list_h. Out of memory?");
+        n = i;
+        goto error;
+      }
+
+      jobj = json_array_get_object_element (array, i);
+      members = json_object_get_members (jobj);
+      for (l = members; l != NULL; l = l->next) {
+        const gchar *key = l->data;
+        const gchar *val = json_object_get_string_member (jobj, key);
+
+        ml_option_set (_info_list->info[i], key, g_strdup (val), g_free);
+      }
+      /** @todo add app_info and fetch it from service-db */
+    }
+  }
+
+  *res = _info_list;
+  return ML_ERROR_NONE;
+
+error:
+  if (_info_list) {
+    for (i = 0; i < n; i++) {
+      if (_info_list->info[i])
+        ml_option_destroy (_info_list->info[i]);
+    }
+
+    g_free (_info_list->info);
+    g_free (_info_list);
+  }
+
+  return ret;
+}

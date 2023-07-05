@@ -495,6 +495,22 @@ int ml_option_set (ml_option_h option, const char *key, void *value, ml_data_des
  */
 int ml_option_get (ml_option_h option, const char *key, void **value);
 
+/******************
+ * ML INFORMATION *
+ ******************/
+
+/**
+ * @brief A handle of a ml-information instance.
+ * @since_tizen 8.0
+ */
+typedef void *ml_information_h;
+
+/**
+ * @brief A handle of a list of ml-information instance.
+ * @since_tizen 8.0
+ */
+typedef void *ml_information_list_h;
+
 /**
  * @}
  */
