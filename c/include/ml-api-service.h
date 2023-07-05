@@ -333,6 +333,95 @@ int ml_service_model_get_all (const char *name, ml_option_h *info_list[], unsign
 int ml_service_model_delete (const char *name, const unsigned int version);
 
 /**
+ * @brief Adds new information of machine learning resources those contain images, audio samples, binary files, and so on.
+ * @since_tizen 8.0
+ * @remarks If same name is already registered in machine learning service, this returns no error and the list of resource files will be updated.
+ * @remarks %http://tizen.org/privilege/mediastorage is needed if model file is relevant to media storage.
+ * @remarks %http://tizen.org/privilege/externalstorage is needed if model file is relevant to external storage.
+ * @param[in] name The unique name to indicate the resources.
+ * @param[in] path The path to machine learning resources.
+ * @param[in] description Nullable, description for machine learning resources.
+ * @return 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_PERMISSION_DENIED The application does not have the privilege to access to the storage.
+ * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
+ * @retval #ML_ERROR_IO_ERROR The operation of DB or filesystem has failed.
+ *
+ * Here is an example of the usage:
+ * @code
+ * // The machine-learning resource API provides a method to share the data files those can be used for training or inferencing AI model.
+ * // Users may generate preprocessed data file, and add it into machine-learning service.
+ * // Then an application can fetch the data set for retraining an AI model.
+ *
+ * const char *my_resources[3] = {
+ *   "/path/to/resources/my_res1.dat",
+ *   "/path/to/resources/my_res2.dat"
+ *   "/path/to/resources/my_res3.dat"
+ * };
+ *
+ * int status;
+ * unsigned int i, length;
+ * ml_information_list_h resources;
+ * ml_information_h res;
+ * char *path_to_resource;
+ *
+ * // Add resource files with name "my_resource".
+ * for (i = 0; i < 3; i++) {
+ *   status = ml_service_resource_add ("my_resource", my_resources[i], "This is my resource data file.");
+ *   if (status != ML_ERROR_NONE) {
+ *     // Handle error case.
+ *   }
+ * }
+ *
+ * // Get the resources with specific name.
+ * status = ml_service_resource_get ("my_resource", &resources);
+ * if (status != ML_ERROR_NONE) {
+ *   // Handle error case.
+ * }
+ *
+ * status = ml_information_list_length (resources, &length);
+ * for (i = 0; i < length; i++) {
+ *   status = ml_information_list_get (resources, i, &res);
+ *   // Get the path of added resources.
+ *   status = ml_information_get (res, "path", (void **) &path_to_resource);
+ * }
+ *
+ * // Release the information handle of resources.
+ * status = ml_information_list_destroy (resources);
+ * @endcode
+ */
+int ml_service_resource_add (const char *name, const char *path, const char *description);
+
+/**
+ * @brief Deletes the information of the resources from machine learning service.
+ * @since_tizen 8.0
+ * @remarks This does not remove the resource files from file system.
+ * @param[in] name The unique name to indicate the resources.
+ * @return 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
+ * @retval #ML_ERROR_IO_ERROR The operation of DB or filesystem has failed.
+ */
+int ml_service_resource_delete (const char *name);
+
+/**
+ * @brief Gets the information of the resources from machine learning service.
+ * @since_tizen 8.0
+ * @remarks If the function succeeds, the @a res should be released using ml_information_list_destroy().
+ * @param[in] name The unique name to indicate the resources.
+ * @param[out] res The handle of the machine learning resources.
+ * @return 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
+ * @retval #ML_ERROR_IO_ERROR The operation of DB or filesystem has failed.
+ * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
+ */
+int ml_service_resource_get (const char *name, ml_information_list_h *res);
+
+/**
  * @}
  */
 #ifdef __cplusplus

@@ -1297,6 +1297,92 @@ TEST_F (MLServiceAgentTest, resource_gdbus_call_n)
 }
 
 /**
+ * @brief Negative testcase of ml-service-resource - add invalid param.
+ */
+TEST (MLServiceResource, addInvalidParam01_n)
+{
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
+  g_autofree gchar *test_model = NULL;
+  int ret;
+
+  /* Adding res file into ml-service-agent requires absolute path, ignore this case. */
+  if (root_path == NULL)
+    return;
+
+  test_model = g_build_filename (root_path, "tests", "test_models", "models",
+      "mobilenet_v1_1.0_224_quant.tflite", NULL);
+  ASSERT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
+
+  ret = ml_service_resource_add (NULL, test_model, "unittest-add-resource");
+  EXPECT_NE (ret, ML_ERROR_NONE);
+}
+
+/**
+ * @brief Negative testcase of ml-service-resource - add invalid param.
+ */
+TEST (MLServiceResource, addInvalidParam02_n)
+{
+  int ret;
+
+  ret = ml_service_resource_add ("unittest-res", NULL, "unittest-add-resource");
+  EXPECT_NE (ret, ML_ERROR_NONE);
+}
+
+/**
+ * @brief Negative testcase of ml-service-resource - add invalid param.
+ */
+TEST (MLServiceResource, addInvalidParam03_n)
+{
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
+  g_autofree gchar *test_model = NULL;
+  int ret;
+
+  /* Adding res file into ml-service-agent requires absolute path, ignore this case. */
+  if (root_path == NULL)
+    return;
+
+  test_model = g_build_filename (root_path, "tests", "test_models", "models",
+      "restest_invalid.tflite", NULL);
+
+  ret = ml_service_resource_add ("unittest-res", test_model, "unittest-add-resource");
+  EXPECT_NE (ret, ML_ERROR_NONE);
+}
+
+/**
+ * @brief Negative testcase of ml-service-resource - delete invalid param.
+ */
+TEST (MLServiceResource, deleteInvalidParam01_n)
+{
+  int ret;
+
+  ret = ml_service_resource_delete (NULL);
+  EXPECT_NE (ret, ML_ERROR_NONE);
+}
+
+/**
+ * @brief Negative testcase of ml-service-resource - get invalid param.
+ */
+TEST (MLServiceResource, getInvalidParam01_n)
+{
+  int ret;
+  ml_option_h res = NULL;
+
+  ret = ml_service_resource_get (NULL, &res);
+  EXPECT_NE (ret, ML_ERROR_NONE);
+}
+
+/**
+ * @brief Negative testcase of ml-service-resource - get invalid param.
+ */
+TEST (MLServiceResource, getInvalidParam02_n)
+{
+  int ret;
+
+  ret = ml_service_resource_get ("unittest-res", NULL);
+  EXPECT_NE (ret, ML_ERROR_NONE);
+}
+
+/**
  * @brief Negative test for pipeline. With DBus unconnected.
  */
 TEST (MLServiceAgentTestDbusUnconnected, pipeline_n)
