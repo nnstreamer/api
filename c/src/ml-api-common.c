@@ -16,7 +16,32 @@
 #include <glib.h>
 
 #include "nnstreamer.h"
+#include "nnstreamer-tizen-internal.h"
 #include "ml-api-internal.h"
+
+/**
+ * @brief Gets the version number of machine-learning API.
+ */
+void
+ml_api_get_version (unsigned int *major, unsigned int *minor,
+    unsigned int *micro)
+{
+  if (major)
+    *major = VERSION_MAJOR;
+  if (minor)
+    *minor = VERSION_MINOR;
+  if (micro)
+    *micro = VERSION_MICRO;
+}
+
+/**
+ * @brief Gets the version string of machine-learning API.
+ */
+char *
+ml_api_get_version_string (void)
+{
+  return g_strdup_printf ("Machine Learning API %s", VERSION);
+}
 
 /**
  * @brief Internal function to create tensors-info handle.

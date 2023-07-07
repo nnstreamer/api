@@ -45,6 +45,22 @@ typedef struct {
  */
 int ml_single_open_custom (ml_single_h *single, ml_single_preset *info);
 
+/**
+ * @brief Gets the version number of machine-learning API. (major.minor.micro)
+ * @since_tizen 8.0
+ * @param[out] major The pointer to store the major version number. Set null if won't fetch the version.
+ * @param[out] minor The pointer to store the minor version number. Set null if won't fetch the version.
+ * @param[out] micro The pointer to store the micro version number. Set null if won't fetch the version.
+ */
+void ml_api_get_version (unsigned int *major, unsigned int *minor, unsigned int *micro);
+
+/**
+ * @brief Gets the version string of machine-learning API.
+ * @since_tizen 8.0
+ * @return Newly allocated string. The returned string should be freed with free().
+ */
+char * ml_api_get_version_string (void);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

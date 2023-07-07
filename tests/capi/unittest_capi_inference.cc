@@ -4020,6 +4020,25 @@ TEST (nnstreamer_capi_util, replaceStr03)
 }
 
 /**
+ * @brief Test to get version of ML API.
+ */
+TEST (nnstreamer_capi_util, getVersion)
+{
+  gchar *version;
+  unsigned int major, minor, micro;
+
+  version = ml_api_get_version_string ();
+  ml_api_get_version (&major, &minor, &micro);
+
+  EXPECT_TRUE (g_str_has_suffix (version, VERSION));
+  EXPECT_EQ (major, VERSION_MAJOR);
+  EXPECT_EQ (minor, VERSION_MINOR);
+  EXPECT_EQ (micro, VERSION_MICRO);
+
+  g_free (version);
+}
+
+/**
  * @brief Test case of Element Property Control.
  * @detail Run the `ml_pipeline_element_get_handle()` API and check its results.
  */
