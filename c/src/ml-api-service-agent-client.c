@@ -37,7 +37,7 @@ _build_ml_opt_from_json_cstr (const gchar * jcstring, ml_option_h * opt)
 
   if (NULL == opt) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The argument for 'opt' should not be NULL");
+        "The argument for 'opt' should not be NULL.");
   }
 
   if (NULL != *opt) {
@@ -53,8 +53,8 @@ _build_ml_opt_from_json_cstr (const gchar * jcstring, ml_option_h * opt)
   }
 
   if (!json_parser_load_from_data (parser, jcstring, -1, &err)) {
-    _ml_error_report ("Failed to parse the json string. %s",
-        err ? err->message : "unknown error");
+    _ml_error_report ("Failed to parse the json string (%s).",
+        err ? err->message : "Unknown error");
     return ML_ERROR_INVALID_PARAMETER;
   }
 
@@ -111,7 +111,8 @@ _parse_app_info_and_update_path (ml_option_h ml_info)
   /* parsing the app_info json string. If the model is from rpk, path should be updated. */
   parser = json_parser_new ();
   if (!json_parser_load_from_data (parser, app_info, -1, &err)) {
-    _ml_logi ("Failed to parse app_info (%s). Skip it.", err->message);
+    _ml_logi ("Failed to parse app_info (%s). Skip it.",
+        err ? err->message : "Unknown error");
     return 0;
   }
 
@@ -165,7 +166,7 @@ int
 ml_service_set_pipeline (const char *name, const char *pipeline_desc)
 {
   int ret = ML_ERROR_NONE;
-  GError *err = NULL;
+  g_autoptr (GError) err = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
@@ -186,7 +187,6 @@ ml_service_set_pipeline (const char *name, const char *pipeline_desc)
     _ml_error_report ("Failed to invoke the method set_pipeline (%s).",
         err ? err->message : "Unknown error");
   }
-  g_clear_error (&err);
 
   return ret;
 }
@@ -198,18 +198,18 @@ int
 ml_service_get_pipeline (const char *name, char **pipeline_desc)
 {
   int ret = ML_ERROR_NONE;
-  GError *err = NULL;
+  g_autoptr (GError) err = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
   if (!name) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'name' is NULL, It should be a valid string");
+        "The parameter, 'name' is NULL, It should be a valid string.");
   }
 
   if (pipeline_desc == NULL) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The argument for 'pipeline_desc' should not be NULL");
+        "The argument for 'pipeline_desc' should not be NULL.");
   }
 
   if (*pipeline_desc != NULL) {
@@ -224,7 +224,6 @@ ml_service_get_pipeline (const char *name, char **pipeline_desc)
     _ml_error_report ("Failed to invoke the method get_pipeline (%s).",
         err ? err->message : "Unknown error");
   }
-  g_clear_error (&err);
 
   return ret;
 }
@@ -236,13 +235,13 @@ int
 ml_service_delete_pipeline (const char *name)
 {
   int ret = ML_ERROR_NONE;
-  GError *err = NULL;
+  g_autoptr (GError) err = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
   if (!name) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'name' is NULL, It should be a valid string");
+        "The parameter, 'name' is NULL, It should be a valid string.");
   }
 
   ret = ml_agent_dbus_interface_pipeline_delete (name, &err);
@@ -250,7 +249,6 @@ ml_service_delete_pipeline (const char *name)
     _ml_error_report ("Failed to invoke the method delete_pipeline (%s).",
         err ? err->message : "Unknown error");
   }
-  g_clear_error (&err);
 
   return ret;
 }
@@ -262,15 +260,15 @@ int
 ml_service_launch_pipeline (const char *name, ml_service_h * h)
 {
   int ret = ML_ERROR_NONE;
-  GError *err = NULL;
   ml_service_s *mls;
   _ml_service_server_s *server;
+  g_autoptr (GError) err = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
   if (h == NULL) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The argument for 'h' should not be NULL");
+        "The argument for 'h' should not be NULL.");
   }
 
   if (*h != NULL) {
@@ -288,8 +286,7 @@ ml_service_launch_pipeline (const char *name, ml_service_h * h)
   if (server == NULL) {
     g_free (mls);
     _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
-        "Failed to allocate memory for the service handle's private data. "
-        "Out of memory?");
+        "Failed to allocate memory for the service handle's private data. Out of memory?");
   }
 
   ret = ml_agent_dbus_interface_pipeline_launch (name, &(server->id), &err);
@@ -298,7 +295,6 @@ ml_service_launch_pipeline (const char *name, ml_service_h * h)
     g_free (mls);
     _ml_error_report ("Failed to invoke the method launch_pipeline (%s).",
         (err ? err->message : "Unknown error"));
-    g_clear_error (&err);
     return ret;
   }
 
@@ -319,13 +315,13 @@ ml_service_start_pipeline (ml_service_h h)
   int ret = ML_ERROR_NONE;
   ml_service_s *mls;
   _ml_service_server_s *server;
-  GError *err = NULL;
+  g_autoptr (GError) err = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
   if (!h) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'h' is NULL. It should be a valid ml_service_h");
+        "The parameter, 'h' is NULL. It should be a valid ml_service_h.");
   }
 
   mls = (ml_service_s *) h;
@@ -335,7 +331,6 @@ ml_service_start_pipeline (ml_service_h h)
     _ml_error_report ("Failed to invoke the method start_pipeline (%s).",
         err ? err->message : "Unknown error");
   }
-  g_clear_error (&err);
 
   return ret;
 }
@@ -347,15 +342,15 @@ int
 ml_service_stop_pipeline (ml_service_h h)
 {
   int ret = ML_ERROR_NONE;
-  GError *err = NULL;
   ml_service_s *mls;
   _ml_service_server_s *server;
+  g_autoptr (GError) err = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
   if (!h) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'h' is NULL. It should be a valid ml_service_h");
+        "The parameter, 'h' is NULL. It should be a valid ml_service_h.");
   }
 
   mls = (ml_service_s *) h;
@@ -365,7 +360,6 @@ ml_service_stop_pipeline (ml_service_h h)
     _ml_error_report ("Failed to invoke the method stop_pipeline (%s).",
         err ? err->message : "Unknown error");
   }
-  g_clear_error (&err);
 
   return ret;
 }
@@ -377,22 +371,22 @@ int
 ml_service_get_pipeline_state (ml_service_h h, ml_pipeline_state_e * state)
 {
   int ret = ML_ERROR_NONE;
-  GError *err = NULL;
   gint _state = ML_PIPELINE_STATE_UNKNOWN;
   ml_service_s *mls;
   _ml_service_server_s *server;
+  g_autoptr (GError) err = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
   if (NULL == state) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter 'state' should not be NULL");
+        "The parameter 'state' should not be NULL.");
   }
   *state = ML_PIPELINE_STATE_UNKNOWN;
 
   if (!h) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'h' is NULL. It should be a valid ml_service_h");
+        "The parameter, 'h' is NULL. It should be a valid ml_service_h.");
   }
   mls = (ml_service_s *) h;
   server = (_ml_service_server_s *) mls->priv;
@@ -401,7 +395,6 @@ ml_service_get_pipeline_state (ml_service_h h, ml_pipeline_state_e * state)
     _ml_error_report ("Failed to invoke the method get_state (%s).",
         err ? err->message : "Unknown error");
   }
-  g_clear_error (&err);
 
   *state = (ml_pipeline_state_e) _state;
   return ret;
@@ -415,29 +408,29 @@ ml_service_model_register (const char *name, const char *path,
     const bool activate, const char *description, unsigned int *version)
 {
   int ret = ML_ERROR_NONE;
-  GError *err = NULL;
   g_autofree gchar *dir_name = NULL;
   g_autofree gchar *app_info = NULL;
   g_autofree gchar *app_id = NULL;
   g_autoptr (JsonBuilder) builder = NULL;
   g_autoptr (JsonGenerator) gen = NULL;
+  g_autoptr (GError) err = NULL;
   GStatBuf statbuf;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
   if (!name) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'name' is NULL. It should be a valid string");
+        "The parameter, 'name' is NULL. It should be a valid string.");
   }
 
   if (!path) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'path' is NULL. It should be a valid string");
+        "The parameter, 'path' is NULL. It should be a valid string.");
   }
 
   if (NULL == version) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter 'version' should not be NULL");
+        "The parameter 'version' should not be NULL.");
   }
   *version = 0U;
 
@@ -460,7 +453,7 @@ ml_service_model_register (const char *name, const char *path,
   ret = app_get_id (&app_id);
   if (ret == APP_ERROR_INVALID_CONTEXT) {
     /* Not a Tizen APP context, e.g. gbs build test */
-    _ml_logi ("Not an APP context, skip creating app_info");
+    _ml_logi ("Not an APP context, skip creating app_info.");
     goto app_info_exit;
   }
 
@@ -503,10 +496,9 @@ app_info_exit:
   ret = ml_agent_dbus_interface_model_register (name, path, activate,
       description ? description : "", app_info ? app_info : "", version, &err);
   if (ret < 0) {
-    _ml_error_report ("Failed to invoke the method register (%s).",
+    _ml_error_report ("Failed to invoke the method model_register (%s).",
         err ? err->message : "Unknown error");
   }
-  g_clear_error (&err);
 
   return ret;
 }
@@ -519,23 +511,23 @@ ml_service_model_update_description (const char *name,
     const unsigned int version, const char *description)
 {
   int ret = ML_ERROR_NONE;
-  GError *err = NULL;
+  g_autoptr (GError) err = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
   if (!name) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'name' is NULL. It should be a valid string");
+        "The parameter, 'name' is NULL. It should be a valid string.");
   }
 
   if (version == 0U) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'version' is 0. It should be a valid unsigned int");
+        "The parameter, 'version' is 0. It should be a valid unsigned int.");
   }
 
   if (!description) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'description' is NULL. It should be a valid string");
+        "The parameter, 'description' is NULL. It should be a valid string.");
   }
 
   ret =
@@ -543,10 +535,10 @@ ml_service_model_update_description (const char *name,
       description, &err);
 
   if (ret < 0) {
-    _ml_error_report ("Failed to invoke the method update_description (%s).",
+    _ml_error_report
+        ("Failed to invoke the method model_update_description (%s).",
         err ? err->message : "Unknown error");
   }
-  g_clear_error (&err);
 
   return ret;
 }
@@ -558,26 +550,25 @@ int
 ml_service_model_activate (const char *name, const unsigned int version)
 {
   int ret = ML_ERROR_NONE;
-  GError *err = NULL;
+  g_autoptr (GError) err = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
   if (!name) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'name' is NULL. It should be a valid string");
+        "The parameter, 'name' is NULL. It should be a valid string.");
   }
 
   if (version == 0U) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'version' is 0. It should be a valid unsigned int");
+        "The parameter, 'version' is 0. It should be a valid unsigned int.");
   }
 
   ret = ml_agent_dbus_interface_model_activate (name, version, &err);
   if (ret < 0) {
-    _ml_error_report ("Failed to invoke the method activate (%s).",
+    _ml_error_report ("Failed to invoke the method model_activate (%s).",
         err ? err->message : "Unknown error");
   }
-  g_clear_error (&err);
 
   return ret;
 }
@@ -591,19 +582,19 @@ ml_service_model_get (const char *name, const unsigned int version,
 {
   int ret = ML_ERROR_NONE;
   ml_option_h _info = NULL;
-  GError *err = NULL;
+  g_autoptr (GError) err = NULL;
   g_autofree gchar *description = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
   if (!name) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'name' is NULL. It should be a valid string");
+        "The parameter, 'name' is NULL. It should be a valid string.");
   }
 
   if (info == NULL) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The argument for 'info' should not be NULL");
+        "The argument for 'info' should not be NULL.");
   }
 
   if (*info != NULL) {
@@ -613,9 +604,8 @@ ml_service_model_get (const char *name, const unsigned int version,
 
   ret = ml_agent_dbus_interface_model_get (name, version, &description, &err);
   if (ML_ERROR_NONE != ret || !description) {
-    _ml_error_report ("Failed to invoke the method get (%s).",
+    _ml_error_report ("Failed to invoke the method model_get (%s).",
         err ? err->message : "Unknown error");
-    g_clear_error (&err);
     return ret;
   }
 
@@ -650,19 +640,19 @@ ml_service_model_get_activated (const char *name, ml_option_h * info)
   int ret = ML_ERROR_NONE;
 
   ml_option_h _info = NULL;
-  GError *err = NULL;
+  g_autoptr (GError) err = NULL;
   g_autofree gchar *description = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
   if (!name) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'name' is NULL. It should be a valid string");
+        "The parameter, 'name' is NULL. It should be a valid string.");
   }
 
   if (info == NULL) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The argument for 'info' should not be NULL");
+        "The argument for 'info' should not be NULL.");
   }
 
   if (*info != NULL) {
@@ -672,9 +662,8 @@ ml_service_model_get_activated (const char *name, ml_option_h * info)
 
   ret = ml_agent_dbus_interface_model_get_activated (name, &description, &err);
   if (ML_ERROR_NONE != ret || !description) {
-    _ml_error_report ("Failed to invoke the method get_activated (%s).",
+    _ml_error_report ("Failed to invoke the method model_get_activated (%s).",
         err ? err->message : "Unknown error");
-    g_clear_error (&err);
     return ret;
   }
 
@@ -708,8 +697,8 @@ ml_service_model_get_all (const char *name, ml_option_h * info_list[],
     unsigned int *num)
 {
   g_autofree gchar *description = NULL;
+  g_autoptr (GError) err = NULL;
   ml_option_h *_info_list = NULL;
-  GError *err = NULL;
   int ret = ML_ERROR_NONE;
   guint i, n;
 
@@ -717,26 +706,25 @@ ml_service_model_get_all (const char *name, ml_option_h * info_list[],
 
   if (!name) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'name' is NULL. It should be a valid string");
+        "The parameter, 'name' is NULL. It should be a valid string.");
   }
 
   if (NULL == info_list) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter 'info_list' should not be NULL");
+        "The parameter 'info_list' should not be NULL.");
   }
   *info_list = NULL;
 
   if (NULL == num) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter 'num' should not be NULL");
+        "The parameter 'num' should not be NULL.");
   }
   *num = 0;
 
   ret = ml_agent_dbus_interface_model_get_all (name, &description, &err);
   if (ML_ERROR_NONE != ret || !description) {
-    _ml_error_report ("Failed to invoke the method get_all (%s).",
+    _ml_error_report ("Failed to invoke the method model_get_all (%s).",
         err ? err->message : "Unknown error");
-    g_clear_error (&err);
     return ret;
   }
 
@@ -748,13 +736,12 @@ ml_service_model_get_all (const char *name, ml_option_h * info_list[],
     parser = json_parser_new ();
     if (!parser) {
       _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-          "The parameter, 'name' is NULL. It should be a valid string");
+          "The parameter, 'name' is NULL. It should be a valid string.");
     }
 
     if (!json_parser_load_from_data (parser, description, -1, &err)) {
-      _ml_error_report ("Failed to parse the json string. %s",
+      _ml_error_report ("Failed to parse the json string (%s).",
           err ? err->message : "Unknown error");
-      g_clear_error (&err);
       return ML_ERROR_INVALID_PARAMETER;
     }
 
@@ -839,21 +826,20 @@ int
 ml_service_model_delete (const char *name, const unsigned int version)
 {
   int ret = ML_ERROR_NONE;
-  GError *err = NULL;
+  g_autoptr (GError) err = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
   if (!name) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'name' is NULL. It should be a valid string");
+        "The parameter, 'name' is NULL. It should be a valid string.");
   }
 
   ret = ml_agent_dbus_interface_model_delete (name, version, &err);
   if (ret < 0) {
-    _ml_error_report ("Failed to invoke the method delete (%s).",
+    _ml_error_report ("Failed to invoke the method model_delete (%s).",
         err ? err->message : "Unknown error");
   }
-  g_clear_error (&err);
 
   return ret;
 }
