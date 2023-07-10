@@ -3015,6 +3015,25 @@ TEST (nnstreamer_capi_util, info_set_count_n)
 /**
  * @brief Test utility functions (public)
  */
+TEST (nnstreamer_capi_util, info_set_count_1_n)
+{
+  ml_tensors_info_h info;
+  int status = ml_tensors_info_create (&info);
+  ASSERT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_tensors_info_set_count (info, ML_TENSOR_SIZE_LIMIT);
+  ASSERT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_tensors_info_set_count (info, ML_TENSOR_SIZE_LIMIT + 1);
+  ASSERT_EQ (status, ML_ERROR_INVALID_PARAMETER);
+
+  status = ml_tensors_info_destroy (info);
+  ASSERT_EQ (status, ML_ERROR_NONE);
+}
+
+/**
+ * @brief Test utility functions (public)
+ */
 TEST (nnstreamer_capi_util, info_get_count_1_n)
 {
   unsigned int count;
@@ -3480,6 +3499,63 @@ TEST (nnstreamer_capi_util, info_clone_extended)
 /**
  * @brief Test utility functions (public)
  */
+TEST (nnstreamer_capi_util, info_clone_max)
+{
+  gint status;
+  guint count = 0;
+  ml_tensors_info_h in_info, out_info;
+  ml_tensor_dimension in_dim, out_dim;
+  ml_tensor_type_e type = ML_TENSOR_TYPE_UNKNOWN;
+
+  status = ml_tensors_info_create (&in_info);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  status = ml_tensors_info_create (&out_info);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  in_dim[0] = 5;
+  in_dim[1] = 1;
+  in_dim[2] = 1;
+  in_dim[3] = 1;
+
+  status = ml_tensors_info_set_count (in_info, ML_TENSOR_SIZE_LIMIT);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  for (unsigned int i = 0; i < ML_TENSOR_SIZE_LIMIT; ++i) {
+    status = ml_tensors_info_set_tensor_type (in_info, i, ML_TENSOR_TYPE_UINT8);
+    EXPECT_EQ (status, ML_ERROR_NONE);
+    status = ml_tensors_info_set_tensor_dimension (in_info, i, in_dim);
+    EXPECT_EQ (status, ML_ERROR_NONE);
+  }
+
+  status = ml_tensors_info_clone (out_info, in_info);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_tensors_info_get_count (out_info, &count);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  EXPECT_EQ (count, (guint) ML_TENSOR_SIZE_LIMIT);
+
+  for (unsigned int i = 0; i < ML_TENSOR_SIZE_LIMIT; ++i) {
+    status = ml_tensors_info_get_tensor_type (out_info, i, &type);
+    EXPECT_EQ (status, ML_ERROR_NONE);
+    EXPECT_EQ (type, ML_TENSOR_TYPE_UINT8);
+
+    status = ml_tensors_info_get_tensor_dimension (out_info, i, out_dim);
+    EXPECT_EQ (status, ML_ERROR_NONE);
+    EXPECT_TRUE (in_dim[0] == out_dim[0]);
+    EXPECT_TRUE (in_dim[1] == out_dim[1]);
+    EXPECT_TRUE (in_dim[2] == out_dim[2]);
+    EXPECT_TRUE (in_dim[3] == out_dim[3]);
+  }
+
+  status = ml_tensors_info_destroy (in_info);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  status = ml_tensors_info_destroy (out_info);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+}
+
+/**
+ * @brief Test utility functions (public)
+ */
 TEST (nnstreamer_capi_util, info_clone_01_n)
 {
   int status;
@@ -3511,6 +3587,69 @@ TEST (nnstreamer_capi_util, info_clone_02_n)
 
   status = ml_tensors_info_destroy (desc);
   ASSERT_EQ (status, ML_ERROR_NONE);
+}
+
+/**
+ * @brief Test utility function `ml_tensors_info_get_nth_info`
+ */
+TEST (nnstreamer_capi_util, get_nth_info_00)
+{
+  int status;
+  ml_tensors_info_h info;
+
+  status = ml_tensors_info_create (&info);
+  ASSERT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_tensors_info_set_count (info, 1U);
+  ASSERT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_tensors_info_set_tensor_type (info, 0U, ML_TENSOR_TYPE_UINT8);
+  ASSERT_EQ (status, ML_ERROR_NONE);
+
+  ml_tensor_dimension in_dim = { 5, 1, 1, 1 };
+  status = ml_tensors_info_set_tensor_dimension (info, 0U, in_dim);
+  ASSERT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_tensors_info_set_tensor_name (info, 0U, "test");
+  ASSERT_EQ (status, ML_ERROR_NONE);
+
+  ml_tensors_info_s *info_s = (ml_tensors_info_s *) info;
+  ml_tensor_info_s *tinfo_s = ml_tensors_info_get_nth_info (info_s, 0U);
+  EXPECT_NE (tinfo_s, nullptr);
+
+  EXPECT_EQ (tinfo_s->type, ML_TENSOR_TYPE_UINT8);
+  EXPECT_EQ (tinfo_s->dimension[0], 5);
+  EXPECT_STREQ (tinfo_s->name, "test");
+
+  status = ml_tensors_info_destroy (info);
+  ASSERT_EQ (status, ML_ERROR_NONE);
+
+  info_s = nullptr;
+  tinfo_s = nullptr;
+}
+
+/**
+ * @brief Test utility function `ml_tensors_info_get_nth_info`
+ */
+TEST (nnstreamer_capi_util, get_nth_info_01_n)
+{
+  EXPECT_EQ (ml_tensors_info_get_nth_info (NULL, 0U), nullptr);
+
+  ml_tensors_info_s info;
+  EXPECT_EQ (ml_tensors_info_get_nth_info (&info, ML_TENSOR_SIZE_LIMIT), nullptr);
+}
+
+/**
+ * @brief Test internal util functions for extra info.
+ */
+TEST (nnstreamer_capi_util, info_extra_n)
+{
+  int status;
+
+  status = _ml_tensor_info_initialize (NULL);
+  EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
+
+  EXPECT_FALSE (_ml_tensors_info_create_extra (NULL));
 }
 
 /**
