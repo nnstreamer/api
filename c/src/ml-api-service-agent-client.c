@@ -160,6 +160,42 @@ _parse_app_info_and_update_path (ml_option_h ml_info)
 #endif
 
 /**
+ * @brief Internal function to check the path of model or resource.
+ */
+static int
+_ml_service_check_path (const char *path)
+{
+  int ret;
+  g_autofree gchar *dir_name = NULL;
+  GStatBuf statbuf;
+
+  if (!path) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'path' is NULL. It should be a valid string.");
+  }
+
+  if (g_file_test (path, G_FILE_TEST_IS_DIR))
+    dir_name = g_strdup (path);
+  else
+    dir_name = g_path_get_dirname (path);
+
+  ret = g_stat (dir_name, &statbuf);
+  if (ret != 0) {
+    _ml_error_report_return (ML_ERROR_PERMISSION_DENIED,
+        "Failed to get the information of given path '%s'.", path);
+  }
+
+  if (!g_path_is_absolute (path)
+      || !g_file_test (path, (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR))
+      || g_file_test (path, G_FILE_TEST_IS_SYMLINK)) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "Given path '%s' is not a regular.", path);
+  }
+
+  return ML_ERROR_NONE;
+}
+
+/**
  * @brief Set the pipeline description with a given name.
  */
 int
@@ -408,13 +444,11 @@ ml_service_model_register (const char *name, const char *path,
     const bool activate, const char *description, unsigned int *version)
 {
   int ret = ML_ERROR_NONE;
-  g_autofree gchar *dir_name = NULL;
   g_autofree gchar *app_info = NULL;
   g_autofree gchar *app_id = NULL;
   g_autoptr (JsonBuilder) builder = NULL;
   g_autoptr (JsonGenerator) gen = NULL;
   g_autoptr (GError) err = NULL;
-  GStatBuf statbuf;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
@@ -423,30 +457,16 @@ ml_service_model_register (const char *name, const char *path,
         "The parameter, 'name' is NULL. It should be a valid string.");
   }
 
-  if (!path) {
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'path' is NULL. It should be a valid string.");
-  }
-
   if (NULL == version) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter 'version' should not be NULL.");
   }
   *version = 0U;
 
-  dir_name = g_path_get_dirname (path);
-  ret = g_stat (dir_name, &statbuf);
-  if (ret != 0) {
-    _ml_error_report_return (ML_ERROR_PERMISSION_DENIED,
-        "Failed to get the information of the model file '%s'.", path);
-  }
+  ret = _ml_service_check_path (path);
+  if (ret != ML_ERROR_NONE)
+    return ret;
 
-  if (!g_path_is_absolute (path)
-      || !g_file_test (path, (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR))
-      || g_file_test (path, G_FILE_TEST_IS_SYMLINK)) {
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The model file '%s' is not a regular file.", path);
-  }
 #if defined(__TIZEN__)
   /* Tizen application info of caller should be provided as a json string */
 
