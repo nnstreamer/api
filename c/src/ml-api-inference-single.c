@@ -1205,11 +1205,7 @@ ml_single_open_full (ml_single_h * single, const char *model,
 int
 ml_single_open_with_option (ml_single_h * single, const ml_option_h option)
 {
-  ml_option_s *_option;
-  GHashTable *table;
-  GHashTableIter iter;
-  gchar *key;
-  ml_option_value_s *_option_value;
+  void *value;
   ml_single_preset info = { 0, };
 
   check_feature_state (ML_FEATURE_INFERENCE);
@@ -1223,30 +1219,20 @@ ml_single_open_with_option (ml_single_h * single, const ml_option_h option)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'single' (ml_single_h), is NULL. It should be a valid ml_single_h instance, usually created by ml_single_open().");
 
-  _option = (ml_option_s *) option;
-  table = _option->option_table;
-
-  g_hash_table_iter_init (&iter, table);
-  while (g_hash_table_iter_next (&iter, (gpointer *) & key,
-          (gpointer *) & _option_value)) {
-    if (g_ascii_strcasecmp (key, "input_info") == 0) {
-      info.input_info = _option_value->value;
-    } else if (g_ascii_strcasecmp (key, "output_info") == 0) {
-      info.output_info = _option_value->value;
-    } else if (g_ascii_strcasecmp (key, "nnfw") == 0) {
-      info.nnfw = *((ml_nnfw_type_e *) _option_value->value);
-    } else if (g_ascii_strcasecmp (key, "hw") == 0) {
-      info.hw = *((ml_nnfw_hw_e *) _option_value->value);
-    } else if (g_ascii_strcasecmp (key, "models") == 0) {
-      info.models = (gchar *) _option_value->value;
-    } else if (g_ascii_strcasecmp (key, "custom") == 0) {
-      info.custom_option = (gchar *) _option_value->value;
-    } else if (g_ascii_strcasecmp (key, "framework_name") == 0) {
-      info.fw_name = (gchar *) _option_value->value;
-    } else {
-      _ml_logw ("Ignore unknown key for ml_option: %s", key);
-    }
-  }
+  if (ML_ERROR_NONE == ml_option_get (option, "input_info", &value))
+    info.input_info = value;
+  if (ML_ERROR_NONE == ml_option_get (option, "output_info", &value))
+    info.output_info = value;
+  if (ML_ERROR_NONE == ml_option_get (option, "nnfw", &value))
+    info.nnfw = *((ml_nnfw_type_e *) value);
+  if (ML_ERROR_NONE == ml_option_get (option, "hw", &value))
+    info.hw = *((ml_nnfw_hw_e *) value);
+  if (ML_ERROR_NONE == ml_option_get (option, "models", &value))
+    info.models = (gchar *) value;
+  if (ML_ERROR_NONE == ml_option_get (option, "custom", &value))
+    info.custom_option = (gchar *) value;
+  if (ML_ERROR_NONE == ml_option_get (option, "framework_name", &value))
+    info.fw_name = (gchar *) value;
 
   return ml_single_open_custom (single, &info);
 }
