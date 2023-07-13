@@ -157,23 +157,41 @@ typedef struct {
 } ml_tensors_info_s;
 
 /**
- * @brief Data structure for value of ml_option.
- * @since_tizen 7.0
+ * @brief Enumeration for ml_info.
+ */
+typedef enum {
+  ML_INFO_OPTION = 0,
+  ML_INFO_MODEL,
+
+  ML_INFO_MAX
+} ml_info_type_e;
+
+/**
+ * @brief Data structure for value of ml_info.
  */
 typedef struct
 {
   void *value; /**< The data given by user. */
   ml_data_destroy_cb destroy; /**< The destroy func given by user. */
-} ml_option_value_s;
+} ml_info_value_s;
 
 /**
- * @brief Data structure for ml_option.
- * @since_tizen 7.0
+ * @brief Data structure for ml_info.
  */
 typedef struct
 {
-  GHashTable *option_table; /**< hash table used by ml_option. */
-} ml_option_s;
+  ml_info_type_e type; /**< The type of ml_info. */
+  GHashTable *table; /**< hash table used by ml_info. */
+} ml_info_s;
+
+/**
+ * @brief Data structure for ml_info_list.
+ */
+typedef struct
+{
+  unsigned int length; /**< The length of data. */
+  ml_info_s **info; /**< array of ml_info. */
+} ml_info_list_s;
 
 /**
  * @brief Macro to control private lock with nolock condition (lock)
