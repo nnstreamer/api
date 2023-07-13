@@ -67,11 +67,7 @@ ml_service_query_create (ml_option_h option, ml_service_h * h)
   int status = ML_ERROR_NONE;
 
   gchar *description = NULL;
-
-  ml_option_s *_option;
-  GHashTableIter iter;
-  gchar *key;
-  ml_option_value_s *_option_value;
+  void *value;
 
   GString *tensor_query_client_prop;
   gchar *prop = NULL;
@@ -98,45 +94,42 @@ ml_service_query_create (ml_option_h option, ml_service_h * h)
         "The parameter, 'h' (ml_service_h), is NULL. It should be a valid ml_service_h.");
   }
 
-  _option = (ml_option_s *) option;
-  g_hash_table_iter_init (&iter, _option->option_table);
   tensor_query_client_prop = g_string_new (NULL);
-  while (g_hash_table_iter_next (&iter, (gpointer *) & key,
-          (gpointer *) & _option_value)) {
-    if (0 == g_ascii_strcasecmp (key, "host")) {
-      g_string_append_printf (tensor_query_client_prop, " host=%s ",
-          (gchar *) _option_value->value);
-    } else if (0 == g_ascii_strcasecmp (key, "port")) {
-      g_string_append_printf (tensor_query_client_prop, " port=%u ",
-          *((guint *) _option_value->value));
-    } else if (0 == g_ascii_strcasecmp (key, "dest-host")) {
-      g_string_append_printf (tensor_query_client_prop, " dest-host=%s ",
-          (gchar *) _option_value->value);
-    } else if (0 == g_ascii_strcasecmp (key, "dest-port")) {
-      g_string_append_printf (tensor_query_client_prop, " dest-port=%u ",
-          *((guint *) _option_value->value));
-    } else if (0 == g_ascii_strcasecmp (key, "connect-type")) {
-      g_string_append_printf (tensor_query_client_prop, " connect-type=%s ",
-          (gchar *) _option_value->value);
-    } else if (0 == g_ascii_strcasecmp (key, "topic")) {
-      g_string_append_printf (tensor_query_client_prop, " topic=%s ",
-          (gchar *) _option_value->value);
-    } else if (0 == g_ascii_strcasecmp (key, "timeout")) {
-      g_string_append_printf (tensor_query_client_prop, " timeout=%u ",
-          *((guint *) _option_value->value));
-      timeout = *((guint *) _option_value->value);
-    } else if (0 == g_ascii_strcasecmp (key, "caps")) {
-      caps = g_strdup (_option_value->value);
-    } else {
-      _ml_logw ("Ignore unknown key for ml_option: %s", key);
-    }
-  }
 
-  if (!caps) {
+  if (ML_ERROR_NONE == ml_option_get (option, "host", &value))
+    g_string_append_printf (tensor_query_client_prop, " host=%s ",
+        (gchar *) value);
+
+  if (ML_ERROR_NONE == ml_option_get (option, "port", &value))
+    g_string_append_printf (tensor_query_client_prop, " port=%u ",
+        *((guint *) value));
+
+  if (ML_ERROR_NONE == ml_option_get (option, "dest-host", &value))
+    g_string_append_printf (tensor_query_client_prop, " dest-host=%s ",
+        (gchar *) value);
+
+  if (ML_ERROR_NONE == ml_option_get (option, "dest-port", &value))
+    g_string_append_printf (tensor_query_client_prop, " dest-port=%u ",
+        *((guint *) value));
+
+  if (ML_ERROR_NONE == ml_option_get (option, "connect-type", &value))
+    g_string_append_printf (tensor_query_client_prop, " connect-type=%s ",
+        (gchar *) value);
+
+  if (ML_ERROR_NONE == ml_option_get (option, "topic", &value))
+    g_string_append_printf (tensor_query_client_prop, " topic=%s ",
+        (gchar *) value);
+
+  if (ML_ERROR_NONE == ml_option_get (option, "timeout", &value))
+    g_string_append_printf (tensor_query_client_prop, " timeout=%u ",
+        *((guint *) value));
+
+  if (ML_ERROR_NONE != ml_option_get (option, "caps", &value)) {
     g_string_free (tensor_query_client_prop, TRUE);
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The option 'caps' must be set before call ml_service_query_create.");
   }
+  caps = g_strdup ((gchar *) value);
 
   prop = g_string_free (tensor_query_client_prop, FALSE);
   description =
