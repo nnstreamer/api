@@ -1287,11 +1287,11 @@ ml_strerror (int errnum)
  * @brief Internal function for destroy value of option table
  */
 static void
-_ml_option_value_free (gpointer data)
+_ml_info_value_free (gpointer data)
 {
-  ml_option_value_s *_value;
+  ml_info_value_s *_value;
 
-  _value = (ml_option_value_s *) data;
+  _value = (ml_info_value_s *) data;
   if (_value) {
     if (_value->destroy)
       _value->destroy (_value->value);
@@ -1300,12 +1300,103 @@ _ml_option_value_free (gpointer data)
 }
 
 /**
+ * @brief Internal function for create ml_info
+ */
+static ml_info_s *
+_ml_info_create (ml_info_type_e type)
+{
+  ml_info_s *info;
+
+  info = g_new0 (ml_info_s, 1);
+  if (info == NULL) {
+    _ml_error_report
+        ("Failed to allocate memory for the ml_info. Out of memory?");
+    return NULL;
+  }
+
+  info->type = type;
+  info->table =
+      g_hash_table_new_full (g_str_hash, g_str_equal, g_free,
+      _ml_info_value_free);
+  if (info->table == NULL) {
+    _ml_error_report
+        ("Failed to allocate memory for the table of ml_info. Out of memory?");
+    g_free (info);
+    return NULL;
+  }
+
+  return info;
+}
+
+/**
+ * @brief Internal function for destroy ml_info
+ */
+static void
+_ml_info_destroy (ml_info_s * info)
+{
+  if (!info)
+    return;
+
+  if (info->table)
+    g_hash_table_destroy (info->table);
+
+  g_free (info);
+  return;
+}
+
+/**
+ * @brief Internal function for set value of given ml_info
+ */
+static int
+_ml_info_set_value (ml_info_s * info, const char *key, void *value,
+    ml_data_destroy_cb destroy)
+{
+  ml_info_value_s *info_value;
+
+  if (!info || !key || !value)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'info', 'key' or 'value' is NULL. It should be a valid ml_info, key and value.");
+
+  info_value = g_new0 (ml_info_value_s, 1);
+  if (!info_value)
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Failed to allocate memory for the info value. Out of memory?");
+
+  info_value->value = value;
+  info_value->destroy = destroy;
+  g_hash_table_insert (info->table, g_strdup (key), (gpointer) info_value);
+
+  return ML_ERROR_NONE;
+}
+
+/**
+ * @brief Internal function for get value of given ml_info
+ */
+static int
+_ml_info_get_value (ml_info_s * info, const char *key, void **value)
+{
+  ml_info_value_s *info_value;
+
+  if (!info || !key || !value)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'info', 'key' or 'value' is NULL. It should be a valid ml_info, key and value.");
+
+  info_value = g_hash_table_lookup (info->table, key);
+  if (!info_value)
+    return ML_ERROR_INVALID_PARAMETER;
+
+  *value = info_value->value;
+
+  return ML_ERROR_NONE;
+}
+
+/**
  * @brief Creates an option and returns the instance a handle.
  */
 int
 ml_option_create (ml_option_h * option)
 {
-  ml_option_s *_option;
+  ml_info_s *_option = NULL;
 
   check_feature_state (ML_FEATURE);
 
@@ -1314,20 +1405,10 @@ ml_option_create (ml_option_h * option)
         "The parameter, 'option' is NULL. It should be a valid ml_option_h");
   }
 
-  _option = g_new0 (ml_option_s, 1);
+  _option = _ml_info_create (ML_INFO_OPTION);
   if (_option == NULL)
     _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
         "Failed to allocate memory for the option handle. Out of memory?");
-
-  _option->option_table =
-      g_hash_table_new_full (g_str_hash, g_str_equal, g_free,
-      _ml_option_value_free);
-  if (_option->option_table == NULL) {
-    _ml_error_report
-        ("Failed to create a new table for ml_option. Out of memory?");
-    g_free (_option);
-    return ML_ERROR_OUT_OF_MEMORY;
-  }
 
   *option = (ml_option_h *) _option;
   return ML_ERROR_NONE;
@@ -1339,8 +1420,6 @@ ml_option_create (ml_option_h * option)
 int
 ml_option_destroy (ml_option_h option)
 {
-  ml_option_s *_option;
-
   check_feature_state (ML_FEATURE);
 
   if (!option) {
@@ -1348,9 +1427,7 @@ ml_option_destroy (ml_option_h option)
         "The parameter, 'option' is NULL. It should be a valid ml_option_h, which should be created by ml_option_create().");
   }
 
-  _option = (ml_option_s *) option;
-  g_hash_table_destroy (_option->option_table);
-  g_free (_option);
+  _ml_info_destroy ((ml_info_s *) option);
 
   return ML_ERROR_NONE;
 }
@@ -1369,9 +1446,6 @@ int
 ml_option_set (ml_option_h option, const char *key, void *value,
     ml_data_destroy_cb destroy)
 {
-  ml_option_s *_option;
-  ml_option_value_s *_option_value;
-
   check_feature_state (ML_FEATURE);
 
   if (!option) {
@@ -1389,19 +1463,7 @@ ml_option_set (ml_option_h option, const char *key, void *value,
         "The parameter, 'value' is NULL. It should be a valid void*");
   }
 
-  _option = (ml_option_s *) option;
-
-  _option_value = g_new0 (ml_option_value_s, 1);
-  if (_option_value == NULL)
-    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
-        "Failed to allocate memory for the option_value structure. Out of memory?");
-
-  _option_value->value = value;
-  _option_value->destroy = destroy;
-  g_hash_table_insert (_option->option_table, g_strdup (key),
-      (gpointer) _option_value);
-
-  return ML_ERROR_NONE;
+  return _ml_info_set_value ((ml_info_s *) option, key, value, destroy);
 }
 
 /**
@@ -1410,9 +1472,6 @@ ml_option_set (ml_option_h option, const char *key, void *value,
 int
 ml_option_get (ml_option_h option, const char *key, void **value)
 {
-  ml_option_s *_option;
-  ml_option_value_s *_option_value;
-
   check_feature_state (ML_FEATURE);
 
   if (!option) {
@@ -1430,14 +1489,5 @@ ml_option_get (ml_option_h option, const char *key, void **value)
         "The parameter, 'value' is NULL. It should be a valid void**");
   }
 
-  _option = (ml_option_s *) option;
-  _option_value = (ml_option_value_s *)
-      g_hash_table_lookup (_option->option_table, key);
-  if (_option_value == NULL)
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The key - %s - is not found in the option table.", key);
-
-  *value = _option_value->value;
-
-  return ML_ERROR_NONE;
+  return _ml_info_get_value ((ml_info_s *) option, key, value);
 }
