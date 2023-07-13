@@ -22,10 +22,10 @@
         "It is highly suggested that `%s` before it is set."
 
 /**
- * @brief Build ml_option_h from json cstring.
+ * @brief Build ml_information_h from json cstring.
  */
 static gint
-_build_ml_opt_from_json_cstr (const gchar * jcstring, ml_option_h * opt)
+_build_ml_info_from_json_cstr (const gchar * jcstring, ml_information_h * _info)
 {
   g_autoptr (GError) err = NULL;
   g_autoptr (JsonParser) parser = NULL;
@@ -35,14 +35,14 @@ _build_ml_opt_from_json_cstr (const gchar * jcstring, ml_option_h * opt)
   GList *l;
   gint ret;
 
-  if (NULL == opt) {
+  if (NULL == _info) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The argument for 'opt' should not be NULL.");
   }
 
-  if (NULL != *opt) {
+  if (NULL != *_info) {
     _ml_logw (WARN_MSG_DPTR_SET_OVER, "opt");
-    *opt = NULL;
+    *_info = NULL;
   }
 
   parser = json_parser_new ();
@@ -64,7 +64,7 @@ _build_ml_opt_from_json_cstr (const gchar * jcstring, ml_option_h * opt)
     return ML_ERROR_INVALID_PARAMETER;
   }
 
-  ret = ml_option_create (opt);
+  ret = _ml_information_create (_info);
   if (ML_ERROR_NONE != ret) {
     return ret;
   }
@@ -75,7 +75,7 @@ _build_ml_opt_from_json_cstr (const gchar * jcstring, ml_option_h * opt)
     const gchar *key = l->data;
     const gchar *val = json_object_get_string_member (jobj, key);
 
-    ml_option_set (*opt, key, g_strdup (val), g_free);
+    _ml_information_set (*_info, key, g_strdup (val), g_free);
   }
 
   return ML_ERROR_NONE;
@@ -89,7 +89,7 @@ _build_ml_opt_from_json_cstr (const gchar * jcstring, ml_option_h * opt)
  * @brief Parse app_info and update path (for model from rpk). Only for Tizen Applications.
  */
 static int
-_parse_app_info_and_update_path (ml_option_h ml_info)
+_parse_app_info_and_update_path (ml_information_h ml_info)
 {
   int ret = ML_ERROR_NONE;
 
@@ -100,7 +100,7 @@ _parse_app_info_and_update_path (ml_option_h ml_info)
   JsonObject *j_object;
 
   /* parsing app_info and fill path (for rpk) */
-  ret = ml_option_get (ml_info, "app_info", (void **) &app_info);
+  ret = ml_information_get (ml_info, "app_info", (void **) &app_info);
   if (ret != ML_ERROR_NONE) {
     _ml_error_report ("Failed to get app_info from the model info.");
     return ret;
@@ -128,7 +128,7 @@ _parse_app_info_and_update_path (ml_option_h ml_info)
     const gchar *res_type =
         json_object_get_string_member (j_object, "res_type");
 
-    ret = ml_option_get (ml_info, "path", (void **) &ori_path);
+    ret = ml_information_get (ml_info, "path", (void **) &ori_path);
     if (ret != ML_ERROR_NONE) {
       _ml_error_report ("Failed to get path from the model info.");
       return ret;
@@ -144,7 +144,7 @@ _parse_app_info_and_update_path (ml_option_h ml_info)
     }
 
     new_path = g_strdup_printf ("%s/%s", global_resource_path, ori_path);
-    ret = ml_option_set (ml_info, "path", new_path, g_free);
+    ret = _ml_information_set (ml_info, "path", new_path, g_free);
     if (ret != ML_ERROR_NONE) {
       _ml_error_report ("Failed to set path to the model info.");
       return ret;
@@ -598,10 +598,10 @@ ml_service_model_activate (const char *name, const unsigned int version)
  */
 int
 ml_service_model_get (const char *name, const unsigned int version,
-    ml_option_h * info)
+    ml_information_h * info)
 {
   int ret = ML_ERROR_NONE;
-  ml_option_h _info = NULL;
+  ml_information_h _info = NULL;
   g_autoptr (GError) err = NULL;
   g_autofree gchar *description = NULL;
 
@@ -618,7 +618,7 @@ ml_service_model_get (const char *name, const unsigned int version,
   }
 
   if (*info != NULL) {
-    _ml_logw (WARN_MSG_DPTR_SET_OVER, "ml_option_h info = NULL");
+    _ml_logw (WARN_MSG_DPTR_SET_OVER, "ml_information_h info = NULL");
   }
   *info = NULL;
 
@@ -629,9 +629,9 @@ ml_service_model_get (const char *name, const unsigned int version,
     return ret;
   }
 
-  ret = _build_ml_opt_from_json_cstr (description, &_info);
+  ret = _build_ml_info_from_json_cstr (description, &_info);
   if (ML_ERROR_NONE != ret) {
-    _ml_error_report ("Failed to convert json string to ml_option_h.");
+    _ml_error_report ("Failed to convert json string to ml_information_h.");
     goto error;
   }
 
@@ -645,7 +645,7 @@ ml_service_model_get (const char *name, const unsigned int version,
 
 error:
   if (ML_ERROR_NONE != ret && _info) {
-    ml_option_destroy (_info);
+    ml_information_destroy (_info);
   }
 
   return ret;
@@ -655,11 +655,11 @@ error:
  * @brief Gets the information of activated neural network model with given @a name.
  */
 int
-ml_service_model_get_activated (const char *name, ml_option_h * info)
+ml_service_model_get_activated (const char *name, ml_information_h * info)
 {
   int ret = ML_ERROR_NONE;
 
-  ml_option_h _info = NULL;
+  ml_information_h _info = NULL;
   g_autoptr (GError) err = NULL;
   g_autofree gchar *description = NULL;
 
@@ -676,7 +676,7 @@ ml_service_model_get_activated (const char *name, ml_option_h * info)
   }
 
   if (*info != NULL) {
-    _ml_logw (WARN_MSG_DPTR_SET_OVER, "ml_option_h info = NULL");
+    _ml_logw (WARN_MSG_DPTR_SET_OVER, "ml_information_h info = NULL");
   }
   *info = NULL;
 
@@ -687,9 +687,9 @@ ml_service_model_get_activated (const char *name, ml_option_h * info)
     return ret;
   }
 
-  ret = _build_ml_opt_from_json_cstr (description, &_info);
+  ret = _build_ml_info_from_json_cstr (description, &_info);
   if (ML_ERROR_NONE != ret) {
-    _ml_error_report ("Failed to convert json string to ml_option_h.");
+    _ml_error_report ("Failed to convert json string to ml_information_h.");
     goto error;
   }
 
@@ -703,7 +703,7 @@ ml_service_model_get_activated (const char *name, ml_option_h * info)
 
 error:
   if (ret != ML_ERROR_NONE && _info) {
-    ml_option_destroy (_info);
+    ml_information_destroy (_info);
   }
 
   return ret;
@@ -713,12 +713,11 @@ error:
  * @brief Gets the list of neural network model with given @a name.
  */
 int
-ml_service_model_get_all (const char *name, ml_option_h * info_list[],
-    unsigned int *num)
+ml_service_model_get_all (const char *name, ml_information_list_h * info_list)
 {
   g_autofree gchar *description = NULL;
   g_autoptr (GError) err = NULL;
-  ml_option_h *_info_list = NULL;
+  ml_info_list_s *_info_list = NULL;
   int ret = ML_ERROR_NONE;
   guint i, n;
 
@@ -735,17 +734,17 @@ ml_service_model_get_all (const char *name, ml_option_h * info_list[],
   }
   *info_list = NULL;
 
-  if (NULL == num) {
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter 'num' should not be NULL.");
-  }
-  *num = 0;
-
   ret = ml_agent_dbus_interface_model_get_all (name, &description, &err);
   if (ML_ERROR_NONE != ret || !description) {
     _ml_error_report ("Failed to invoke the method model_get_all (%s).",
         err ? err->message : "Unknown error");
     return ret;
+  }
+
+  _info_list = g_try_new0 (ml_info_list_s, 1);
+  if (NULL == _info_list) {
+    _ml_error_report ("Failed to allocate memory for ml_info_list.");
+    return ML_ERROR_OUT_OF_MEMORY;
   }
 
   {
@@ -784,20 +783,23 @@ ml_service_model_get_all (const char *name, ml_option_h * info_list[],
           "Failed to retrieve the length of the json array.");
     }
 
-    _info_list = g_try_new0 (ml_option_h, n);
-    if (!_info_list) {
+    _info_list->info = g_try_new0 (ml_info_s *, n);
+    if (!_info_list->info) {
+      g_free (_info_list);
       _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
-          "Failed to allocate memory for list of ml_option_h. Out of memory?");
+          "Failed to allocate memory for list of ml_information_h. Out of memory?");
     }
+    _info_list->length = n;
 
     for (i = 0; i < n; i++) {
       g_autoptr (GList) members = NULL;
       JsonObject *jobj = NULL;
       GList *l;
 
-      if (ML_ERROR_NONE != ml_option_create (&_info_list[i])) {
+      if (ML_ERROR_NONE !=
+          _ml_information_create ((ml_information_h *) & _info_list->info[i])) {
         _ml_error_report
-            ("Failed to allocate memory for ml_option_h. Out of memory?");
+            ("Failed to allocate memory for ml_information. Out of memory?");
         n = i;
         ret = ML_ERROR_OUT_OF_MEMORY;
         goto error;
@@ -809,10 +811,11 @@ ml_service_model_get_all (const char *name, ml_option_h * info_list[],
         const gchar *key = l->data;
         const gchar *val = json_object_get_string_member (jobj, key);
 
-        ml_option_set (_info_list[i], key, g_strdup (val), g_free);
+        _ml_information_set (_info_list->info[i], key, g_strdup (val), g_free);
       }
 
-      if (_parse_app_info_and_update_path (_info_list[i]) != 0) {
+      if (_parse_app_info_and_update_path ((ml_information_h)
+              _info_list->info[i]) != 0) {
         _ml_error_report ("Failed to parse app_info and update path.");
         ret = ML_ERROR_INVALID_PARAMETER;
         goto error;
@@ -821,18 +824,18 @@ ml_service_model_get_all (const char *name, ml_option_h * info_list[],
   }
 
   *info_list = _info_list;
-  *num = n;
 
   return ML_ERROR_NONE;
 
 error:
   if (_info_list) {
     for (i = 0; i < n; i++) {
-      if (_info_list[i]) {
-        ml_option_destroy (_info_list[i]);
+      if (_info_list->info[i]) {
+        ml_information_destroy (_info_list->info[i]);
       }
     }
 
+    g_free (_info_list->info);
     g_free (_info_list);
   }
 

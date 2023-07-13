@@ -241,6 +241,46 @@ int ml_service_query_request (ml_service_h handle, const ml_tensors_data_h input
  * @retval #ML_ERROR_PERMISSION_DENIED The application does not have the privilege to access to the storage.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
  * @retval #ML_ERROR_IO_ERROR The operation of DB or filesystem has failed.
+ *
+ * Here is an example of the usage:
+ * @code
+ * // The machine-learning service API for model provides a method to share model files those can be used for ML application.
+ *
+ * /// Model Provider APP
+ * const gchar *key = "imgcls-mobilenet"; // The name shared among ML applications.
+ * gchar *model_path = g_strdup_printf ("%s/%s", app_get_shared_resource_path (), "mobilenet_v2.tflite"); // Provide the absolute file path.
+ * const bool is_active = true; // Parameter deciding whether to activate this model or not.
+ * const gchar *description = "This is the description of mobilenet_v2 model ..."; // Model description parameter.
+ * unsigned int version; // Out parameter for the version of registered model.
+ *
+ * // Register the model via ML Service API.
+ * int status;
+ * status = ml_service_model_register (key, model_path, is_active, description, &version);
+ * if (status != ML_ERROR_NONE) {
+ *   // Handle error case.
+ * }
+ *
+ * /// Model Consumer APP
+ * const gchar *key = "imgcls-mobilenet"; // The name shared among ML applications.
+ * gchar *model_path; // Out parameter for the path of registered model.
+ * ml_information_h activated_model_info; // The ml_information handle for the activated model.
+ *
+ * // Get the model which is registered and activated by ML Service API.
+ * int status;
+ * status = ml_service_model_get_activated (key, &activated_model_info);
+ * if (status == ML_ERROR_NONE) {
+ *   // Get the path of the model.
+ *   gchar *activated_model_path;
+ *   status = ml_information_get (activated_model_info, "path", (void **) &activated_model_path);
+ *   model_path = g_strdup (activated_model_path);
+ * } else {
+ *   // Handle error case.
+ * }
+ *
+ * ml_information_destroy (activated_model_info); // Release the information handle.
+ *
+ * // Do ML things with the variable `model_path`.
+ * @endcode
  */
 int ml_service_model_register (const char *name, const char *path, const bool activate, const char *description, unsigned int *version);
 
@@ -274,10 +314,10 @@ int ml_service_model_activate (const char *name, const unsigned int version);
 /**
  * @brief Gets the information of neural network model with given @a name and @a version.
  * @since_tizen 8.0
- * @remarks If the function succeeds, the @a info should be released using ml_option_destroy().
+ * @remarks If the function succeeds, the @a info should be released using ml_information_destroy().
  * @param[in] name The unique name to indicate the model.
  * @param[in] version The version of registered model.
- * @param[out] info The handle of model.
+ * @param[out] info The handle of model information.
  * @return 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
@@ -285,12 +325,12 @@ int ml_service_model_activate (const char *name, const unsigned int version);
  * @retval #ML_ERROR_IO_ERROR The operation of DB or filesystem has failed.
  * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
  */
-int ml_service_model_get (const char *name, const unsigned int version, ml_option_h *info);
+int ml_service_model_get (const char *name, const unsigned int version, ml_information_h *info);
 
 /**
  * @brief Gets the information of activated neural network model with given @a name.
  * @since_tizen 8.0
- * @remarks If the function succeeds, the @a info should be released using ml_option_destroy().
+ * @remarks If the function succeeds, the @a info should be released using ml_information_destroy().
  * @param[in] name The unique name to indicate the model.
  * @param[out] info The handle of activated model.
  * @return 0 on success. Otherwise a negative error value.
@@ -300,15 +340,14 @@ int ml_service_model_get (const char *name, const unsigned int version, ml_optio
  * @retval #ML_ERROR_IO_ERROR The operation of DB or filesystem has failed.
  * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
  */
-int ml_service_model_get_activated (const char *name, ml_option_h *info);
+int ml_service_model_get_activated (const char *name, ml_information_h *info);
 
 /**
  * @brief Gets the list of neural network model with given @a name.
  * @since_tizen 8.0
- * @remarks If the function succeeds, each handle in @a info_list should be released using ml_option_destroy().
+ * @remarks If the function succeeds, the @a info_list should be released using ml_information_list_destroy().
  * @param[in] name The unique name to indicate the model.
- * @param[out] info_list The handles of registered model.
- * @param[out] num Total number of registered model.
+ * @param[out] info_list The handle of list of registered models.
  * @return 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
@@ -316,7 +355,7 @@ int ml_service_model_get_activated (const char *name, ml_option_h *info);
  * @retval #ML_ERROR_IO_ERROR The operation of DB or filesystem has failed.
  * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
  */
-int ml_service_model_get_all (const char *name, ml_option_h *info_list[], unsigned int *num);
+int ml_service_model_get_all (const char *name, ml_information_list_h *info_list);
 
 /**
  * @brief Deletes a model information with given @a name and @a version from machine learning service.
