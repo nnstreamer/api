@@ -842,7 +842,7 @@ TEST_F (MLServiceAgentTest, model_get_00_n)
 
   const gchar *name = "some_model_name";
   guint version = 12345U;
-  ml_option_h info_h;
+  ml_information_h info_h;
 
   status = ml_service_model_get (NULL, version, &info_h);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
@@ -881,7 +881,7 @@ TEST_F (MLServiceAgentTest, model_get_01_n)
   status = ml_service_model_register (model_name, test_model, true, NULL, &version);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  ml_option_h info_h;
+  ml_information_h info_h;
   status = ml_service_model_get (model_name, 987654321U, &info_h);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
@@ -899,7 +899,7 @@ TEST_F (MLServiceAgentTest, model_get_activated_00_n)
   int status;
 
   const gchar *name = "some_model_name";
-  ml_option_h info_h;
+  ml_information_h info_h;
 
   status = ml_service_model_get_activated (NULL, &info_h);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
@@ -919,19 +919,15 @@ TEST_F (MLServiceAgentTest, model_get_all_00_n)
   int status;
 
   const gchar *name = "some_model_name";
-  ml_option_h *info_list_h;
-  guint list_size;
+  ml_information_list_h info_list_h;
 
-  status = ml_service_model_get_all (NULL, &info_list_h, &list_size);
+  status = ml_service_model_get_all (NULL, &info_list_h);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = ml_service_model_get_all (name, NULL, &list_size);
+  status = ml_service_model_get_all (name, NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = ml_service_model_get_all (name, &info_list_h, NULL);
-  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
-
-  status = ml_service_model_get_all (name, &info_list_h, &list_size);
+  status = ml_service_model_get_all (name, &info_list_h);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 }
 
@@ -958,7 +954,7 @@ TEST_F (MLServiceAgentTest, model_delete_00_n)
 /**
  * @brief Test ml_option_get with invalid param.
  */
-TEST_F (MLServiceAgentTest, model_ml_option_get_00_n)
+TEST_F (MLServiceAgentTest, ml_option_get_00_n)
 {
   int status;
 
@@ -986,9 +982,9 @@ TEST_F (MLServiceAgentTest, model_ml_option_get_00_n)
 }
 
 /**
- * @brief Test ml_option_get with invalid param.
+ * @brief Test ml_information_get with invalid param.
  */
-TEST_F (MLServiceAgentTest, model_ml_option_get_01_n)
+TEST_F (MLServiceAgentTest, model_ml_information_get_00_n)
 {
   int status;
 
@@ -1005,7 +1001,7 @@ TEST_F (MLServiceAgentTest, model_ml_option_get_01_n)
   ASSERT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
 
   const gchar *key = "some_invalid_key";
-  ml_option_h info_h = NULL;
+  ml_information_h info_h = NULL;
   gchar *value;
 
   status = ml_service_model_delete (model_name, 0U);
@@ -1018,25 +1014,95 @@ TEST_F (MLServiceAgentTest, model_ml_option_get_01_n)
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   gchar *path;
-  status = ml_option_get (info_h, "path", (void **) &path);
+  status = ml_information_get (info_h, "path", (void **) &path);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_STREQ (test_model, path);
 
   gchar *description;
-  status = ml_option_get (info_h, "description", (void **) &description);
+  status = ml_information_get (info_h, "description", (void **) &description);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_STREQ ("", description);
 
-  status = ml_option_get (info_h, key, NULL);
+
+  status = ml_information_get (info_h, key, NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = ml_option_get (info_h, key, (void **) &value);
+  status = ml_information_get (info_h, key, (void **) &value);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = ml_option_get (NULL, key, (void **) &value);
+  status = ml_information_get (info_h, NULL, (void **) &value);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = ml_option_destroy (info_h);
+  status = ml_information_get (NULL, key, (void **) &value);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_information_destroy (info_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_service_model_delete (model_name, 0U);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  g_free (test_model);
+}
+
+/**
+ * @brief Test ml_information_list with invalid param.
+ */
+TEST_F (MLServiceAgentTest, model_ml_information_list_00_n)
+{
+  int status;
+
+  const gchar *model_name = "some_model_name";
+  guint version;
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
+
+  /* ml_service_model_register() requires absolute path to model, ignore this case. */
+  if (root_path == NULL)
+    return;
+
+  gchar *test_model = g_build_filename (root_path, "tests", "test_models",
+      "models", "mobilenet_v1_1.0_224_quant.tflite", NULL);
+  ASSERT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
+
+  status = ml_service_model_delete (model_name, 0U);
+  EXPECT_TRUE (status == ML_ERROR_NONE || status == ML_ERROR_INVALID_PARAMETER);
+
+  status = ml_service_model_register (model_name, test_model, true, NULL, &version);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  ml_information_list_h info_list_h = NULL;
+  status = ml_service_model_get_all (model_name, &info_list_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_information_list_length (info_list_h, NULL);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  unsigned int length = 0U;
+
+  status = ml_information_list_length (NULL, &length);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_information_list_length (info_list_h, &length);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  EXPECT_EQ (1U, length);
+
+  ml_information_h info_h = NULL;
+  status = ml_information_list_get (NULL, 0U, &info_h);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_information_list_get (info_list_h, 0U, NULL);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_information_list_get (info_list_h, 1U, &info_h);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_information_list_get (info_list_h, 0U, &info_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_information_list_destroy (NULL);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_information_list_destroy (info_list_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   status = ml_service_model_delete (model_name, 0U);
@@ -1087,75 +1153,79 @@ TEST_F (MLServiceAgentTest, model_scenario)
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_EQ (version, 2U);
 
-  ml_option_h activated_model_info;
+  ml_information_h activated_model_info;
   status = ml_service_model_get_activated (key, &activated_model_info);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_NE (activated_model_info, nullptr);
 
   gchar *test_description;
-  status = ml_option_get (activated_model_info, "path", (void **) &test_description);
+  status = ml_information_get (activated_model_info, "path", (void **) &test_description);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_STREQ (test_description, test_model1);
-  status = ml_option_destroy (activated_model_info);
+  status = ml_information_destroy (activated_model_info);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  ml_option_h _model_info;
+  ml_information_h _model_info = NULL;
   status = ml_service_model_get (key, 2U, &_model_info);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_NE (_model_info, nullptr);
 
-  status = ml_option_get (_model_info, "path", (void **) &test_description);
+  status = ml_information_get (_model_info, "path", (void **) &test_description);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_STREQ (test_description, test_model2);
-  status = ml_option_destroy (_model_info);
+  status = ml_information_destroy (_model_info);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  ml_option_h *info_list;
-  guint info_num;
+  ml_information_list_h info_list = NULL;
+  unsigned int length = 0U;
 
-  status = ml_service_model_get_all (key, &info_list, &info_num);
+  status = ml_service_model_get_all (key, &info_list);
   EXPECT_EQ (ML_ERROR_NONE, status);
-  EXPECT_EQ (info_num, 2U);
+  status = ml_information_list_length (info_list, &length);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  EXPECT_EQ (length, 2U);
 
-  for (guint i = 0; i < info_num; i++) {
+  ml_information_h _info_h = NULL;
+  for (guint i = 0; i < length; i++) {
     gchar *version_str;
 
-    status = ml_option_get (info_list[i], "version", (void **) &version_str);
+    status = ml_information_list_get (info_list, i, &_info_h);
+    EXPECT_EQ (ML_ERROR_NONE, status);
+
+    status = ml_information_get (_info_h, "version", (void **) &version_str);
     EXPECT_EQ (ML_ERROR_NONE, status);
     if (g_ascii_strcasecmp (version_str, "1") == 0) {
       gchar *is_active;
-      status = ml_option_get (info_list[i], "active", (void **) &is_active);
+      status = ml_information_get (_info_h, "active", (void **) &is_active);
       EXPECT_EQ (ML_ERROR_NONE, status);
       EXPECT_STREQ (is_active, "T");
 
       gchar *path;
-      status = ml_option_get (info_list[i], "path", (void **) &path);
+      status = ml_information_get (_info_h, "path", (void **) &path);
       EXPECT_EQ (ML_ERROR_NONE, status);
       EXPECT_STREQ (path, test_model1);
 
       gchar *app_info;
-      status = ml_option_get (info_list[i], "app_info", (void **) &app_info);
+      status = ml_information_get (_info_h, "app_info", (void **) &app_info);
       EXPECT_EQ (ML_ERROR_NONE, status);
       EXPECT_STREQ (app_info, "");
     } else if (g_ascii_strcasecmp (version_str, "2") == 0) {
       gchar *is_active;
-      status = ml_option_get (info_list[i], "active", (void **) &is_active);
+      status = ml_information_get (_info_h, "active", (void **) &is_active);
       EXPECT_EQ (ML_ERROR_NONE, status);
       EXPECT_STREQ (is_active, "F");
 
       gchar *path;
-      status = ml_option_get (info_list[i], "path", (void **) &path);
+      status = ml_information_get (_info_h, "path", (void **) &path);
       EXPECT_EQ (ML_ERROR_NONE, status);
       EXPECT_STREQ (path, test_model2);
     } else {
       EXPECT_TRUE (false);
     }
-
-    status = ml_option_destroy (info_list[i]);
-    EXPECT_EQ (ML_ERROR_NONE, status);
   }
 
-  g_free (info_list);
+  status = ml_information_list_destroy (info_list);
+  EXPECT_EQ (ML_ERROR_NONE, status);
 
   /* failed to delete the active model */
   status = ml_service_model_delete (key, 1U);
@@ -1175,7 +1245,7 @@ TEST_F (MLServiceAgentTest, model_scenario)
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_STREQ (test_description, test_model2);
 
-  status = ml_option_destroy (activated_model_info);
+  status = ml_information_destroy (activated_model_info);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   /* failed to delete the active model */
@@ -1477,9 +1547,8 @@ TEST (MLServiceAgentTestDbusUnconnected, model_n)
   status = ml_service_model_get_activated ("test", &model_info);
   EXPECT_EQ (ML_ERROR_IO_ERROR, status);
 
-  ml_option_h *info_list;
-  guint info_num;
-  status = ml_service_model_get_all ("test", &info_list, &info_num);
+  ml_information_list_h info_list;
+  status = ml_service_model_get_all ("test", &info_list);
   EXPECT_EQ (ML_ERROR_IO_ERROR, status);
 }
 
