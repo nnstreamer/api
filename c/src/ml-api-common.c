@@ -1647,3 +1647,208 @@ ml_option_get (ml_option_h option, const char *key, void **value)
 
   return _ml_info_get_value ((ml_info_s *) option, key, value);
 }
+
+/**
+ * @brief Creates an ml_information instance and returns the handle.
+ */
+int
+_ml_information_create (ml_information_h * info)
+{
+  ml_info_s *_info = NULL;
+
+  check_feature_state (ML_FEATURE);
+
+  if (!info) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'info' is NULL. It should be a valid ml_information_h");
+  }
+
+  _info = _ml_info_create (ML_INFO_MODEL);
+  if (!_info)
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Failed to allocate memory for the info handle. Out of memory?");
+
+  *info = (ml_information_h *) _info;
+  return ML_ERROR_NONE;
+}
+
+/**
+ * @brief Set key-value pair in given information handle.
+ * @note If duplicated key is given, the value is updated with the new one.
+ */
+int
+_ml_information_set (ml_information_h information, const char *key, void *value,
+    ml_data_destroy_cb destroy)
+{
+  check_feature_state (ML_FEATURE);
+
+  if (!information) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'information' is NULL. It should be a valid ml_information_h, which should be created by ml_information_create().");
+  }
+
+  if (!key) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'key' is NULL. It should be a valid const char*");
+  }
+
+  if (!value) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'value' is NULL. It should be a valid void*");
+  }
+
+  return _ml_info_set_value ((ml_info_s *) information, key, value, destroy);
+}
+
+/**
+ * @brief Frees the given handle of a ml_information.
+ */
+int
+ml_information_destroy (ml_information_h information)
+{
+  check_feature_state (ML_FEATURE);
+
+  if (!information) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'information' is NULL. It should be a valid ml_information_h, which should be created by ml_information_create().");
+  }
+
+  _ml_info_destroy ((ml_info_s *) information);
+
+  return ML_ERROR_NONE;
+}
+
+/**
+ * @brief Gets the value corresponding to the given key in ml_information instance.
+ */
+int
+ml_information_get (ml_information_h information, const char *key, void **value)
+{
+  check_feature_state (ML_FEATURE);
+
+  if (!information) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'information' is NULL. It should be a valid ml_information_h, which should be created by ml_information_create().");
+  }
+
+  if (!key) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'key' is NULL. It should be a valid const char*");
+  }
+
+  if (!value) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'value' is NULL. It should be a valid void**");
+  }
+
+  return _ml_info_get_value ((ml_info_s *) information, key, value);
+}
+
+/**
+ * @brief Internal function for destroy ml_info_list_s instance.
+ */
+static void
+_ml_info_list_destroy (ml_info_list_s * list)
+{
+  guint i;
+
+  for (i = 0; i < list->length; ++i) {
+    _ml_info_destroy (list->info[i]);
+  }
+
+  g_free (list->info);
+  g_free (list);
+}
+
+/**
+ * @brief Internal function for getting length of ml_info_list_s instance.
+ */
+static unsigned int
+_ml_info_list_length (ml_info_list_s * list)
+{
+  return list->length;
+}
+
+/**
+ * @brief Internal function for getting index-th ml_information_h instance in ml_info_list_s instance.
+ */
+static ml_info_s *
+_ml_info_list_get (ml_info_list_s * list, unsigned int index)
+{
+  if (index >= list->length)
+    return NULL;
+
+  return list->info[index];
+}
+
+/**
+ * @brief Destroys the ml-information-list instance.
+ */
+int
+ml_information_list_destroy (ml_information_list_h list)
+{
+  check_feature_state (ML_FEATURE);
+
+  if (!list) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'list' is NULL. It should be a valid ml_information_list_h, which should be created by ml_information_list_create().");
+  }
+
+  _ml_info_list_destroy ((ml_info_list_s *) list);
+
+  return ML_ERROR_NONE;
+}
+
+/**
+ * @brief Gets the number of ml-information in ml-information-list instance.
+ */
+int
+ml_information_list_length (ml_information_list_h list, unsigned int *length)
+{
+  check_feature_state (ML_FEATURE);
+
+  if (!list) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'list' is NULL. It should be a valid ml_information_list_h, which should be created by ml_information_list_create().");
+  }
+
+  if (!length) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'length' is NULL. It should be a valid unsigned int*");
+  }
+
+  *length = _ml_info_list_length ((ml_info_list_s *) list);
+
+  return ML_ERROR_NONE;
+}
+
+/**
+ * @brief Gets a ml-information in ml-information-list instance with given index.
+ */
+int
+ml_information_list_get (ml_information_list_h list, unsigned int index,
+    ml_information_h * information)
+{
+  ml_info_s *info_s;
+  check_feature_state (ML_FEATURE);
+
+  if (!list) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'list' is NULL. It should be a valid ml_information_list_h, which should be created by ml_information_list_create().");
+  }
+
+  if (!information) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'information' is NULL. It should be a valid ml_information_h*");
+  }
+
+  info_s = _ml_info_list_get ((ml_info_list_s *) list, index);
+  if (info_s == NULL) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'index' is invalid. It should be less than the length of ml_information_list_h");
+  }
+
+  *information = (ml_information_h) info_s;
+
+  return ML_ERROR_NONE;
+}

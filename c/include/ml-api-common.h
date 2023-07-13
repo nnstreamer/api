@@ -512,6 +512,70 @@ typedef void *ml_information_h;
 typedef void *ml_information_list_h;
 
 /**
+ * @brief Destroys the ml-information instance.
+ * @details Note that, user should free the allocated values of ml-information in the case that destroy function is not given.
+ * @since_tizen 8.0
+ * @param[in] ml_info The ml_information handle to be destroyed.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
+ */
+int ml_information_destroy (ml_information_h ml_info);
+
+/**
+ * @brief Gets a value of key in ml-information instance.
+ * @details This returns the pointer of memory in the handle. If you modify the returned memory (value), the contents of value is updated.
+ * @since_tizen 8.0
+ * @remarks The @a value should not be released. The @a value is available until @a ml_info is destroyed using ml_information_destroy().
+ * @param[in] ml_info The handle of ml-information.
+ * @param[in] key The key to get the corresponding value.
+ * @param[out] value The value of the key.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
+ */
+int ml_information_get (ml_information_h ml_info, const char *key, void **value);
+
+/**
+ * @brief Destroys the ml-information-list instance.
+ * @details Note that, user should free the allocated values of ml-information-list in the case that destroy function is not given.
+ * @since_tizen 8.0
+ * @param[in] ml_info_list The ml-information-list handle to be destroyed.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
+ */
+int ml_information_list_destroy (ml_information_list_h ml_info_list);
+
+/**
+ * @brief Gets the number of ml-information in ml-information-list instance.
+ * @since_tizen 8.0
+ * @param[in] ml_info_list The handle of ml-information-list.
+ * @param[out] length The number of ml-information in ml-information-list.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
+ */
+int ml_information_list_length (ml_information_list_h ml_info_list, unsigned int *length);
+
+/**
+ * @brief Gets a ml-information in ml-information-list instance with given index.
+ * @since_tizen 8.0
+ * @remarks The @a ml_info should not be released. The @a ml_info is available until @a ml_info_list is destroyed using ml_information_list_destroy().
+ * @param[in] ml_info_list The handle of ml-information-list.
+ * @param[in] index The index of ml-information in ml-information-list.
+ * @param[out] ml_info The ml-information handle of given index.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
+ */
+int ml_information_list_get (ml_information_list_h ml_info_list, unsigned int index, ml_information_h *ml_info);
+/**
  * @}
  */
 #ifdef __cplusplus
