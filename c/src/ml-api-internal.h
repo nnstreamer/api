@@ -395,6 +395,34 @@ int _ml_tensors_data_destroy_internal (ml_tensors_data_h data, gboolean free_dat
  */
 int _ml_tensors_data_create_no_alloc (const ml_tensors_info_h info, ml_tensors_data_h *data);
 
+/**
+ * @brief Creates ml-information instance.
+ * @since_tizen 8.0
+ * @remarks The @a ml_info should be released using ml_information_destroy().
+ * @param[out] ml_info Newly created ml_info handle is returned.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
+ * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
+ */
+int _ml_information_create (ml_information_h *ml_info);
+
+/**
+ * @brief Sets a new key-value in ml-information instance.
+ * @details Note that the @a value should be valid during single task and be freed after destroying the ml-information instance unless proper @a destroy function is given. When duplicated @a key is given, the corresponding @a value is updated with the new one.
+ * @since_tizen 8.0
+ * @param[in] ml_info The handle of ml-information.
+ * @param[in] key The key to be set.
+ * @param[in] value The value to be set.
+ * @param[in] destroy The function to destroy the value. It is called when the ml-information instance is destroyed.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
+ */
+int _ml_information_set (ml_information_h ml_info, const char *key, void *value, ml_data_destroy_cb destroy);
+
 #if defined (__TIZEN__)
 /****** TIZEN CHECK FEATURE BEGINS *****/
 /**
