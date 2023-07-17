@@ -519,22 +519,12 @@ out:
 static void
 init_pipeline_module (void *data)
 {
-  GError *err = NULL;
+  gdbus_initialize ();
 
   G_LOCK (pipeline_table_lock);
   g_assert (NULL == pipeline_table); /** Internal error */
   pipeline_table = g_hash_table_new_full (g_direct_hash, g_direct_equal, NULL, _pipeline_free);
   G_UNLOCK (pipeline_table_lock);
-
-  _I ("init gstreamer");
-  if (!gst_init_check (NULL, NULL, &err)) {
-    if (err) {
-      _E ("Initializing gstreamer failed with err msg %s", err->message);
-      g_clear_error (&err);
-    } else {
-      _E ("cannot initialize GStreamer with unknown reason.");
-    }
-  }
 }
 
 /**
