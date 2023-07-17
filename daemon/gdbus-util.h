@@ -20,6 +20,7 @@
 
 #include <glib.h>
 #include <gio/gio.h>
+#include <gst/gst.h>
 #include <stdbool.h>
 
 #ifdef __cplusplus
@@ -83,6 +84,11 @@ int gdbus_get_system_connection (gboolean is_session);
  * @brief Disconnect the DBus message bus.
  */
 void gdbus_put_system_connection (void);
+
+/**
+ * @brief Common function to initialize the DBus module.
+ */
+void gdbus_initialize (void);
 
 #ifdef __cplusplus
 }

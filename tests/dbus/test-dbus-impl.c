@@ -14,7 +14,6 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <gst/gst.h>
 
 #include <common.h>
 #include <modules.h>
@@ -73,18 +72,9 @@ gdbus_put_instance_test (MachinelearningServiceTest ** instance)
 static void
 init_test (void *data)
 {
-  GError *err = NULL;
   g_debug ("init_test module");
 
-  if (!gst_init_check (NULL, NULL, &err)) {
-    if (err) {
-      g_critical ("Initializing gstreamer failed with err msg %s",
-          err->message);
-      g_clear_error (&err);
-    } else {
-      g_critical ("cannot initalize GStreamer with unknown reason.");
-    }
-  }
+  gdbus_initialize ();
 }
 
 /**

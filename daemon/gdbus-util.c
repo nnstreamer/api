@@ -26,7 +26,7 @@ int
 gdbus_export_interface (gpointer instance, const char *obj_path)
 {
   if (g_dbus_sys_conn == NULL) {
-    _E ("cannot get the dbus connection to the system message bus\n");
+    _E ("Cannot get the dbus connection to the system message bus");
     return -ENOSYS;
   }
 
@@ -120,13 +120,13 @@ gdbus_disconnect_signal (gpointer instance, int num_signals,
 int
 gdbus_get_system_connection (gboolean is_session)
 {
-  GError *error = NULL;
+  GError *err = NULL;
   GBusType bus_type = is_session ? G_BUS_TYPE_SESSION : G_BUS_TYPE_SYSTEM;
 
-  g_dbus_sys_conn = g_bus_get_sync (bus_type, NULL, &error);
+  g_dbus_sys_conn = g_bus_get_sync (bus_type, NULL, &err);
   if (g_dbus_sys_conn == NULL) {
-    _E ("cannot connect to the system message bus: %s\n", error->message);
-    g_clear_error (&error);
+    _E ("Cannot connect to the system message bus: %s", err ? err->message : "Unknown error");
+    g_clear_error (&err);
     return -ENOSYS;
   }
 
@@ -140,4 +140,18 @@ void
 gdbus_put_system_connection (void)
 {
   g_clear_object (&g_dbus_sys_conn);
+}
+
+/**
+ * @brief Common function to initialize the DBus module.
+ */
+void
+gdbus_initialize (void)
+{
+  GError *err = NULL;
+
+  if (!gst_init_check (NULL, NULL, &err))
+    _E ("Failed to initialize GStreamer: %s", (err ? err->message : "Unknown error"));
+
+  g_clear_error (&err);
 }

@@ -12,7 +12,6 @@
 
 #include <errno.h>
 #include <glib.h>
-#include <gst/gst.h>
 
 #include "common.h"
 #include "dbus-interface.h"
@@ -376,14 +375,7 @@ out:
 static void
 init_model_module (void *data)
 {
-  GError *err = NULL;
-  gboolean ret;
-
-  ret = gst_init_check (NULL, NULL, &err);
-  if (!ret) {
-    _E ("Failed to initialize GStreamer with err msg (%s)", (err ? err->message : "NULL"));
-  }
-  g_clear_error (&err);
+  gdbus_initialize ();
 }
 
 /**
