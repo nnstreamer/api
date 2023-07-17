@@ -175,8 +175,7 @@ gdbus_cb_model_get (MachinelearningServiceModel *obj,
   }
 
   db.disconnectDB ();
-  machinelearning_service_model_complete_get_activated (
-      obj, invoc, model_info.c_str (), ret);
+  machinelearning_service_model_complete_get (obj, invoc, model_info.c_str (), ret);
 
   return TRUE;
 }
@@ -244,7 +243,7 @@ gdbus_cb_model_get_all (MachinelearningServiceModel *obj,
 
   db.disconnectDB ();
 
-  machinelearning_service_model_complete_get (obj, invoc, all_model_list.c_str (), ret);
+  machinelearning_service_model_complete_get_all (obj, invoc, all_model_list.c_str (), ret);
 
   return TRUE;
 }
