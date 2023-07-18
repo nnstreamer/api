@@ -48,6 +48,9 @@ class MLServiceDB
   virtual ~MLServiceDB ();
 
   void initDB ();
+  int get_table_version (const std::string tbl_name, const int default_ver);
+  bool set_table_version (const std::string tbl_name, const int tbl_ver);
+  bool create_table (const std::string tbl_name);
   bool set_transaction (bool begin);
   bool is_model_registered (const std::string key, const guint version);
   bool is_model_activated (const std::string key, const guint version);
