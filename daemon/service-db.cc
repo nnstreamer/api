@@ -88,11 +88,7 @@ MLServiceDB::~MLServiceDB ()
 void
 MLServiceDB::initDB ()
 {
-  int rc;
-  int tbl_ver;
-  char *sql;
-  char *errmsg = nullptr;
-  sqlite3_stmt *res;
+  int i, tbl_ver;
 
   if (_initialized)
     return;
@@ -108,85 +104,32 @@ MLServiceDB::initDB ()
     return;
 
   /* Create tables. */
-  sql = g_strdup_printf ("CREATE TABLE IF NOT EXISTS %s;", g_mlsvc_table_schema[TBL_DB_INFO]);
-  rc = sqlite3_exec (_db, sql, nullptr, nullptr, &errmsg);
-  g_free (sql);
-  if (rc != SQLITE_OK) {
-    _W ("Failed to create table for database info: %s (%d)", errmsg, rc);
-    sqlite3_clear_errmsg (errmsg);
-    return;
-  }
-
-  sql = g_strdup_printf ("CREATE TABLE IF NOT EXISTS %s;",
-      g_mlsvc_table_schema[TBL_PIPELINE_DESCRIPTION]);
-  rc = sqlite3_exec (_db, sql, nullptr, nullptr, &errmsg);
-  g_free (sql);
-  if (rc != SQLITE_OK) {
-    _W ("Failed to create table for pipeline description: %s (%d)", errmsg, rc);
-    sqlite3_clear_errmsg (errmsg);
-    return;
-  }
-
-  sql = g_strdup_printf (
-      "CREATE TABLE IF NOT EXISTS %s;", g_mlsvc_table_schema[TBL_MODEL_INFO]);
-  rc = sqlite3_exec (_db, sql, nullptr, nullptr, &errmsg);
-  g_free (sql);
-  if (rc != SQLITE_OK) {
-    _W ("Failed to create table for model info: %s (%d)", errmsg, rc);
-    sqlite3_clear_errmsg (errmsg);
-    return;
+  for (i = 0; i < TBL_MAX; i++) {
+    if (!create_table (g_mlsvc_table_schema[i]))
+      return;
   }
 
   /* Check pipeline table. */
-  rc = sqlite3_prepare_v2 (_db,
-      "SELECT version FROM tblMLDBInfo WHERE name = 'tblPipeline';", -1, &res, nullptr);
-  if (rc != SQLITE_OK) {
-    _W ("Failed to get the version of pipeline table: %s (%d)", sqlite3_errmsg (_db), rc);
+  if ((tbl_ver = get_table_version ("tblPipeline", TBL_VER_PIPELINE_DESCRIPTION)) < 0)
     return;
-  }
-
-  tbl_ver = (sqlite3_step (res) == SQLITE_ROW) ? sqlite3_column_int (res, 0) :
-                                                 TBL_VER_PIPELINE_DESCRIPTION;
-  sqlite3_finalize (res);
 
   if (tbl_ver != TBL_VER_PIPELINE_DESCRIPTION) {
     /** @todo update pipeline table if table schema is changed */
   }
 
-  sql = g_strdup_printf ("INSERT OR REPLACE INTO tblMLDBInfo VALUES ('tblPipeline', '%d');",
-      TBL_VER_PIPELINE_DESCRIPTION);
-  rc = sqlite3_exec (_db, sql, nullptr, nullptr, &errmsg);
-  g_free (sql);
-  if (rc != SQLITE_OK) {
-    _W ("Failed to update version of pipeline table: %s (%d)", errmsg, rc);
-    sqlite3_clear_errmsg (errmsg);
+  if (!set_table_version ("tblPipeline", TBL_VER_PIPELINE_DESCRIPTION))
     return;
-  }
 
   /* Check model table. */
-  rc = sqlite3_prepare_v2 (_db,
-      "SELECT version FROM tblMLDBInfo WHERE name = 'tblModel';", -1, &res, nullptr);
-  if (rc != SQLITE_OK) {
-    _W ("Failed to get the version of model table: %s (%d)", sqlite3_errmsg (_db), rc);
+  if ((tbl_ver = get_table_version ("tblModel", TBL_VER_MODEL_INFO)) < 0)
     return;
-  }
-
-  tbl_ver = (sqlite3_step (res) == SQLITE_ROW) ? sqlite3_column_int (res, 0) : TBL_VER_MODEL_INFO;
-  sqlite3_finalize (res);
 
   if (tbl_ver != TBL_VER_MODEL_INFO) {
     /** @todo update model table if table schema is changed */
   }
 
-  sql = g_strdup_printf ("INSERT OR REPLACE INTO tblMLDBInfo VALUES ('tblModel', '%d');",
-      TBL_VER_MODEL_INFO);
-  rc = sqlite3_exec (_db, sql, nullptr, nullptr, &errmsg);
-  g_free (sql);
-  if (rc != SQLITE_OK) {
-    _W ("Failed to update version of model table: %s (%d)", errmsg, rc);
-    sqlite3_clear_errmsg (errmsg);
+  if (!set_table_version ("tblModel", TBL_VER_MODEL_INFO))
     return;
-  }
 
   if (!set_transaction (false))
     return;
@@ -233,6 +176,70 @@ MLServiceDB::disconnectDB ()
 }
 
 /**
+ * @brief Get table version.
+ */
+int
+MLServiceDB::get_table_version (const std::string tbl_name, const int default_ver)
+{
+  int rc, tbl_ver;
+  sqlite3_stmt *res;
+  std::string sql = "SELECT version FROM tblMLDBInfo WHERE name = '" + tbl_name + "';";
+
+  rc = sqlite3_prepare_v2 (_db, sql.c_str (), -1, &res, nullptr);
+  if (rc != SQLITE_OK) {
+    _W ("Failed to get the version of table %s: %s (%d)", tbl_name.c_str (),
+        sqlite3_errmsg (_db), rc);
+    return -1;
+  }
+
+  tbl_ver = (sqlite3_step (res) == SQLITE_ROW) ? sqlite3_column_int (res, 0) : default_ver;
+  sqlite3_finalize (res);
+
+  return tbl_ver;
+}
+
+/**
+ * @brief Set table version.
+ */
+bool
+MLServiceDB::set_table_version (const std::string tbl_name, const int tbl_ver)
+{
+  sqlite3_stmt *res;
+  std::string sql = "INSERT OR REPLACE INTO tblMLDBInfo VALUES (?1, ?2);";
+
+  bool is_done = (sqlite3_prepare_v2 (_db, sql.c_str (), -1, &res, nullptr) == SQLITE_OK
+                  && sqlite3_bind_text (res, 1, tbl_name.c_str (), -1, nullptr) == SQLITE_OK
+                  && sqlite3_bind_int (res, 2, tbl_ver) == SQLITE_OK
+                  && sqlite3_step (res) == SQLITE_DONE);
+
+  sqlite3_finalize (res);
+
+  if (!is_done)
+    _W ("Failed to update version of table %s.", tbl_name.c_str ());
+  return is_done;
+}
+
+/**
+ * @brief Create DB table.
+ */
+bool
+MLServiceDB::create_table (const std::string tbl_name)
+{
+  int rc;
+  char *errmsg = nullptr;
+  std::string sql = "CREATE TABLE IF NOT EXISTS " + tbl_name;
+
+  rc = sqlite3_exec (_db, sql.c_str (), nullptr, nullptr, &errmsg);
+  if (rc != SQLITE_OK) {
+    _W ("Failed to create table %s: %s (%d)", tbl_name.c_str (), errmsg, rc);
+    sqlite3_clear_errmsg (errmsg);
+    return false;
+  }
+
+  return true;
+}
+
+/**
  * @brief Begin/end transaction.
  */
 bool
@@ -264,7 +271,7 @@ MLServiceDB::set_pipeline (const std::string name, const std::string description
   if (name.empty () || description.empty ())
     throw std::invalid_argument ("Invalid name or value parameters!");
 
-  std::string key_with_prefix = DB_KEY_PREFIX;
+  std::string key_with_prefix = DB_KEY_PREFIX + std::string ("_pipeline_");
   key_with_prefix += name;
 
   if (sqlite3_prepare_v2 (_db,
@@ -294,7 +301,7 @@ MLServiceDB::get_pipeline (const std::string name, std::string &description)
   if (name.empty ())
     throw std::invalid_argument ("Invalid name parameters!");
 
-  std::string key_with_prefix = DB_KEY_PREFIX;
+  std::string key_with_prefix = DB_KEY_PREFIX + std::string ("_pipeline_");
   key_with_prefix += name;
 
   if (sqlite3_prepare_v2 (_db,
@@ -326,7 +333,7 @@ MLServiceDB::delete_pipeline (const std::string name)
   if (name.empty ())
     throw std::invalid_argument ("Invalid name parameters!");
 
-  std::string key_with_prefix = DB_KEY_PREFIX;
+  std::string key_with_prefix = DB_KEY_PREFIX + std::string ("_pipeline_");
   key_with_prefix += name;
 
   if (sqlite3_prepare_v2 (_db, "DELETE FROM tblPipeline WHERE key = ?1", -1, &res, nullptr) != SQLITE_OK
@@ -410,7 +417,7 @@ MLServiceDB::set_model (const std::string name, const std::string model, const b
   if (name.empty () || model.empty () || !version)
     throw std::invalid_argument ("Invalid name, model, or version parameter!");
 
-  std::string key_with_prefix = DB_KEY_PREFIX;
+  std::string key_with_prefix = DB_KEY_PREFIX + std::string ("_model_");
   key_with_prefix += name;
 
   if (!set_transaction (true))
@@ -492,7 +499,7 @@ MLServiceDB::update_model_description (
   if (version == 0U)
     throw std::invalid_argument ("Invalid version number!");
 
-  std::string key_with_prefix = DB_KEY_PREFIX;
+  std::string key_with_prefix = DB_KEY_PREFIX + std::string ("_model_");
   key_with_prefix += name;
 
   /* check the existence of given model */
@@ -531,7 +538,7 @@ MLServiceDB::activate_model (const std::string name, const guint version)
   if (version == 0U)
     throw std::invalid_argument ("Invalid version number!");
 
-  std::string key_with_prefix = DB_KEY_PREFIX;
+  std::string key_with_prefix = DB_KEY_PREFIX + std::string ("_model_");
   key_with_prefix += name;
 
   /* check the existence */
@@ -586,7 +593,7 @@ MLServiceDB::get_model (const std::string name, std::string &model, const gint v
   if (name.empty ())
     throw std::invalid_argument ("Invalid name parameters!");
 
-  std::string key_with_prefix = DB_KEY_PREFIX;
+  std::string key_with_prefix = DB_KEY_PREFIX + std::string ("_model_");
   key_with_prefix += name;
 
   if (version == 0)
@@ -630,7 +637,7 @@ MLServiceDB::delete_model (const std::string name, const guint version)
   if (name.empty ())
     throw std::invalid_argument ("Invalid name parameters!");
 
-  std::string key_with_prefix = DB_KEY_PREFIX;
+  std::string key_with_prefix = DB_KEY_PREFIX + std::string ("_model_");
   key_with_prefix += name;
 
   /* existence check */
