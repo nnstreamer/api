@@ -14,12 +14,14 @@
 #include "dbus-interface.h"
 #include "model-dbus.h"
 #include "pipeline-dbus.h"
+#include "resource-dbus.h"
 
 typedef enum
 {
   ML_AGENT_DBUS_SERVICE_PIPELINE = 0,
   ML_AGENT_DBUS_SERVICE_MODEL,
-  ML_AGENT_DBUS_SERVICE_END,
+  ML_AGENT_DBUS_SERVICE_RESOURCE,
+  ML_AGENT_DBUS_SERVICE_END
 } ml_agent_dbus_service_type_e;
 
 typedef gpointer ml_agent_dbus_proxy_h;
@@ -70,6 +72,23 @@ _get_proxy_new_for_bus_sync (ml_agent_dbus_service_type_e type, GError ** err)
           break;
       }
       proxy = (ml_agent_dbus_proxy_h *) mlsm;
+      break;
+    }
+    case ML_AGENT_DBUS_SERVICE_RESOURCE:
+    {
+      MachinelearningServiceResource *mlsr;
+
+      for (i = 0; i < num_bus_types; ++i) {
+        g_clear_error (&_err);
+
+        mlsr =
+            machinelearning_service_resource_proxy_new_for_bus_sync (bus_types[i],
+            G_DBUS_PROXY_FLAGS_NONE, DBUS_ML_BUS_NAME, DBUS_RESOURCE_PATH, NULL,
+            &_err);
+        if (mlsr)
+          break;
+      }
+      proxy = (ml_agent_dbus_proxy_h *) mlsr;
       break;
     }
     default:
@@ -491,5 +510,77 @@ ml_agent_dbus_interface_model_delete (const gchar * name, const guint version,
 
   g_return_val_if_fail (ret == 0 && result, ret);
 
+  return 0;
+}
+
+/**
+ * @brief A dbus interface exported for adding the resource
+ */
+gint
+ml_agent_dbus_interface_resource_add (const gchar * name, const gchar * path,
+    const gchar * description, GError ** err)
+{
+  MachinelearningServiceResource *mlsr;
+
+  gboolean result;
+  gint ret;
+
+  mlsr = _get_proxy_new_for_bus_sync (ML_AGENT_DBUS_SERVICE_RESOURCE, err);
+  if (!mlsr) {
+    g_return_val_if_reached (-EIO);
+  }
+
+  result = machinelearning_service_resource_call_add_sync (mlsr, name, path,
+      description ? description : "", &ret, NULL, err);
+  g_object_unref (mlsr);
+
+  g_return_val_if_fail (ret == 0 && result, ret);
+  return 0;
+}
+
+/**
+ * @brief A dbus interface exported for removing the resource with @name
+ */
+gint
+ml_agent_dbus_interface_resource_delete (const gchar * name, GError ** err)
+{
+  MachinelearningServiceResource *mlsr;
+  gboolean result;
+  gint ret;
+
+  mlsr = _get_proxy_new_for_bus_sync (ML_AGENT_DBUS_SERVICE_RESOURCE, err);
+  if (!mlsr) {
+    g_return_val_if_reached (-EIO);
+  }
+
+  result = machinelearning_service_resource_call_delete_sync (mlsr, name, &ret,
+      NULL, err);
+  g_object_unref (mlsr);
+
+  g_return_val_if_fail (ret == 0 && result, ret);
+  return 0;
+}
+
+/**
+ * @brief A dbus interface exported for getting the description of the resource with @name
+ */
+gint
+ml_agent_dbus_interface_resource_get (const gchar * name, gchar ** res_info,
+    GError ** err)
+{
+  MachinelearningServiceResource *mlsr;
+  gboolean result;
+  gint ret;
+
+  mlsr = _get_proxy_new_for_bus_sync (ML_AGENT_DBUS_SERVICE_RESOURCE, err);
+  if (!mlsr) {
+    g_return_val_if_reached (-EIO);
+  }
+
+  result = machinelearning_service_resource_call_get_sync (mlsr, name,
+      res_info, &ret, NULL, err);
+  g_object_unref (mlsr);
+
+  g_return_val_if_fail (ret == 0 && result, ret);
   return 0;
 }

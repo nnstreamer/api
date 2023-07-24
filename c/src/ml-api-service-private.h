@@ -19,6 +19,7 @@
 
 #include "pipeline-dbus.h"
 #include "model-dbus.h"
+#include "resource-dbus.h"
 
 #ifdef __cplusplus
 extern "C" {

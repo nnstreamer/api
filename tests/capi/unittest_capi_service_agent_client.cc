@@ -1251,6 +1251,52 @@ TEST_F (MLServiceAgentTest, model_gdbus_call_n)
 }
 
 /**
+ * @brief Negative testcase of resource gdbus call.
+ */
+TEST_F (MLServiceAgentTest, resource_gdbus_call_n)
+{
+  int ret;
+  gchar *res_info = NULL;
+  GError *error = NULL;
+
+  MachinelearningServiceResource *proxy_for_resource
+      = machinelearning_service_resource_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
+          G_DBUS_PROXY_FLAGS_NONE, "org.tizen.machinelearning.service",
+          "/Org/Tizen/MachineLearning/Service/Resource", NULL, &error);
+
+  if (!proxy_for_resource || error) {
+    g_critical ("Failed to create proxy_for_resource for machinelearning service resource");
+    if (error) {
+      g_critical ("Error Message : %s", error->message);
+      g_clear_error (&error);
+    }
+    ASSERT_TRUE (false);
+  }
+
+  machinelearning_service_resource_call_add_sync (
+      proxy_for_resource, "", "path", "description", &ret, nullptr, nullptr);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, ret);
+
+  machinelearning_service_resource_call_add_sync (
+      proxy_for_resource, "name", "", "description", &ret, nullptr, nullptr);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, ret);
+
+  machinelearning_service_resource_call_get_sync (
+      proxy_for_resource, "", &res_info, &ret, nullptr, nullptr);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, ret);
+
+  machinelearning_service_resource_call_get_sync (
+      proxy_for_resource, "unknown", &res_info, &ret, nullptr, nullptr);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, ret);
+
+  machinelearning_service_resource_call_delete_sync (
+      proxy_for_resource, "", &ret, nullptr, nullptr);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, ret);
+
+  g_object_unref (proxy_for_resource);
+}
+
+/**
  * @brief Negative test for pipeline. With DBus unconnected.
  */
 TEST (MLServiceAgentTestDbusUnconnected, pipeline_n)

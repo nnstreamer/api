@@ -2,7 +2,7 @@
 # This file should be included when ml-service feature is enabled.
 ml_agentd_incs = include_directories('.', 'include')
 ml_agentd_lib_common_srcs = files('modules.c', 'gdbus-util.c', 'ml-agent-dbus-interface.c',
-  'pipeline-dbus-impl.cc', 'model-dbus-impl.cc')
+  'pipeline-dbus-impl.cc', 'model-dbus-impl.cc', 'resource-dbus-impl.cc')
 ml_agentd_lib_service_db_srcs = files('service-db.cc')
 
 if (get_option('enable-tizen'))
@@ -27,7 +27,16 @@ gdbus_gen_model_src = custom_target('gdbus-model-gencode',
             '--output-directory', meson.current_build_dir(),
             '@INPUT@'])
 
-gdbus_gen_header_dep = declare_dependency(sources: [gdbus_gen_pipeline_src, gdbus_gen_model_src])
+gdbus_gen_resource_src = custom_target('gdbus-resource-gencode',
+  input: resource_dbus_input,
+  output: ['resource-dbus.h', 'resource-dbus.c'],
+  command: [gdbus_prog, '--interface-prefix', 'org.tizen',
+            '--generate-c-code', 'resource-dbus',
+            '--output-directory', meson.current_build_dir(),
+            '@INPUT@'])
+
+gdbus_gen_header_dep = declare_dependency(
+  sources: [gdbus_gen_pipeline_src, gdbus_gen_model_src, gdbus_gen_resource_src])
 
 ml_agentd_deps = [
   gdbus_gen_header_dep,
