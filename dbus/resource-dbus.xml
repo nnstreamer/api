@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<node name="/Org/Tizen/MachineLearning/Service">
+  <interface name="org.tizen.machinelearning.service.resource">
+    <!-- Add machine-learning resource -->
+    <method name="Add">
+      <arg type="s" name="name" direction="in" />
+      <arg type="s" name="path" direction="in" />
+      <arg type="s" name="description" direction="in" />
+      <arg type="i" name="result" direction="out" />
+    </method>
+    <!-- Get the resource -->
+    <method name="Get">
+      <arg type="s" name="name" direction="in" />
+      <arg type="s" name="info" direction="out" />
+      <arg type="i" name="result" direction="out" />
+    </method>
+    <!-- Delete the resource -->
+    <method name="Delete">
+      <arg type="s" name="name" direction="in" />
+      <arg type="i" name="result" direction="out" />
+    </method>
+  </interface>
+</node>
