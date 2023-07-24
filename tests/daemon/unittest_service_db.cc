@@ -423,6 +423,219 @@ TEST (serviceDBNotInitalized, delete_model_n)
 }
 
 /**
+ * @brief Negative test for set_resource. Invalid param case (empty name or path).
+ */
+TEST (serviceDB, set_resource_n)
+{
+  MLServiceDB &db = MLServiceDB::getInstance ();
+  int gotException = 0;
+
+  db.connectDB ();
+
+  try {
+    db.set_resource ("", "resource", "description");
+  } catch (const std::exception &e) {
+    g_critical ("Got Exception: %s", e.what ());
+    gotException = 1;
+  }
+  EXPECT_EQ (gotException, 1);
+
+  gotException = 0;
+  try {
+    db.set_resource ("test", "", "description");
+  } catch (const std::exception &e) {
+    g_critical ("Got Exception: %s", e.what ());
+    gotException = 1;
+  }
+  EXPECT_EQ (gotException, 1);
+
+  db.disconnectDB ();
+}
+
+/**
+ * @brief Check resources.
+ */
+TEST (serviceDB, get_resource)
+{
+  MLServiceDB &db = MLServiceDB::getInstance ();
+  int gotException = 0;
+
+  db.connectDB ();
+
+  /* No exception to add, get, and delete resources with name 'test'. */
+  try {
+    std::string res_description;
+    gchar *pos;
+
+    db.set_resource ("test", "test_resource1", "res1_description");
+    db.set_resource ("test", "test_resource2", "res2_description");
+
+    db.get_resource ("test", res_description);
+
+    /* Check res description contains added string. */
+    pos = g_strstr_len (res_description.c_str (), -1, "test_resource1");
+    EXPECT_TRUE (pos != NULL);
+    pos = g_strstr_len (res_description.c_str (), -1, "test_resource2");
+    EXPECT_TRUE (pos != NULL);
+
+    db.delete_resource ("test");
+  } catch (const std::exception &e) {
+    g_critical ("Got Exception: %s", e.what ());
+    gotException = 1;
+  }
+  EXPECT_EQ (gotException, 0);
+
+  db.disconnectDB ();
+}
+
+/**
+ * @brief Negative test for get_resource. Empty name.
+ */
+TEST (serviceDB, get_resource_n)
+{
+  MLServiceDB &db = MLServiceDB::getInstance ();
+  int gotException = 0;
+
+  db.connectDB ();
+
+  try {
+    std::string res_description;
+    db.get_resource ("", res_description);
+  } catch (const std::exception &e) {
+    g_critical ("Got Exception: %s", e.what ());
+    gotException = 1;
+  }
+  EXPECT_EQ (gotException, 1);
+
+  db.disconnectDB ();
+}
+
+/**
+ * @brief Negative test for get_resource. Empty name or unregistered name.
+ */
+TEST (serviceDB, get_resource_unregistered_n)
+{
+  MLServiceDB &db = MLServiceDB::getInstance ();
+  int gotException = 0;
+
+  db.connectDB ();
+
+  /* Test condition, remove all resource with name 'test'. */
+  db.set_resource ("test", "test_resource", "");
+  db.delete_resource ("test");
+
+  gotException = 0;
+  try {
+    std::string res_description;
+    db.get_resource ("test", res_description);
+  } catch (const std::exception &e) {
+    g_critical ("Got Exception: %s", e.what ());
+    gotException = 1;
+  }
+  EXPECT_EQ (gotException, 1);
+
+  db.disconnectDB ();
+}
+
+/**
+ * @brief Negative test for delete_resource. Empty name.
+ */
+TEST (serviceDB, delete_resource_n)
+{
+  MLServiceDB &db = MLServiceDB::getInstance ();
+  int gotException = 0;
+
+  db.connectDB ();
+
+  try {
+    db.delete_resource ("");
+  } catch (const std::exception &e) {
+    g_critical ("Got Exception: %s", e.what ());
+    gotException = 1;
+  }
+  EXPECT_EQ (gotException, 1);
+
+  db.disconnectDB ();
+}
+
+/**
+ * @brief Negative test for delete_resource. Resource is not registered.
+ */
+TEST (serviceDB, delete_resource_unregistered_n)
+{
+  MLServiceDB &db = MLServiceDB::getInstance ();
+  int gotException = 0;
+
+  db.connectDB ();
+
+  /* Test condition, remove all resource with name 'test'. */
+  db.set_resource ("test", "test_resource", "");
+  db.delete_resource ("test");
+
+  try {
+    db.delete_resource ("test");
+  } catch (const std::exception &e) {
+    g_critical ("Got Exception: %s", e.what ());
+    gotException = 1;
+  }
+  EXPECT_EQ (gotException, 1);
+
+  db.disconnectDB ();
+}
+
+/**
+ * @brief Negative test for set_resource. DB is not initialized.
+ */
+TEST (serviceDBNotInitalized, set_resource_n)
+{
+  MLServiceDB &db = MLServiceDB::getInstance ();
+  int gotException = 0;
+
+  try {
+    db.set_resource ("test", "resource", "description");
+  } catch (const std::exception &e) {
+    g_critical ("Got Exception: %s", e.what ());
+    gotException = 1;
+  }
+  EXPECT_EQ (gotException, 1);
+}
+
+/**
+ * @brief Negative test for get_resource. DB is not initialized.
+ */
+TEST (serviceDBNotInitalized, get_resource_n)
+{
+  MLServiceDB &db = MLServiceDB::getInstance ();
+  int gotException = 0;
+
+  try {
+    std::string res_description;
+    db.get_resource ("test", res_description);
+  } catch (const std::exception &e) {
+    g_critical ("Got Exception: %s", e.what ());
+    gotException = 1;
+  }
+  EXPECT_EQ (gotException, 1);
+}
+
+/**
+ * @brief Negative test for delete_resource. DB is not initialized.
+ */
+TEST (serviceDBNotInitalized, delete_resource_n)
+{
+  MLServiceDB &db = MLServiceDB::getInstance ();
+  int gotException = 0;
+
+  try {
+    db.delete_resource ("test");
+  } catch (const std::exception &e) {
+    g_critical ("Got Exception: %s", e.what ());
+    gotException = 1;
+  }
+  EXPECT_EQ (gotException, 1);
+}
+
+/**
  * @brief Main gtest
  */
 int
