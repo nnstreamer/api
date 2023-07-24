@@ -40,6 +40,10 @@ class MLServiceDB
   virtual void activate_model (const std::string name, const guint version);
   virtual void get_model (const std::string name, std::string &model, const gint version);
   virtual void delete_model (const std::string name, const guint version);
+  virtual void set_resource (const std::string name, const std::string path,
+      const std::string description);
+  virtual void get_resource (const std::string name, std::string &resource);
+  virtual void delete_resource (const std::string name);
 
   static MLServiceDB &getInstance (void);
 
@@ -54,6 +58,7 @@ class MLServiceDB
   bool set_transaction (bool begin);
   bool is_model_registered (const std::string key, const guint version);
   bool is_model_activated (const std::string key, const guint version);
+  bool is_resource_registered (const std::string key);
 
   std::string _path;
   bool _initialized;

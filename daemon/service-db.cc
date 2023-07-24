@@ -34,21 +34,27 @@
  */
 #define TBL_VER_MODEL_INFO (1)
 
+/**
+ * @brief The version of resource table schema. It should be a positive integer.
+ */
+#define TBL_VER_RESOURCE_INFO (1)
+
 typedef enum {
   TBL_DB_INFO = 0,
   TBL_PIPELINE_DESCRIPTION = 1,
   TBL_MODEL_INFO = 2,
+  TBL_RESOURCE_INFO = 3,
 
   TBL_MAX
 } mlsvc_table_e;
 
-const char *g_mlsvc_table_schema_v1[]
-    = { [TBL_DB_INFO] = "tblMLDBInfo (name TEXT PRIMARY KEY NOT NULL, version INTEGER DEFAULT 1)",
-        [TBL_PIPELINE_DESCRIPTION] = "tblPipeline (key TEXT PRIMARY KEY NOT NULL, description TEXT, CHECK (length(description) > 0))",
-        [TBL_MODEL_INFO]
-        = "tblModel (key TEXT NOT NULL, version INTEGER DEFAULT 1, active TEXT DEFAULT 'F', "
-          "path TEXT, description TEXT, app_info TEXT, PRIMARY KEY (key, version), CHECK (length(path) > 0), CHECK (active IN ('T', 'F')))",
-        NULL };
+const char *g_mlsvc_table_schema_v1[] = { [TBL_DB_INFO] = "tblMLDBInfo (name TEXT PRIMARY KEY NOT NULL, version INTEGER DEFAULT 1)",
+  [TBL_PIPELINE_DESCRIPTION] = "tblPipeline (key TEXT PRIMARY KEY NOT NULL, description TEXT, CHECK (length(description) > 0))",
+  [TBL_MODEL_INFO]
+  = "tblModel (key TEXT NOT NULL, version INTEGER DEFAULT 1, active TEXT DEFAULT 'F', "
+    "path TEXT, description TEXT, app_info TEXT, PRIMARY KEY (key, version), CHECK (length(path) > 0), CHECK (active IN ('T', 'F')))",
+  [TBL_RESOURCE_INFO] = "tblResource (key TEXT NOT NULL, path TEXT, description TEXT, PRIMARY KEY (key, path), CHECK (length(path) > 0))",
+  NULL };
 
 const char **g_mlsvc_table_schema = g_mlsvc_table_schema_v1;
 
@@ -129,6 +135,17 @@ MLServiceDB::initDB ()
   }
 
   if (!set_table_version ("tblModel", TBL_VER_MODEL_INFO))
+    return;
+
+  /* Check resource table. */
+  if ((tbl_ver = get_table_version ("tblResource", TBL_VER_RESOURCE_INFO)) < 0)
+    return;
+
+  if (tbl_ver != TBL_VER_RESOURCE_INFO) {
+    /** @todo update resource table if table schema is changed */
+  }
+
+  if (!set_table_version ("tblResource", TBL_VER_RESOURCE_INFO))
     return;
 
   if (!set_transaction (false))
@@ -397,6 +414,28 @@ MLServiceDB::is_model_activated (const std::string key, const guint version)
   g_free (sql);
 
   return activated;
+}
+
+/**
+ * @brief Check the resource is registered.
+ */
+bool
+MLServiceDB::is_resource_registered (const std::string key)
+{
+  sqlite3_stmt *res;
+  gchar *sql;
+  bool registered;
+
+  sql = g_strdup_printf ("SELECT EXISTS(SELECT 1 FROM tblResource WHERE key = ?1)");
+
+  registered
+      = !(sqlite3_prepare_v2 (_db, sql, -1, &res, nullptr) != SQLITE_OK
+          || sqlite3_bind_text (res, 1, key.c_str (), -1, nullptr) != SQLITE_OK
+          || sqlite3_step (res) != SQLITE_ROW || sqlite3_column_int (res, 0) != 1);
+  sqlite3_finalize (res);
+  g_free (sql);
+
+  return registered;
 }
 
 /**
@@ -673,4 +712,124 @@ MLServiceDB::delete_model (const std::string name, const guint version)
     throw std::invalid_argument ("There is no model with the given name " + name
                                  + " and version " + std::to_string (version));
   }
+}
+
+/**
+ * @brief Set the resource with given name.
+ * @param[in] name Unique name of ml-resource.
+ * @param[in] path The path to be stored.
+ * @param[in] description The description for ml-resource.
+ */
+void
+MLServiceDB::set_resource (const std::string name, const std::string path,
+    const std::string description)
+{
+  sqlite3_stmt *res;
+
+  if (name.empty () || path.empty ())
+    throw std::invalid_argument ("Invalid name or path parameter!");
+
+  std::string key_with_prefix = DB_KEY_PREFIX + std::string ("_resource_");
+  key_with_prefix += name;
+
+  if (!set_transaction (true))
+    throw std::runtime_error ("Failed to begin transaction.");
+
+  if (sqlite3_prepare_v2 (_db,
+          "INSERT OR REPLACE INTO tblResource VALUES (?1, ?2, ?3)", -1, &res, nullptr)
+          != SQLITE_OK
+      || sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, nullptr) != SQLITE_OK
+      || sqlite3_bind_text (res, 2, path.c_str (), -1, nullptr) != SQLITE_OK
+      || sqlite3_bind_text (res, 3, description.c_str (), -1, nullptr) != SQLITE_OK
+      || sqlite3_step (res) != SQLITE_DONE) {
+    sqlite3_finalize (res);
+    throw std::runtime_error ("Failed to add the resource " + name);
+  }
+
+  sqlite3_finalize (res);
+
+  if (!set_transaction (false))
+    throw std::runtime_error ("Failed to end transaction.");
+
+  long long int last_id = sqlite3_last_insert_rowid (_db);
+  if (last_id == 0) {
+    _E ("Failed to get last inserted row id: %s", sqlite3_errmsg (_db));
+    throw std::runtime_error ("Failed to get last inserted row id.");
+  }
+}
+
+/**
+ * @brief Get the resource with given name.
+ * @param[in] name The unique name to retrieve.
+ * @param[out] resource The resource corresponding with the given name.
+ */
+void
+MLServiceDB::get_resource (const std::string name, std::string &resource)
+{
+  char *sql;
+  char *value = nullptr;
+  sqlite3_stmt *res;
+
+  if (name.empty ())
+    throw std::invalid_argument ("Invalid name parameters!");
+
+  std::string key_with_prefix = DB_KEY_PREFIX + std::string ("_resource_");
+  key_with_prefix += name;
+
+  /* existence check */
+  if (!is_resource_registered (key_with_prefix))
+    throw std::invalid_argument ("There is no resource with name " + name);
+
+  sql = g_strdup ("SELECT json_group_array(json_object('key', key, 'path', path, 'description', description)) FROM tblResource WHERE key = ?1");
+
+  if (sqlite3_prepare_v2 (_db, sql, -1, &res, nullptr) == SQLITE_OK
+      && sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, nullptr) == SQLITE_OK
+      && sqlite3_step (res) == SQLITE_ROW)
+    value = g_strdup_printf ("%s", sqlite3_column_text (res, 0));
+
+  sqlite3_finalize (res);
+  g_free (sql);
+
+  if (!value)
+    throw std::invalid_argument ("Failed to get resource with name " + name);
+
+  resource = std::string (value);
+  g_free (value);
+}
+
+/**
+ * @brief Delete the resource.
+ * @param[in] name The unique name to delete
+ */
+void
+MLServiceDB::delete_resource (const std::string name)
+{
+  char *sql;
+  sqlite3_stmt *res;
+
+  if (name.empty ())
+    throw std::invalid_argument ("Invalid name parameters!");
+
+  std::string key_with_prefix = DB_KEY_PREFIX + std::string ("_resource_");
+  key_with_prefix += name;
+
+  /* existence check */
+  if (!is_resource_registered (key_with_prefix))
+    throw std::invalid_argument ("There is no resource with name " + name);
+
+  sql = g_strdup ("DELETE FROM tblResource WHERE key = ?1");
+
+  if (sqlite3_prepare_v2 (_db, sql, -1, &res, nullptr) != SQLITE_OK
+      || sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, nullptr) != SQLITE_OK
+      || sqlite3_step (res) != SQLITE_DONE) {
+    sqlite3_finalize (res);
+    g_free (sql);
+    throw std::runtime_error ("Failed to delete resource with name " + name);
+  }
+
+  sqlite3_finalize (res);
+  g_free (sql);
+
+  if (sqlite3_changes (_db) == 0)
+    throw std::invalid_argument ("There is no resource with name " + name);
 }
