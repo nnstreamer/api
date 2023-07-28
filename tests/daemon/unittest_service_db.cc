@@ -118,6 +118,66 @@ TEST (serviceDB, set_model_n)
 }
 
 /**
+ * @brief Check model update.
+ */
+TEST (serviceDB, update_model_scenario)
+{
+  MLServiceDB &db = MLServiceDB::getInstance ();
+  int gotException = 0;
+
+  db.connectDB ();
+
+  /* No exception to add, get, and delete model with name 'test'. */
+  try {
+    std::string model_info;
+    gchar *pos;
+    guint version, version_active;
+
+    db.set_model ("test", "test_model1", true, "model1_description", "", &version_active);
+    db.set_model ("test", "test_model2", false, "model2_description", "", &version);
+
+    /* Check model info contains added string. */
+    db.get_model ("test", model_info, 0);
+    pos = g_strstr_len (model_info.c_str (), -1, "test_model1");
+    EXPECT_TRUE (pos != NULL);
+    pos = g_strstr_len (model_info.c_str (), -1, "test_model2");
+    EXPECT_TRUE (pos != NULL);
+    pos = g_strstr_len (model_info.c_str (), -1, "model1_description");
+    EXPECT_TRUE (pos != NULL);
+    pos = g_strstr_len (model_info.c_str (), -1, "model2_description");
+    EXPECT_TRUE (pos != NULL);
+
+    db.get_model ("test", model_info, version);
+    pos = g_strstr_len (model_info.c_str (), -1, "test_model2");
+    EXPECT_TRUE (pos != NULL);
+    pos = g_strstr_len (model_info.c_str (), -1, "model2_description");
+    EXPECT_TRUE (pos != NULL);
+
+    db.get_model ("test", model_info, -1);
+    pos = g_strstr_len (model_info.c_str (), -1, "test_model1");
+    EXPECT_TRUE (pos != NULL);
+    pos = g_strstr_len (model_info.c_str (), -1, "model1_description");
+    EXPECT_TRUE (pos != NULL);
+
+    db.activate_model ("test", version);
+    db.update_model_description ("test", version, "updated_desc_model2");
+    db.get_model ("test", model_info, -1);
+    pos = g_strstr_len (model_info.c_str (), -1, "test_model2");
+    EXPECT_TRUE (pos != NULL);
+    pos = g_strstr_len (model_info.c_str (), -1, "updated_desc_model2");
+    EXPECT_TRUE (pos != NULL);
+
+    db.delete_model ("test", 0);
+  } catch (const std::exception &e) {
+    g_critical ("Got Exception: %s", e.what ());
+    gotException = 1;
+  }
+  EXPECT_EQ (gotException, 0);
+
+  db.disconnectDB ();
+}
+
+/**
  * @brief Negative test for get_model. Empty name, invalid version.
  */
 TEST (serviceDB, get_model_n)
@@ -455,7 +515,7 @@ TEST (serviceDB, set_resource_n)
 /**
  * @brief Check resources.
  */
-TEST (serviceDB, get_resource)
+TEST (serviceDB, update_resource_scenario)
 {
   MLServiceDB &db = MLServiceDB::getInstance ();
   int gotException = 0;
@@ -464,18 +524,26 @@ TEST (serviceDB, get_resource)
 
   /* No exception to add, get, and delete resources with name 'test'. */
   try {
-    std::string res_description;
+    std::string res_info;
     gchar *pos;
 
     db.set_resource ("test", "test_resource1", "res1_description");
     db.set_resource ("test", "test_resource2", "res2_description");
 
-    db.get_resource ("test", res_description);
-
-    /* Check res description contains added string. */
-    pos = g_strstr_len (res_description.c_str (), -1, "test_resource1");
+    /* Check res info contains added string. */
+    db.get_resource ("test", res_info);
+    pos = g_strstr_len (res_info.c_str (), -1, "test_resource1");
     EXPECT_TRUE (pos != NULL);
-    pos = g_strstr_len (res_description.c_str (), -1, "test_resource2");
+    pos = g_strstr_len (res_info.c_str (), -1, "test_resource2");
+    EXPECT_TRUE (pos != NULL);
+    pos = g_strstr_len (res_info.c_str (), -1, "res1_description");
+    EXPECT_TRUE (pos != NULL);
+    pos = g_strstr_len (res_info.c_str (), -1, "res2_description");
+    EXPECT_TRUE (pos != NULL);
+
+    db.set_resource ("test", "test_resource2", "updated_desc_res2");
+    db.get_resource ("test", res_info);
+    pos = g_strstr_len (res_info.c_str (), -1, "updated_desc_res2");
     EXPECT_TRUE (pos != NULL);
 
     db.delete_resource ("test");

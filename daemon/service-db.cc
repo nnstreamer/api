@@ -625,6 +625,8 @@ MLServiceDB::activate_model (const std::string name, const guint version)
 void
 MLServiceDB::get_model (const std::string name, std::string &model, const gint version)
 {
+  const char model_info_json[]
+      = "json_object('version', CAST(version AS TEXT), 'active', active, 'path', path, 'description', description, 'app_info', app_info)";
   char *sql;
   char *value = nullptr;
   sqlite3_stmt *res;
@@ -636,12 +638,14 @@ MLServiceDB::get_model (const std::string name, std::string &model, const gint v
   key_with_prefix += name;
 
   if (version == 0)
-    sql = g_strdup ("SELECT json_group_array(json_object('key', key, 'version', CAST(version AS TEXT), 'active', active, 'path', path, 'description', description, 'app_info', app_info)) FROM tblModel WHERE key = ?1");
+    sql = g_strdup_printf (
+        "SELECT json_group_array(%s) FROM tblModel WHERE key = ?1", model_info_json);
   else if (version == -1)
-    sql = g_strdup ("SELECT json_object('key', key, 'version', CAST(version AS TEXT), 'active', active, 'path', path, 'description', description, 'app_info', app_info) FROM tblModel WHERE key = ?1 and active = 'T' ORDER BY version DESC LIMIT 1");
+    sql = g_strdup_printf ("SELECT %s FROM tblModel WHERE key = ?1 and active = 'T' ORDER BY version DESC LIMIT 1",
+        model_info_json);
   else if (version > 0)
-    sql = g_strdup_printf ("SELECT json_object('key', key, 'version', CAST(version AS TEXT), 'active', active, 'path', path, 'description', description, 'app_info', app_info) FROM tblModel WHERE key = ?1 and version = %d",
-        version);
+    sql = g_strdup_printf ("SELECT %s FROM tblModel WHERE key = ?1 and version = %d",
+        model_info_json, version);
   else
     throw std::invalid_argument ("Invalid version parameter!");
 
@@ -766,6 +770,7 @@ MLServiceDB::set_resource (const std::string name, const std::string path,
 void
 MLServiceDB::get_resource (const std::string name, std::string &resource)
 {
+  const char res_info_json[] = "json_object('path', path, 'description', description)";
   char *sql;
   char *value = nullptr;
   sqlite3_stmt *res;
@@ -780,7 +785,9 @@ MLServiceDB::get_resource (const std::string name, std::string &resource)
   if (!is_resource_registered (key_with_prefix))
     throw std::invalid_argument ("There is no resource with name " + name);
 
-  sql = g_strdup ("SELECT json_group_array(json_object('key', key, 'path', path, 'description', description)) FROM tblResource WHERE key = ?1");
+  /* Get json string with insertion order. */
+  sql = g_strdup_printf ("SELECT json_group_array(%s) FROM (SELECT * FROM tblResource WHERE key = ?1 ORDER BY ROWID ASC)",
+      res_info_json);
 
   if (sqlite3_prepare_v2 (_db, sql, -1, &res, nullptr) == SQLITE_OK
       && sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, nullptr) == SQLITE_OK
