@@ -158,10 +158,11 @@ gint ml_agent_dbus_interface_model_delete(const gchar *name, const guint version
  * @param[in] name A name indicating the resource
  * @param[in] path A path that specifies the location of the resource
  * @param[in] description A stringified description of the resource
+ * @param[in] app_info Application-specific information from Tizen's RPK
  * @param[out] err Return location for error
  * @return 0 on success, a negative error value if failed
  */
-gint ml_agent_dbus_interface_resource_add (const gchar *name, const gchar *path, const gchar *description, GError **err);
+gint ml_agent_dbus_interface_resource_add (const gchar *name, const gchar *path, const gchar *description, const gchar *app_info, GError **err);
 
 /**
  * @brief A dbus interface exported for removing the resource with @name

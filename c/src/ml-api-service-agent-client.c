@@ -877,6 +877,7 @@ ml_service_resource_add (const char *name, const char *path,
     const char *description)
 {
   int ret = ML_ERROR_NONE;
+  g_autofree gchar *app_info = NULL;
   g_autoptr (GError) err = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
@@ -890,12 +891,10 @@ ml_service_resource_add (const char *name, const char *path,
   if (ret != ML_ERROR_NONE)
     return ret;
 
-  /**
-   * @todo Check whether the given path is in the app's resource directory.
-   * Implement common function later, see ml_service_model_register().
-   */
+  app_info = _get_app_info ();
+
   ret = ml_agent_dbus_interface_resource_add (name, path,
-      description ? description : "", &err);
+      description ? description : "", app_info ? app_info : "", &err);
   if (ret < 0) {
     _ml_error_report ("Failed to invoke the method resource_add (%s).",
         err ? err->message : "Unknown error");

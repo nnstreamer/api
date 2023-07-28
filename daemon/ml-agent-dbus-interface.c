@@ -518,7 +518,7 @@ ml_agent_dbus_interface_model_delete (const gchar * name, const guint version,
  */
 gint
 ml_agent_dbus_interface_resource_add (const gchar * name, const gchar * path,
-    const gchar * description, GError ** err)
+    const gchar * description, const gchar * app_info, GError ** err)
 {
   MachinelearningServiceResource *mlsr;
 
@@ -531,7 +531,8 @@ ml_agent_dbus_interface_resource_add (const gchar * name, const gchar * path,
   }
 
   result = machinelearning_service_resource_call_add_sync (mlsr, name, path,
-      description ? description : "", &ret, NULL, err);
+      description ? description : "", app_info ? app_info : "",
+      &ret, NULL, err);
   g_object_unref (mlsr);
 
   g_return_val_if_fail (ret == 0 && result, ret);

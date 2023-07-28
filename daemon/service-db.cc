@@ -53,7 +53,7 @@ const char *g_mlsvc_table_schema_v1[] = { [TBL_DB_INFO] = "tblMLDBInfo (name TEX
   [TBL_MODEL_INFO]
   = "tblModel (key TEXT NOT NULL, version INTEGER DEFAULT 1, active TEXT DEFAULT 'F', "
     "path TEXT, description TEXT, app_info TEXT, PRIMARY KEY (key, version), CHECK (length(path) > 0), CHECK (active IN ('T', 'F')))",
-  [TBL_RESOURCE_INFO] = "tblResource (key TEXT NOT NULL, path TEXT, description TEXT, PRIMARY KEY (key, path), CHECK (length(path) > 0))",
+  [TBL_RESOURCE_INFO] = "tblResource (key TEXT NOT NULL, path TEXT, description TEXT, app_info TEXT, PRIMARY KEY (key, path), CHECK (length(path) > 0))",
   NULL };
 
 const char **g_mlsvc_table_schema = g_mlsvc_table_schema_v1;
@@ -726,7 +726,7 @@ MLServiceDB::delete_model (const std::string name, const guint version)
  */
 void
 MLServiceDB::set_resource (const std::string name, const std::string path,
-    const std::string description)
+    const std::string description, const std::string app_info)
 {
   sqlite3_stmt *res;
 
@@ -740,11 +740,12 @@ MLServiceDB::set_resource (const std::string name, const std::string path,
     throw std::runtime_error ("Failed to begin transaction.");
 
   if (sqlite3_prepare_v2 (_db,
-          "INSERT OR REPLACE INTO tblResource VALUES (?1, ?2, ?3)", -1, &res, nullptr)
+          "INSERT OR REPLACE INTO tblResource VALUES (?1, ?2, ?3, ?4)", -1, &res, nullptr)
           != SQLITE_OK
       || sqlite3_bind_text (res, 1, key_with_prefix.c_str (), -1, nullptr) != SQLITE_OK
       || sqlite3_bind_text (res, 2, path.c_str (), -1, nullptr) != SQLITE_OK
       || sqlite3_bind_text (res, 3, description.c_str (), -1, nullptr) != SQLITE_OK
+      || sqlite3_bind_text (res, 4, app_info.c_str (), -1, nullptr) != SQLITE_OK
       || sqlite3_step (res) != SQLITE_DONE) {
     sqlite3_finalize (res);
     throw std::runtime_error ("Failed to add the resource " + name);
@@ -770,7 +771,8 @@ MLServiceDB::set_resource (const std::string name, const std::string path,
 void
 MLServiceDB::get_resource (const std::string name, std::string &resource)
 {
-  const char res_info_json[] = "json_object('path', path, 'description', description)";
+  const char res_info_json[]
+      = "json_object('path', path, 'description', description, 'app_info', app_info)";
   char *sql;
   char *value = nullptr;
   sqlite3_stmt *res;

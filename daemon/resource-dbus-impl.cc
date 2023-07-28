@@ -52,14 +52,14 @@ gdbus_put_resource_instance (MachinelearningServiceResource **instance)
  */
 static gboolean
 gdbus_cb_resource_add (MachinelearningServiceResource *obj, GDBusMethodInvocation *invoc,
-    const gchar *name, const gchar *path, const gchar *description)
+    const gchar *name, const gchar *path, const gchar *description, const gchar *app_info)
 {
   int ret = 0;
   MLServiceDB &db = MLServiceDB::getInstance ();
 
   try {
     db.connectDB ();
-    db.set_resource (name, path, description);
+    db.set_resource (name, path, description, app_info);
   } catch (const std::invalid_argument &e) {
     _E ("%s", e.what ());
     ret = -EINVAL;

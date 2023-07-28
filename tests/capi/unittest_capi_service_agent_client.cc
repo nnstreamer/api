@@ -1358,11 +1358,11 @@ TEST_F (MLServiceAgentTest, resource_gdbus_call_n)
   }
 
   machinelearning_service_resource_call_add_sync (
-      proxy_for_resource, "", "path", "description", &ret, nullptr, nullptr);
+      proxy_for_resource, "", "path", "description", "", &ret, nullptr, nullptr);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, ret);
 
   machinelearning_service_resource_call_add_sync (
-      proxy_for_resource, "name", "", "description", &ret, nullptr, nullptr);
+      proxy_for_resource, "name", "", "description", "", &ret, nullptr, nullptr);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, ret);
 
   machinelearning_service_resource_call_get_sync (
