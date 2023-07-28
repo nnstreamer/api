@@ -18,6 +18,8 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 
+#include "dbus-interface.h"
+
 /**
  * @brief Test base class for Database of ML Service API.
  */
@@ -1197,8 +1199,7 @@ TEST_F (MLServiceAgentTest, pipeline_gdbus_call_n)
 
   MachinelearningServicePipeline *proxy_for_pipeline
       = machinelearning_service_pipeline_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
-          G_DBUS_PROXY_FLAGS_NONE, "org.tizen.machinelearning.service",
-          "/Org/Tizen/MachineLearning/Service/Pipeline", NULL, &error);
+          G_DBUS_PROXY_FLAGS_NONE, DBUS_ML_BUS_NAME, DBUS_PIPELINE_PATH, NULL, &error);
 
   if (!proxy_for_pipeline || error) {
     g_critical ("Failed to create proxy_for_pipeline for machinelearning service pipeline");
@@ -1225,8 +1226,7 @@ TEST_F (MLServiceAgentTest, model_gdbus_call_n)
 
   MachinelearningServiceModel *proxy_for_model
       = machinelearning_service_model_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
-          G_DBUS_PROXY_FLAGS_NONE, "org.tizen.machinelearning.service",
-          "/Org/Tizen/MachineLearning/Service/Model", NULL, &error);
+          G_DBUS_PROXY_FLAGS_NONE, DBUS_ML_BUS_NAME, DBUS_MODEL_PATH, NULL, &error);
 
   if (!proxy_for_model || error) {
     g_critical ("Failed to create proxy_for_model for machinelearning service model");
@@ -1261,8 +1261,7 @@ TEST_F (MLServiceAgentTest, resource_gdbus_call_n)
 
   MachinelearningServiceResource *proxy_for_resource
       = machinelearning_service_resource_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
-          G_DBUS_PROXY_FLAGS_NONE, "org.tizen.machinelearning.service",
-          "/Org/Tizen/MachineLearning/Service/Resource", NULL, &error);
+          G_DBUS_PROXY_FLAGS_NONE, DBUS_ML_BUS_NAME, DBUS_RESOURCE_PATH, NULL, &error);
 
   if (!proxy_for_resource || error) {
     g_critical ("Failed to create proxy_for_resource for machinelearning service resource");
