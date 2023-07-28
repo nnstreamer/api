@@ -1752,6 +1752,9 @@ _ml_info_list_destroy (ml_info_list_s * list)
 {
   guint i;
 
+  if (!list)
+    return;
+
   for (i = 0; i < list->length; ++i) {
     _ml_info_destroy (list->info[i]);
   }
@@ -1766,7 +1769,7 @@ _ml_info_list_destroy (ml_info_list_s * list)
 static unsigned int
 _ml_info_list_length (ml_info_list_s * list)
 {
-  return list->length;
+  return list ? list->length : 0;
 }
 
 /**
@@ -1775,10 +1778,55 @@ _ml_info_list_length (ml_info_list_s * list)
 static ml_info_s *
 _ml_info_list_get (ml_info_list_s * list, unsigned int index)
 {
-  if (index >= list->length)
+  if (!list || index >= list->length)
     return NULL;
 
   return list->info[index];
+}
+
+/**
+ * @brief Creates an ml-information-list instance and returns the handle.
+ */
+int
+_ml_information_list_create (const unsigned int length,
+    ml_information_list_h * list)
+{
+  ml_info_list_s *_info_list;
+  guint i;
+
+  check_feature_state (ML_FEATURE);
+
+  if (length == 0U)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The length of information list should be a positive value.");
+
+  if (!list)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'list' is NULL. It should be a valid ml_information_list_h.");
+
+  _info_list = g_try_new0 (ml_info_list_s, 1);
+  if (!_info_list)
+    goto error;
+
+  _info_list->info = g_try_new0 (ml_info_s *, length);
+  if (!_info_list->info)
+    goto error;
+
+  _info_list->length = length;
+
+  for (i = 0; i < length; i++) {
+    _info_list->info[i] = _ml_info_create (ML_INFO_MODEL);
+    if (_info_list->info[i] == NULL)
+      goto error;
+  }
+
+  *list = _info_list;
+  return ML_ERROR_NONE;
+
+error:
+  _ml_info_list_destroy (_info_list);
+  _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+      "Failed to allocate memory for ml_information_list_h. Out of memory?");
 }
 
 /**
