@@ -982,6 +982,21 @@ TEST_F (MLServiceAgentTest, ml_option_get_00_n)
 }
 
 /**
+ * @brief Test _ml_information_list_create with invalid param.
+ */
+TEST_F (MLServiceAgentTest, ml_information_list_create_00_n)
+{
+  int status;
+  ml_information_list_h info_list;
+
+  status = _ml_information_list_create (0U, &info_list);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = _ml_information_list_create (4U, NULL);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+}
+
+/**
  * @brief Test ml_information_get with invalid param.
  */
 TEST_F (MLServiceAgentTest, model_ml_information_get_00_n)
