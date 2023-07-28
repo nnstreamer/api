@@ -493,7 +493,7 @@ TEST (serviceDB, set_resource_n)
   db.connectDB ();
 
   try {
-    db.set_resource ("", "resource", "description");
+    db.set_resource ("", "resource", "description", "");
   } catch (const std::exception &e) {
     g_critical ("Got Exception: %s", e.what ());
     gotException = 1;
@@ -502,7 +502,7 @@ TEST (serviceDB, set_resource_n)
 
   gotException = 0;
   try {
-    db.set_resource ("test", "", "description");
+    db.set_resource ("test", "", "description", "");
   } catch (const std::exception &e) {
     g_critical ("Got Exception: %s", e.what ());
     gotException = 1;
@@ -527,8 +527,8 @@ TEST (serviceDB, update_resource_scenario)
     std::string res_info;
     gchar *pos;
 
-    db.set_resource ("test", "test_resource1", "res1_description");
-    db.set_resource ("test", "test_resource2", "res2_description");
+    db.set_resource ("test", "test_resource1", "res1_description", "");
+    db.set_resource ("test", "test_resource2", "res2_description", "");
 
     /* Check res info contains added string. */
     db.get_resource ("test", res_info);
@@ -541,7 +541,7 @@ TEST (serviceDB, update_resource_scenario)
     pos = g_strstr_len (res_info.c_str (), -1, "res2_description");
     EXPECT_TRUE (pos != NULL);
 
-    db.set_resource ("test", "test_resource2", "updated_desc_res2");
+    db.set_resource ("test", "test_resource2", "updated_desc_res2", "");
     db.get_resource ("test", res_info);
     pos = g_strstr_len (res_info.c_str (), -1, "updated_desc_res2");
     EXPECT_TRUE (pos != NULL);
@@ -589,7 +589,7 @@ TEST (serviceDB, get_resource_unregistered_n)
   db.connectDB ();
 
   /* Test condition, remove all resource with name 'test'. */
-  db.set_resource ("test", "test_resource", "");
+  db.set_resource ("test", "test_resource", "", "");
   db.delete_resource ("test");
 
   gotException = 0;
@@ -637,7 +637,7 @@ TEST (serviceDB, delete_resource_unregistered_n)
   db.connectDB ();
 
   /* Test condition, remove all resource with name 'test'. */
-  db.set_resource ("test", "test_resource", "");
+  db.set_resource ("test", "test_resource", "", "");
   db.delete_resource ("test");
 
   try {
@@ -660,7 +660,7 @@ TEST (serviceDBNotInitalized, set_resource_n)
   int gotException = 0;
 
   try {
-    db.set_resource ("test", "resource", "description");
+    db.set_resource ("test", "resource", "description", "");
   } catch (const std::exception &e) {
     g_critical ("Got Exception: %s", e.what ());
     gotException = 1;
