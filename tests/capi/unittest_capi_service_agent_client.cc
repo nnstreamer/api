@@ -1381,6 +1381,75 @@ TEST_F (MLServiceAgentTest, resource_gdbus_call_n)
 }
 
 /**
+ * @brief Test the usecase of ml_service for resource.
+ */
+TEST_F (MLServiceAgentTest, resource_scenario)
+{
+  int status;
+  const gchar *key = "res_test";
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
+  gchar *res_path[2];
+  gchar *res_desc[2];
+  guint i, length;
+  ml_information_list_h info_list;
+  ml_information_h info;
+
+  /* Adding res file into ml-service-agent requires absolute path, ignore this case. */
+  if (root_path == NULL)
+    return;
+
+  /* delete all resource with the key before test */
+  status = ml_service_resource_delete (key);
+  EXPECT_TRUE (status == ML_ERROR_NONE || status == ML_ERROR_INVALID_PARAMETER);
+
+  res_path[0] = g_build_filename (root_path, "tests", "test_models", "models",
+      "mobilenet_v1_1.0_224_quant.tflite", NULL);
+  ASSERT_TRUE (g_file_test (res_path[0], G_FILE_TEST_EXISTS));
+
+  res_path[1] = g_build_filename (
+      root_path, "tests", "test_models", "models", "add.tflite", NULL);
+  ASSERT_TRUE (g_file_test (res_path[1], G_FILE_TEST_EXISTS));
+
+  res_desc[0] = g_strdup ("res1 description");
+  res_desc[1] = g_strdup ("res2 description");
+
+  for (i = 0; i < 2; i++) {
+    status = ml_service_resource_add (key, res_path[i], res_desc[i]);
+    EXPECT_EQ (ML_ERROR_NONE, status);
+  }
+
+  status = ml_service_resource_get (key, &info_list);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_information_list_length (info_list, &length);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  EXPECT_EQ (length, 2U);
+
+  for (i = 0; i < length; i++) {
+    gchar *path, *desc;
+
+    status = ml_information_list_get (info_list, i, &info);
+    EXPECT_EQ (ML_ERROR_NONE, status);
+
+    status = ml_information_get (info, "path", (void **) &path);
+    EXPECT_EQ (ML_ERROR_NONE, status);
+    EXPECT_STREQ (path, res_path[i]);
+
+    status = ml_information_get (info, "description", (void **) &desc);
+    EXPECT_EQ (ML_ERROR_NONE, status);
+    EXPECT_STREQ (desc, res_desc[i]);
+  }
+
+  status = ml_information_list_destroy (info_list);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  for (i = 0; i < 2; i++) {
+    g_free (res_path[i]);
+    g_free (res_desc[i]);
+  }
+}
+
+/**
  * @brief Negative testcase of ml-service-resource - add invalid param.
  */
 TEST (MLServiceResource, addInvalidParam01_n)
