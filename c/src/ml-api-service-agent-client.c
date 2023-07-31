@@ -151,8 +151,62 @@ _parse_app_info_and_update_path (ml_information_h ml_info)
 
   return ML_ERROR_NONE;
 }
+
+/**
+ * @brief Get Tizen application info. It should be a json string.
+ */
+static gchar *
+_get_app_info (void)
+{
+  g_autofree gchar *app_id = NULL;
+  g_autoptr (JsonBuilder) builder = NULL;
+  g_autoptr (JsonGenerator) gen = NULL;
+  int ret;
+
+  ret = app_get_id (&app_id);
+  if (ret == APP_ERROR_INVALID_CONTEXT) {
+    /* Not a Tizen APP context, e.g. gbs build test */
+    _ml_logi ("Not an APP context, skip creating app_info.");
+    return NULL;
+  }
+
+  /**
+   * @todo Check whether the given path is in the app's resource directory.
+   * Below is sample code for this (unfortunately, TCT get error with it):
+   * g_autofree gchar *app_resource_path = NULL;
+   * g_autofree gchar *app_shared_resource_path = NULL;
+   * app_resource_path = app_get_resource_path ();
+   * app_shared_resource_path = app_get_shared_resource_path ();
+   * if (!app_resource_path || !app_shared_resource_path) {
+   *   _ml_error_report_return (ML_ERROR_PERMISSION_DENIED,
+   *      "Failed to get the app resource path of the caller.");
+   * }
+   * if (!g_str_has_prefix (path, app_resource_path) &&
+   *     !g_str_has_prefix (path, app_shared_resource_path)) {
+   *   _ml_error_report_return (ML_ERROR_PERMISSION_DENIED,
+   *      "The model file '%s' is not in the app's resource directory.", path);
+   * }
+   */
+  builder = json_builder_new ();
+  json_builder_begin_object (builder);
+
+  json_builder_set_member_name (builder, "is_rpk");
+  json_builder_add_string_value (builder, "F");
+
+  json_builder_set_member_name (builder, "app_id");
+  json_builder_add_string_value (builder, app_id);
+
+  json_builder_end_object (builder);
+
+  gen = json_generator_new ();
+  json_generator_set_root (gen, json_builder_get_root (builder));
+  json_generator_set_pretty (gen, TRUE);
+
+  return json_generator_to_data (gen, NULL);
+}
 #else
 #define _parse_app_info_and_update_path(...) ((int) ML_ERROR_NONE)
+#define _get_app_info(...) (NULL)
 #endif
 
 /**
@@ -441,9 +495,6 @@ ml_service_model_register (const char *name, const char *path,
 {
   int ret = ML_ERROR_NONE;
   g_autofree gchar *app_info = NULL;
-  g_autofree gchar *app_id = NULL;
-  g_autoptr (JsonBuilder) builder = NULL;
-  g_autoptr (JsonGenerator) gen = NULL;
   g_autoptr (GError) err = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
@@ -463,52 +514,8 @@ ml_service_model_register (const char *name, const char *path,
   if (ret != ML_ERROR_NONE)
     return ret;
 
-#if defined(__TIZEN__)
-  /* Tizen application info of caller should be provided as a json string */
+  app_info = _get_app_info ();
 
-  ret = app_get_id (&app_id);
-  if (ret == APP_ERROR_INVALID_CONTEXT) {
-    /* Not a Tizen APP context, e.g. gbs build test */
-    _ml_logi ("Not an APP context, skip creating app_info.");
-    goto app_info_exit;
-  }
-
-  /**
-   * @todo Check whether the given path is in the app's resource directory.
-   * Below is sample code for this (unfortunately, TCT get error with it):
-   * g_autofree gchar *app_resource_path = NULL;
-   * g_autofree gchar *app_shared_resource_path = NULL;
-   * app_resource_path = app_get_resource_path ();
-   * app_shared_resource_path = app_get_shared_resource_path ();
-   * if (!app_resource_path || !app_shared_resource_path) {
-   *   _ml_error_report_return (ML_ERROR_PERMISSION_DENIED,
-   *      "Failed to get the app resource path of the caller.");
-   * }
-   * if (!g_str_has_prefix (path, app_resource_path) &&
-   *     !g_str_has_prefix (path, app_shared_resource_path)) {
-   *   _ml_error_report_return (ML_ERROR_PERMISSION_DENIED,
-   *      "The model file '%s' is not in the app's resource directory.", path);
-   * }
-   */
-
-  builder = json_builder_new ();
-  json_builder_begin_object (builder);
-
-  json_builder_set_member_name (builder, "is_rpk");
-  json_builder_add_string_value (builder, "F");
-
-  json_builder_set_member_name (builder, "app_id");
-  json_builder_add_string_value (builder, app_id);
-
-  json_builder_end_object (builder);
-
-  gen = json_generator_new ();
-  json_generator_set_root (gen, json_builder_get_root (builder));
-  json_generator_set_pretty (gen, TRUE);
-
-  app_info = json_generator_to_data (gen, NULL);
-app_info_exit:
-#endif
   ret = ml_agent_dbus_interface_model_register (name, path, activate,
       description ? description : "", app_info ? app_info : "", version, &err);
   if (ret < 0) {
