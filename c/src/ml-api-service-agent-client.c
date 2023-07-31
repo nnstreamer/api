@@ -97,13 +97,14 @@ _parse_app_info_and_update_path (ml_information_h ml_info)
   g_autoptr (JsonParser) parser = NULL;
   g_autoptr (GError) err = NULL;
 
-  JsonObject *j_object;
+  JsonObject *jobj;
 
   /* parsing app_info and fill path (for rpk) */
   ret = ml_information_get (ml_info, "app_info", (void **) &app_info);
   if (ret != ML_ERROR_NONE) {
-    _ml_error_report ("Failed to get app_info from the model info.");
-    return ret;
+    /* ml-info may not contain app_info, ignore this case. */
+    _ml_error_report_return (ML_ERROR_NONE,
+        "Failed to get app_info from the model info.");
   }
 
   _ml_logi ("Parsing app_info: %s", app_info);
@@ -113,50 +114,45 @@ _parse_app_info_and_update_path (ml_information_h ml_info)
   if (!json_parser_load_from_data (parser, app_info, -1, &err)) {
     _ml_logi ("Failed to parse app_info (%s). Skip it.",
         err ? err->message : "Unknown error");
-    return 0;
+    return ML_ERROR_NONE;
   }
 
-  j_object = json_node_get_object (json_parser_get_root (parser));
-  if (!j_object) {
-    _ml_error_report ("Failed to get json object from the app_info. Skip it.");
-    return 0;
+  jobj = json_node_get_object (json_parser_get_root (parser));
+  if (!jobj) {
+    _ml_error_report_return (ML_ERROR_NONE,
+        "Failed to get json object from the app_info. Skip it.");
   }
 
-  if (g_strcmp0 (json_object_get_string_member (j_object, "is_rpk"), "T") == 0) {
+  if (g_strcmp0 (json_object_get_string_member (jobj, "is_rpk"), "T") == 0) {
     gchar *ori_path, *new_path;
     g_autofree gchar *global_resource_path;
-    const gchar *res_type =
-        json_object_get_string_member (j_object, "res_type");
+    const gchar *res_type = json_object_get_string_member (jobj, "res_type");
 
     ret = ml_information_get (ml_info, "path", (void **) &ori_path);
     if (ret != ML_ERROR_NONE) {
-      _ml_error_report ("Failed to get path from the model info.");
-      return ret;
+      _ml_error_report_return (ret, "Failed to get path from the model info.");
     }
 
-    ret =
-        app_get_res_control_global_resource_path (res_type,
+    ret = app_get_res_control_global_resource_path (res_type,
         &global_resource_path);
     if (ret != APP_ERROR_NONE) {
-      _ml_error_report ("Failed to get global resource path.");
-      ret = ML_ERROR_INVALID_PARAMETER;
-      return ret;
+      _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+          "Failed to get global resource path.");
     }
 
     new_path = g_strdup_printf ("%s/%s", global_resource_path, ori_path);
     ret = _ml_information_set (ml_info, "path", new_path, g_free);
     if (ret != ML_ERROR_NONE) {
-      _ml_error_report ("Failed to set path to the model info.");
-      return ret;
+      _ml_error_report_return (ret, "Failed to set path to the model info.");
     }
   } else {
     _ml_logi ("The model is not from rpk. Skip it.");
   }
 
-  return 0;
+  return ML_ERROR_NONE;
 }
 #else
-#define _parse_app_info_and_update_path(...) ((int) 0)
+#define _parse_app_info_and_update_path(...) ((int) ML_ERROR_NONE)
 #endif
 
 /**
@@ -635,9 +631,9 @@ ml_service_model_get (const char *name, const unsigned int version,
     goto error;
   }
 
-  if (_parse_app_info_and_update_path (_info) != 0) {
+  ret = _parse_app_info_and_update_path (_info);
+  if (ML_ERROR_NONE != ret) {
     _ml_error_report ("Failed to parse app_info and update path.");
-    ret = ML_ERROR_INVALID_PARAMETER;
     goto error;
   }
 
@@ -693,9 +689,9 @@ ml_service_model_get_activated (const char *name, ml_information_h * info)
     goto error;
   }
 
-  if (_parse_app_info_and_update_path (_info) != 0) {
+  ret = _parse_app_info_and_update_path (_info);
+  if (ML_ERROR_NONE != ret) {
     _ml_error_report ("Failed to parse app_info and update path.");
-    ret = ML_ERROR_INVALID_PARAMETER;
     goto error;
   }
 
@@ -814,10 +810,9 @@ ml_service_model_get_all (const char *name, ml_information_list_h * info_list)
         _ml_information_set (_info_list->info[i], key, g_strdup (val), g_free);
       }
 
-      if (_parse_app_info_and_update_path ((ml_information_h)
-              _info_list->info[i]) != 0) {
+      ret = _parse_app_info_and_update_path (_info_list->info[i]);
+      if (ML_ERROR_NONE != ret) {
         _ml_error_report ("Failed to parse app_info and update path.");
-        ret = ML_ERROR_INVALID_PARAMETER;
         goto error;
       }
     }
