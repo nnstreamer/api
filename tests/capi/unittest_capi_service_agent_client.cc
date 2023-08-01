@@ -1127,7 +1127,7 @@ TEST_F (MLServiceAgentTest, model_ml_information_list_00_n)
 }
 
 /**
- * @brief Test the usecase of ml_servive for model. TBU.
+ * @brief Test the usecase of ml_service for model.
  */
 TEST_F (MLServiceAgentTest, model_scenario)
 {
@@ -1256,7 +1256,7 @@ TEST_F (MLServiceAgentTest, model_scenario)
   status = ml_service_model_get_activated (key, &activated_model_info);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_option_get (activated_model_info, "path", (gpointer *) &test_description);
+  status = ml_information_get (activated_model_info, "path", (gpointer *) &test_description);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_STREQ (test_description, test_model2);
 
@@ -1518,7 +1518,7 @@ TEST (MLServiceResource, deleteInvalidParam01_n)
 TEST (MLServiceResource, getInvalidParam01_n)
 {
   int ret;
-  ml_option_h res = NULL;
+  ml_information_h res = NULL;
 
   ret = ml_service_resource_get (NULL, &res);
   EXPECT_NE (ret, ML_ERROR_NONE);
@@ -1624,7 +1624,7 @@ TEST (MLServiceAgentTestDbusUnconnected, model_n)
   status = ml_service_model_activate ("test", 1U);
   EXPECT_EQ (ML_ERROR_IO_ERROR, status);
 
-  ml_option_h model_info;
+  ml_information_h model_info;
   status = ml_service_model_get ("test", 1U, &model_info);
   EXPECT_EQ (ML_ERROR_IO_ERROR, status);
 
