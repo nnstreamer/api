@@ -52,6 +52,9 @@ convert_ml_tensor_type_from (tensor_type type)
   return (ml_tensor_type_e) type;
 }
 
+/**
+ * @brief Check tensor-info has extended rank value.
+ */
 static gboolean
 gst_info_is_extended (const GstTensorsInfo * gst_info)
 {

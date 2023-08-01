@@ -823,9 +823,9 @@ _ml_tensors_info_free (ml_tensors_info_s * info)
         g_free (info->extra[i].name);
       }
     }
-  }
 
-  g_free (info->extra);
+    g_free (info->extra);
+  }
 
   _ml_tensors_info_initialize (info);
 }
