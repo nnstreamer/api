@@ -18,7 +18,41 @@
 #include "pkg-mgr.h"
 #include "service-db.hh"
 
+/**
+ * @brief Global handle for Tizen package manager.
+ */
 static package_manager_h pkg_mgr = NULL;
+
+/**
+ * @brief Get app-info json string.
+ */
+static gchar *
+_get_app_info (const gchar *package_name, const gchar *res_type, const gchar *res_version)
+{
+  g_autoptr (JsonBuilder) builder = json_builder_new ();
+  json_builder_begin_object (builder);
+
+  json_builder_set_member_name (builder, "is_rpk");
+  json_builder_add_string_value (builder, "T");
+
+  json_builder_set_member_name (builder, "app_id");
+  json_builder_add_string_value (builder, package_name);
+
+  json_builder_set_member_name (builder, "res_type");
+  json_builder_add_string_value (builder, res_type);
+
+  json_builder_set_member_name (builder, "res_version");
+  json_builder_add_string_value (builder, res_version);
+
+  json_builder_end_object (builder);
+
+  g_autoptr (JsonNode) root = json_builder_get_root (builder);
+  g_autoptr (JsonGenerator) gen = json_generator_new ();
+  json_generator_set_root (gen, root);
+  json_generator_set_pretty (gen, TRUE);
+
+  return json_generator_to_data (gen, NULL);
+}
 
 /**
  * @brief A simple package manager event handler for temporary use
@@ -75,8 +109,12 @@ _pkg_mgr_event_cb (const char *type, const char *package_name,
   if (g_ascii_strcasecmp (type, "rpk") != 0)
     return;
 
-  /* TODO handle allowed resources. Currently this only supports global resources */
-  pkg_path = g_strdup_printf ("/opt/usr/globalapps/%s/res/global/", package_name);
+  /**
+   * @todo package path
+   * 1. Handle allowed resources. Currently this only supports global resources.
+   * 2. Find API to get this hardcoded path prefix (/opt/usr/globalapps/)
+   */
+  pkg_path = g_strdup_printf ("/opt/usr/globalapps/%s/res/global", package_name);
 
   if (event_type == PACKAGE_MANAGER_EVENT_TYPE_INSTALL
       && event_state == PACKAGE_MANAGER_EVENT_STATE_COMPLETED) {
@@ -119,9 +157,10 @@ _pkg_mgr_event_cb (const char *type, const char *package_name,
       }
     }
 
-    /* TODO: find API to get this hardcoded path prefix (/opt/usr/globalapps/) */
-    g_autofree gchar *json_file_path = g_strdup_printf (
-        "/opt/usr/globalapps/%s/res/global/%s/model_description.json", package_name, res_type);
+    g_autofree gchar *app_info = _get_app_info (package_name, res_type, res_version);
+
+    g_autofree gchar *json_file_path
+        = g_strdup_printf ("%s/%s/model_description.json", pkg_path, res_type);
 
     if (!g_file_test (json_file_path, G_FILE_TEST_IS_REGULAR)) {
       _E ("Failed to find json file '%s'. RPK using ML Service APIs should provide this json file.",
@@ -169,31 +208,6 @@ _pkg_mgr_event_cb (const char *type, const char *package_name,
           _E ("Failed to get name, model, or description from json file '%s'", json_file_path);
           return;
         }
-
-        /* Fill out the app_info column of DB */
-        g_autoptr (JsonBuilder) builder = json_builder_new ();
-        json_builder_begin_object (builder);
-
-        json_builder_set_member_name (builder, "is_rpk");
-        json_builder_add_string_value (builder, "T");
-
-        json_builder_set_member_name (builder, "app_id");
-        json_builder_add_string_value (builder, package_name);
-
-        json_builder_set_member_name (builder, "res_type");
-        json_builder_add_string_value (builder, res_type);
-
-        json_builder_set_member_name (builder, "res_version");
-        json_builder_add_string_value (builder, res_version);
-
-        json_builder_end_object (builder);
-
-        g_autoptr (JsonNode) root = json_builder_get_root (builder);
-
-        g_autoptr (JsonGenerator) gen = json_generator_new ();
-        json_generator_set_root (gen, root);
-        json_generator_set_pretty (gen, TRUE);
-        g_autofree gchar *app_info = json_generator_to_data (gen, NULL);
 
         guint version;
         db.set_model (name, model, true, description, app_info, &version);
