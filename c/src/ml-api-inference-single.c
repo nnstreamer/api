@@ -1351,9 +1351,8 @@ _ml_single_invoke_validate_data (ml_single_h single,
     raw_size = _model->tensors[i].size;
     if (G_UNLIKELY (_data->tensors[i].size != raw_size))
       _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-          "The size of %d-th %s tensor is not compatible with model. Given: %zu, Expected: %zu (type: %d).",
-          i, (is_input) ? "input" : "output", _data->tensors[i].size, raw_size,
-          ml_tensors_info_get_nth_info (&single_h->in_info, i)->type);
+          "The size of %d-th %s tensor is not compatible with model. Given: %zu, Expected: %zu.",
+          i, (is_input) ? "input" : "output", _data->tensors[i].size, raw_size);
   }
 
   return ML_ERROR_NONE;
