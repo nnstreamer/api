@@ -201,6 +201,18 @@ _ml_tensors_info_copy_from_ml (GstTensorsInfo * gst_info,
     GstTensorInfo *_gst_tensor_info =
         gst_tensors_info_get_nth_info (gst_info, i);
 
+    if (!_gst_tensor_info) {
+      G_UNLOCK_UNLESS_NOLOCK (*ml_info);
+      _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+          "The parameter, gst_info, is invalid. It should be a valid GstTensorsInfo instance. This is probably an internal bug of ML API.");
+    }
+
+    if (!_ml_tensor_info) {
+      G_UNLOCK_UNLESS_NOLOCK (*ml_info);
+      _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+          "The parameter, ml_info, is invalid. It should be a valid ml_tensors_info_s instance, usually created by ml_tensors_info_create(). This is probably an internal bug of ML API.");
+    }
+
     /* Copy name string */
     if (_ml_tensor_info->name) {
       _gst_tensor_info->name = g_strdup (_ml_tensor_info->name);
