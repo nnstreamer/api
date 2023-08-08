@@ -1,7 +1,7 @@
 /**
- * @file    ml-agent-dbus-interface.c
+ * @file    ml-agent-interface.c
  * @date    5 April 2023
- * @brief   A set of exported DBus interfaces for managing pipelines and models
+ * @brief   A set of exported ml-agent interfaces for managing pipelines, models, and other service.
  * @see     https://github.com/nnstreamer/api
  * @author  Wook Song <wook16.song@samsung.com>
  * @bug     No known bugs except for NYI items
@@ -10,7 +10,7 @@
 #include <errno.h>
 #include <glib.h>
 
-#include "include/ml-agent-dbus-interface.h"
+#include "include/ml-agent-interface.h"
 #include "dbus-interface.h"
 #include "model-dbus.h"
 #include "pipeline-dbus.h"
@@ -18,29 +18,29 @@
 
 typedef enum
 {
-  ML_AGENT_DBUS_SERVICE_PIPELINE = 0,
-  ML_AGENT_DBUS_SERVICE_MODEL,
-  ML_AGENT_DBUS_SERVICE_RESOURCE,
-  ML_AGENT_DBUS_SERVICE_END
-} ml_agent_dbus_service_type_e;
+  ML_AGENT_SERVICE_PIPELINE = 0,
+  ML_AGENT_SERVICE_MODEL,
+  ML_AGENT_SERVICE_RESOURCE,
+  ML_AGENT_SERVICE_END
+} ml_agent_service_type_e;
 
-typedef gpointer ml_agent_dbus_proxy_h;
+typedef gpointer ml_agent_proxy_h;
 
 /**
  * @brief An internal helper to get the dbus proxy
  */
-static ml_agent_dbus_proxy_h
-_get_proxy_new_for_bus_sync (ml_agent_dbus_service_type_e type, GError ** err)
+static ml_agent_proxy_h
+_get_proxy_new_for_bus_sync (ml_agent_service_type_e type, GError ** err)
 {
   static const GBusType bus_types[] = { G_BUS_TYPE_SYSTEM, G_BUS_TYPE_SESSION };
   static const size_t num_bus_types =
       sizeof (bus_types) / sizeof (bus_types[0]);
-  ml_agent_dbus_proxy_h *proxy = NULL;
+  ml_agent_proxy_h *proxy = NULL;
   GError *_err = NULL;
   size_t i;
 
   switch (type) {
-    case ML_AGENT_DBUS_SERVICE_PIPELINE:
+    case ML_AGENT_SERVICE_PIPELINE:
     {
       MachinelearningServicePipeline *mlsp;
 
@@ -54,10 +54,10 @@ _get_proxy_new_for_bus_sync (ml_agent_dbus_service_type_e type, GError ** err)
           break;
         }
       }
-      proxy = (ml_agent_dbus_proxy_h *) mlsp;
+      proxy = (ml_agent_proxy_h *) mlsp;
       break;
     }
-    case ML_AGENT_DBUS_SERVICE_MODEL:
+    case ML_AGENT_SERVICE_MODEL:
     {
       MachinelearningServiceModel *mlsm;
 
@@ -71,10 +71,10 @@ _get_proxy_new_for_bus_sync (ml_agent_dbus_service_type_e type, GError ** err)
         if (mlsm)
           break;
       }
-      proxy = (ml_agent_dbus_proxy_h *) mlsm;
+      proxy = (ml_agent_proxy_h *) mlsm;
       break;
     }
-    case ML_AGENT_DBUS_SERVICE_RESOURCE:
+    case ML_AGENT_SERVICE_RESOURCE:
     {
       MachinelearningServiceResource *mlsr;
 
@@ -88,7 +88,7 @@ _get_proxy_new_for_bus_sync (ml_agent_dbus_service_type_e type, GError ** err)
         if (mlsr)
           break;
       }
-      proxy = (ml_agent_dbus_proxy_h *) mlsr;
+      proxy = (ml_agent_proxy_h *) mlsr;
       break;
     }
     default:
@@ -104,10 +104,10 @@ _get_proxy_new_for_bus_sync (ml_agent_dbus_service_type_e type, GError ** err)
 }
 
 /**
- * @brief A dbus interface exported for setting the description of a pipeline
+ * @brief An interface exported for setting the description of a pipeline
  */
 gint
-ml_agent_dbus_interface_pipeline_set_description (const gchar * name,
+ml_agent_pipeline_set_description (const gchar * name,
     const gchar * pipeline_desc, GError ** err)
 {
   MachinelearningServicePipeline *mlsp;
@@ -117,7 +117,7 @@ ml_agent_dbus_interface_pipeline_set_description (const gchar * name,
     g_return_val_if_reached (-EINVAL);
   }
 
-  mlsp = _get_proxy_new_for_bus_sync (ML_AGENT_DBUS_SERVICE_PIPELINE, err);
+  mlsp = _get_proxy_new_for_bus_sync (ML_AGENT_SERVICE_PIPELINE, err);
   if (!mlsp) {
     g_return_val_if_reached (-EIO);
   }
@@ -133,10 +133,10 @@ ml_agent_dbus_interface_pipeline_set_description (const gchar * name,
 }
 
 /**
- * @brief A dbus interface exported for getting the pipeline's description corresponding to the given @name
+ * @brief An interface exported for getting the pipeline's description corresponding to the given @name
  */
 gint
-ml_agent_dbus_interface_pipeline_get_description (const gchar * name,
+ml_agent_pipeline_get_description (const gchar * name,
     gchar ** pipeline_desc, GError ** err)
 {
   MachinelearningServicePipeline *mlsp;
@@ -147,7 +147,7 @@ ml_agent_dbus_interface_pipeline_get_description (const gchar * name,
     g_return_val_if_reached (-EINVAL);
   }
 
-  mlsp = _get_proxy_new_for_bus_sync (ML_AGENT_DBUS_SERVICE_PIPELINE, err);
+  mlsp = _get_proxy_new_for_bus_sync (ML_AGENT_SERVICE_PIPELINE, err);
   if (!mlsp) {
     g_return_val_if_reached (-EIO);
   }
@@ -164,10 +164,10 @@ ml_agent_dbus_interface_pipeline_get_description (const gchar * name,
 }
 
 /**
- * @brief A dbus interface exported for deletion of the pipeline's description corresponding to the given @name
+ * @brief An interface exported for deletion of the pipeline's description corresponding to the given @name
  */
 gint
-ml_agent_dbus_interface_pipeline_delete (const gchar * name, GError ** err)
+ml_agent_pipeline_delete (const gchar * name, GError ** err)
 {
   MachinelearningServicePipeline *mlsp;
   gboolean result;
@@ -177,7 +177,7 @@ ml_agent_dbus_interface_pipeline_delete (const gchar * name, GError ** err)
     g_return_val_if_reached (-EINVAL);
   }
 
-  mlsp = _get_proxy_new_for_bus_sync (ML_AGENT_DBUS_SERVICE_PIPELINE, err);
+  mlsp = _get_proxy_new_for_bus_sync (ML_AGENT_SERVICE_PIPELINE, err);
   if (!mlsp) {
     g_return_val_if_reached (-EIO);
   }
@@ -193,11 +193,10 @@ ml_agent_dbus_interface_pipeline_delete (const gchar * name, GError ** err)
 }
 
 /**
- * @brief A dbus interface exported for launching the pipeline's description corresponding to the given @name
+ * @brief An interface exported for launching the pipeline's description corresponding to the given @name
  */
 gint
-ml_agent_dbus_interface_pipeline_launch (const gchar * name, gint64 * id,
-    GError ** err)
+ml_agent_pipeline_launch (const gchar * name, gint64 * id, GError ** err)
 {
   MachinelearningServicePipeline *mlsp;
   gboolean result;
@@ -207,7 +206,7 @@ ml_agent_dbus_interface_pipeline_launch (const gchar * name, gint64 * id,
     g_return_val_if_reached (-EINVAL);
   }
 
-  mlsp = _get_proxy_new_for_bus_sync (ML_AGENT_DBUS_SERVICE_PIPELINE, err);
+  mlsp = _get_proxy_new_for_bus_sync (ML_AGENT_SERVICE_PIPELINE, err);
   if (!mlsp) {
     g_return_val_if_reached (-EIO);
   }
@@ -223,16 +222,16 @@ ml_agent_dbus_interface_pipeline_launch (const gchar * name, gint64 * id,
 }
 
 /**
- * @brief A dbus interface exported for changing the pipeline's state of the given @id to start
+ * @brief An interface exported for changing the pipeline's state of the given @id to start
  */
 gint
-ml_agent_dbus_interface_pipeline_start (gint64 id, GError ** err)
+ml_agent_pipeline_start (gint64 id, GError ** err)
 {
   MachinelearningServicePipeline *mlsp;
   gboolean result;
   gint ret;
 
-  mlsp = _get_proxy_new_for_bus_sync (ML_AGENT_DBUS_SERVICE_PIPELINE, err);
+  mlsp = _get_proxy_new_for_bus_sync (ML_AGENT_SERVICE_PIPELINE, err);
   if (!mlsp) {
     g_return_val_if_reached (-EIO);
   }
@@ -248,16 +247,16 @@ ml_agent_dbus_interface_pipeline_start (gint64 id, GError ** err)
 }
 
 /**
- * @brief A dbus interface exported for changing the pipeline's state of the given @id to stop
+ * @brief An interface exported for changing the pipeline's state of the given @id to stop
  */
 gint
-ml_agent_dbus_interface_pipeline_stop (gint64 id, GError ** err)
+ml_agent_pipeline_stop (gint64 id, GError ** err)
 {
   MachinelearningServicePipeline *mlsp;
   gboolean result;
   gint ret;
 
-  mlsp = _get_proxy_new_for_bus_sync (ML_AGENT_DBUS_SERVICE_PIPELINE, err);
+  mlsp = _get_proxy_new_for_bus_sync (ML_AGENT_SERVICE_PIPELINE, err);
   if (!mlsp) {
     g_return_val_if_reached (-EIO);
   }
@@ -273,17 +272,17 @@ ml_agent_dbus_interface_pipeline_stop (gint64 id, GError ** err)
 }
 
 /**
- * @brief A dbus interface exported for destroying a launched pipeline corresponding to the given @id
+ * @brief An interface exported for destroying a launched pipeline corresponding to the given @id
  */
 gint
-ml_agent_dbus_interface_pipeline_destroy (gint64 id, GError ** err)
+ml_agent_pipeline_destroy (gint64 id, GError ** err)
 {
   MachinelearningServicePipeline *mlsp;
 
   gboolean result;
   gint ret;
 
-  mlsp = _get_proxy_new_for_bus_sync (ML_AGENT_DBUS_SERVICE_PIPELINE, err);
+  mlsp = _get_proxy_new_for_bus_sync (ML_AGENT_SERVICE_PIPELINE, err);
   if (!mlsp) {
     g_return_val_if_reached (-EIO);
   }
@@ -299,18 +298,17 @@ ml_agent_dbus_interface_pipeline_destroy (gint64 id, GError ** err)
 }
 
 /**
- * @brief A dbus interface exported for getting the pipeline's state of the given @id
+ * @brief An interface exported for getting the pipeline's state of the given @id
  */
 gint
-ml_agent_dbus_interface_pipeline_get_state (gint64 id, gint * state,
-    GError ** err)
+ml_agent_pipeline_get_state (gint64 id, gint * state, GError ** err)
 {
   MachinelearningServicePipeline *mlsp;
 
   gboolean result;
   gint ret;
 
-  mlsp = _get_proxy_new_for_bus_sync (ML_AGENT_DBUS_SERVICE_PIPELINE, err);
+  mlsp = _get_proxy_new_for_bus_sync (ML_AGENT_SERVICE_PIPELINE, err);
   if (!mlsp) {
     g_return_val_if_reached (-EIO);
   }
@@ -325,12 +323,11 @@ ml_agent_dbus_interface_pipeline_get_state (gint64 id, gint * state,
   return 0;
 }
 
-
 /**
- * @brief A dbus interface exported for registering a model
+ * @brief An interface exported for registering a model
  */
 gint
-ml_agent_dbus_interface_model_register (const gchar * name, const gchar * path,
+ml_agent_model_register (const gchar * name, const gchar * path,
     const gboolean activate, const gchar * description, const gchar * app_info,
     guint * version, GError ** err)
 {
@@ -339,7 +336,7 @@ ml_agent_dbus_interface_model_register (const gchar * name, const gchar * path,
   gboolean result;
   gint ret;
 
-  mlsm = _get_proxy_new_for_bus_sync (ML_AGENT_DBUS_SERVICE_MODEL, err);
+  mlsm = _get_proxy_new_for_bus_sync (ML_AGENT_SERVICE_MODEL, err);
   if (!mlsm) {
     g_return_val_if_reached (-EIO);
   }
@@ -355,10 +352,10 @@ ml_agent_dbus_interface_model_register (const gchar * name, const gchar * path,
 }
 
 /**
- * @brief A dbus interface exported for updating the description of the given model, @name
+ * @brief An interface exported for updating the description of the given model, @name
  */
 gint
-ml_agent_dbus_interface_model_update_description (const gchar * name,
+ml_agent_model_update_description (const gchar * name,
     const guint version, const gchar * description, GError ** err)
 {
   MachinelearningServiceModel *mlsm;
@@ -366,7 +363,7 @@ ml_agent_dbus_interface_model_update_description (const gchar * name,
   gboolean result;
   gint ret;
 
-  mlsm = _get_proxy_new_for_bus_sync (ML_AGENT_DBUS_SERVICE_MODEL, err);
+  mlsm = _get_proxy_new_for_bus_sync (ML_AGENT_SERVICE_MODEL, err);
   if (!mlsm) {
     g_return_val_if_reached (-EIO);
   }
@@ -382,18 +379,17 @@ ml_agent_dbus_interface_model_update_description (const gchar * name,
 }
 
 /**
- * @brief A dbus interface exported for activating the model of @name and @version
+ * @brief An interface exported for activating the model of @name and @version
  */
 gint
-ml_agent_dbus_interface_model_activate (const gchar * name, const guint version,
-    GError ** err)
+ml_agent_model_activate (const gchar * name, const guint version, GError ** err)
 {
   MachinelearningServiceModel *mlsm;
 
   gboolean result;
   gint ret;
 
-  mlsm = _get_proxy_new_for_bus_sync (ML_AGENT_DBUS_SERVICE_MODEL, err);
+  mlsm = _get_proxy_new_for_bus_sync (ML_AGENT_SERVICE_MODEL, err);
   if (!mlsm) {
     g_return_val_if_reached (-EIO);
   }
@@ -409,10 +405,10 @@ ml_agent_dbus_interface_model_activate (const gchar * name, const guint version,
 }
 
 /**
- * @brief A dbus interface exported for getting the description of the given model of @name and @version
+ * @brief An interface exported for getting the description of the given model of @name and @version
  */
 gint
-ml_agent_dbus_interface_model_get (const gchar * name, const guint version,
+ml_agent_model_get (const gchar * name, const guint version,
     gchar ** description, GError ** err)
 {
   MachinelearningServiceModel *mlsm;
@@ -420,7 +416,7 @@ ml_agent_dbus_interface_model_get (const gchar * name, const guint version,
   gboolean result;
   gint ret;
 
-  mlsm = _get_proxy_new_for_bus_sync (ML_AGENT_DBUS_SERVICE_MODEL, err);
+  mlsm = _get_proxy_new_for_bus_sync (ML_AGENT_SERVICE_MODEL, err);
   if (!mlsm) {
     g_return_val_if_reached (-EIO);
   }
@@ -436,17 +432,17 @@ ml_agent_dbus_interface_model_get (const gchar * name, const guint version,
 }
 
 /**
- * @brief A dbus interface exported for getting the description of the activated model of the given @name
+ * @brief An interface exported for getting the description of the activated model of the given @name
  */
 gint
-ml_agent_dbus_interface_model_get_activated (const gchar * name,
+ml_agent_model_get_activated (const gchar * name,
     gchar ** description, GError ** err)
 {
   MachinelearningServiceModel *mlsm;
   gboolean result;
   gint ret;
 
-  mlsm = _get_proxy_new_for_bus_sync (ML_AGENT_DBUS_SERVICE_MODEL, err);
+  mlsm = _get_proxy_new_for_bus_sync (ML_AGENT_SERVICE_MODEL, err);
   if (!mlsm) {
     g_return_val_if_reached (-EIO);
   }
@@ -462,17 +458,16 @@ ml_agent_dbus_interface_model_get_activated (const gchar * name,
 }
 
 /**
- * @brief  A dbus interface exported for getting the description of all the models corresponding to the given @name
+ * @brief  An interface exported for getting the description of all the models corresponding to the given @name
  */
 gint
-ml_agent_dbus_interface_model_get_all (const gchar * name, gchar ** description,
-    GError ** err)
+ml_agent_model_get_all (const gchar * name, gchar ** description, GError ** err)
 {
   MachinelearningServiceModel *mlsm;
   gboolean result;
   gint ret;
 
-  mlsm = _get_proxy_new_for_bus_sync (ML_AGENT_DBUS_SERVICE_MODEL, err);
+  mlsm = _get_proxy_new_for_bus_sync (ML_AGENT_SERVICE_MODEL, err);
   if (!mlsm) {
     g_return_val_if_reached (-EIO);
   }
@@ -488,17 +483,16 @@ ml_agent_dbus_interface_model_get_all (const gchar * name, gchar ** description,
 }
 
 /**
- * @brief A dbus interface exported for removing the model of @name and @version
+ * @brief An interface exported for removing the model of @name and @version
  */
 gint
-ml_agent_dbus_interface_model_delete (const gchar * name, const guint version,
-    GError ** err)
+ml_agent_model_delete (const gchar * name, const guint version, GError ** err)
 {
   MachinelearningServiceModel *mlsm;
   gboolean result;
   gint ret;
 
-  mlsm = _get_proxy_new_for_bus_sync (ML_AGENT_DBUS_SERVICE_MODEL, err);
+  mlsm = _get_proxy_new_for_bus_sync (ML_AGENT_SERVICE_MODEL, err);
   if (!mlsm) {
     g_return_val_if_reached (-EIO);
   }
@@ -514,10 +508,10 @@ ml_agent_dbus_interface_model_delete (const gchar * name, const guint version,
 }
 
 /**
- * @brief A dbus interface exported for adding the resource
+ * @brief An interface exported for adding the resource
  */
 gint
-ml_agent_dbus_interface_resource_add (const gchar * name, const gchar * path,
+ml_agent_resource_add (const gchar * name, const gchar * path,
     const gchar * description, const gchar * app_info, GError ** err)
 {
   MachinelearningServiceResource *mlsr;
@@ -525,7 +519,7 @@ ml_agent_dbus_interface_resource_add (const gchar * name, const gchar * path,
   gboolean result;
   gint ret;
 
-  mlsr = _get_proxy_new_for_bus_sync (ML_AGENT_DBUS_SERVICE_RESOURCE, err);
+  mlsr = _get_proxy_new_for_bus_sync (ML_AGENT_SERVICE_RESOURCE, err);
   if (!mlsr) {
     g_return_val_if_reached (-EIO);
   }
@@ -540,16 +534,16 @@ ml_agent_dbus_interface_resource_add (const gchar * name, const gchar * path,
 }
 
 /**
- * @brief A dbus interface exported for removing the resource with @name
+ * @brief An interface exported for removing the resource with @name
  */
 gint
-ml_agent_dbus_interface_resource_delete (const gchar * name, GError ** err)
+ml_agent_resource_delete (const gchar * name, GError ** err)
 {
   MachinelearningServiceResource *mlsr;
   gboolean result;
   gint ret;
 
-  mlsr = _get_proxy_new_for_bus_sync (ML_AGENT_DBUS_SERVICE_RESOURCE, err);
+  mlsr = _get_proxy_new_for_bus_sync (ML_AGENT_SERVICE_RESOURCE, err);
   if (!mlsr) {
     g_return_val_if_reached (-EIO);
   }
@@ -563,17 +557,16 @@ ml_agent_dbus_interface_resource_delete (const gchar * name, GError ** err)
 }
 
 /**
- * @brief A dbus interface exported for getting the description of the resource with @name
+ * @brief An interface exported for getting the description of the resource with @name
  */
 gint
-ml_agent_dbus_interface_resource_get (const gchar * name, gchar ** res_info,
-    GError ** err)
+ml_agent_resource_get (const gchar * name, gchar ** res_info, GError ** err)
 {
   MachinelearningServiceResource *mlsr;
   gboolean result;
   gint ret;
 
-  mlsr = _get_proxy_new_for_bus_sync (ML_AGENT_DBUS_SERVICE_RESOURCE, err);
+  mlsr = _get_proxy_new_for_bus_sync (ML_AGENT_SERVICE_RESOURCE, err);
   if (!mlsr) {
     g_return_val_if_reached (-EIO);
   }
