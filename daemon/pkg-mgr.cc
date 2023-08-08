@@ -55,6 +55,92 @@ _get_app_info (const gchar *package_name, const gchar *res_type, const gchar *re
 }
 
 /**
+ * @brief Parse model json and update ml-service database.
+ */
+static void
+_parse_model_json (const gchar *json_path, const gchar *app_info)
+{
+  if (!g_file_test (json_path, (GFileTest) (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR))) {
+    _W ("Failed to find json file '%s'. RPK using ML Service API should provide this json file.",
+        json_path);
+    return;
+  }
+
+  g_autoptr (JsonParser) parser = json_parser_new ();
+  g_autoptr (GError) err = NULL;
+
+  json_parser_load_from_file (parser, json_path, &err);
+  if (err) {
+    _E ("Failed to parse json file '%s': %s", json_path, err->message);
+    return;
+  }
+
+  JsonNode *root = json_parser_get_root (parser);
+  JsonArray *array = NULL;
+  JsonObject *object = NULL;
+  guint json_len = 1U;
+
+  if (JSON_NODE_HOLDS_ARRAY (root)) {
+    array = json_node_get_array (root);
+    if (!array) {
+      _E ("Failed to get root array from json file '%s'", json_path);
+      return;
+    }
+
+    json_len = json_array_get_length (array);
+  }
+
+  /* For each model, register it into the database. */
+  MLServiceDB &db = MLServiceDB::getInstance ();
+  try {
+    db.connectDB ();
+
+    for (guint i = 0; i < json_len; ++i) {
+      if (array)
+        object = json_array_get_object_element (array, i);
+      else
+        object = json_node_get_object (root);
+
+      const gchar *name = json_object_get_string_member (object, "name");
+      const gchar *model = json_object_get_string_member (object, "model");
+      const gchar *description = json_object_get_string_member (object, "description");
+
+      if (!name || !model || !description) {
+        _E ("Failed to get name, model, or description from json file '%s'", json_path);
+        continue;
+      }
+
+      guint version;
+      db.set_model (name, model, true, description, app_info, &version);
+
+      _I ("The model with app_info (%s) is registered as version %u", app_info, version);
+    }
+  } catch (const std::exception &e) {
+    _E ("%s", e.what ());
+  }
+
+  db.disconnectDB ();
+}
+
+/**
+ * @brief Parse pipeline json and update ml-service database.
+ */
+static void
+_parse_pipeline_json (const gchar *json_path, const gchar *app_info)
+{
+  /** @todo Fill this function */
+}
+
+/**
+ * @brief Parse resource json and update ml-service database.
+ */
+static void
+_parse_resource_json (const gchar *json_path, const gchar *app_info)
+{
+  /** @todo Fill this function */
+}
+
+/**
  * @brief A simple package manager event handler for temporary use
  * @param pkg_path The path where the target package is installed
  */
@@ -159,66 +245,16 @@ _pkg_mgr_event_cb (const char *type, const char *package_name,
 
     g_autofree gchar *app_info = _get_app_info (package_name, res_type, res_version);
 
-    g_autofree gchar *json_file_path
-        = g_strdup_printf ("%s/%s/model_description.json", pkg_path, res_type);
+    g_autofree gchar *model_json
+        = g_build_filename (pkg_path, res_type, "model_description.json", NULL);
+    g_autofree gchar *pipeline_json
+        = g_build_filename (pkg_path, res_type, "pipeline_description.json", NULL);
+    g_autofree gchar *resource_json
+        = g_build_filename (pkg_path, res_type, "resource_description.json", NULL);
 
-    if (!g_file_test (json_file_path, G_FILE_TEST_IS_REGULAR)) {
-      _E ("Failed to find json file '%s'. RPK using ML Service APIs should provide this json file.",
-          json_file_path);
-      return;
-    }
-
-    /* parsing model_description.json */
-    g_autoptr (JsonParser) parser = json_parser_new ();
-    g_autoptr (GError) err = NULL;
-    json_parser_load_from_file (parser, json_file_path, &err);
-    if (err) {
-      _E ("Failed to parse json file '%s': %s", json_file_path, err->message);
-      return;
-    }
-
-    JsonArray *root_array = json_node_get_array (json_parser_get_root (parser));
-    if (!root_array) {
-      _E ("Failed to get root array from json file '%s'", json_file_path);
-      return;
-    }
-
-    guint json_len = json_array_get_length (root_array);
-    if (json_len == 0U) {
-      _E ("Failed to get root array from json file '%s'", json_file_path);
-      return;
-    }
-
-    /* For each model, register it into the database */
-    MLServiceDB &db = MLServiceDB::getInstance ();
-    try {
-      db.connectDB ();
-      for (guint i = 0; i < json_len; ++i) {
-        JsonObjectIter iter;
-        JsonObject *object;
-
-        object = json_array_get_object_element (root_array, i);
-        json_object_iter_init_ordered (&iter, object);
-
-        const gchar *name = json_object_get_string_member (object, "name");
-        const gchar *model = json_object_get_string_member (object, "model");
-        const gchar *description = json_object_get_string_member (object, "description");
-
-        if (!name || !model || !description) {
-          _E ("Failed to get name, model, or description from json file '%s'", json_file_path);
-          return;
-        }
-
-        guint version;
-        db.set_model (name, model, true, description, app_info, &version);
-        _I ("The model with app_info (%s) is registered as version %u", app_info, version);
-      }
-    } catch (const std::exception &e) {
-      _E ("%s", e.what ());
-    }
-
-    db.disconnectDB ();
-
+    _parse_model_json (model_json, app_info);
+    _parse_pipeline_json (pipeline_json, app_info);
+    _parse_resource_json (resource_json, app_info);
   } else if (event_type == PACKAGE_MANAGER_EVENT_TYPE_UNINSTALL
              && event_state == PACKAGE_MANAGER_EVENT_STATE_STARTED) {
     _I ("resource package %s is being uninstalled", package_name);
