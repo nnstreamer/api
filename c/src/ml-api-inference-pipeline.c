@@ -414,15 +414,16 @@ send_cb:
     gsize hsize;
 
     gst_tensors_info_init (&gst_info);
-    gst_info.num_tensors = num_mems;
+    gst_info.num_tensors = num_tensors;
     _info = &info_flex_tensor;
 
     /* handle header for flex tensor */
-    for (i = 0; i < num_mems; i++) {
+    for (i = 0; i < num_tensors; i++) {
       gst_tensor_meta_info_parse_header (&meta, map[i].data);
       hsize = gst_tensor_meta_info_get_header_size (&meta);
 
-      gst_tensor_meta_info_convert (&meta, &gst_info.info[i]);
+      gst_tensor_meta_info_convert (&meta,
+          gst_tensors_info_get_nth_info (&gst_info, i));
 
       _data->tensors[i].tensor = map[i].data + hsize;
       _data->tensors[i].size = map[i].size - hsize;
@@ -1750,7 +1751,7 @@ ml_pipeline_src_input_data (ml_pipeline_src_h h, ml_tensors_data_h data,
     if (elem->is_flexible_tensor) {
       GstTensorMetaInfo meta;
 
-      gst_tensor_info_convert_to_meta (&gst_info.info[i], &meta);
+      gst_tensor_info_convert_to_meta (_gst_tensor_info, &meta);
 
       mem = gst_tensor_meta_info_append_header (&meta, tmp);
       gst_memory_unref (tmp);
