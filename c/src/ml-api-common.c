@@ -456,8 +456,8 @@ ml_tensors_info_set_tensor_name (ml_tensors_info_h info,
   if (tensors_info->num_tensors <= index) {
     G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, index, is too large, it should be smaller than the number of tensors, given by info. info says num_tensors is %u and index is %u.",
-        tensors_info->num_tensors, index);
+        "The number of tensors in 'info' parameter is %u, which is not larger than the given 'index' %u. Thus, we cannot get %u'th tensor from 'info'. Please set the number of tensors of 'info' correctly or check the value of the given 'index'.",
+        tensors_info->num_tensors, index, index);
   }
 
   _tensor_info = ml_tensors_info_get_nth_info (tensors_info, index);
@@ -503,8 +503,8 @@ ml_tensors_info_get_tensor_name (ml_tensors_info_h info,
   if (tensors_info->num_tensors <= index) {
     G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, index, is too large. It should be smaller than the number of tensors, given by info. info says num_tensors is %u and index is %u.",
-        tensors_info->num_tensors, index);
+        "The number of tensors in 'info' parameter is %u, which is not larger than the given 'index' %u. Thus, we cannot get %u'th tensor from 'info'. Please set the number of tensors of 'info' correctly or check the value of the given 'index'.",
+        tensors_info->num_tensors, index, index);
   }
 
   _tensor_info = ml_tensors_info_get_nth_info (tensors_info, index);
@@ -553,7 +553,9 @@ ml_tensors_info_set_tensor_type (ml_tensors_info_h info,
 
   if (tensors_info->num_tensors <= index) {
     G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
-    return ML_ERROR_INVALID_PARAMETER;
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The number of tensors in 'info' parameter is %u, which is not larger than the given 'index' %u. Thus, we cannot get %u'th tensor from 'info'. Please set the number of tensors of 'info' correctly or check the value of the given 'index'.",
+        tensors_info->num_tensors, index, index);
   }
 
   _tensor_info = ml_tensors_info_get_nth_info (tensors_info, index);
@@ -592,7 +594,9 @@ ml_tensors_info_get_tensor_type (ml_tensors_info_h info,
 
   if (tensors_info->num_tensors <= index) {
     G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
-    return ML_ERROR_INVALID_PARAMETER;
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The number of tensors in 'info' parameter is %u, which is not larger than the given 'index' %u. Thus, we cannot get %u'th tensor from 'info'. Please set the number of tensors of 'info' correctly or check the value of the given 'index'.",
+        tensors_info->num_tensors, index, index);
   }
 
   _tensor_info = ml_tensors_info_get_nth_info (tensors_info, index);
@@ -673,7 +677,9 @@ ml_tensors_info_get_tensor_dimension (ml_tensors_info_h info,
 
   if (tensors_info->num_tensors <= index) {
     G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
-    return ML_ERROR_INVALID_PARAMETER;
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The number of tensors in 'info' parameter is %u, which is not larger than the given 'index' %u. Thus, we cannot get %u'th tensor from 'info'. Please set the number of tensors of 'info' correctly or check the value of the given 'index'.",
+        tensors_info->num_tensors, index, index);
   }
 
   _tensor_info = ml_tensors_info_get_nth_info (tensors_info, index);
@@ -765,6 +771,13 @@ ml_tensors_info_get_tensor_size (ml_tensors_info_h info,
   /* init 0 */
   *data_size = 0;
 
+  if (index >= 0 && tensors_info->num_tensors <= index) {
+    G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The number of tensors in 'info' parameter is %u, which is not larger than the given 'index' %u. Thus, we cannot get %u'th tensor from 'info'. Please set the number of tensors of 'info' correctly or check the value of the given 'index'.",
+        tensors_info->num_tensors, index, index);
+  }
+
   if (index < 0) {
     guint i;
 
@@ -783,12 +796,6 @@ ml_tensors_info_get_tensor_size (ml_tensors_info_h info,
     if (!_tensor_info) {
       G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
       return ML_ERROR_INVALID_PARAMETER;
-    }
-    if (tensors_info->num_tensors <= index) {
-      G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
-      _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-          "The parameter, index (%u), is too large. Index should be smaller than the number of tensors of the parameter, info (info's num-tensors: %u).",
-          index, tensors_info->num_tensors);
     }
 
     *data_size =
