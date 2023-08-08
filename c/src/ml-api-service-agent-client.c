@@ -13,7 +13,7 @@
 #include <glib/gstdio.h>
 #include <json-glib/json-glib.h>
 
-#include "ml-agent-dbus-interface.h"
+#include "ml-agent-interface.h"
 #include "ml-api-internal.h"
 #include "ml-api-service-private.h"
 #include "ml-api-service.h"
@@ -303,9 +303,7 @@ ml_service_set_pipeline (const char *name, const char *pipeline_desc)
         "The parameter, 'pipeline_desc' is NULL. It should be a valid string.");
   }
 
-  ret =
-      ml_agent_dbus_interface_pipeline_set_description (name, pipeline_desc,
-      &err);
+  ret = ml_agent_pipeline_set_description (name, pipeline_desc, &err);
   if (ret < 0) {
     _ml_error_report ("Failed to invoke the method set_pipeline (%s).",
         err ? err->message : "Unknown error");
@@ -340,9 +338,7 @@ ml_service_get_pipeline (const char *name, char **pipeline_desc)
     *pipeline_desc = NULL;
   }
 
-  ret =
-      ml_agent_dbus_interface_pipeline_get_description (name, pipeline_desc,
-      &err);
+  ret = ml_agent_pipeline_get_description (name, pipeline_desc, &err);
   if (ret < 0) {
     _ml_error_report ("Failed to invoke the method get_pipeline (%s).",
         err ? err->message : "Unknown error");
@@ -367,7 +363,7 @@ ml_service_delete_pipeline (const char *name)
         "The parameter, 'name' is NULL, It should be a valid string.");
   }
 
-  ret = ml_agent_dbus_interface_pipeline_delete (name, &err);
+  ret = ml_agent_pipeline_delete (name, &err);
   if (ret < 0) {
     _ml_error_report ("Failed to invoke the method delete_pipeline (%s).",
         err ? err->message : "Unknown error");
@@ -412,7 +408,7 @@ ml_service_launch_pipeline (const char *name, ml_service_h * h)
         "Failed to allocate memory for the service handle's private data. Out of memory?");
   }
 
-  ret = ml_agent_dbus_interface_pipeline_launch (name, &(server->id), &err);
+  ret = ml_agent_pipeline_launch (name, &(server->id), &err);
   if (ret < 0) {
     g_free (server);
     g_free (mls);
@@ -449,7 +445,7 @@ ml_service_start_pipeline (ml_service_h h)
 
   mls = (ml_service_s *) h;
   server = (_ml_service_server_s *) mls->priv;
-  ret = ml_agent_dbus_interface_pipeline_start (server->id, &err);
+  ret = ml_agent_pipeline_start (server->id, &err);
   if (ret < 0) {
     _ml_error_report ("Failed to invoke the method start_pipeline (%s).",
         err ? err->message : "Unknown error");
@@ -478,7 +474,7 @@ ml_service_stop_pipeline (ml_service_h h)
 
   mls = (ml_service_s *) h;
   server = (_ml_service_server_s *) mls->priv;
-  ret = ml_agent_dbus_interface_pipeline_stop (server->id, &err);
+  ret = ml_agent_pipeline_stop (server->id, &err);
   if (ret < 0) {
     _ml_error_report ("Failed to invoke the method stop_pipeline (%s).",
         err ? err->message : "Unknown error");
@@ -513,7 +509,7 @@ ml_service_get_pipeline_state (ml_service_h h, ml_pipeline_state_e * state)
   }
   mls = (ml_service_s *) h;
   server = (_ml_service_server_s *) mls->priv;
-  ret = ml_agent_dbus_interface_pipeline_get_state (server->id, &_state, &err);
+  ret = ml_agent_pipeline_get_state (server->id, &_state, &err);
   if (ret < 0) {
     _ml_error_report ("Failed to invoke the method get_state (%s).",
         err ? err->message : "Unknown error");
@@ -553,7 +549,7 @@ ml_service_model_register (const char *name, const char *path,
 
   app_info = _get_app_info ();
 
-  ret = ml_agent_dbus_interface_model_register (name, path, activate,
+  ret = ml_agent_model_register (name, path, activate,
       description ? description : "", app_info ? app_info : "", version, &err);
   if (ret < 0) {
     _ml_error_report ("Failed to invoke the method model_register (%s).",
@@ -590,10 +586,7 @@ ml_service_model_update_description (const char *name,
         "The parameter, 'description' is NULL. It should be a valid string.");
   }
 
-  ret =
-      ml_agent_dbus_interface_model_update_description (name, version,
-      description, &err);
-
+  ret = ml_agent_model_update_description (name, version, description, &err);
   if (ret < 0) {
     _ml_error_report
         ("Failed to invoke the method model_update_description (%s).",
@@ -624,7 +617,7 @@ ml_service_model_activate (const char *name, const unsigned int version)
         "The parameter, 'version' is 0. It should be a valid unsigned int.");
   }
 
-  ret = ml_agent_dbus_interface_model_activate (name, version, &err);
+  ret = ml_agent_model_activate (name, version, &err);
   if (ret < 0) {
     _ml_error_report ("Failed to invoke the method model_activate (%s).",
         err ? err->message : "Unknown error");
@@ -662,7 +655,7 @@ ml_service_model_get (const char *name, const unsigned int version,
   }
   *info = NULL;
 
-  ret = ml_agent_dbus_interface_model_get (name, version, &description, &err);
+  ret = ml_agent_model_get (name, version, &description, &err);
   if (ML_ERROR_NONE != ret || !description) {
     _ml_error_report ("Failed to invoke the method model_get (%s).",
         err ? err->message : "Unknown error");
@@ -707,7 +700,7 @@ ml_service_model_get_activated (const char *name, ml_information_h * info)
   }
   *info = NULL;
 
-  ret = ml_agent_dbus_interface_model_get_activated (name, &description, &err);
+  ret = ml_agent_model_get_activated (name, &description, &err);
   if (ML_ERROR_NONE != ret || !description) {
     _ml_error_report ("Failed to invoke the method model_get_activated (%s).",
         err ? err->message : "Unknown error");
@@ -747,7 +740,7 @@ ml_service_model_get_all (const char *name, ml_information_list_h * info_list)
   }
   *info_list = NULL;
 
-  ret = ml_agent_dbus_interface_model_get_all (name, &description, &err);
+  ret = ml_agent_model_get_all (name, &description, &err);
   if (ML_ERROR_NONE != ret || !description) {
     _ml_error_report_return (ret,
         "Failed to invoke the method model_get_all (%s).",
@@ -779,7 +772,7 @@ ml_service_model_delete (const char *name, const unsigned int version)
         "The parameter, 'name' is NULL. It should be a valid string.");
   }
 
-  ret = ml_agent_dbus_interface_model_delete (name, version, &err);
+  ret = ml_agent_model_delete (name, version, &err);
   if (ret < 0) {
     _ml_error_report ("Failed to invoke the method model_delete (%s).",
         err ? err->message : "Unknown error");
@@ -812,8 +805,8 @@ ml_service_resource_add (const char *name, const char *path,
 
   app_info = _get_app_info ();
 
-  ret = ml_agent_dbus_interface_resource_add (name, path,
-      description ? description : "", app_info ? app_info : "", &err);
+  ret = ml_agent_resource_add (name, path, description ? description : "",
+      app_info ? app_info : "", &err);
   if (ret < 0) {
     _ml_error_report ("Failed to invoke the method resource_add (%s).",
         err ? err->message : "Unknown error");
@@ -838,7 +831,7 @@ ml_service_resource_delete (const char *name)
         "The parameter, 'name' is NULL. It should be a valid string.");
   }
 
-  ret = ml_agent_dbus_interface_resource_delete (name, &err);
+  ret = ml_agent_resource_delete (name, &err);
   if (ret < 0) {
     _ml_error_report ("Failed to invoke the method resource_delete (%s).",
         err ? err->message : "Unknown error");
@@ -875,7 +868,7 @@ ml_service_resource_get (const char *name, ml_information_list_h * res)
   }
   *res = NULL;
 
-  ret = ml_agent_dbus_interface_resource_get (name, &res_info, &err);
+  ret = ml_agent_resource_get (name, &res_info, &err);
   if (ML_ERROR_NONE != ret || !res_info) {
     _ml_error_report_return (ret,
         "Failed to invoke the method resource_get (%s).",

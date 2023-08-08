@@ -1,7 +1,7 @@
 # Machine Learning Agent
 # This file should be included when ml-service feature is enabled.
 ml_agentd_incs = include_directories('.', 'include')
-ml_agentd_lib_common_srcs = files('modules.c', 'gdbus-util.c', 'ml-agent-dbus-interface.c',
+ml_agentd_lib_common_srcs = files('modules.c', 'gdbus-util.c', 'ml-agent-interface.c',
   'pipeline-dbus-impl.cc', 'model-dbus-impl.cc', 'resource-dbus-impl.cc')
 ml_agentd_lib_service_db_srcs = files('service-db.cc')
 

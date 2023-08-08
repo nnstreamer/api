@@ -13,7 +13,7 @@
 #include "ml-api-internal.h"
 #include "ml-api-service.h"
 #include "ml-api-service-private.h"
-#include "ml-agent-dbus-interface.h"
+#include "ml-agent-interface.h"
 
 /**
  * @brief Destroy the pipeline of given ml_service_h
@@ -34,7 +34,7 @@ ml_service_destroy (ml_service_h h)
     _ml_service_server_s *server = (_ml_service_server_s *) mls->priv;
     GError *err = NULL;
 
-    ret = ml_agent_dbus_interface_pipeline_destroy (server->id, &err);
+    ret = ml_agent_pipeline_destroy (server->id, &err);
     if (ret < 0) {
       _ml_error_report ("Failed to invoke the method destroy_pipeline (%s).",
           err ? err->message : "Unknown error");

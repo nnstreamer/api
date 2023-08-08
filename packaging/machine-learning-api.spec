@@ -503,7 +503,7 @@ install -m 0755 packaging/run-unittest.sh %{buildroot}%{_bindir}/tizen-unittests
 %manifest machine-learning-agent.manifest
 %{_libdir}/libml-agentd.so
 %{_libdir}/libml-agentd.a
-%{_includedir}/ml-agentd/ml-agent-dbus-interface.h
+%{_includedir}/ml-agentd/ml-agent-interface.h
 %{_libdir}/pkgconfig/ml-agentd.pc
 
 %files -n machine-learning-agent
