@@ -20,6 +20,47 @@
 #include "ml-api-internal.h"
 
 /**
+ * @brief Enumeration for ml_info type.
+ */
+typedef enum
+{
+  ML_INFO_TYPE_UNKNOWN = 0,
+  ML_INFO_TYPE_OPTION = 0xfeed0001,
+  ML_INFO_TYPE_INFORMATION = 0xfeed0010,
+  ML_INFO_TYPE_INFORMATION_LIST = 0xfeed0011,
+
+  ML_INFO_TYPE_MAX = 0xfeedffff
+} ml_info_type_e;
+
+/**
+ * @brief Data structure for value of ml_info.
+ */
+typedef struct
+{
+  void *value; /**< The data given by user. */
+  ml_data_destroy_cb destroy; /**< The destroy func given by user. */
+} ml_info_value_s;
+
+/**
+ * @brief Data structure for ml_info.
+ */
+typedef struct
+{
+  ml_info_type_e type; /**< The type of ml_info. */
+  GHashTable *table; /**< hash table used by ml_info. */
+} ml_info_s;
+
+/**
+ * @brief Data structure for ml_info_list.
+ */
+typedef struct
+{
+  ml_info_type_e type; /**< The type of ml_info. */
+  unsigned int length; /**< The length of data. */
+  ml_info_s **info; /**< array of ml_info. */
+} ml_info_list_s;
+
+/**
  * @brief Gets the version number of machine-learning API.
  */
 void
@@ -1493,6 +1534,50 @@ ml_strerror (int errnum)
 }
 
 /**
+ * @brief Internal function to check the handle is valid.
+ */
+static bool
+_ml_info_is_valid (gpointer handle, ml_info_type_e expected)
+{
+  ml_info_type_e current;
+
+  if (!handle)
+    return false;
+
+  /* The first field should be an enum value of ml_info_type_e. */
+  current = *((ml_info_type_e *) handle);
+  if (current != expected)
+    return false;
+
+  switch (current) {
+    case ML_INFO_TYPE_OPTION:
+    case ML_INFO_TYPE_INFORMATION:
+    {
+      ml_info_s *_info = (ml_info_s *) handle;
+
+      if (!_info->table)
+        return false;
+
+      break;
+    }
+    case ML_INFO_TYPE_INFORMATION_LIST:
+    {
+      ml_info_list_s *_list = (ml_info_list_s *) handle;
+
+      if (_list->length == 0 || !_list->info)
+        return false;
+
+      break;
+    }
+    default:
+      /* Unknown type */
+      return false;
+  }
+
+  return true;
+}
+
+/**
  * @brief Internal function for destroy value of option table
  */
 static void
@@ -1546,8 +1631,12 @@ _ml_info_destroy (ml_info_s * info)
   if (!info)
     return;
 
-  if (info->table)
+  info->type = ML_INFO_TYPE_UNKNOWN;
+
+  if (info->table) {
     g_hash_table_destroy (info->table);
+    info->table = NULL;
+  }
 
   g_free (info);
   return;
@@ -1614,7 +1703,7 @@ ml_option_create (ml_option_h * option)
         "The parameter, 'option' is NULL. It should be a valid ml_option_h");
   }
 
-  _option = _ml_info_create (ML_INFO_OPTION);
+  _option = _ml_info_create (ML_INFO_TYPE_OPTION);
   if (_option == NULL)
     _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
         "Failed to allocate memory for the option handle. Out of memory?");
@@ -1635,6 +1724,10 @@ ml_option_destroy (ml_option_h option)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'option' is NULL. It should be a valid ml_option_h, which should be created by ml_option_create().");
   }
+
+  if (!_ml_info_is_valid (option, ML_INFO_TYPE_OPTION))
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'option' is not a ml-option handle.");
 
   _ml_info_destroy ((ml_info_s *) option);
 
@@ -1672,6 +1765,10 @@ ml_option_set (ml_option_h option, const char *key, void *value,
         "The parameter, 'value' is NULL. It should be a valid void*");
   }
 
+  if (!_ml_info_is_valid (option, ML_INFO_TYPE_OPTION))
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'option' is not a ml-option handle.");
+
   return _ml_info_set_value ((ml_info_s *) option, key, value, destroy);
 }
 
@@ -1698,6 +1795,10 @@ ml_option_get (ml_option_h option, const char *key, void **value)
         "The parameter, 'value' is NULL. It should be a valid void**");
   }
 
+  if (!_ml_info_is_valid (option, ML_INFO_TYPE_OPTION))
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'option' is not a ml-option handle.");
+
   return _ml_info_get_value ((ml_info_s *) option, key, value);
 }
 
@@ -1716,7 +1817,7 @@ _ml_information_create (ml_information_h * info)
         "The parameter, 'info' is NULL. It should be a valid ml_information_h");
   }
 
-  _info = _ml_info_create (ML_INFO_MODEL);
+  _info = _ml_info_create (ML_INFO_TYPE_INFORMATION);
   if (!_info)
     _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
         "Failed to allocate memory for the info handle. Out of memory?");
@@ -1750,6 +1851,10 @@ _ml_information_set (ml_information_h information, const char *key, void *value,
         "The parameter, 'value' is NULL. It should be a valid void*");
   }
 
+  if (!_ml_info_is_valid (information, ML_INFO_TYPE_INFORMATION))
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'information' is not a ml-information handle.");
+
   return _ml_info_set_value ((ml_info_s *) information, key, value, destroy);
 }
 
@@ -1765,6 +1870,10 @@ ml_information_destroy (ml_information_h information)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'information' is NULL. It should be a valid ml_information_h, which should be created by ml_information_create().");
   }
+
+  if (!_ml_info_is_valid (information, ML_INFO_TYPE_INFORMATION))
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'information' is not a ml-information handle.");
 
   _ml_info_destroy ((ml_info_s *) information);
 
@@ -1794,6 +1903,10 @@ ml_information_get (ml_information_h information, const char *key, void **value)
         "The parameter, 'value' is NULL. It should be a valid void**");
   }
 
+  if (!_ml_info_is_valid (information, ML_INFO_TYPE_INFORMATION))
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'information' is not a ml-information handle.");
+
   return _ml_info_get_value ((ml_info_s *) information, key, value);
 }
 
@@ -1807,6 +1920,8 @@ _ml_info_list_destroy (ml_info_list_s * list)
 
   if (!list)
     return;
+
+  list->type = ML_INFO_TYPE_UNKNOWN;
 
   for (i = 0; i < list->length; ++i) {
     _ml_info_destroy (list->info[i]);
@@ -1865,10 +1980,11 @@ _ml_information_list_create (const unsigned int length,
   if (!_info_list->info)
     goto error;
 
+  _info_list->type = ML_INFO_TYPE_INFORMATION_LIST;
   _info_list->length = length;
 
   for (i = 0; i < length; i++) {
-    _info_list->info[i] = _ml_info_create (ML_INFO_MODEL);
+    _info_list->info[i] = _ml_info_create (ML_INFO_TYPE_INFORMATION);
     if (_info_list->info[i] == NULL)
       goto error;
   }
@@ -1895,6 +2011,10 @@ ml_information_list_destroy (ml_information_list_h list)
         "The parameter, 'list' is NULL. It should be a valid ml_information_list_h, which should be created by ml_information_list_create().");
   }
 
+  if (!_ml_info_is_valid (list, ML_INFO_TYPE_INFORMATION_LIST))
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'list' is not a ml-information-list handle.");
+
   _ml_info_list_destroy ((ml_info_list_s *) list);
 
   return ML_ERROR_NONE;
@@ -1917,6 +2037,10 @@ ml_information_list_length (ml_information_list_h list, unsigned int *length)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'length' is NULL. It should be a valid unsigned int*");
   }
+
+  if (!_ml_info_is_valid (list, ML_INFO_TYPE_INFORMATION_LIST))
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'list' is not a ml-information-list handle.");
 
   *length = _ml_info_list_length ((ml_info_list_s *) list);
 
@@ -1942,6 +2066,10 @@ ml_information_list_get (ml_information_list_h list, unsigned int index,
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'information' is NULL. It should be a valid ml_information_h*");
   }
+
+  if (!_ml_info_is_valid (list, ML_INFO_TYPE_INFORMATION_LIST))
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'list' is not a ml-information-list handle.");
 
   info_s = _ml_info_list_get ((ml_info_list_s *) list, index);
   if (info_s == NULL) {
