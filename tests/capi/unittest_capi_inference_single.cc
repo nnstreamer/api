@@ -3955,6 +3955,88 @@ TEST (nnstreamer_capi_ml_option, test04_n)
 }
 
 /**
+ * @brief Test ml_option with invalid type.
+ */
+TEST (nnstreamer_capi_ml_information, invalidHandle01_n)
+{
+  int status;
+  ml_information_h info;
+  void *value;
+  void *test_val = g_malloc0 (sizeof (int));
+
+  status = _ml_information_create (&info);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_option_set (info, "temp-key", test_val, NULL);
+  EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
+
+  status = ml_option_get (info, "temp-key", &value);
+  EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
+
+  status = ml_option_destroy (info);
+  EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
+
+  status = ml_information_destroy (info);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  g_free (test_val);
+}
+
+/**
+ * @brief Test ml_information with invalid type.
+ */
+TEST (nnstreamer_capi_ml_information, invalidHandle02_n)
+{
+  int status;
+  ml_option_h option;
+  void *value;
+  void *test_val = g_malloc0 (sizeof (int));
+
+  status = ml_option_create (&option);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = _ml_information_set (option, "temp-key", test_val, NULL);
+  EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
+
+  status = ml_information_get (option, "temp-key", &value);
+  EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
+
+  status = ml_information_destroy (option);
+  EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
+
+  status = ml_option_destroy (option);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  g_free (test_val);
+}
+
+/**
+ * @brief Test ml_information_list with invalid type.
+ */
+TEST (nnstreamer_capi_ml_information, invalidHandle03_n)
+{
+  int status;
+  ml_option_h info_list;
+  ml_information_h info;
+  unsigned int len;
+
+  status = ml_option_create (&info_list);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_information_list_length (info_list, &len);
+  EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
+
+  status = ml_information_list_get (info_list, 0U, &info);
+  EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
+
+  status = ml_information_list_destroy (info_list);
+  EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
+
+  status = ml_option_destroy (info_list);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+}
+
+/**
  * @brief Test ml_option with tensorflow-lite
  */
 TEST (nnstreamer_capi_ml_option, tensorflow_lite)
