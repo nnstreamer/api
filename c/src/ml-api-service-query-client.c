@@ -35,6 +35,13 @@ _sink_callback_for_query_client (const ml_tensors_data_h data,
   guint i, count = 0U;
   int status;
 
+  status = ml_tensors_info_get_count (info, &count);
+  if (ML_ERROR_NONE != status) {
+    _ml_error_report_continue
+        ("Failed to get count of tensors info from tensor_sink.");
+    return;
+  }
+
   status = ml_tensors_data_create (info, &copied_data);
   if (ML_ERROR_NONE != status) {
     _ml_error_report_continue
@@ -42,13 +49,6 @@ _sink_callback_for_query_client (const ml_tensors_data_h data,
     return;
   }
   _copied_data_s = (ml_tensors_data_s *) copied_data;
-
-  status = ml_tensors_info_get_count (info, &count);
-  if (ML_ERROR_NONE != status) {
-    _ml_error_report_continue
-        ("Failed to get count of tensors info from tensor_sink.");
-    return;
-  }
 
   for (i = 0; i < count; ++i) {
     memcpy (_copied_data_s->tensors[i].tensor, data_s->tensors[i].tensor,
