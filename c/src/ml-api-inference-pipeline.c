@@ -601,6 +601,8 @@ cleanup_node (gpointer data)
   if (e->sink)
     gst_object_unref (e->sink);
 
+  gst_object_unref (e->element);
+
   _ml_tensors_info_free (&e->tensors_info);
 
   g_mutex_unlock (&e->lock);
@@ -915,7 +917,8 @@ iterate_element (ml_pipeline * pipe_h, GstElement * pipeline,
               if (element_type != ML_PIPELINE_ELEMENT_UNKNOWN) {
                 ml_pipeline_element *e;
 
-                e = construct_element (elem, pipe_h, name, element_type);
+                e = construct_element (gst_object_ref (elem), pipe_h, name,
+                    element_type);
                 if (e != NULL) {
                   if (g_str_equal (element_name, "tensor_if"))
                     process_tensor_if_option (e);
@@ -925,6 +928,7 @@ iterate_element (ml_pipeline * pipe_h, GstElement * pipeline,
                   g_hash_table_insert (pipe_h->namednodes, g_strdup (name), e);
                 } else {
                   /* allocation failure */
+                  gst_object_unref (elem);
                   _ml_error_report_continue
                       ("Cannot allocate memory with construct_element().");
                   status = ML_ERROR_OUT_OF_MEMORY;
