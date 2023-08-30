@@ -308,6 +308,7 @@ HTML pages of lcov results of ML API generated during rpm build
 %define enable_ml_service_check -Denable-ml-service=false
 %define service_db_path ""
 %define service_db_key_prefix %{nil}
+%define enable_gcov -Denable-gcov=false
 
 # To set prefix, use this line
 ### define service_db_key_prefix -Dservice-db-key-prefix='some-prefix'
@@ -328,6 +329,10 @@ HTML pages of lcov results of ML API generated during rpm build
 %define enable_ml_service_check -Denable-ml-service=true
 %endif
 %endif # tizen
+
+%if 0%{?gcov}
+%define enable_gcov -Denable-gcov=true
+%endif
 
 %prep
 %setup -q
@@ -375,6 +380,7 @@ meson --buildtype=plain --prefix=%{_prefix} --sysconfdir=%{_sysconfdir} --libdir
 	%{enable_test} %{install_test} %{enable_test_coverage} \
 	%{enable_tizen} %{enable_tizen_privilege_check} %{enable_tizen_feature_check} \
 	%{service_db_path} %{service_db_key_prefix} %{enable_ml_service_check} \
+	%{enable_gcov} \
 	build
 
 ninja -C build %{?_smp_mflags}
@@ -383,7 +389,8 @@ export MLAPI_SOURCE_ROOT_PATH=$(pwd)
 export MLAPI_BUILD_ROOT_PATH=$(pwd)/%{builddir}
 
 # Run test
-%if 0%{?unit_test}
+# If gcov package generation is enabled, pass the test from GBS.
+%if 0%{?unit_test} && !0%{?gcov}
 bash %{test_script} ./tests/capi/unittest_capi_inference_single
 bash %{test_script} ./tests/capi/unittest_capi_inference
 bash %{test_script} ./tests/capi/unittest_capi_datatype_consistency

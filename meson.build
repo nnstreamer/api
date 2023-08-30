@@ -105,6 +105,10 @@ if get_option('enable-tizen')
   endif
 endif
 
+if get_option('enable-gcov')
+    add_project_arguments('-DENABLE_GCOV=1', language: ['c', 'cpp'])
+endif
+
 serviceDBPath = get_option('service-db-path')
 add_project_arguments('-DSYS_DB_DIR="' + serviceDBPath + '"', language: ['c', 'cpp'])
 

@@ -27,6 +27,7 @@ class MLServiceAgentTest : public ::testing::Test
 {
   protected:
   GTestDBus *dbus;
+  GBusType bus_type;
 
   public:
   /**
@@ -44,6 +45,11 @@ class MLServiceAgentTest : public ::testing::Test
     g_free (services_dir);
 
     g_test_dbus_up (dbus);
+#if defined(ENABLE_GCOV)
+    bus_type = G_BUS_TYPE_SYSTEM;
+#else
+    bus_type = G_BUS_TYPE_SESSION;
+#endif
   }
 
   /**
@@ -1283,7 +1289,7 @@ TEST_F (MLServiceAgentTest, pipeline_gdbus_call_n)
   GError *error = NULL;
 
   MachinelearningServicePipeline *proxy_for_pipeline
-      = machinelearning_service_pipeline_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
+      = machinelearning_service_pipeline_proxy_new_for_bus_sync (bus_type,
           G_DBUS_PROXY_FLAGS_NONE, DBUS_ML_BUS_NAME, DBUS_PIPELINE_PATH, NULL, &error);
 
   if (!proxy_for_pipeline || error) {
@@ -1310,7 +1316,7 @@ TEST_F (MLServiceAgentTest, model_gdbus_call_n)
   GError *error = NULL;
 
   MachinelearningServiceModel *proxy_for_model
-      = machinelearning_service_model_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
+      = machinelearning_service_model_proxy_new_for_bus_sync (bus_type,
           G_DBUS_PROXY_FLAGS_NONE, DBUS_ML_BUS_NAME, DBUS_MODEL_PATH, NULL, &error);
 
   if (!proxy_for_model || error) {
@@ -1345,7 +1351,7 @@ TEST_F (MLServiceAgentTest, resource_gdbus_call_n)
   GError *error = NULL;
 
   MachinelearningServiceResource *proxy_for_resource
-      = machinelearning_service_resource_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
+      = machinelearning_service_resource_proxy_new_for_bus_sync (bus_type,
           G_DBUS_PROXY_FLAGS_NONE, DBUS_ML_BUS_NAME, DBUS_RESOURCE_PATH, NULL, &error);
 
   if (!proxy_for_resource || error) {
