@@ -62,7 +62,7 @@ Group:		Machine Learning/ML Framework
 Packager:	MyungJoo Ham <myungjoo.ham@samsung.com>
 License:	Apache-2.0
 Source0:	machine-learning-api-%{version}.tar
-Source1001:	capi-machine-learning-inference.manifest
+Source1001:	capi-machine-learning.manifest
 Source1002:	machine-learning-agent.manifest
 
 ## Define build requirements ##
@@ -458,13 +458,13 @@ install -m 0755 packaging/run-unittest.sh %{buildroot}%{_bindir}/tizen-unittests
 %postun -p /sbin/ldconfig
 
 %files
-%manifest capi-machine-learning-inference.manifest
+%manifest capi-machine-learning.manifest
 %defattr(-,root,root,-)
 %license LICENSE
 %{_libdir}/libcapi-nnstreamer.so.*
 
 %files devel
-%manifest capi-machine-learning-inference.manifest
+%manifest capi-machine-learning.manifest
 %{_libdir}/pkgconfig/capi-ml-inference.pc
 %{_includedir}/nnstreamer/nnstreamer.h
 %{_libdir}/libcapi-nnstreamer.so
@@ -473,11 +473,11 @@ install -m 0755 packaging/run-unittest.sh %{buildroot}%{_bindir}/tizen-unittests
 %{_libdir}/libcapi-nnstreamer.a
 
 %files single
-%manifest capi-machine-learning-inference.manifest
+%manifest capi-machine-learning.manifest
 %{_libdir}/libcapi-ml-inference-single.so.*
 
 %files single-devel
-%manifest capi-machine-learning-inference.manifest
+%manifest capi-machine-learning.manifest
 %{_libdir}/libcapi-ml-inference-single.so
 %{_includedir}/nnstreamer/nnstreamer-single.h
 %{_libdir}/pkgconfig/capi-ml-inference-single.pc
@@ -486,11 +486,11 @@ install -m 0755 packaging/run-unittest.sh %{buildroot}%{_bindir}/tizen-unittests
 %{_libdir}/libcapi-ml-inference-single.a
 
 %files -n capi-machine-learning-common
-%manifest capi-machine-learning-inference.manifest
+%manifest capi-machine-learning.manifest
 %{_libdir}/libcapi-ml-common.so.*
 
 %files -n capi-machine-learning-common-devel
-%manifest capi-machine-learning-inference.manifest
+%manifest capi-machine-learning.manifest
 %{_libdir}/libcapi-ml-common.so
 %{_includedir}/nnstreamer/ml-api-common.h
 %{_libdir}/pkgconfig/capi-ml-common.pc
@@ -521,11 +521,11 @@ install -m 0755 packaging/run-unittest.sh %{buildroot}%{_bindir}/tizen-unittests
 %attr(0644,root,root) %{_datadir}/dbus-1/system-services/org.tizen.machinelearning.service.service
 
 %files -n capi-machine-learning-service
-%manifest capi-machine-learning-inference.manifest
+%manifest capi-machine-learning.manifest
 %{_libdir}/libcapi-ml-service.so.*
 
 %files -n capi-machine-learning-service-devel
-%manifest capi-machine-learning-inference.manifest
+%manifest capi-machine-learning.manifest
 %{_libdir}/libcapi-ml-service.so
 %{_includedir}/nnstreamer/ml-api-service.h
 %{_libdir}/pkgconfig/capi-ml-service.pc
@@ -537,7 +537,7 @@ install -m 0755 packaging/run-unittest.sh %{buildroot}%{_bindir}/tizen-unittests
 %if 0%{?unit_test}
 %if 0%{?release_test}
 %files -n capi-machine-learning-unittests
-%manifest capi-machine-learning-inference.manifest
+%manifest capi-machine-learning.manifest
 %{_bindir}/unittest-ml
 %{_libdir}/libml-agentd-test.a
 %{_libdir}/libml-agentd-test.so*
