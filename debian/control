@@ -6,7 +6,7 @@ Build-Depends: gcc-9 | gcc-8 | gcc-7 | gcc-6 | gcc-5 (>=5.4),
  ninja-build, meson (>=0.50), debhelper (>=9),
  libgstreamer1.0-dev, libgstreamer-plugins-base1.0-dev, gstreamer1.0-plugins-base,
  nnstreamer, nnstreamer-dev, nnstreamer-dev-internal, openjdk-11-jdk,
- libglib2.0-dev, libgtest-dev, ssat, gstreamer1.0-plugins-good
+ libglib2.0-dev, libgtest-dev, ssat, gstreamer1.0-plugins-good, nnstreamer-edge-dev
 Standards-Version: 3.9.6
 Homepage: https://github.com/nnstreamer/api
 
