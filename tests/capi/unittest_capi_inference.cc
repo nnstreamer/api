@@ -3615,9 +3615,6 @@ TEST (nnstreamer_capi_util, get_nth_info_00)
 
   status = ml_tensors_info_destroy (info);
   ASSERT_EQ (status, ML_ERROR_NONE);
-
-  info_s = nullptr;
-  tinfo_s = nullptr;
 }
 
 /**

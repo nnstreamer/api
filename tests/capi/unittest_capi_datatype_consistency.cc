@@ -25,8 +25,7 @@
  */
 TEST (nnstreamer_datatypes, test_all_1)
 {
-  EXPECT_EQ (8, (int) NNS_TENSOR_RANK_LIMIT);
-  EXPECT_EQ (16, (int) ML_TENSOR_RANK_LIMIT);
+  EXPECT_EQ ((int) NNS_TENSOR_RANK_LIMIT, (int) ML_TENSOR_RANK_LIMIT);
   /** @todo restore this TC when NNS_TENSOR_SIZE_LIMIT is changed to 256 */
   // EXPECT_EQ ((int) NNS_TENSOR_SIZE_LIMIT, (int) ML_TENSOR_SIZE_LIMIT);
   EXPECT_EQ (sizeof (tensor_dim[0]), sizeof (ml_tensor_dimension[0]));
