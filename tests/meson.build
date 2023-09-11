@@ -4,8 +4,8 @@ unittest_install_dir = join_paths(unittest_base_dir,'tests')
 
 # Set dependency and test-env
 testenv = environment()
-testenv.set('MLAPI_SOURCE_ROOT_PATH', meson.source_root())
-testenv.set('MLAPI_BUILD_ROOT_PATH', meson.build_root())
+testenv.set('MLAPI_SOURCE_ROOT_PATH', join_paths(meson.current_source_dir() / '..'))
+testenv.set('MLAPI_BUILD_ROOT_PATH', join_paths(meson.current_build_dir() / '..'))
 
 unittest_util_static = static_library('unittest_util',
   files('capi/unittest_util.c'),
