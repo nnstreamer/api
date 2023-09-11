@@ -20,6 +20,8 @@
 #include "ml-api-service.h"
 #include "ml-api-service-private.h"
 
+#define MAX_PORT_NUM_LEN 6U
+
 /**
  * @brief Data struct for options.
  */
@@ -114,17 +116,17 @@ _mlrs_get_edge_info (ml_option_h option, edge_info_s * edge_info)
 static void
 _mlrs_set_edge_info (edge_info_s * edge_info, nns_edge_h edge_h)
 {
-  char port[6];
+  char port[MAX_PORT_NUM_LEN] = { 0, };
 
   nns_edge_set_info (edge_h, "HOST", edge_info->host);
-  sprintf (port, "%u", edge_info->port);
+  g_snprintf (port, MAX_PORT_NUM_LEN, "%u", edge_info->port);
   nns_edge_set_info (edge_h, "PORT", port);
 
   if (edge_info->topic)
     nns_edge_set_info (edge_h, "TOPIC", edge_info->topic);
 
   nns_edge_set_info (edge_h, "DEST_HOST", edge_info->dest_host);
-  sprintf (port, "%u", edge_info->dest_port);
+  g_snprintf (port, MAX_PORT_NUM_LEN, "%u", edge_info->dest_port);
   nns_edge_set_info (edge_h, "DEST_PORT", port);
 }
 
