@@ -31,13 +31,17 @@ gst_app_dep = dependency('gstreamer-app-1.0')
 nnstreamer_internal_dep = dependency('nnstreamer-internal')
 nnstreamer_single_dep = dependency('nnstreamer-single')
 nnstreamer_dep = dependency('nnstreamer')
-nnstreamer_edge_dep = dependency('nnstreamer-edge', required: false)
-curl_dep = cc.find_library('curl', required: false)
 
+support_remote_service = false
 if get_option('enable-ml-service')
   libsystemd_dep = dependency('libsystemd')
   sqlite_dep = dependency('sqlite3')
   json_glib_dep = dependency('json-glib-1.0')
+  nnstreamer_edge_dep = dependency('nnstreamer-edge', required: false)
+  curl_dep = cc.find_library('curl', required: false)
+  if nnstreamer_edge_dep.found() and curl_dep.found()
+    support_remote_service = true
+  endif
 endif
 
 # Set version info

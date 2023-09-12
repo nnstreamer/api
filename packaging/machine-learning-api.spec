@@ -162,10 +162,10 @@ BuildRequires:  pkgconfig(json-glib-1.0)
 BuildRequires:  dbus
 BuildRequires:  pkgconfig(capi-appfw-package-manager)
 BuildRequires:	pkgconfig(capi-appfw-app-common)
-BuildRequires:	libcurl-devel
 %endif
 
 %if 0%{?nnstreamer_edge_support}
+BuildRequires:	libcurl-devel
 BuildRequires:	nnstreamer-edge-devel
 %endif
 
