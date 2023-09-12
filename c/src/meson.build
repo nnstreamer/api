@@ -12,7 +12,7 @@ endif
 nns_capi_single_srcs = files('ml-api-inference-single.c')
 nns_capi_pipeline_srcs = files('ml-api-inference-pipeline.c')
 nns_capi_service_srcs = files('ml-api-service-common.c','ml-api-service-agent-client.c', 'ml-api-service-query-client.c')
-if nnstreamer_edge_dep.found()
+if support_remote_service
   nns_capi_service_srcs += files('ml-api-remote-service.c')
 endif
 
@@ -103,9 +103,8 @@ nns_capi_dep = declare_dependency(link_with: nns_capi_lib,
 # Service API
 if get_option('enable-ml-service')
   ml_service_deps = [nns_capi_dep, ml_agentd_deps]
-  if nnstreamer_edge_dep.found()
-    ml_service_deps += nnstreamer_edge_dep
-    ml_service_deps += curl_dep
+  if support_remote_service
+    ml_service_deps += [nnstreamer_edge_dep, curl_dep]
   endif
 
   nns_capi_service_shared_lib = shared_library ('capi-ml-service',

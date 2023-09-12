@@ -42,7 +42,7 @@ if get_option('enable-ml-service')
   )
   test('unittest_capi_service_agent_client', unittest_capi_service_agent_client, env: testenv, timeout: 100)
 
-  if nnstreamer_edge_dep.found()
+  if support_remote_service
     unittest_capi_remote_service = executable('unittest_capi_remote_service',
       'unittest_capi_remote_service.cc',
       link_with: nns_capi_service_lib,
