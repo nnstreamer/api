@@ -218,13 +218,26 @@ _mlrs_model_register (gchar * service_key, nns_edge_data_h data_h,
   GError *error = NULL;
   gboolean ret = TRUE;
 
-  nns_edge_data_get_info (data_h, "description", &description);
-  nns_edge_data_get_info (data_h, "name", &name);
-  nns_edge_data_get_info (data_h, "activate", &activate);
+  if (NNS_EDGE_ERROR_NONE != nns_edge_data_get_info (data_h, "description",
+          &description)
+      || NNS_EDGE_ERROR_NONE != nns_edge_data_get_info (data_h, "name", &name)
+      || NNS_EDGE_ERROR_NONE != nns_edge_data_get_info (data_h, "activate",
+          &activate)) {
+    _ml_loge ("Failed to get info from data handle.");
+    ret = FALSE;
+    goto error;
+  }
+
   active_bool = _mlrs_parse_activate (activate);
 
   dir_path = g_build_path ("/", current_dir, service_key, NULL);
-  g_mkdir_with_parents (dir_path, 0755);
+  if (g_mkdir_with_parents (dir_path, 0755) < 0) {
+    _ml_loge ("Failed to create directory %s., error: %s", dir_path,
+        g_strerror (errno));
+    ret = FALSE;
+    goto error;
+  }
+
   model_path = g_build_path ("/", dir_path, name, NULL);
 
   if (!g_file_set_contents (model_path, (char *) data, data_len, &error)) {
@@ -266,22 +279,31 @@ _mlrs_get_data_from_uri (gchar * uri, GByteArray * array)
 
   curl = curl_easy_init ();
   if (curl) {
-    curl_easy_setopt (curl, CURLOPT_URL, (gchar *) uri);
-    curl_easy_setopt (curl, CURLOPT_FOLLOWLOCATION, 1L);
-    curl_easy_setopt (curl, CURLOPT_WRITEFUNCTION, curl_mem_write_cb);
-    curl_easy_setopt (curl, CURLOPT_WRITEDATA, (void *) array);
+    if (CURLE_OK != curl_easy_setopt (curl, CURLOPT_URL, (gchar *) uri) ||
+        CURLE_OK != curl_easy_setopt (curl, CURLOPT_FOLLOWLOCATION, 1L) ||
+        CURLE_OK != curl_easy_setopt (curl, CURLOPT_WRITEFUNCTION,
+            curl_mem_write_cb) ||
+        CURLE_OK != curl_easy_setopt (curl, CURLOPT_WRITEDATA,
+            (void *) array)) {
+      _ml_loge ("Failed to set option for curl easy handle.");
+      ret = FALSE;
+      goto done;
+    }
 
     res = curl_easy_perform (curl);
 
     if (res != CURLE_OK) {
       _ml_loge ("curl_easy_perform failed: %s\n", curl_easy_strerror (res));
-      return FALSE;
+      ret = FALSE;
+      goto done;
     }
 
-    curl_easy_cleanup (curl);
     ret = TRUE;
   }
 
+done:
+  if (curl)
+    curl_easy_cleanup (curl);
   return ret;
 }
 
@@ -562,28 +584,55 @@ ml_remote_service_register (ml_service_h handle, ml_option_h option, void *data,
     return ret;
   }
 
-  nns_edge_data_set_info (data_h, "service-type", service_str);
-  nns_edge_data_set_info (data_h, "service-key", service_key);
-  ml_option_get (option, "description", (void **) &description);
-  nns_edge_data_set_info (data_h, "description", description);
-  ml_option_get (option, "name", (void **) &name);
-  nns_edge_data_set_info (data_h, "name", name);
-  ml_option_get (option, "activate", (void **) &activate);
-  nns_edge_data_set_info (data_h, "activate", activate);
+  ret = nns_edge_data_set_info (data_h, "service-type", service_str);
+  if (NNS_EDGE_ERROR_NONE != ret) {
+    _ml_error_report ("Failed to set service type in edge data.");
+    goto done;
+  }
+  ret = nns_edge_data_set_info (data_h, "service-key", service_key);
+  if (NNS_EDGE_ERROR_NONE != ret) {
+    _ml_error_report ("Failed to set service key in edge data.");
+    goto done;
+  }
+  ret = ml_option_get (option, "description", (void **) &description);
+  if (ML_ERROR_NONE != ret) {
+    _ml_logi ("Failed to get option description.");
+  }
+  ret = nns_edge_data_set_info (data_h, "description", description);
+  if (NNS_EDGE_ERROR_NONE != ret) {
+    _ml_logi ("Failed to set description in edge data.");
+  }
+  ret = ml_option_get (option, "name", (void **) &name);
+  if (ML_ERROR_NONE != ret) {
+    _ml_logi ("Failed to get option name.");
+  }
+  ret = nns_edge_data_set_info (data_h, "name", name);
+  if (NNS_EDGE_ERROR_NONE != ret) {
+    _ml_logi ("Failed to set name in edge data.");
+  }
+  ret = ml_option_get (option, "activate", (void **) &activate);
+  if (ML_ERROR_NONE != ret) {
+    _ml_logi ("Failed to get option activate.");
+  }
+  ret = nns_edge_data_set_info (data_h, "activate", activate);
+  if (NNS_EDGE_ERROR_NONE != ret) {
+    _ml_logi ("Failed to set activate in edge data.");
+  }
 
   ret = nns_edge_data_add (data_h, data, data_len, NULL);
   if (NNS_EDGE_ERROR_NONE != ret) {
-    _ml_error_report ("Failed to add camera data to the edge data.\n");
-    nns_edge_data_destroy (data_h);
-    return ret;
+    _ml_error_report ("Failed to add camera data to the edge data.");
+    goto done;
   }
 
   ret = nns_edge_send (remote_s->edge_h, data_h);
   if (NNS_EDGE_ERROR_NONE != ret) {
     _ml_error_report
         ("Failed to publish the data to register the remote service.");
-    nns_edge_data_destroy (data_h);
   }
 
+done:
+  if (data_h)
+    nns_edge_data_destroy (data_h);
   return ret;
 }
