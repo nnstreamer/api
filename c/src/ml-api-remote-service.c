@@ -315,8 +315,8 @@ _mlrs_process_remote_service (nns_edge_data_h data_h)
 {
   void *data;
   nns_size_t data_len;
-  gchar *service_str = NULL;
-  gchar *service_key = NULL;
+  g_autofree gchar *service_str = NULL;
+  g_autofree gchar *service_key = NULL;
   ml_remote_service_type_e service_type;
   int ret = NNS_EDGE_ERROR_NONE;
 
@@ -344,6 +344,7 @@ _mlrs_process_remote_service (nns_edge_data_h data_h)
       GByteArray *array = g_byte_array_new ();
 
       if (!_mlrs_get_data_from_uri ((gchar *) data, array)) {
+        g_byte_array_free (array, TRUE);
         _ml_error_report_return (NNS_EDGE_ERROR_IO,
             "Failed to get data from uri: %s.", (gchar *) data);
       }
@@ -370,6 +371,7 @@ _mlrs_process_remote_service (nns_edge_data_h data_h)
 
       ret = _mlrs_get_data_from_uri ((gchar *) data, array);
       if (!ret) {
+        g_byte_array_free (array, TRUE);
         _ml_error_report_return (ret,
             "Failed to get data from uri: %s.", (gchar *) data);
       }
@@ -409,8 +411,6 @@ _mlrs_edge_event_cb (nns_edge_event_h event_h, void *user_data)
         return ret;
 
       ret = _mlrs_process_remote_service (data_h);
-      if (NNS_EDGE_ERROR_NONE != ret)
-        return ret;
       break;
     }
     default:
