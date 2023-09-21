@@ -34,8 +34,7 @@ test('unittest_capi_datatype_consistency', unittest_capi_datatype_consistency, e
 if get_option('enable-ml-service')
   unittest_capi_service_agent_client = executable('unittest_capi_service_agent_client',
     'unittest_capi_service_agent_client.cc',
-    link_with: nns_capi_service_lib,
-    dependencies: [unittest_common_dep, gdbus_gen_test_dep, lib_ml_agentd_test_dep],
+    dependencies: [unittest_common_dep, nns_capi_service_dep, gdbus_gen_test_dep, lib_ml_agentd_test_dep],
     install: get_option('install-test'),
     install_dir: unittest_install_dir,
     include_directories: nns_capi_include,
@@ -45,8 +44,7 @@ if get_option('enable-ml-service')
   if support_remote_service
     unittest_capi_remote_service = executable('unittest_capi_remote_service',
       'unittest_capi_remote_service.cc',
-      link_with: nns_capi_service_lib,
-      dependencies: [unittest_common_dep, gdbus_gen_test_dep, lib_ml_agentd_test_dep],
+      dependencies: [unittest_common_dep, nns_capi_service_dep, gdbus_gen_test_dep, lib_ml_agentd_test_dep],
       install: get_option('install-test'),
       install_dir: unittest_install_dir,
       include_directories: nns_capi_include,
