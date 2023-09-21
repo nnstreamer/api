@@ -7,3 +7,4 @@ else
 endif
 
 nns_capi_service_headers = files('ml-api-service.h')
+nns_capi_experimental_headers = files('ml-api-experimental.h')

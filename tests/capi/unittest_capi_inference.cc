@@ -13,6 +13,7 @@
 #include <ml-api-inference-internal.h>
 #include <ml-api-inference-pipeline-internal.h>
 #include <ml-api-internal.h>
+#include <ml-api-experimental.h>
 #include <nnstreamer-tizen-internal.h>
 #include <nnstreamer.h>
 #include <nnstreamer_internal.h>

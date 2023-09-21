@@ -18,6 +18,7 @@
 #include "nnstreamer.h"
 #include "nnstreamer-tizen-internal.h"
 #include "ml-api-internal.h"
+#include "ml-api-experimental.h"
 
 /**
  * @brief Enumeration for ml_info type.

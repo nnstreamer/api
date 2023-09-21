@@ -22,6 +22,7 @@
 #include "resource-dbus.h"
 #include "nnstreamer-edge.h"
 #include "nnstreamer-tizen-internal.h"
+#include "ml-api-experimental.h"
 
 #ifdef __cplusplus
 extern "C" {
