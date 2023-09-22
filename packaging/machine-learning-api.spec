@@ -141,10 +141,6 @@ BuildRequires:	pkgconfig(gles20)
 %if 0%{?nnfw_support}
 BuildRequires:	nnfw-devel
 BuildRequires:	nnstreamer-nnfw
-%ifarch %arm aarch64
-BuildRequires:	libarmcl
-BuildConflicts:	libarmcl-release
-%endif
 %endif
 
 %if 0%{?armnn_support}
