@@ -213,7 +213,7 @@ int ml_service_query_create (ml_option_h option, ml_service_h *handle);
  * @param[in] handle The query service handle created by ml_service_query_create().
  * @param[in] input The handle of input tensors.
  * @param[out] output The handle of output tensors.
- * @return 0 on success. Otherwise a negative error value.
+ * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
@@ -235,7 +235,7 @@ int ml_service_query_request (ml_service_h handle, const ml_tensors_data_h input
  * @param[in] activate The flag to set the model to be activated.
  * @param[in] description Nullable, description for neural network model.
  * @param[out] version The version of registered model.
- * @return 0 on success. Otherwise a negative error value.
+ * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_PERMISSION_DENIED The application does not have the privilege to access to the storage.
@@ -290,7 +290,7 @@ int ml_service_model_register (const char *name, const char *path, const bool ac
  * @param[in] name The unique name to indicate the model.
  * @param[in] version The version of registered model.
  * @param[in] description The description for neural network model.
- * @return 0 on success. Otherwise a negative error value.
+ * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
@@ -303,7 +303,7 @@ int ml_service_model_update_description (const char *name, const unsigned int ve
  * @since_tizen 8.0
  * @param[in] name The unique name to indicate the model.
  * @param[in] version The version of registered model.
- * @return 0 on success. Otherwise a negative error value.
+ * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
@@ -318,7 +318,7 @@ int ml_service_model_activate (const char *name, const unsigned int version);
  * @param[in] name The unique name to indicate the model.
  * @param[in] version The version of registered model.
  * @param[out] info The handle of model information.
- * @return 0 on success. Otherwise a negative error value.
+ * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
@@ -333,7 +333,7 @@ int ml_service_model_get (const char *name, const unsigned int version, ml_infor
  * @remarks If the function succeeds, the @a info should be released using ml_information_destroy().
  * @param[in] name The unique name to indicate the model.
  * @param[out] info The handle of activated model.
- * @return 0 on success. Otherwise a negative error value.
+ * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
@@ -348,7 +348,7 @@ int ml_service_model_get_activated (const char *name, ml_information_h *info);
  * @remarks If the function succeeds, the @a info_list should be released using ml_information_list_destroy().
  * @param[in] name The unique name to indicate the model.
  * @param[out] info_list The handle of list of registered models.
- * @return 0 on success. Otherwise a negative error value.
+ * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
@@ -363,7 +363,7 @@ int ml_service_model_get_all (const char *name, ml_information_list_h *info_list
  * @remarks This does not remove the model file from file system. If @a version is 0, machine learning service will delete all information with given @a name.
  * @param[in] name The unique name to indicate the model.
  * @param[in] version The version of registered model.
- * @return 0 on success. Otherwise a negative error value.
+ * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
@@ -380,7 +380,7 @@ int ml_service_model_delete (const char *name, const unsigned int version);
  * @param[in] name The unique name to indicate the resources.
  * @param[in] path The path to machine learning resources.
  * @param[in] description Nullable, description for machine learning resources.
- * @return 0 on success. Otherwise a negative error value.
+ * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_PERMISSION_DENIED The application does not have the privilege to access to the storage.
@@ -437,7 +437,7 @@ int ml_service_resource_add (const char *name, const char *path, const char *des
  * @since_tizen 8.0
  * @remarks This does not remove the resource files from file system.
  * @param[in] name The unique name to indicate the resources.
- * @return 0 on success. Otherwise a negative error value.
+ * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
@@ -451,7 +451,7 @@ int ml_service_resource_delete (const char *name);
  * @remarks If the function succeeds, the @a res should be released using ml_information_list_destroy().
  * @param[in] name The unique name to indicate the resources.
  * @param[out] res The handle of the machine learning resources.
- * @return 0 on success. Otherwise a negative error value.
+ * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
