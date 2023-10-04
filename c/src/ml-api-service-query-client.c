@@ -21,6 +21,20 @@
 #include "ml-api-service-private.h"
 
 /**
+ * @brief Structure for ml_service_query
+ */
+typedef struct
+{
+  ml_pipeline_h pipe_h;
+  ml_pipeline_src_h src_h;
+  ml_pipeline_sink_h sink_h;
+
+  gchar *caps;
+  guint timeout; /**< in ms unit */
+  GAsyncQueue *out_data_queue;
+} _ml_service_query_s;
+
+/**
  * @brief Sink callback for query_client
  */
 static void
@@ -56,6 +70,37 @@ _sink_callback_for_query_client (const ml_tensors_data_h data,
   }
 
   g_async_queue_push (mls->out_data_queue, copied_data);
+}
+
+/**
+ * @brief Internal function to release ml-service query data.
+ */
+int
+ml_service_query_release_internal (void *priv)
+{
+  _ml_service_query_s *query = (_ml_service_query_s *) priv;
+  ml_tensors_data_h data_h;
+
+  if (!query)
+    return ML_ERROR_INVALID_PARAMETER;
+
+  if (ml_pipeline_src_release_handle (query->src_h))
+    _ml_error_report ("Failed to release src handle");
+
+  if (ml_pipeline_sink_unregister (query->sink_h))
+    _ml_error_report ("Failed to unregister sink handle");
+
+  if (ml_pipeline_destroy (query->pipe_h))
+    _ml_error_report ("Failed to destroy pipeline");
+
+  while ((data_h = g_async_queue_try_pop (query->out_data_queue))) {
+    ml_tensors_data_destroy (data_h);
+  }
+
+  g_async_queue_unref (query->out_data_queue);
+  g_free (query);
+
+  return ML_ERROR_NONE;
 }
 
 /**

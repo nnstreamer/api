@@ -520,6 +520,29 @@ ml_service_get_pipeline_state (ml_service_h h, ml_pipeline_state_e * state)
 }
 
 /**
+ * @brief Internal function to release ml-service pipeline data.
+ */
+int
+ml_service_pipeline_release_internal (void *priv)
+{
+  _ml_service_server_s *server = (_ml_service_server_s *) priv;
+  g_autoptr (GError) err = NULL;
+  int ret;
+
+  ret = ml_agent_pipeline_destroy (server->id, &err);
+  if (ret < 0) {
+    _ml_error_report_return (ret,
+        "Failed to invoke the method destroy_pipeline (%s).",
+        err ? err->message : "Unknown error");
+  }
+
+  g_free (server->service_name);
+  g_free (server);
+
+  return ML_ERROR_NONE;
+}
+
+/**
  * @brief Registers new information of a neural network model.
  */
 int

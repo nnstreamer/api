@@ -16,6 +16,7 @@
 #include <gst/app/app.h>
 #include <string.h>
 #include <curl/curl.h>
+#include <nnstreamer-edge.h>
 
 #include "ml-api-internal.h"
 #include "ml-api-service.h"
@@ -50,6 +51,15 @@ typedef struct
   nns_edge_connect_type_e conn_type;
   nns_edge_node_type_e node_type;
 } edge_info_s;
+
+/**
+ * @brief Structure for ml_remote_service
+ */
+typedef struct
+{
+  nns_edge_h edge_h;
+  nns_edge_node_type_e node_type;
+} _ml_remote_service_s;
 
 /**
  * @brief Get ml-service node type from ml_option.
@@ -478,6 +488,26 @@ _mlrs_create_edge_handle (nns_edge_h * edge_h, edge_info_s * edge_info)
   }
 
   return ret;
+}
+
+/**
+ * @brief Internal function to release ml-service remote data.
+ */
+int
+ml_service_remote_release_internal (void *priv)
+{
+  _ml_remote_service_s *mlrs = (_ml_remote_service_s *) priv;
+
+  if (!mlrs)
+    return ML_ERROR_INVALID_PARAMETER;
+
+  nns_edge_release_handle (mlrs->edge_h);
+
+  /** Wait some time until release the edge handle. */
+  g_usleep (1000000);
+  g_free (mlrs);
+
+  return ML_ERROR_NONE;
 }
 
 /**

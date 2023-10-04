@@ -20,7 +20,6 @@
 #include "pipeline-dbus.h"
 #include "model-dbus.h"
 #include "resource-dbus.h"
-#include "nnstreamer-edge.h"
 #include "nnstreamer-tizen-internal.h"
 
 #ifdef __cplusplus
@@ -60,27 +59,23 @@ typedef struct
 } _ml_service_server_s;
 
 /**
- * @brief Structure for ml_service_query
+ * @brief Internal function to release ml-service pipeline data.
  */
-typedef struct
-{
-  ml_pipeline_h pipe_h;
-  ml_pipeline_src_h src_h;
-  ml_pipeline_sink_h sink_h;
-
-  gchar *caps;
-  guint timeout; /**< in ms unit */
-  GAsyncQueue *out_data_queue;
-} _ml_service_query_s;
+int ml_service_pipeline_release_internal (void *priv);
 
 /**
- * @brief Structure for ml_remote_service
+ * @brief Internal function to release ml-service query data.
  */
-typedef struct
-{
-  nns_edge_h edge_h;
-  nns_edge_node_type_e node_type;
-} _ml_remote_service_s;
+int ml_service_query_release_internal (void *priv);
+
+#if defined(ENABLE_REMOTE_SERVICE)
+/**
+ * @brief Internal function to release ml-service remote data.
+ */
+int ml_service_remote_release_internal (void *priv);
+#else
+#define ml_service_remote_release_internal(...) ML_ERROR_NOT_SUPPORTED
+#endif
 
 #ifdef __cplusplus
 }

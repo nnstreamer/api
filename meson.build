@@ -40,6 +40,7 @@ if get_option('enable-ml-service')
   nnstreamer_edge_dep = dependency('nnstreamer-edge', required: false)
   curl_dep = cc.find_library('curl', required: false)
   if nnstreamer_edge_dep.found() and curl_dep.found()
+    add_project_arguments('-DENABLE_REMOTE_SERVICE=1', language: ['c', 'cpp'])
     support_remote_service = true
   endif
 endif
