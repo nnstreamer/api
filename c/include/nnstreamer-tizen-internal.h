@@ -108,7 +108,7 @@ int ml_remote_service_create (ml_option_h option, ml_service_h *handle);
  * @param[in] handle The query service handle created by ml_service_query_create().
  * @param[in] option The option used for registering machine learning service.
  * @param[in] data The Data to be registered on the remote server.
- * @return 0 on success. Otherwise a negative error value.
+ * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.

@@ -201,7 +201,7 @@ int ml_tensors_info_create_extended (ml_tensors_info_h *info);
  * @brief Frees the given handle of a tensors information.
  * @since_tizen 5.5
  * @param[in] info The handle of tensors information.
- * @return 0 on success. Otherwise a negative error value.
+ * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.

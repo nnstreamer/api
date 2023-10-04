@@ -313,7 +313,7 @@ int ml_pipeline_sink_unregister (ml_pipeline_sink_h sink_handle);
  * @param[in] pipe The pipeline to be attached with a src node.
  * @param[in] src_name The name of src node, described with ml_pipeline_construct().
  * @param[out] src_handle The src handle.
- * @return 0 on success. Otherwise a negative error value.
+ * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
@@ -327,7 +327,7 @@ int ml_pipeline_src_get_handle (ml_pipeline_h pipe, const char *src_name, ml_pip
  * @brief Releases the given src handle.
  * @since_tizen 5.5
  * @param[in] src_handle The src handle to be released.
- * @return 0 on success. Otherwise a negative error value.
+ * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
@@ -341,7 +341,7 @@ int ml_pipeline_src_release_handle (ml_pipeline_src_h src_handle);
  * @param[in] data The handle of input tensors, in the format of tensors info given by ml_pipeline_src_get_tensors_info().
  *                 This function takes ownership of the data if @a policy is #ML_PIPELINE_BUF_POLICY_AUTO_FREE.
  * @param[in] policy The policy of buffer deallocation. The policy value may include buffer deallocation mechanisms or event triggers for appsrc elements. If event triggers are provided, these functions will not give input data to the appsrc element, but will trigger the given event only.
- * @return 0 on success. Otherwise a negative error value.
+ * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
@@ -368,7 +368,7 @@ typedef struct {
  * @param[in] src_handle The source handle returned by ml_pipeline_src_get_handle().
  * @param[in] cb The app-src callbacks for event handling.
  * @param[in] user_data The user's custom data given to callbacks.
- * @return 0 on success. Otherwise a negative error value.
+ * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
@@ -383,7 +383,7 @@ int ml_pipeline_src_set_event_cb (ml_pipeline_src_h src_handle, ml_pipeline_src_
  * @remarks If the function succeeds, @a info handle must be released using ml_tensors_info_destroy().
  * @param[in] src_handle The source handle returned by ml_pipeline_src_get_handle().
  * @param[out] info The handle of tensors information.
- * @return 0 on success. Otherwise a negative error value.
+ * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
@@ -406,7 +406,7 @@ int ml_pipeline_src_get_tensors_info (ml_pipeline_src_h src_handle, ml_tensors_i
  * @param[in] switch_name The name of switch (InputSelector/OutputSelector).
  * @param[out] switch_type The type of the switch. If NULL, it is ignored.
  * @param[out] switch_handle The switch handle.
- * @return 0 on success. Otherwise a negative error value.
+ * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
