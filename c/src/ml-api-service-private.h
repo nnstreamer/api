@@ -28,6 +28,19 @@ extern "C" {
 #endif /* __cplusplus */
 
 /**
+ * @brief Enumeration for ml-service type.
+ */
+typedef enum
+{
+  ML_SERVICE_TYPE_UNKNOWN = 0,
+  ML_SERVICE_TYPE_SERVER_PIPELINE,
+  ML_SERVICE_TYPE_CLIENT_QUERY,
+  ML_SERVICE_TYPE_REMOTE,
+
+  ML_SERVICE_TYPE_MAX
+} ml_service_type_e;
+
+/**
  * @brief Structure for ml_remote_service_h
  */
 typedef struct

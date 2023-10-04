@@ -61,27 +61,6 @@ void ml_api_get_version (unsigned int *major, unsigned int *minor, unsigned int 
  */
 char * ml_api_get_version_string (void);
 
-
-typedef enum {
-  ML_SERVICE_TYPE_UNKNOWN = 0,
-  ML_SERVICE_TYPE_SERVER_PIPELINE,
-  ML_SERVICE_TYPE_CLIENT_QUERY,
-  ML_SERVICE_TYPE_REMOTE,
-
-  ML_SERVICE_TYPE_MAX
-} ml_service_type_e;
-
-typedef enum {
-  ML_REMOTE_SERVICE_TYPE_UNKNOWN = 0,
-  ML_REMOTE_SERVICE_TYPE_MODEL_RAW,
-  ML_REMOTE_SERVICE_TYPE_MODEL_URI,
-  ML_REMOTE_SERVICE_TYPE_PIPELINE_RAW,
-  ML_REMOTE_SERVICE_TYPE_PIPELINE_URI,
-
-  ML_REMOTE_SERVICE_TYPE_MAX
-} ml_remote_service_type_e;
-
-
 /**
  * @brief Creates ml remote service handle with given ml-option handle.
  * @since_tizen 8.0
@@ -98,7 +77,7 @@ typedef enum {
  * @retval #ML_ERROR_STREAMS_PIPE Failed to launch the pipeline.
  * @retval #ML_ERROR_TRY_AGAIN The pipeline is not ready yet.
  */
-int ml_remote_service_create (ml_option_h option, ml_service_h *handle);
+int ml_service_remote_create (ml_option_h option, ml_service_h *handle);
 
 /**
  * @todo DRAFT. API name should be determined later.
@@ -127,7 +106,7 @@ int ml_remote_service_create (ml_option_h option, ml_service_h *handle);
  * gchar *client_connect_type = g_strdup ("TCP");
  * ml_option_set (client_option_h, "connect-type", client_connect_type, g_free);
  *
- * status = ml_remote_service_create (client_option_h, &client_h);
+ * status = ml_service_remote_create (client_option_h, &client_h);
  *
  * // ================== Server side ==================
  * ml_service_h server_h;
@@ -143,7 +122,7 @@ int ml_remote_service_create (ml_option_h option, ml_service_h *handle);
  *  ml_option_set (server_option_h, "connect-type", server_connect_type, g_free);
  *
  * // Create ml-remote service.
- * ml_remote_service_create (server_option_h, &server_h)
+ * ml_service_remote_create (server_option_h, &server_h)
  *
  * // ================== Client side ==================
  * // Send neural network model url to the query server.
@@ -161,7 +140,7 @@ int ml_remote_service_create (ml_option_h option, ml_service_h *handle);
  * ml_option_set (client_option_h, "dest_host", dest_host, g_free);
  *
  * // Create query service.
- * ml_remote_service_create (client_option_h, &client_h);
+ * ml_service_remote_create (client_option_h, &client_h);
  *
  * ml_option_h query_option_h = NULL;
  * ml_option_create (&query_option_h);
@@ -186,7 +165,7 @@ int ml_remote_service_create (ml_option_h option, ml_service_h *handle);
  * gchar *name = g_strdup ("model_name.nnfw");
  * ml_option_set (remote_service_option_h, "name", name, g_free);
  *
- * ml_remote_service_register (client_h, remote_service_option_h, contents, len);
+ * ml_service_remote_register (client_h, remote_service_option_h, contents, len);
  *
  * ml_service_destroy (client_h);
  * ml_service_destroy (server_h);
@@ -196,7 +175,7 @@ int ml_remote_service_create (ml_option_h option, ml_service_h *handle);
  *
  * @endcode
  */
-int ml_remote_service_register (ml_service_h handle, ml_option_h option, void *data, size_t data_len);
+int ml_service_remote_register (ml_service_h handle, ml_option_h option, void *data, size_t data_len);
 
 #ifdef __cplusplus
 }
