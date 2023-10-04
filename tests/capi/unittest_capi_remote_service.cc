@@ -121,7 +121,7 @@ TEST_F (MLRemoteService, registerPipeline)
   status = ml_option_set (client_option_h, "topic", topic, NULL);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_remote_service_create (client_option_h, &client_h);
+  status = ml_service_remote_create (client_option_h, &client_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   /**============= Prepare server ============= **/
@@ -147,7 +147,7 @@ TEST_F (MLRemoteService, registerPipeline)
   status = ml_option_set (server_option_h, "connect-type", server_connect_type, g_free);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_remote_service_create (server_option_h, &server_h);
+  status = ml_service_remote_create (server_option_h, &server_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   ml_option_h remote_service_option_h = NULL;
@@ -163,7 +163,7 @@ TEST_F (MLRemoteService, registerPipeline)
 
   g_autofree gchar *pipeline_desc = g_strdup ("fakesrc ! fakesink");
 
-  status = ml_remote_service_register (client_h, remote_service_option_h,
+  status = ml_service_remote_register (client_h, remote_service_option_h,
       pipeline_desc, strlen (pipeline_desc) + 1);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
@@ -222,7 +222,7 @@ TEST_F (MLRemoteService, registerPipelineURI)
   status = ml_option_set (client_option_h, "topic", topic, NULL);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_remote_service_create (client_option_h, &client_h);
+  status = ml_service_remote_create (client_option_h, &client_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   /**============= Prepare server ============= **/
@@ -248,7 +248,7 @@ TEST_F (MLRemoteService, registerPipelineURI)
   status = ml_option_set (server_option_h, "connect-type", server_connect_type, g_free);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_remote_service_create (server_option_h, &server_h);
+  status = ml_service_remote_create (server_option_h, &server_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   ml_option_h remote_service_option_h = NULL;
@@ -271,7 +271,7 @@ TEST_F (MLRemoteService, registerPipelineURI)
   gchar *pipeline_uri = g_strdup_printf ("file://%s", test_file_path);
   g_free (test_file_path);
 
-  status = ml_remote_service_register (client_h, remote_service_option_h,
+  status = ml_service_remote_register (client_h, remote_service_option_h,
       pipeline_uri, strlen (pipeline_uri) + 1);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
@@ -301,7 +301,7 @@ TEST_F (MLRemoteService, registerPipelineURI)
 }
 
 /**
- * @brief Test ml_remote_service_create with invalid param.
+ * @brief Test ml_service_remote_create with invalid param.
  */
 TEST_F (MLRemoteService, createInvalidParam_n)
 {
@@ -312,10 +312,10 @@ TEST_F (MLRemoteService, createInvalidParam_n)
   status = ml_option_create (&option_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_remote_service_create (NULL, &service_h);
+  status = ml_service_remote_create (NULL, &service_h);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = ml_remote_service_create (option_h, NULL);
+  status = ml_service_remote_create (option_h, NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
   status = ml_option_destroy (option_h);
@@ -323,7 +323,7 @@ TEST_F (MLRemoteService, createInvalidParam_n)
 }
 
 /**
- * @brief Test ml_remote_service_register with invalid param.
+ * @brief Test ml_service_remote_register with invalid param.
  */
 TEST_F (MLRemoteService, registerInvalidParam_n)
 {
@@ -352,7 +352,7 @@ TEST_F (MLRemoteService, registerInvalidParam_n)
   status = ml_option_set (option_h, "connect-type", client_connect_type, g_free);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_remote_service_create (option_h, &service_h);
+  status = ml_service_remote_create (option_h, &service_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   status = ml_option_destroy (option_h);
@@ -369,16 +369,16 @@ TEST_F (MLRemoteService, registerInvalidParam_n)
   ml_option_set (remote_service_option_h, "service-key", service_key, g_free);
 
   g_autofree gchar *pipeline_desc = g_strdup ("fakesrc ! fakesink");
-  status = ml_remote_service_register (NULL, remote_service_option_h, str, len);
+  status = ml_service_remote_register (NULL, remote_service_option_h, str, len);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = ml_remote_service_register (service_h, NULL, str, len);
+  status = ml_service_remote_register (service_h, NULL, str, len);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = ml_remote_service_register (service_h, remote_service_option_h, NULL, len);
+  status = ml_service_remote_register (service_h, remote_service_option_h, NULL, len);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = ml_remote_service_register (service_h, remote_service_option_h, str, 0);
+  status = ml_service_remote_register (service_h, remote_service_option_h, str, 0);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
   status = ml_option_destroy (remote_service_option_h);
@@ -422,7 +422,7 @@ TEST_F (MLRemoteService, registerModel)
   status = ml_option_set (client_option_h, "topic", topic, NULL);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_remote_service_create (client_option_h, &client_h);
+  status = ml_service_remote_create (client_option_h, &client_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   /**============= Prepare server ============= **/
@@ -448,12 +448,12 @@ TEST_F (MLRemoteService, registerModel)
   status = ml_option_set (server_option_h, "connect-type", server_connect_type, g_free);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_remote_service_create (server_option_h, &server_h);
+  status = ml_service_remote_create (server_option_h, &server_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   /** Set service option */
   const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
-  /* ml_remote_service_register () requires absolute path to model, ignore this case. */
+  /* ml_service_remote_register () requires absolute path to model, ignore this case. */
   if (root_path == NULL)
     return;
 
@@ -484,7 +484,7 @@ TEST_F (MLRemoteService, registerModel)
   gchar *name = g_strdup ("mobilenet_v1_1.0_224_quant.tflite");
   ml_option_set (remote_service_option_h, "name", name, g_free);
 
-  status = ml_remote_service_register (client_h, remote_service_option_h, contents, len);
+  status = ml_service_remote_register (client_h, remote_service_option_h, contents, len);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   /** Wait for the server to register the pipeline. */
@@ -563,7 +563,7 @@ TEST_F (MLRemoteService, registerModelURI)
   status = ml_option_set (client_option_h, "topic", topic, NULL);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_remote_service_create (client_option_h, &client_h);
+  status = ml_service_remote_create (client_option_h, &client_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   /**============= Prepare server ============= **/
@@ -589,12 +589,12 @@ TEST_F (MLRemoteService, registerModelURI)
   status = ml_option_set (server_option_h, "connect-type", server_connect_type, g_free);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_remote_service_create (server_option_h, &server_h);
+  status = ml_service_remote_create (server_option_h, &server_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   /** Prepare model register service */
   const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
-  /* ml_remote_service_register () requires absolute path to model, ignore this case. */
+  /* ml_service_remote_register () requires absolute path to model, ignore this case. */
   if (root_path == NULL)
     return;
 
@@ -623,7 +623,7 @@ TEST_F (MLRemoteService, registerModelURI)
   gchar *name = g_strdup ("mobilenet_v1_1.0_224_quant.tflite");
   ml_option_set (remote_service_option_h, "name", name, g_free);
 
-  status = ml_remote_service_register (
+  status = ml_service_remote_register (
       client_h, remote_service_option_h, model_uri, strlen (model_uri) + 1);
   EXPECT_EQ (ML_ERROR_NONE, status);
   g_free (model_uri);

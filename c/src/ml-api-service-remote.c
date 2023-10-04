@@ -2,9 +2,9 @@
 /**
  * Copyright (c) 2023 Samsung Electronics Co., Ltd. All Rights Reserved.
  *
- * @file ml-api-remote-service.c
+ * @file ml-api-service-remote.c
  * @date 26 Jun 2023
- * @brief ml-remote-service of NNStreamer/Service C-API
+ * @brief ML remote service of NNStreamer/Service C-API
  * @see https://github.com/nnstreamer/nnstreamer
  * @author Gichan Jang <gichan2.jang@samsung.com>
  * @bug No known bugs except for NYI items
@@ -22,6 +22,20 @@
 #include "ml-api-service-private.h"
 
 #define MAX_PORT_NUM_LEN 6U
+
+/**
+ * @brief Enumeration for ml-remote service type.
+ */
+typedef enum
+{
+  ML_REMOTE_SERVICE_TYPE_UNKNOWN = 0,
+  ML_REMOTE_SERVICE_TYPE_MODEL_RAW,
+  ML_REMOTE_SERVICE_TYPE_MODEL_URI,
+  ML_REMOTE_SERVICE_TYPE_PIPELINE_RAW,
+  ML_REMOTE_SERVICE_TYPE_PIPELINE_URI,
+
+  ML_REMOTE_SERVICE_TYPE_MAX
+} ml_remote_service_type_e;
 
 /**
  * @brief Data struct for options.
@@ -470,7 +484,7 @@ _mlrs_create_edge_handle (nns_edge_h * edge_h, edge_info_s * edge_info)
  * @brief Creates ml-service handle with given ml-option handle.
  */
 int
-ml_remote_service_create (ml_option_h option, ml_service_h * handle)
+ml_service_remote_create (ml_option_h option, ml_service_h * handle)
 {
   ml_service_s *mls;
   _ml_remote_service_s *remote_s;
@@ -527,7 +541,7 @@ ml_remote_service_create (ml_option_h option, ml_service_h * handle)
  *  @brief Register new information, such as neural network models or pipeline descriptions, on a remote server.
 */
 int
-ml_remote_service_register (ml_service_h handle, ml_option_h option, void *data,
+ml_service_remote_register (ml_service_h handle, ml_option_h option, void *data,
     size_t data_len)
 {
   ml_service_s *mls = (ml_service_s *) handle;

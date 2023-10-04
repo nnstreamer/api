@@ -13,7 +13,7 @@ nns_capi_single_srcs = files('ml-api-inference-single.c')
 nns_capi_pipeline_srcs = files('ml-api-inference-pipeline.c')
 nns_capi_service_srcs = files('ml-api-service-common.c','ml-api-service-agent-client.c', 'ml-api-service-query-client.c')
 if support_remote_service
-  nns_capi_service_srcs += files('ml-api-remote-service.c')
+  nns_capi_service_srcs += files('ml-api-service-remote.c')
 endif
 
 # Build ML-API Common Lib First.
