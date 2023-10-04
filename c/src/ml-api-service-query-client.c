@@ -134,7 +134,7 @@ ml_service_query_create (ml_option_h option, ml_service_h * h)
   prop = g_string_free (tensor_query_client_prop, FALSE);
   description =
       g_strdup_printf
-      ("appsrc name=srcx ! %s ! tensor_query_client %s name=qcx ! tensor_sink name=sinkx async=false sync=false",
+      ("appsrc name=srcx caps=%s ! tensor_query_client %s name=qcx ! tensor_sink name=sinkx async=false sync=false",
       caps, prop);
 
   g_free (caps);
