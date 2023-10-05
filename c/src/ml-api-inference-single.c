@@ -1231,7 +1231,8 @@ ml_single_open_with_option (ml_single_h * single, const ml_option_h option)
     info.models = (gchar *) value;
   if (ML_ERROR_NONE == ml_option_get (option, "custom", &value))
     info.custom_option = (gchar *) value;
-  if (ML_ERROR_NONE == ml_option_get (option, "framework_name", &value))
+  if (ML_ERROR_NONE == ml_option_get (option, "framework_name", &value) ||
+      ML_ERROR_NONE == ml_option_get (option, "framework", &value))
     info.fw_name = (gchar *) value;
 
   return ml_single_open_custom (single, &info);
