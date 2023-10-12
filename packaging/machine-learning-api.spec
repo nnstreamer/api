@@ -510,14 +510,14 @@ install -m 0755 packaging/run-unittest.sh %{buildroot}%{_bindir}/tizen-unittests
 %if 0%{?enable_ml_service}
 %files -n libmachine-learning-agent
 %manifest machine-learning-agent.manifest
-%{_libdir}/libml-agentd.so.*
+%{_libdir}/libml-agent.so.*
 
 %files -n libmachine-learning-agent-devel
 %manifest machine-learning-agent.manifest
-%{_libdir}/libml-agentd.so
-%{_libdir}/libml-agentd.a
-%{_includedir}/ml-agentd/ml-agent-interface.h
-%{_libdir}/pkgconfig/ml-agentd.pc
+%{_libdir}/libml-agent.so
+%{_libdir}/libml-agent.a
+%{_includedir}/ml-agent/ml-agent-interface.h
+%{_libdir}/pkgconfig/ml-agent.pc
 
 %files -n machine-learning-agent
 %manifest machine-learning-agent.manifest
@@ -545,8 +545,8 @@ install -m 0755 packaging/run-unittest.sh %{buildroot}%{_bindir}/tizen-unittests
 %files -n capi-machine-learning-unittests
 %manifest capi-machine-learning.manifest
 %{_bindir}/unittest-ml
-%{_libdir}/libml-agentd-test.a
-%{_libdir}/libml-agentd-test.so*
+%{_libdir}/libml-agent-test.a
+%{_libdir}/libml-agent-test.so*
 %{_libdir}/libunittest_mock.so*
 %if 0%{?gcov:1}
 %{_bindir}/tizen-unittests/%{name}/run-unittest.sh

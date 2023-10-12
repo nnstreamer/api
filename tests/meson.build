@@ -24,14 +24,14 @@ if get_option('enable-ml-service')
   subdir('mock')
   subdir('dbus')
 
-  ml_agentd_main_objs = ml_agent_executable.extract_objects(ml_agentd_main_file)
+  ml_agent_main_objs = ml_agent_executable.extract_objects(ml_agent_main_file)
   executable('machine-learning-agent-test',
     test_dbus_impl_srcs,
-    dependencies: [lib_ml_agentd_test_dep, gdbus_gen_test_dep],
+    dependencies: [lib_ml_agent_test_dep, gdbus_gen_test_dep],
     install: get_option('install-test'),
     install_dir: unittest_base_dir,
     link_with: lib_unittest_mock,
-    objects: ml_agentd_main_objs,
+    objects: ml_agent_main_objs,
   )
 
   subdir('services')
