@@ -2565,7 +2565,8 @@ TEST (nnstreamer_capi_util, tensors_info_extended)
   ml_tensor_type_e out_type;
   gchar *out_name;
   size_t data_size;
-  int status, i;
+  int status;
+  guint i;
 
   status = ml_tensors_info_create_extended (&info);
   EXPECT_EQ (status, ML_ERROR_NONE);
@@ -3442,7 +3443,8 @@ TEST (nnstreamer_capi_util, info_clone)
  */
 TEST (nnstreamer_capi_util, info_clone_extended)
 {
-  gint status, i;
+  gint status;
+  guint i;
   guint count = 0;
   ml_tensors_info_h in_info, out_info;
   ml_tensor_dimension in_dim, out_dim;
@@ -3610,7 +3612,7 @@ TEST (nnstreamer_capi_util, get_nth_info_00)
   EXPECT_NE (tinfo_s, nullptr);
 
   EXPECT_EQ (tinfo_s->type, ML_TENSOR_TYPE_UINT8);
-  EXPECT_EQ (tinfo_s->dimension[0], 5);
+  EXPECT_EQ (tinfo_s->dimension[0], 5U);
   EXPECT_STREQ (tinfo_s->name, "test");
 
   status = ml_tensors_info_destroy (info);
@@ -4159,9 +4161,9 @@ TEST (nnstreamer_capi_util, getVersion)
   ml_api_get_version (&major, &minor, &micro);
 
   EXPECT_TRUE (g_str_has_suffix (version, VERSION));
-  EXPECT_EQ (major, VERSION_MAJOR);
-  EXPECT_EQ (minor, VERSION_MINOR);
-  EXPECT_EQ (micro, VERSION_MICRO);
+  EXPECT_EQ (major, static_cast<unsigned int> (VERSION_MAJOR));
+  EXPECT_EQ (minor, static_cast<unsigned int> (VERSION_MINOR));
+  EXPECT_EQ (micro, static_cast<unsigned int> (VERSION_MICRO));
 
   g_free (version);
 }
