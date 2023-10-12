@@ -1,1 +1,1 @@
-ml_agentd_headers = files('ml-agent-interface.h')
+ml_agent_headers = files('ml-agent-interface.h')

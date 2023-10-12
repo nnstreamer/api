@@ -6,5 +6,5 @@ includedir=@INCLUDE_INSTALL_DIR@
 Name: ml-agent-service
 Description: Development headers and libraries for interfaces provided by Machine Learning Agent Service
 Version: @VERSION@
-Libs: -L${libdir} -lml-agentd
-Cflags: -I${includedir}/ml-agentd
+Libs: -L${libdir} -lml-agent
+Cflags: -I${includedir}/ml-agent
