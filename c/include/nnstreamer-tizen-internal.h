@@ -39,6 +39,24 @@ typedef struct {
   char *fw_name;                 /**< The explicit framework name given by user */
 } ml_single_preset;
 
+typedef void *ml_service_event_h;
+
+/**
+ * @brief Enumeration for the event types of ml-service.
+ */
+typedef enum {
+  ML_SERVICE_EVENT_MODEL_REGISTERED = 0,
+  ML_SERVICE_EVENT_PIPELINE_REGISTERED,
+
+  NNS_EDGE_EVENT_TYPE_UNKNOWN
+} ml_service_event_e;
+
+/**
+ * @brief Callback for the ml-service event.
+ * @return User should return ML_ERROR_NONE if an event is successfully handled.
+ */
+typedef int (*ml_service_event_cb) (ml_service_event_e event_type, void *user_data);
+
 /**
  * @brief Opens an ML model with the custom options and returns the instance as a handle.
  * This is internal function to handle various options in public APIs.
@@ -68,6 +86,8 @@ char * ml_api_get_version_string (void);
  * @details The caller should set one of "remote_sender" and "remote_receiver" as a service type in @a ml_option.
  * @remarks The @a handle should be destroyed using ml_service_destroy().
  * @param[in] option The option used for creating query service.
+ * @param[in] cb The ml-service callbacks for event handling.
+ * @param[in] user_data Private data for the callback. This value is passed to the callback when service is received.
  * @param[out] handle Newly created query service handle is returned.
  * @return @c 0 on Success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
@@ -77,7 +97,7 @@ char * ml_api_get_version_string (void);
  * @retval #ML_ERROR_STREAMS_PIPE Failed to launch the pipeline.
  * @retval #ML_ERROR_TRY_AGAIN The pipeline is not ready yet.
  */
-int ml_service_remote_create (ml_option_h option, ml_service_h *handle);
+int ml_service_remote_create (ml_option_h option, ml_service_event_cb cb, void *user_data, ml_service_h *handle);
 
 /**
  * @todo DRAFT. API name should be determined later.
@@ -106,7 +126,7 @@ int ml_service_remote_create (ml_option_h option, ml_service_h *handle);
  * gchar *client_connect_type = g_strdup ("TCP");
  * ml_option_set (client_option_h, "connect-type", client_connect_type, g_free);
  *
- * status = ml_service_remote_create (client_option_h, &client_h);
+ * status = ml_service_remote_create (client_option_h, NULL, NULL, &client_h);
  *
  * // ================== Server side ==================
  * ml_service_h server_h;
@@ -122,7 +142,7 @@ int ml_service_remote_create (ml_option_h option, ml_service_h *handle);
  *  ml_option_set (server_option_h, "connect-type", server_connect_type, g_free);
  *
  * // Create ml-remote service.
- * ml_service_remote_create (server_option_h, &server_h)
+ * ml_service_remote_create (server_option_h, NULL, NULL, &server_h)
  *
  * // ================== Client side ==================
  * // Send neural network model url to the query server.
@@ -140,7 +160,7 @@ int ml_service_remote_create (ml_option_h option, ml_service_h *handle);
  * ml_option_set (client_option_h, "dest_host", dest_host, g_free);
  *
  * // Create query service.
- * ml_service_remote_create (client_option_h, &client_h);
+ * ml_service_remote_create (client_option_h, NULL, NULL, &client_h);
  *
  * ml_option_h query_option_h = NULL;
  * ml_option_create (&query_option_h);

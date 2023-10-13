@@ -59,6 +59,9 @@ typedef struct
 {
   nns_edge_h edge_h;
   nns_edge_node_type_e node_type;
+
+  ml_service_event_cb event_cb;
+  void *user_data;
 } _ml_remote_service_s;
 
 /**
@@ -335,7 +338,7 @@ done:
  * @brief Process ml remote service
  */
 static int
-_mlrs_process_remote_service (nns_edge_data_h data_h)
+_mlrs_process_remote_service (nns_edge_data_h data_h, void *user_data)
 {
   void *data;
   nns_size_t data_len;
@@ -343,6 +346,8 @@ _mlrs_process_remote_service (nns_edge_data_h data_h)
   g_autofree gchar *service_key = NULL;
   ml_remote_service_type_e service_type;
   int ret = NNS_EDGE_ERROR_NONE;
+  _ml_remote_service_s *remote_s = (_ml_remote_service_s *) user_data;
+  ml_service_event_e event_type = NNS_EDGE_EVENT_TYPE_UNKNOWN;
 
   ret = nns_edge_data_get (data_h, 0, &data, &data_len);
   if (NNS_EDGE_ERROR_NONE != ret) {
@@ -372,7 +377,9 @@ _mlrs_process_remote_service (nns_edge_data_h data_h)
         _ml_error_report_return (NNS_EDGE_ERROR_IO,
             "Failed to get data from uri: %s.", (gchar *) data);
       }
-      if (!_mlrs_model_register (service_key, data_h, array->data, array->len)) {
+      if (_mlrs_model_register (service_key, data_h, array->data, array->len)) {
+        event_type = ML_SERVICE_EVENT_MODEL_REGISTERED;
+      } else {
         _ml_error_report ("Failed to register model downloaded from: %s.",
             (gchar *) data);
         ret = NNS_EDGE_ERROR_UNKNOWN;
@@ -382,7 +389,9 @@ _mlrs_process_remote_service (nns_edge_data_h data_h)
     }
     case ML_REMOTE_SERVICE_TYPE_MODEL_RAW:
     {
-      if (!_mlrs_model_register (service_key, data_h, data, data_len)) {
+      if (_mlrs_model_register (service_key, data_h, data, data_len)) {
+        event_type = ML_SERVICE_EVENT_MODEL_REGISTERED;
+      } else {
         _ml_error_report ("Failed to register model downloaded from: %s.",
             (gchar *) data);
         ret = NNS_EDGE_ERROR_UNKNOWN;
@@ -400,17 +409,30 @@ _mlrs_process_remote_service (nns_edge_data_h data_h)
             "Failed to get data from uri: %s.", (gchar *) data);
       }
       ret = ml_service_set_pipeline (service_key, (gchar *) array->data);
+      if (ML_ERROR_NONE == ret) {
+        event_type = ML_SERVICE_EVENT_PIPELINE_REGISTERED;
+      }
       g_byte_array_free (array, TRUE);
       break;
     }
     case ML_REMOTE_SERVICE_TYPE_PIPELINE_RAW:
       ret = ml_service_set_pipeline (service_key, (gchar *) data);
+      if (ML_ERROR_NONE == ret) {
+        event_type = ML_SERVICE_EVENT_PIPELINE_REGISTERED;
+      }
       break;
     default:
       _ml_error_report ("Unknown service type or not supported yet. "
           "Service num: %d", service_type);
       break;
   }
+
+  if (remote_s && event_type != NNS_EDGE_EVENT_TYPE_UNKNOWN) {
+    if (remote_s->event_cb) {
+      remote_s->event_cb (event_type, remote_s->user_data);
+    }
+  }
+
   return ret;
 }
 
@@ -434,7 +456,7 @@ _mlrs_edge_event_cb (nns_edge_event_h event_h, void *user_data)
       if (NNS_EDGE_ERROR_NONE != ret)
         return ret;
 
-      ret = _mlrs_process_remote_service (data_h);
+      ret = _mlrs_process_remote_service (data_h, user_data);
       break;
     }
     default:
@@ -451,41 +473,46 @@ _mlrs_edge_event_cb (nns_edge_event_h event_h, void *user_data)
  * @brief Create edge handle.
  */
 static int
-_mlrs_create_edge_handle (nns_edge_h * edge_h, edge_info_s * edge_info)
+_mlrs_create_edge_handle (_ml_remote_service_s * remote_s,
+    edge_info_s * edge_info)
 {
   int ret = 0;
+  nns_edge_h edge_h = NULL;
+
   ret = nns_edge_create_handle (edge_info->topic, edge_info->conn_type,
-      edge_info->node_type, edge_h);
+      edge_info->node_type, &edge_h);
 
   if (NNS_EDGE_ERROR_NONE != ret) {
     _ml_error_report ("nns_edge_create_handle failed.");
     return ret;
   }
 
-  ret = nns_edge_set_event_callback (*edge_h, _mlrs_edge_event_cb, NULL);
+  ret = nns_edge_set_event_callback (edge_h, _mlrs_edge_event_cb, remote_s);
   if (NNS_EDGE_ERROR_NONE != ret) {
     _ml_error_report ("nns_edge_set_event_callback failed.");
-    nns_edge_release_handle (*edge_h);
+    nns_edge_release_handle (edge_h);
     return ret;
   }
 
-  _mlrs_set_edge_info (edge_info, *edge_h);
+  _mlrs_set_edge_info (edge_info, edge_h);
 
-  ret = nns_edge_start (*edge_h);
+  ret = nns_edge_start (edge_h);
   if (NNS_EDGE_ERROR_NONE != ret) {
     _ml_error_report ("nns_edge_start failed.");
-    nns_edge_release_handle (*edge_h);
+    nns_edge_release_handle (edge_h);
     return ret;
   }
 
   if (edge_info->node_type == NNS_EDGE_NODE_TYPE_SUB) {
-    ret = nns_edge_connect (*edge_h, edge_info->dest_host,
-        edge_info->dest_port);
+    ret = nns_edge_connect (edge_h, edge_info->dest_host, edge_info->dest_port);
+
     if (NNS_EDGE_ERROR_NONE != ret) {
       _ml_error_report ("nns_edge_connect failed.");
-      nns_edge_release_handle (*edge_h);
+      nns_edge_release_handle (edge_h);
+      return ret;
     }
   }
+  remote_s->edge_h = edge_h;
 
   return ret;
 }
@@ -514,11 +541,11 @@ ml_service_remote_release_internal (void *priv)
  * @brief Creates ml-service handle with given ml-option handle.
  */
 int
-ml_service_remote_create (ml_option_h option, ml_service_h * handle)
+ml_service_remote_create (ml_option_h option, ml_service_event_cb cb,
+    void *user_data, ml_service_h * handle)
 {
   ml_service_s *mls;
   _ml_remote_service_s *remote_s;
-  nns_edge_h edge_h = NULL;
   edge_info_s *edge_info = NULL;
   int ret = ML_ERROR_NONE;
 
@@ -545,15 +572,17 @@ ml_service_remote_create (ml_option_h option, ml_service_h * handle)
 
   _mlrs_get_edge_info (option, edge_info);
 
-  ret = _mlrs_create_edge_handle (&edge_h, edge_info);
+  remote_s = g_new0 (_ml_remote_service_s, 1);
+  remote_s->node_type = edge_info->node_type;
+  remote_s->event_cb = cb;
+  remote_s->user_data = user_data;
+
+  ret = _mlrs_create_edge_handle (remote_s, edge_info);
   if (ML_ERROR_NONE != ret) {
     g_free (edge_info);
+    g_free (remote_s);
     return ret;
   }
-
-  remote_s = g_new0 (_ml_remote_service_s, 1);
-  remote_s->edge_h = edge_h;
-  remote_s->node_type = edge_info->node_type;
 
   mls = g_new0 (ml_service_s, 1);
   mls->type = ML_SERVICE_TYPE_REMOTE;

@@ -88,6 +88,56 @@ class MLRemoteService : public ::testing::Test
 };
 
 /**
+ * @brief ml-service event callback for test.
+ */
+static int
+_ml_service_event_cb (ml_service_event_e event_type, void *user_data)
+{
+  int status;
+
+  switch (event_type) {
+    case ML_SERVICE_EVENT_PIPELINE_REGISTERED:
+      {
+        g_autofree gchar *ret_pipeline = NULL;
+        const gchar *service_key = "pipeline_test_key";
+        status = ml_service_get_pipeline (service_key, &ret_pipeline);
+        EXPECT_EQ (ML_ERROR_NONE, status);
+        EXPECT_STREQ ((gchar *) user_data, ret_pipeline);
+        break;
+      }
+    case ML_SERVICE_EVENT_MODEL_REGISTERED:
+      {
+        const gchar *service_key = "model_registration_test_key";
+        ml_information_h activated_model_info;
+        status = ml_service_model_get_activated (service_key, &activated_model_info);
+        EXPECT_EQ (ML_ERROR_NONE, status);
+        EXPECT_NE (activated_model_info, nullptr);
+
+        gchar *activated_model_path;
+        status = ml_information_get (
+            activated_model_info, "path", (void **) &activated_model_path);
+        EXPECT_EQ (ML_ERROR_NONE, status);
+
+        g_autofree gchar *activated_model_contents = NULL;
+        gsize activated_model_len = 0;
+        EXPECT_TRUE (g_file_get_contents (activated_model_path,
+            &activated_model_contents, &activated_model_len, NULL));
+        EXPECT_EQ (memcmp ((gchar *) user_data, activated_model_contents, activated_model_len), 0);
+
+        status = g_remove (activated_model_path);
+        EXPECT_TRUE (status == 0);
+        status = ml_information_destroy (activated_model_info);
+        EXPECT_EQ (ML_ERROR_NONE, status);
+        break;
+      }
+    default:
+      break;
+  }
+
+  return ML_ERROR_NONE;
+}
+
+/**
  * @brief use case of pipeline registration using ml remote service.
  */
 TEST_F (MLRemoteService, registerPipeline)
@@ -121,7 +171,7 @@ TEST_F (MLRemoteService, registerPipeline)
   status = ml_option_set (client_option_h, "topic", topic, NULL);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_service_remote_create (client_option_h, &client_h);
+  status = ml_service_remote_create (client_option_h, NULL, NULL, &client_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   /**============= Prepare server ============= **/
@@ -147,7 +197,10 @@ TEST_F (MLRemoteService, registerPipeline)
   status = ml_option_set (server_option_h, "connect-type", server_connect_type, g_free);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_service_remote_create (server_option_h, &server_h);
+  g_autofree gchar *pipeline_desc = g_strdup ("fakesrc ! fakesink");
+
+  status = ml_service_remote_create (
+      server_option_h, _ml_service_event_cb, pipeline_desc, &server_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   ml_option_h remote_service_option_h = NULL;
@@ -161,19 +214,13 @@ TEST_F (MLRemoteService, registerPipeline)
   gchar *service_key = g_strdup ("pipeline_test_key");
   ml_option_set (remote_service_option_h, "service-key", service_key, g_free);
 
-  g_autofree gchar *pipeline_desc = g_strdup ("fakesrc ! fakesink");
 
   status = ml_service_remote_register (client_h, remote_service_option_h,
       pipeline_desc, strlen (pipeline_desc) + 1);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  /** Wait for the server to register the pipeline. */
+  /** Wait for the server to register and check the result. */
   g_usleep (1000000);
-
-  g_autofree gchar *ret_pipeline = NULL;
-  status = ml_service_get_pipeline (service_key, &ret_pipeline);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-  EXPECT_STREQ (pipeline_desc, ret_pipeline);
 
   status = ml_service_destroy (server_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
@@ -186,7 +233,6 @@ TEST_F (MLRemoteService, registerPipeline)
   status = ml_option_destroy (client_option_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 }
-
 
 /**
  * @brief use case of pipeline registration using ml remote service.
@@ -222,7 +268,7 @@ TEST_F (MLRemoteService, registerPipelineURI)
   status = ml_option_set (client_option_h, "topic", topic, NULL);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_service_remote_create (client_option_h, &client_h);
+  status = ml_service_remote_create (client_option_h, NULL, NULL, &client_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   /**============= Prepare server ============= **/
@@ -248,7 +294,10 @@ TEST_F (MLRemoteService, registerPipelineURI)
   status = ml_option_set (server_option_h, "connect-type", server_connect_type, g_free);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_service_remote_create (server_option_h, &server_h);
+  g_autofree gchar *pipeline_desc = g_strdup ("fakesrc ! fakesink");
+
+  status = ml_service_remote_create (
+      server_option_h, _ml_service_event_cb, pipeline_desc, &server_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   ml_option_h remote_service_option_h = NULL;
@@ -262,32 +311,25 @@ TEST_F (MLRemoteService, registerPipelineURI)
   ml_option_set (remote_service_option_h, "service-key", service_key, g_free);
 
   gchar *current_dir = g_get_current_dir ();
-  gchar *test_file_path = g_build_path ("/", current_dir, "test.pipeline", NULL);
-  const gchar *pipeline_desc = "fakesrc ! fakesink";
+  g_autofree gchar *test_file_path
+      = g_build_path ("/", current_dir, "test.pipeline", NULL);
+
 
   EXPECT_TRUE (g_file_set_contents (
       test_file_path, pipeline_desc, strlen (pipeline_desc) + 1, NULL));
 
-  gchar *pipeline_uri = g_strdup_printf ("file://%s", test_file_path);
-  g_free (test_file_path);
+  g_autofree gchar *pipeline_uri = g_strdup_printf ("file://%s", test_file_path);
 
   status = ml_service_remote_register (client_h, remote_service_option_h,
       pipeline_uri, strlen (pipeline_uri) + 1);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  /** Wait for the server to register the pipeline. */
+  /** Wait for the server to register and check the result. */
   g_usleep (1000000);
-
-  gchar *ret_pipeline = NULL;
-  status = ml_service_get_pipeline (service_key, &ret_pipeline);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-  EXPECT_STREQ (pipeline_desc, ret_pipeline);
 
   status = ml_service_delete_pipeline (service_key);
   EXPECT_TRUE (status == ML_ERROR_NONE);
 
-  g_free (ret_pipeline);
-  g_free (pipeline_uri);
   status = ml_service_destroy (server_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
   status = ml_service_destroy (client_h);
@@ -312,10 +354,10 @@ TEST_F (MLRemoteService, createInvalidParam_n)
   status = ml_option_create (&option_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_service_remote_create (NULL, &service_h);
+  status = ml_service_remote_create (NULL, NULL, NULL, &service_h);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = ml_service_remote_create (option_h, NULL);
+  status = ml_service_remote_create (option_h, NULL, NULL, NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
   status = ml_option_destroy (option_h);
@@ -352,7 +394,7 @@ TEST_F (MLRemoteService, registerInvalidParam_n)
   status = ml_option_set (option_h, "connect-type", client_connect_type, g_free);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_service_remote_create (option_h, &service_h);
+  status = ml_service_remote_create (option_h, NULL, NULL, &service_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   status = ml_option_destroy (option_h);
@@ -422,7 +464,7 @@ TEST_F (MLRemoteService, registerModel)
   status = ml_option_set (client_option_h, "topic", topic, NULL);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_service_remote_create (client_option_h, &client_h);
+  status = ml_service_remote_create (client_option_h, NULL, NULL, &client_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   /**============= Prepare server ============= **/
@@ -448,23 +490,24 @@ TEST_F (MLRemoteService, registerModel)
   status = ml_option_set (server_option_h, "connect-type", server_connect_type, g_free);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_service_remote_create (server_option_h, &server_h);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-
-  /** Set service option */
   const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   /* ml_service_remote_register () requires absolute path to model, ignore this case. */
   if (root_path == NULL)
     return;
 
-  gchar *test_model = g_build_filename (root_path, "tests", "test_models",
-      "models", "mobilenet_v1_1.0_224_quant.tflite", NULL);
+  g_autofree gchar *test_model = g_build_filename (root_path, "tests",
+      "test_models", "models", "mobilenet_v1_1.0_224_quant.tflite", NULL);
   EXPECT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
 
-  gchar *contents = NULL;
+  g_autofree gchar *contents = NULL;
   gsize len = 0;
   EXPECT_TRUE (g_file_get_contents (test_model, &contents, &len, NULL));
 
+  status = ml_service_remote_create (
+      server_option_h, _ml_service_event_cb, contents, &server_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  /** Set service option */
   ml_option_h remote_service_option_h = NULL;
   status = ml_option_create (&remote_service_option_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
@@ -487,34 +530,12 @@ TEST_F (MLRemoteService, registerModel)
   status = ml_service_remote_register (client_h, remote_service_option_h, contents, len);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  /** Wait for the server to register the pipeline. */
+  /** Wait for the server to register and check the result. */
   g_usleep (1000000);
-
-  // Get model file
-  ml_information_h activated_model_info;
-  status = ml_service_model_get_activated (service_key, &activated_model_info);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-  EXPECT_NE (activated_model_info, nullptr);
-
-  gchar *activated_model_path;
-  status = ml_information_get (activated_model_info, "path", (void **) &activated_model_path);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-
-  gchar *activated_model_contents = NULL;
-  gsize activated_model_len = 0;
-  EXPECT_TRUE (g_file_get_contents (activated_model_path,
-      &activated_model_contents, &activated_model_len, NULL));
-  EXPECT_EQ (len, activated_model_len);
-  EXPECT_EQ (memcmp (contents, activated_model_contents, len), 0);
 
   status = ml_service_model_delete (service_key, 0U);
   EXPECT_TRUE (status == ML_ERROR_NONE);
 
-  g_remove (activated_model_path);
-
-  g_free (contents);
-  g_free (test_model);
-  g_free (activated_model_contents);
   status = ml_service_destroy (server_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
   status = ml_service_destroy (client_h);
@@ -524,8 +545,6 @@ TEST_F (MLRemoteService, registerModel)
   status = ml_option_destroy (remote_service_option_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
   status = ml_option_destroy (client_option_h);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-  status = ml_information_destroy (activated_model_info);
   EXPECT_EQ (ML_ERROR_NONE, status);
 }
 
@@ -563,7 +582,7 @@ TEST_F (MLRemoteService, registerModelURI)
   status = ml_option_set (client_option_h, "topic", topic, NULL);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_service_remote_create (client_option_h, &client_h);
+  status = ml_service_remote_create (client_option_h, NULL, NULL, &client_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   /**============= Prepare server ============= **/
@@ -589,19 +608,24 @@ TEST_F (MLRemoteService, registerModelURI)
   status = ml_option_set (server_option_h, "connect-type", server_connect_type, g_free);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_service_remote_create (server_option_h, &server_h);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-
-  /** Prepare model register service */
   const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   /* ml_service_remote_register () requires absolute path to model, ignore this case. */
   if (root_path == NULL)
     return;
 
-  gchar *test_model_path = g_build_filename (root_path, "tests", "test_models",
-      "models", "mobilenet_v1_1.0_224_quant.tflite", NULL);
+  g_autofree gchar *test_model_path = g_build_filename (root_path, "tests",
+      "test_models", "models", "mobilenet_v1_1.0_224_quant.tflite", NULL);
   EXPECT_TRUE (g_file_test (test_model_path, G_FILE_TEST_EXISTS));
 
+  g_autofree gchar *contents = NULL;
+  gsize len = 0;
+  EXPECT_TRUE (g_file_get_contents (test_model_path, &contents, &len, NULL));
+
+  status = ml_service_remote_create (
+      server_option_h, _ml_service_event_cb, contents, &server_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  /** Prepare model register service */
   ml_option_h remote_service_option_h = NULL;
   status = ml_option_create (&remote_service_option_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
@@ -609,10 +633,10 @@ TEST_F (MLRemoteService, registerModelURI)
   gchar *service_type = g_strdup ("model_uri");
   ml_option_set (remote_service_option_h, "service-type", service_type, g_free);
 
-  gchar *service_key = g_strdup ("pipeline_test_key");
+  gchar *service_key = g_strdup ("model_registration_test_key");
   ml_option_set (remote_service_option_h, "service-key", service_key, g_free);
 
-  gchar *model_uri = g_strdup_printf ("file://%s", test_model_path);
+  g_autofree gchar *model_uri = g_strdup_printf ("file://%s", test_model_path);
 
   gchar *activate = g_strdup ("true");
   ml_option_set (remote_service_option_h, "activate", activate, g_free);
@@ -626,40 +650,13 @@ TEST_F (MLRemoteService, registerModelURI)
   status = ml_service_remote_register (
       client_h, remote_service_option_h, model_uri, strlen (model_uri) + 1);
   EXPECT_EQ (ML_ERROR_NONE, status);
-  g_free (model_uri);
 
-  /** Wait for the server to register the pipeline. */
+  /** Wait for the server to register and check the result. */
   g_usleep (1000000);
-
-  gchar *contents = NULL;
-  gsize len = 0;
-  EXPECT_TRUE (g_file_get_contents (test_model_path, &contents, &len, NULL));
-
-  ml_information_h activated_model_info;
-  status = ml_service_model_get_activated (service_key, &activated_model_info);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-  EXPECT_NE (activated_model_info, nullptr);
-
-  gchar *activated_model_path;
-  status = ml_information_get (activated_model_info, "path", (void **) &activated_model_path);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-
-  gchar *activated_model_contents = NULL;
-  gsize activated_model_len = 0;
-  EXPECT_TRUE (g_file_get_contents (activated_model_path,
-      &activated_model_contents, &activated_model_len, NULL));
-  EXPECT_EQ (len, activated_model_len);
-  EXPECT_EQ (memcmp (contents, activated_model_contents, len), 0);
 
   status = ml_service_model_delete (service_key, 0U);
   EXPECT_TRUE (status == ML_ERROR_NONE);
 
-  status = g_remove (activated_model_path);
-  EXPECT_TRUE (status == 0);
-
-  g_free (contents);
-  g_free (activated_model_contents);
-  g_free (test_model_path);
   status = ml_service_destroy (server_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
   status = ml_service_destroy (client_h);
@@ -669,8 +666,6 @@ TEST_F (MLRemoteService, registerModelURI)
   status = ml_option_destroy (remote_service_option_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
   status = ml_option_destroy (client_option_h);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-  status = ml_information_destroy (activated_model_info);
   EXPECT_EQ (ML_ERROR_NONE, status);
 }
 
