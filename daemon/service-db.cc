@@ -291,6 +291,9 @@ MLServiceDB::set_pipeline (const std::string name, const std::string description
   std::string key_with_prefix = DB_KEY_PREFIX + std::string ("_pipeline_");
   key_with_prefix += name;
 
+  if (!set_transaction (true))
+    throw std::runtime_error ("Failed to begin transaction.");
+
   if (sqlite3_prepare_v2 (_db,
           "INSERT OR REPLACE INTO tblPipeline VALUES (?1, ?2)", -1, &res, nullptr)
           != SQLITE_OK
@@ -302,6 +305,9 @@ MLServiceDB::set_pipeline (const std::string name, const std::string description
   }
 
   sqlite3_finalize (res);
+
+  if (!set_transaction (false))
+    throw std::runtime_error ("Failed to end transaction.");
 }
 
 /**
@@ -492,9 +498,6 @@ MLServiceDB::set_model (const std::string name, const std::string model, const b
 
   sqlite3_finalize (res);
 
-  if (!set_transaction (false))
-    throw std::runtime_error ("Failed to end transaction.");
-
   long long int last_id = sqlite3_last_insert_rowid (_db);
   if (last_id == 0) {
     _E ("Failed to get last inserted row id: %s", sqlite3_errmsg (_db));
@@ -510,6 +513,9 @@ MLServiceDB::set_model (const std::string name, const std::string model, const b
   }
 
   sqlite3_finalize (res);
+
+  if (!set_transaction (false))
+    throw std::runtime_error ("Failed to end transaction.");
 
   if (_version == 0) {
     _E ("Failed to get model version with name %s: %s", name.c_str (),
@@ -547,6 +553,10 @@ MLServiceDB::update_model_description (
                                  + " version " + std::to_string (version));
   }
 
+
+  if (!set_transaction (true))
+    throw std::runtime_error ("Failed to begin transaction.");
+
   /* update model description */
   if (sqlite3_prepare_v2 (_db, "UPDATE tblModel SET description = ?1 WHERE key = ?2 AND version = ?3",
           -1, &res, nullptr)
@@ -559,6 +569,9 @@ MLServiceDB::update_model_description (
   }
 
   sqlite3_finalize (res);
+
+  if (!set_transaction (false))
+    throw std::runtime_error ("Failed to end transaction.");
 }
 
 /**
