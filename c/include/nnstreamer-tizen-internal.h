@@ -96,6 +96,7 @@ char * ml_api_get_version_string (void);
  * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
  * @retval #ML_ERROR_STREAMS_PIPE Failed to launch the pipeline.
  * @retval #ML_ERROR_TRY_AGAIN The pipeline is not ready yet.
+ * @retval #ML_ERROR_PERMISSION_DENIED The application does not have the privilege to access to the storage.
  */
 int ml_service_remote_create (ml_option_h option, ml_service_event_cb cb, void *user_data, ml_service_h *handle);
 

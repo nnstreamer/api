@@ -11,6 +11,7 @@
  */
 
 #include <glib.h>
+#include <glib/gstdio.h>
 #include <gst/gst.h>
 #include <gst/gstbuffer.h>
 #include <gst/app/app.h>
@@ -62,6 +63,7 @@ typedef struct
 
   ml_service_event_cb event_cb;
   void *user_data;
+  gchar *path; /** A path to save the received model file */
 } _ml_remote_service_s;
 
 /**
@@ -232,18 +234,15 @@ curl_mem_write_cb (void *data, size_t size, size_t nmemb, void *clientp)
  */
 static gboolean
 _mlrs_model_register (gchar * service_key, nns_edge_data_h data_h,
-    void *data, nns_size_t data_len)
+    void *data, nns_size_t data_len, const gchar * dir_path)
 {
   guint version = -1;
-  gchar *description = NULL;
-  gchar *name = NULL;
-  gchar *current_dir = g_get_current_dir ();
-  gchar *dir_path = NULL;
-  gchar *model_path = NULL;
-  gchar *activate = NULL;
+  g_autofree gchar *description = NULL;
+  g_autofree gchar *name = NULL;
+  g_autofree gchar *activate = NULL;
+  g_autofree gchar *model_path = NULL;
   gboolean active_bool = TRUE;
   GError *error = NULL;
-  gboolean ret = TRUE;
 
   if (NNS_EDGE_ERROR_NONE != nns_edge_data_get_info (data_h, "description",
           &description)
@@ -251,28 +250,18 @@ _mlrs_model_register (gchar * service_key, nns_edge_data_h data_h,
       || NNS_EDGE_ERROR_NONE != nns_edge_data_get_info (data_h, "activate",
           &activate)) {
     _ml_loge ("Failed to get info from data handle.");
-    ret = FALSE;
-    goto error;
+    return FALSE;
   }
 
   active_bool = _mlrs_parse_activate (activate);
 
-  dir_path = g_build_path ("/", current_dir, service_key, NULL);
-  if (g_mkdir_with_parents (dir_path, 0755) < 0) {
-    _ml_loge ("Failed to create directory %s., error: %s", dir_path,
-        g_strerror (errno));
-    ret = FALSE;
-    goto error;
-  }
-
-  model_path = g_build_path ("/", dir_path, name, NULL);
+  model_path = g_build_path (G_DIR_SEPARATOR_S, dir_path, name, NULL);
 
   if (!g_file_set_contents (model_path, (char *) data, data_len, &error)) {
     _ml_loge ("Failed to write data to file: %s",
         error ? error->message : "unknown error");
     g_clear_error (&error);
-    ret = FALSE;
-    goto error;
+    return FALSE;
   }
 
   /**
@@ -281,17 +270,36 @@ _mlrs_model_register (gchar * service_key, nns_edge_data_h data_h,
   if (ML_ERROR_NONE != ml_service_model_register (service_key, model_path,
           active_bool, description, &version)) {
     _ml_loge ("Failed to register model, service ket:%s", service_key);
-    ret = FALSE;
+    return FALSE;
   }
-error:
-  g_free (current_dir);
-  g_free (dir_path);
-  g_free (activate);
-  g_free (model_path);
-  g_free (description);
-  g_free (name);
 
-  return ret;
+  return TRUE;
+}
+
+/**
+ * @brief Get path to save the model given from remote sender.
+ * @note The caller is responsible for freeing the returned data using g_free().
+ */
+static gchar *
+_mlrs_get_model_dir_path (_ml_remote_service_s * remote_s,
+    const gchar * service_key)
+{
+  g_autofree gchar *dir_path = NULL;
+
+  if (remote_s->path) {
+    dir_path = g_strdup (remote_s->path);
+  } else {
+    g_autofree gchar *current_dir = g_get_current_dir ();
+
+    dir_path = g_build_path (G_DIR_SEPARATOR_S, current_dir, service_key, NULL);
+    if (g_mkdir_with_parents (dir_path, 0755) < 0) {
+      _ml_loge ("Failed to create directory %s., error: %s", dir_path,
+          g_strerror (errno));
+      return NULL;
+    }
+  }
+
+  return g_steal_pointer (&dir_path);
 }
 
 /**
@@ -371,13 +379,22 @@ _mlrs_process_remote_service (nns_edge_data_h data_h, void *user_data)
     case ML_REMOTE_SERVICE_TYPE_MODEL_URI:
     {
       GByteArray *array = g_byte_array_new ();
+      g_autofree gchar *dir_path = NULL;
 
       if (!_mlrs_get_data_from_uri ((gchar *) data, array)) {
         g_byte_array_free (array, TRUE);
         _ml_error_report_return (NNS_EDGE_ERROR_IO,
             "Failed to get data from uri: %s.", (gchar *) data);
       }
-      if (_mlrs_model_register (service_key, data_h, array->data, array->len)) {
+
+      dir_path = _mlrs_get_model_dir_path (remote_s, service_key);
+      if (!dir_path) {
+        _ml_error_report_return (NNS_EDGE_ERROR_UNKNOWN,
+            "Failed to get model directory path.");
+      }
+
+      if (_mlrs_model_register (service_key, data_h, array->data, array->len,
+              dir_path)) {
         event_type = ML_SERVICE_EVENT_MODEL_REGISTERED;
       } else {
         _ml_error_report ("Failed to register model downloaded from: %s.",
@@ -389,7 +406,14 @@ _mlrs_process_remote_service (nns_edge_data_h data_h, void *user_data)
     }
     case ML_REMOTE_SERVICE_TYPE_MODEL_RAW:
     {
-      if (_mlrs_model_register (service_key, data_h, data, data_len)) {
+      g_autofree gchar *dir_path =
+          _mlrs_get_model_dir_path (remote_s, service_key);
+      if (!dir_path) {
+        _ml_error_report_return (NNS_EDGE_ERROR_UNKNOWN,
+            "Failed to get model directory path.");
+      }
+
+      if (_mlrs_model_register (service_key, data_h, data, data_len, dir_path)) {
         event_type = ML_SERVICE_EVENT_MODEL_REGISTERED;
       } else {
         _ml_error_report ("Failed to register model downloaded from: %s.",
@@ -529,6 +553,7 @@ ml_service_remote_release_internal (void *priv)
     return ML_ERROR_INVALID_PARAMETER;
 
   nns_edge_release_handle (mlrs->edge_h);
+  g_free (mlrs->path);
 
   /** Wait some time until release the edge handle. */
   g_usleep (1000000);
@@ -545,9 +570,10 @@ ml_service_remote_create (ml_option_h option, ml_service_event_cb cb,
     void *user_data, ml_service_h * handle)
 {
   ml_service_s *mls;
-  _ml_remote_service_s *remote_s;
-  edge_info_s *edge_info = NULL;
+  g_autofree _ml_remote_service_s *remote_s = NULL;
+  g_autofree edge_info_s *edge_info = NULL;
   int ret = ML_ERROR_NONE;
+  void *value;
 
   check_feature_state (ML_FEATURE_SERVICE);
   check_feature_state (ML_FEATURE_INFERENCE);
@@ -576,22 +602,31 @@ ml_service_remote_create (ml_option_h option, ml_service_event_cb cb,
   remote_s->node_type = edge_info->node_type;
   remote_s->event_cb = cb;
   remote_s->user_data = user_data;
+  if (ML_ERROR_NONE == ml_option_get (option, "path", &value)) {
+    if (!g_file_test (value, G_FILE_TEST_IS_DIR)) {
+      _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+          "The given param, dir path = \"%s\" is invalid or the dir is not found or accessible.",
+          value);
+    }
+    if (g_access (value, W_OK) != 0) {
+      _ml_error_report_return (ML_ERROR_PERMISSION_DENIED,
+          "Write permission denied, path: %s", value);
+    }
+    remote_s->path = g_strdup (value);
+  }
 
   ret = _mlrs_create_edge_handle (remote_s, edge_info);
   if (ML_ERROR_NONE != ret) {
-    g_free (edge_info);
-    g_free (remote_s);
     return ret;
   }
 
   mls = g_new0 (ml_service_s, 1);
   mls->type = ML_SERVICE_TYPE_REMOTE;
-  mls->priv = remote_s;
+  mls->priv = g_steal_pointer (&remote_s);
 
   *handle = mls;
 
   _mlrs_release_edge_info (edge_info);
-  g_free (edge_info);
 
   return ret;
 }
