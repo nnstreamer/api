@@ -51,6 +51,7 @@ typedef struct
   guint dest_port;
   nns_edge_connect_type_e conn_type;
   nns_edge_node_type_e node_type;
+  gchar *id;
 } edge_info_s;
 
 /**
@@ -138,6 +139,10 @@ _mlrs_get_edge_info (ml_option_h option, edge_info_s * edge_info)
     edge_info->topic = g_strdup (value);
   if (ML_ERROR_NONE == ml_option_get (option, "node-type", &value))
     edge_info->node_type = _mlrs_get_node_type (value);
+  if (ML_ERROR_NONE == ml_option_get (option, "id", &value)) {
+    g_free (edge_info->id);
+    edge_info->id = g_strdup (value);
+  }
 }
 
 /**
@@ -169,6 +174,7 @@ _mlrs_release_edge_info (edge_info_s * edge_info)
   g_free (edge_info->dest_host);
   g_free (edge_info->host);
   g_free (edge_info->topic);
+  g_free (edge_info->id);
 }
 
 /**
@@ -503,7 +509,7 @@ _mlrs_create_edge_handle (_ml_remote_service_s * remote_s,
   int ret = 0;
   nns_edge_h edge_h = NULL;
 
-  ret = nns_edge_create_handle (edge_info->topic, edge_info->conn_type,
+  ret = nns_edge_create_handle (edge_info->id, edge_info->conn_type,
       edge_info->node_type, &edge_h);
 
   if (NNS_EDGE_ERROR_NONE != ret) {
@@ -595,6 +601,7 @@ ml_service_remote_create (ml_option_h option, ml_service_event_cb cb,
   edge_info->dest_host = g_strdup ("localhost");
   edge_info->dest_port = 0;
   edge_info->conn_type = NNS_EDGE_CONNECT_TYPE_UNKNOWN;
+  edge_info->id = NULL;
 
   _mlrs_get_edge_info (option, edge_info);
 
