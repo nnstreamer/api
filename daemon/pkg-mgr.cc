@@ -103,17 +103,20 @@ _parse_model_json (const gchar *json_path, const gchar *app_info)
 
       const gchar *name = json_object_get_string_member (object, "name");
       const gchar *model = json_object_get_string_member (object, "model");
-      const gchar *description = json_object_get_string_member (object, "description");
+      const gchar *desc = json_object_get_string_member (object, "description");
+      const gchar *activate = json_object_get_string_member (object, "activate");
 
-      if (!name || !model || !description) {
-        _E ("Failed to get name, model, or description from json file '%s'", json_path);
+      if (!name || !model) {
+        _E ("Failed to get name or model from json file '%s'.", json_path);
         continue;
       }
 
       guint version;
-      db.set_model (name, model, true, description, app_info, &version);
+      bool active = (activate && g_ascii_strcasecmp (activate, "true") == 0);
 
-      _I ("The model with app_info (%s) is registered as version %u", app_info, version);
+      db.set_model (name, model, active, desc ? desc : "", app_info ? app_info : "", &version);
+
+      _I ("The model with name '%s' is registered as version '%u'.", name, version);
     }
   } catch (const std::exception &e) {
     _E ("%s", e.what ());
