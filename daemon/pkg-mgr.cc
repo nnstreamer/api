@@ -19,6 +19,16 @@
 #include "service-db.hh"
 
 /**
+ * @brief Internal enumeration for data types of json.
+ */
+typedef enum {
+  MLSVC_JSON_MODEL = 0,
+  MLSVC_JSON_PIPELINE = 1,
+  MLSVC_JSON_RESOURCE = 2,
+  MLSVC_JSON_MAX
+} mlsvc_json_type_e;
+
+/**
  * @brief Global handle for Tizen package manager.
  */
 static package_manager_h pkg_mgr = NULL;
@@ -55,23 +65,40 @@ _get_app_info (const gchar *package_name, const gchar *res_type, const gchar *re
 }
 
 /**
- * @brief Parse model json and update ml-service database.
+ * @brief Parse json and update ml-service database.
  */
 static void
-_parse_model_json (const gchar *json_path, const gchar *app_info)
+_parse_json (const gchar *json_path, mlsvc_json_type_e json_type, const gchar *app_info)
 {
-  if (!g_file_test (json_path, (GFileTest) (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR))) {
+  g_autofree gchar *json_file = NULL;
+
+  switch (json_type) {
+    case MLSVC_JSON_MODEL:
+      json_file = g_build_filename (json_path, "model_description.json", NULL);
+      break;
+    case MLSVC_JSON_PIPELINE:
+      json_file = g_build_filename (json_path, "pipeline_description.json", NULL);
+      break;
+    case MLSVC_JSON_RESOURCE:
+      json_file = g_build_filename (json_path, "resource_description.json", NULL);
+      break;
+    default:
+      _E ("Unknown data type '%d', internal error?", json_type);
+      return;
+  }
+
+  if (!g_file_test (json_file, (GFileTest) (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR))) {
     _W ("Failed to find json file '%s'. RPK using ML Service API should provide this json file.",
-        json_path);
+        json_file);
     return;
   }
 
   g_autoptr (JsonParser) parser = json_parser_new ();
   g_autoptr (GError) err = NULL;
 
-  json_parser_load_from_file (parser, json_path, &err);
+  json_parser_load_from_file (parser, json_file, &err);
   if (err) {
-    _E ("Failed to parse json file '%s': %s", json_path, err->message);
+    _E ("Failed to parse json file '%s': %s", json_file, err->message);
     return;
   }
 
@@ -83,14 +110,14 @@ _parse_model_json (const gchar *json_path, const gchar *app_info)
   if (JSON_NODE_HOLDS_ARRAY (root)) {
     array = json_node_get_array (root);
     if (!array) {
-      _E ("Failed to get root array from json file '%s'", json_path);
+      _E ("Failed to get root array from json file '%s'", json_file);
       return;
     }
 
     json_len = json_array_get_length (array);
   }
 
-  /* For each model, register it into the database. */
+  /* Update ML service database. */
   MLServiceDB &db = MLServiceDB::getInstance ();
   try {
     db.connectDB ();
@@ -101,46 +128,69 @@ _parse_model_json (const gchar *json_path, const gchar *app_info)
       else
         object = json_node_get_object (root);
 
-      const gchar *name = json_object_get_string_member (object, "name");
-      const gchar *model = json_object_get_string_member (object, "model");
-      const gchar *desc = json_object_get_string_member (object, "description");
-      const gchar *activate = json_object_get_string_member (object, "activate");
+      switch (json_type) {
+        case MLSVC_JSON_MODEL:
+          {
+            const gchar *name = json_object_get_string_member (object, "name");
+            const gchar *model = json_object_get_string_member (object, "model");
+            const gchar *desc = json_object_get_string_member (object, "description");
+            const gchar *activate = json_object_get_string_member (object, "activate");
 
-      if (!name || !model) {
-        _E ("Failed to get name or model from json file '%s'.", json_path);
-        continue;
+            if (!name || !model) {
+              _E ("Failed to get name or model from json file '%s'.", json_file);
+              continue;
+            }
+
+            guint version;
+            bool active = (activate && g_ascii_strcasecmp (activate, "true") == 0);
+
+            db.set_model (name, model, active, desc ? desc : "",
+                app_info ? app_info : "", &version);
+
+            _I ("The model with name '%s' is registered as version '%u'.", name, version);
+          }
+          break;
+        case MLSVC_JSON_PIPELINE:
+          {
+            const gchar *name = json_object_get_string_member (object, "name");
+            const gchar *desc = json_object_get_string_member (object, "description");
+
+            if (!name || !desc) {
+              _E ("Failed to get name or description from json file '%s'.", json_file);
+              continue;
+            }
+
+            db.set_pipeline (name, desc);
+
+            _I ("The pipeline description with name '%s' is registered.", name);
+          }
+          break;
+        case MLSVC_JSON_RESOURCE:
+          {
+            const gchar *name = json_object_get_string_member (object, "name");
+            const gchar *path = json_object_get_string_member (object, "path");
+            const gchar *desc = json_object_get_string_member (object, "description");
+
+            if (!name || !path) {
+              _E ("Failed to get name or path from json file '%s'.", json_file);
+              continue;
+            }
+
+            db.set_resource (name, path, desc ? desc : "", app_info ? app_info : "");
+
+            _I ("The resource with name '%s' is registered.", name);
+          }
+          break;
+        default:
+          _E ("Unknown data type '%d', internal error?", json_type);
+          break;
       }
-
-      guint version;
-      bool active = (activate && g_ascii_strcasecmp (activate, "true") == 0);
-
-      db.set_model (name, model, active, desc ? desc : "", app_info ? app_info : "", &version);
-
-      _I ("The model with name '%s' is registered as version '%u'.", name, version);
     }
   } catch (const std::exception &e) {
     _E ("%s", e.what ());
   }
 
   db.disconnectDB ();
-}
-
-/**
- * @brief Parse pipeline json and update ml-service database.
- */
-static void
-_parse_pipeline_json (const gchar *json_path, const gchar *app_info)
-{
-  /** @todo Fill this function */
-}
-
-/**
- * @brief Parse resource json and update ml-service database.
- */
-static void
-_parse_resource_json (const gchar *json_path, const gchar *app_info)
-{
-  /** @todo Fill this function */
 }
 
 /**
@@ -247,17 +297,10 @@ _pkg_mgr_event_cb (const char *type, const char *package_name,
     }
 
     g_autofree gchar *app_info = _get_app_info (package_name, res_type, res_version);
+    g_autofree gchar *json_path = g_build_filename (pkg_path, res_type, NULL);
 
-    g_autofree gchar *model_json
-        = g_build_filename (pkg_path, res_type, "model_description.json", NULL);
-    g_autofree gchar *pipeline_json
-        = g_build_filename (pkg_path, res_type, "pipeline_description.json", NULL);
-    g_autofree gchar *resource_json
-        = g_build_filename (pkg_path, res_type, "resource_description.json", NULL);
-
-    _parse_model_json (model_json, app_info);
-    _parse_pipeline_json (pipeline_json, app_info);
-    _parse_resource_json (resource_json, app_info);
+    for (gint t = MLSVC_JSON_MODEL; t < MLSVC_JSON_MAX; t++)
+      _parse_json (json_path, (mlsvc_json_type_e) t, app_info);
   } else if (event_type == PACKAGE_MANAGER_EVENT_TYPE_UNINSTALL
              && event_state == PACKAGE_MANAGER_EVENT_STATE_STARTED) {
     _I ("resource package %s is being uninstalled", package_name);
