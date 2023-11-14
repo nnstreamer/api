@@ -239,12 +239,13 @@ construct_element (GstElement * e, ml_pipeline * p, const char *name,
   ret->handles = NULL;
   ret->src = NULL;
   ret->sink = NULL;
-  _ml_tensors_info_initialize (&ret->tensors_info);
   ret->maxid = 0;
   ret->handle_id = 0;
   ret->is_media_stream = FALSE;
   ret->is_flexible_tensor = FALSE;
   g_mutex_init (&ret->lock);
+  gst_tensors_info_init (&ret->tensors_info);
+
   return ret;
 }
 
@@ -252,7 +253,7 @@ construct_element (GstElement * e, ml_pipeline * p, const char *name,
  * @brief Internal function to get the tensors info from the element caps.
  */
 static gboolean
-get_tensors_info_from_caps (GstCaps * caps, ml_tensors_info_s * info,
+get_tensors_info_from_caps (GstCaps * caps, GstTensorsInfo * info,
     gboolean * is_flexible)
 {
   GstStructure *s;
@@ -260,7 +261,6 @@ get_tensors_info_from_caps (GstCaps * caps, ml_tensors_info_s * info,
   guint i, n_caps;
   gboolean found = FALSE;
 
-  _ml_tensors_info_initialize (info);
   n_caps = gst_caps_get_size (caps);
 
   for (i = 0; i < n_caps; i++) {
@@ -268,7 +268,8 @@ get_tensors_info_from_caps (GstCaps * caps, ml_tensors_info_s * info,
     found = gst_tensors_config_from_structure (&config, s);
 
     if (found) {
-      _ml_tensors_info_copy_from_gst (info, &config.info);
+      gst_tensors_info_free (info);
+      gst_tensors_info_copy (info, &config.info);
       *is_flexible = gst_tensors_config_is_flexible (&config);
     }
 
@@ -291,26 +292,17 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
   /** @todo CRITICAL if the pipeline is being killed, don't proceed! */
   GstMemory *mem[ML_TENSOR_SIZE_LIMIT];
   GstMapInfo map[ML_TENSOR_SIZE_LIMIT];
-  guint i;
-  guint num_mems, num_tensors;
+  guint i, num_tensors;
   GList *l;
   ml_tensors_data_s *_data = NULL;
-  ml_tensors_info_s *_info;
-  ml_tensors_info_s info_flex_tensor;
+  ml_tensors_info_h out_info = NULL;
+  GstTensorsInfo gst_info;
   int status;
 
-  _info = &elem->tensors_info;
-  num_mems = gst_buffer_n_memory (b);
-  num_tensors = gst_tensor_buffer_get_count (b);
+  gst_tensors_info_init (&gst_info);
+  gst_info.num_tensors = num_tensors = gst_tensor_buffer_get_count (b);
 
-  if (num_mems > ML_TENSOR_SIZE_LIMIT_STATIC) {
-    _ml_loge (_ml_detail
-        ("Number of memory chunks in a GstBuffer exceed the limit: %u > %u. Please check the version or variants of GStreamer you use. If you have modified the maximum number of memory chunks of a GST-Buffer, this might happen. Please update nnstreamer and ml-api code to make them consistent with your modification of GStreamer.",
-            num_mems, ML_TENSOR_SIZE_LIMIT_STATIC));
-    return;
-  }
-
-  /* set tensor data */
+  /* Set tensor data. The handle for tensors-info in data should be added. */
   status =
       _ml_tensors_data_create_no_alloc (NULL, (ml_tensors_data_h *) & _data);
   if (status != ML_ERROR_NONE) {
@@ -328,7 +320,8 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
       _ml_loge (_ml_detail
           ("Failed to map the output in sink '%s' callback, which is registered by ml_pipeline_sink_register ()",
               elem->name));
-      num_mems = i;
+      gst_memory_unref (mem[i]);
+      num_tensors = i;
       goto error;
     }
 
@@ -338,6 +331,9 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
 
   /** @todo This assumes that padcap is static */
   if (elem->sink == NULL) {
+    gboolean found = FALSE;
+    gboolean flexible = FALSE;
+
     /* Get the sink-pad-cap */
     elem->sink = gst_element_get_static_pad (elem->element, "sink");
 
@@ -346,68 +342,29 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
       GstCaps *caps = gst_pad_get_current_caps (elem->sink);
 
       if (caps) {
-        gboolean flexible = FALSE;
-        gboolean found = get_tensors_info_from_caps (caps, _info, &flexible);
-
+        found = get_tensors_info_from_caps (caps, &elem->tensors_info,
+            &flexible);
         gst_caps_unref (caps);
-
-        if (found) {
-          /* cannot get exact info from caps */
-          if (flexible) {
-            elem->is_flexible_tensor = TRUE;
-            goto send_cb;
-          }
-
-          if (_info->num_tensors != num_tensors) {
-            _ml_loge (_ml_detail
-                ("The sink event of [%s] cannot be handled because the number of tensors mismatches.",
-                    elem->name));
-
-            gst_object_unref (elem->sink);
-            elem->sink = NULL;
-            goto error;
-          }
-
-          for (i = 0; i < _info->num_tensors; i++) {
-            size_t sz =
-                _ml_tensor_info_get_size (ml_tensors_info_get_nth_info (_info,
-                    i), _info->is_extended);
-
-            /* Not configured, yet. */
-            if (sz == 0)
-              _ml_loge (_ml_detail
-                  ("The caps for sink(%s) is not configured.", elem->name));
-
-            if (sz != _data->tensors[i].size) {
-              _ml_loge (_ml_detail
-                  ("The sink event of [%s] cannot be handled because the tensor dimension mismatches.",
-                      elem->name));
-
-              gst_object_unref (elem->sink);
-              elem->sink = NULL;
-              goto error;
-            }
-          }
-        } else {
-          gst_object_unref (elem->sink);
-          elem->sink = NULL;    /* It is not valid */
-          goto error;
-          /** @todo What if it keeps being "NULL"? Exception handling at 2nd frame? */
-        }
       }
+    }
+
+    if (found) {
+      elem->is_flexible_tensor = flexible;
+    } else {
+      /* It is not valid */
+      if (elem->sink) {
+        gst_object_unref (elem->sink);
+        elem->sink = NULL;
+      }
+
+      goto error;
     }
   }
 
-send_cb:
-  /* set info for flexible stream */
+  /* Prepare output and set data. */
   if (elem->is_flexible_tensor) {
     GstTensorMetaInfo meta;
-    GstTensorsInfo gst_info;
     gsize hsize;
-
-    gst_tensors_info_init (&gst_info);
-    gst_info.num_tensors = num_tensors;
-    _info = &info_flex_tensor;
 
     /* handle header for flex tensor */
     for (i = 0; i < num_tensors; i++) {
@@ -420,9 +377,43 @@ send_cb:
       _data->tensors[i].tensor = map[i].data + hsize;
       _data->tensors[i].size = map[i].size - hsize;
     }
+  } else {
+    gst_tensors_info_copy (&gst_info, &elem->tensors_info);
 
-    _ml_tensors_info_copy_from_gst (_info, &gst_info);
+    /* Compare output info and buffer if gst-buffer is not flexible. */
+    if (gst_info.num_tensors != num_tensors) {
+      _ml_loge (_ml_detail
+          ("The sink event of [%s] cannot be handled because the number of tensors mismatches.",
+              elem->name));
+
+      gst_object_unref (elem->sink);
+      elem->sink = NULL;
+      goto error;
+    }
+
+    for (i = 0; i < num_tensors; i++) {
+      size_t sz = gst_tensors_info_get_size (&gst_info, i);
+
+      /* Not configured, yet. */
+      if (sz == 0)
+        _ml_loge (_ml_detail
+            ("The caps for sink(%s) is not configured.", elem->name));
+
+      if (sz != map[i].size) {
+        _ml_loge (_ml_detail
+            ("The sink event of [%s] cannot be handled because the tensor dimension mismatches.",
+                elem->name));
+
+        gst_object_unref (elem->sink);
+        elem->sink = NULL;
+        goto error;
+      }
+    }
   }
+
+  /* Create new output info, data handle should be updated here. */
+  _ml_tensors_info_create_from_gst (&out_info, &gst_info);
+  _ml_tensors_info_create_from_gst (&_data->info, &gst_info);
 
   /* Iterate e->handles, pass the data to them */
   for (l = elem->handles; l != NULL; l = l->next) {
@@ -433,7 +424,7 @@ send_cb:
 
     callback = sink->callback_info->sink_cb;
     if (callback)
-      callback (_data, _info, sink->callback_info->pdata);
+      callback (_data, out_info, sink->callback_info->pdata);
 
     /** @todo Measure time. Warn if it takes long. Kill if it takes too long. */
   }
@@ -446,9 +437,13 @@ error:
     gst_memory_unref (mem[i]);
   }
 
+  if (out_info)
+    ml_tensors_info_destroy (out_info);
+
   _ml_tensors_data_destroy_internal (_data, FALSE);
   _data = NULL;
 
+  gst_tensors_info_free (&gst_info);
   return;
 }
 
@@ -595,7 +590,7 @@ cleanup_node (gpointer data)
 
   gst_object_unref (e->element);
 
-  _ml_tensors_info_free (&e->tensors_info);
+  gst_tensors_info_free (&e->tensors_info);
 
   g_mutex_unlock (&e->lock);
   g_mutex_clear (&e->lock);
@@ -1511,7 +1506,6 @@ ml_pipeline_src_parse_tensors_info (ml_pipeline_element * elem)
 {
   GstCaps *caps = NULL;
   gboolean found = FALSE, flexible = FALSE;
-  ml_tensors_info_s *_info = &elem->tensors_info;
 
   if (elem->src == NULL) {
     elem->src = gst_element_get_static_pad (elem->element, "src");
@@ -1539,8 +1533,7 @@ ml_pipeline_src_parse_tensors_info (ml_pipeline_element * elem)
     return ML_ERROR_TRY_AGAIN;
   }
 
-  _ml_tensors_info_free (_info);
-  found = get_tensors_info_from_caps (caps, _info, &flexible);
+  found = get_tensors_info_from_caps (caps, &elem->tensors_info, &flexible);
 
   if (found) {
     elem->is_flexible_tensor = flexible;
@@ -1701,12 +1694,8 @@ ml_pipeline_src_input_data (ml_pipeline_src_h h, ml_tensors_data_h data,
       goto dont_destroy_data;
     }
 
-    for (i = 0; i < elem->tensors_info.num_tensors; i++) {
-      ml_tensor_info_s *_tensor_info =
-          ml_tensors_info_get_nth_info (&elem->tensors_info, i);
-
-      size_t sz = _ml_tensor_info_get_size (_tensor_info,
-          elem->tensors_info.is_extended);
+    for (i = 0; i < _data->num_tensors; i++) {
+      size_t sz = gst_tensors_info_get_size (&elem->tensors_info, i);
 
       if (sz != _data->tensors[i].size) {
         _ml_error_report
@@ -1916,8 +1905,7 @@ ml_pipeline_src_get_tensors_info (ml_pipeline_src_h h, ml_tensors_info_h * info)
   ret = ml_pipeline_src_parse_tensors_info (elem);
 
   if (ret == ML_ERROR_NONE) {
-    ml_tensors_info_create_extended (info);
-    ml_tensors_info_clone (*info, &elem->tensors_info);
+    ret = _ml_tensors_info_create_from_gst (info, &elem->tensors_info);
   } else {
     _ml_error_report_continue
         ("ml_pipeline_src_parse_tensors_info () has returned error; it cannot fetch input tensor info (metadata of input stream) for the given ml_pipeline_src_h handle (h). ml_pipeline_src_get_tensors_info () cannot continue.");
