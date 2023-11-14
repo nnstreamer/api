@@ -961,7 +961,8 @@ _ml_tensors_data_destroy_internal (ml_tensors_data_h data, gboolean free_data)
     }
   }
 
-  ml_tensors_info_destroy (_data->info);
+  if (_data->info)
+    ml_tensors_info_destroy (_data->info);
 
   G_UNLOCK_UNLESS_NOLOCK (*_data);
   g_mutex_clear (&_data->lock);
