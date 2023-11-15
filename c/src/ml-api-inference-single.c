@@ -1002,7 +1002,7 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
         fw_name);
   }
 
-                                        /** Create ml_single object */
+  /* Create ml_single object */
   if ((single_h = ml_single_create_handle (nnfw)) == NULL) {
     _ml_error_report_return_continue (ML_ERROR_OUT_OF_MEMORY,
         "Cannot create handle for the given nnfw, %s", fw_name);

@@ -4,7 +4,7 @@
  *
  * @file ml-api-internal.h
  * @date 20 October 2021
- * @brief ML C-API internal herader without NNStreamer deps.
+ * @brief ML C-API internal header without NNStreamer deps.
  *        This file should NOT be exported to SDK or devel package.
  * @see	https://github.com/nnstreamer/nnstreamer
  * @author MyungJoo Ham <myungjoo.ham@samsung.com>

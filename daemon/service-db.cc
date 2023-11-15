@@ -553,7 +553,6 @@ MLServiceDB::update_model_description (
                                  + " version " + std::to_string (version));
   }
 
-
   if (!set_transaction (true))
     throw std::runtime_error ("Failed to begin transaction.");
 
