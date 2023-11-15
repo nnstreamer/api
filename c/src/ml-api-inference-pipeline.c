@@ -240,7 +240,6 @@ construct_element (GstElement * e, ml_pipeline * p, const char *name,
   ret->src = NULL;
   ret->sink = NULL;
   _ml_tensors_info_initialize (&ret->tensors_info);
-  ret->size = 0;
   ret->maxid = 0;
   ret->handle_id = 0;
   ret->is_media_stream = FALSE;
@@ -298,7 +297,6 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
   ml_tensors_data_s *_data = NULL;
   ml_tensors_info_s *_info;
   ml_tensors_info_s info_flex_tensor;
-  size_t total_size = 0;
   int status;
 
   _info = &elem->tensors_info;
@@ -336,8 +334,6 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
 
     _data->tensors[i].tensor = map[i].data;
     _data->tensors[i].size = map[i].size;
-
-    total_size += map[i].size;
   }
 
   /** @todo This assumes that padcap is static */
@@ -356,8 +352,6 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
         gst_caps_unref (caps);
 
         if (found) {
-          elem->size = 0;
-
           /* cannot get exact info from caps */
           if (flexible) {
             elem->is_flexible_tensor = TRUE;
@@ -393,8 +387,6 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
               elem->sink = NULL;
               goto error;
             }
-
-            elem->size += sz;
           }
         } else {
           gst_object_unref (elem->sink);
@@ -1518,13 +1510,11 @@ static int
 ml_pipeline_src_parse_tensors_info (ml_pipeline_element * elem)
 {
   GstCaps *caps = NULL;
-  guint i;
   gboolean found = FALSE, flexible = FALSE;
   ml_tensors_info_s *_info = &elem->tensors_info;
 
   if (elem->src == NULL) {
     elem->src = gst_element_get_static_pad (elem->element, "src");
-    elem->size = 0;
   }
 
   if (elem->src == NULL) {
@@ -1554,14 +1544,6 @@ ml_pipeline_src_parse_tensors_info (ml_pipeline_element * elem)
 
   if (found) {
     elem->is_flexible_tensor = flexible;
-    if (!flexible) {
-      for (i = 0; i < _info->num_tensors; i++) {
-        ml_tensor_info_s *_tensor_info =
-            ml_tensors_info_get_nth_info (_info, i);
-        elem->size +=
-            _ml_tensor_info_get_size (_tensor_info, _info->is_extended);
-      }
-    }
   } else {
     if (gst_caps_is_fixed (caps)) {
       GstStructure *st = gst_caps_get_structure (caps, 0);

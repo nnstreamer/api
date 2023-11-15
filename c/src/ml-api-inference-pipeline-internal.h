@@ -144,7 +144,6 @@ typedef struct _ml_pipeline_element {
   GstPad *src;
   GstPad *sink; /**< Unref this at destroy */
   ml_tensors_info_s tensors_info;
-  size_t size;
 
   GList *handles;
   int maxid; /**< to allocate id for each handle */
