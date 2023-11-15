@@ -145,9 +145,9 @@ ml_tensors_info_destroy (ml_tensors_info_h info)
         "The parameter, info, is NULL. Provide a valid pointer.");
 
   G_LOCK_UNLESS_NOLOCK (*tensors_info);
-
   _ml_tensors_info_free (tensors_info);
   G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
+
   g_mutex_clear (&tensors_info->lock);
   g_free (tensors_info);
 
