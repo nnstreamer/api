@@ -116,8 +116,8 @@ typedef struct
 {
   GTensorFilterSingleClass *klass;    /**< tensor filter class structure*/
   GTensorFilterSingle *filter;        /**< tensor filter element */
-  ml_tensors_info_s in_info;          /**< info about input */
-  ml_tensors_info_s out_info;         /**< info about output */
+  GstTensorsInfo in_info;             /**< info about input */
+  GstTensorsInfo out_info;            /**< info about output */
   ml_nnfw_type_e nnfw;                /**< nnfw type for this filter */
   guint magic;                        /**< code to verify valid handle */
 
@@ -131,8 +131,8 @@ typedef struct
   gboolean free_output;               /**< true if output tensors are allocated in single-shot */
   int status;                         /**< status of processing */
   gboolean invoking;                  /**< invoke running flag */
-  ml_tensors_data_s in_tensors;    /**< input tensor wrapper for processing */
-  ml_tensors_data_s out_tensors;   /**< output tensor wrapper for processing */
+  ml_tensors_data_h in_tensors;       /**< input tensor wrapper for processing */
+  ml_tensors_data_h out_tensors;      /**< output tensor wrapper for processing */
 
   GList *destroy_data_list;         /**< data to be freed by filter */
 } ml_single;
@@ -279,33 +279,31 @@ static void
 __setup_in_out_tensors (ml_single * single_h)
 {
   int i;
-  ml_tensors_data_s *in_tensors = &single_h->in_tensors;
-  ml_tensors_data_s *out_tensors = &single_h->out_tensors;
+  ml_tensors_data_s *in_tensors = (ml_tensors_data_s *) single_h->in_tensors;
+  ml_tensors_data_s *out_tensors = (ml_tensors_data_s *) single_h->out_tensors;
 
-  /** Setup input buffer */
+  /* Setup input buffer */
   _ml_tensors_info_free (in_tensors->info);
-  ml_tensors_info_clone (in_tensors->info, &single_h->in_info);
+  _ml_tensors_info_copy_from_gst (in_tensors->info, &single_h->in_info);
 
   in_tensors->num_tensors = single_h->in_info.num_tensors;
-  for (i = 0; i < single_h->in_info.num_tensors; i++) {
+  for (i = 0; i < in_tensors->num_tensors; i++) {
     /** memory will be allocated by tensor_filter_single */
     in_tensors->tensors[i].tensor = NULL;
     in_tensors->tensors[i].size =
-        _ml_tensor_info_get_size (ml_tensors_info_get_nth_info
-        (&single_h->in_info, i), single_h->in_info.is_extended);
+        gst_tensors_info_get_size (&single_h->in_info, i);
   }
 
-  /** Setup output buffer */
+  /* Setup output buffer */
   _ml_tensors_info_free (out_tensors->info);
-  ml_tensors_info_clone (out_tensors->info, &single_h->out_info);
+  _ml_tensors_info_copy_from_gst (out_tensors->info, &single_h->out_info);
 
   out_tensors->num_tensors = single_h->out_info.num_tensors;
-  for (i = 0; i < single_h->out_info.num_tensors; i++) {
+  for (i = 0; i < out_tensors->num_tensors; i++) {
     /** memory will be allocated by tensor_filter_single */
     out_tensors->tensors[i].tensor = NULL;
     out_tensors->tensors[i].size =
-        _ml_tensor_info_get_size (ml_tensors_info_get_nth_info
-        (&single_h->out_info, i), single_h->out_info.is_extended);
+        gst_tensors_info_get_size (&single_h->out_info, i);
   }
 }
 
@@ -631,28 +629,20 @@ ml_single_get_gst_info (ml_single * single_h, gboolean is_input,
  * @brief Internal function to set the gst info in tensor-filter.
  */
 static int
-ml_single_set_gst_info (ml_single * single_h, const ml_tensors_info_h info)
+ml_single_set_gst_info (ml_single * single_h, const GstTensorsInfo * in_info)
 {
-  GstTensorsInfo gst_in_info, gst_out_info;
+  GstTensorsInfo out_info;
   int status = ML_ERROR_NONE;
   int ret = -EINVAL;
 
-  _ml_error_report_return_continue_iferr
-      (_ml_tensors_info_copy_from_ml (&gst_in_info, info),
-      "Cannot fetch tensor-info from the given info parameter. Error code: %d",
-      _ERRNO);
-
-  ret = single_h->klass->set_input_info (single_h->filter, &gst_in_info,
-      &gst_out_info);
+  gst_tensors_info_init (&out_info);
+  ret = single_h->klass->set_input_info (single_h->filter, in_info, &out_info);
   if (ret == 0) {
-    _ml_error_report_return_continue_iferr
-        (_ml_tensors_info_copy_from_gst (&single_h->in_info, &gst_in_info),
-        "Fetching input information from the given single_h instance has failed with %d",
-        _ERRNO);
-    _ml_error_report_return_continue_iferr (_ml_tensors_info_copy_from_gst
-        (&single_h->out_info, &gst_out_info),
-        "Fetching output information from the given single_h instance has failed with %d",
-        _ERRNO);
+    gst_tensors_info_free (&single_h->in_info);
+    gst_tensors_info_free (&single_h->out_info);
+    gst_tensors_info_copy (&single_h->in_info, in_info);
+    gst_tensors_info_copy (&single_h->out_info, &out_info);
+
     __setup_in_out_tensors (single_h);
   } else if (ret == -ENOENT) {
     status = ML_ERROR_NOT_SUPPORTED;
@@ -660,8 +650,7 @@ ml_single_set_gst_info (ml_single * single_h, const ml_tensors_info_h info)
     status = ML_ERROR_INVALID_PARAMETER;
   }
 
-  gst_tensors_info_free (&gst_in_info);
-  gst_tensors_info_free (&gst_out_info);
+  gst_tensors_info_free (&out_info);
 
   return status;
 }
@@ -734,7 +723,7 @@ ml_single_set_info_in_handle (ml_single_h single, gboolean is_input,
 {
   int status;
   ml_single *single_h;
-  ml_tensors_info_s *dest;
+  GstTensorsInfo *dest;
   gboolean configured = FALSE;
   gboolean is_valid = FALSE;
   GObject *filter_obj;
@@ -773,17 +762,20 @@ ml_single_set_info_in_handle (ml_single_h single, gboolean is_input,
       }
     }
 
-    ml_tensors_info_clone (dest, info);
+    gst_tensors_info_free (dest);
+    _ml_tensors_info_copy_from_ml (dest, info);
     ml_tensors_info_destroy (info);
   } else if (tensors_info) {
     status =
         ml_single_set_inout_tensors_info (filter_obj, is_input, tensors_info);
     if (status != ML_ERROR_NONE)
       goto done;
-    ml_tensors_info_clone (dest, tensors_info);
+
+    gst_tensors_info_free (dest);
+    _ml_tensors_info_copy_from_ml (dest, tensors_info);
   }
 
-  is_valid = ml_tensors_info_is_valid (dest);
+  is_valid = gst_tensors_info_validate (dest);
 
 done:
   return is_valid;
@@ -797,6 +789,9 @@ ml_single_create_handle (ml_nnfw_type_e nnfw)
 {
   ml_single *single_h;
   GError *error;
+  ml_tensors_info_h info_h;
+  int status;
+  gboolean created = FALSE;
 
   single_h = g_new0 (ml_single, 1);
   if (single_h == NULL)
@@ -821,17 +816,38 @@ ml_single_create_handle (ml_nnfw_type_e nnfw)
   single_h->destroy_data_list = NULL;
   single_h->invoking = FALSE;
 
-  _ml_tensors_info_initialize (&single_h->in_info);
-  _ml_tensors_info_initialize (&single_h->out_info);
+  gst_tensors_info_init (&single_h->in_info);
+  gst_tensors_info_init (&single_h->out_info);
   g_mutex_init (&single_h->mutex);
   g_cond_init (&single_h->cond);
+
+  /* Dummy info to allocate tensors-info handle in data. */
+  status = ml_tensors_info_create_extended (&info_h);
+  if (status != ML_ERROR_NONE) {
+    _ml_error_report
+        ("Failed to create tensor information in single handle. Internal error or out of memory?");
+    goto done;
+  }
+
+  status = _ml_tensors_data_create_no_alloc (info_h, &single_h->in_tensors);
+  if (status != ML_ERROR_NONE) {
+    _ml_error_report
+        ("Failed to create input data in single handle. Internal error or out of memory?");
+    goto done;
+  }
+
+  status = _ml_tensors_data_create_no_alloc (info_h, &single_h->out_tensors);
+  if (status != ML_ERROR_NONE) {
+    _ml_error_report
+        ("Failed to create output data in single handle. Internal error or out of memory?");
+    goto done;
+  }
 
   single_h->klass = g_type_class_ref (G_TYPE_TENSOR_FILTER_SINGLE);
   if (single_h->klass == NULL) {
     _ml_error_report
         ("Failed to get class of the tensor-filter of single API. This binary is not compiled properly or required libraries are not loaded.");
-    ml_single_close (single_h);
-    return NULL;
+    goto done;
   }
 
   single_h->thread =
@@ -841,8 +857,17 @@ ml_single_create_handle (ml_nnfw_type_e nnfw)
         ("Failed to create the invoke thread of single API, g_thread_try_new has reported an error: %s.",
         error->message);
     g_clear_error (&error);
+    goto done;
+  }
+
+  created = TRUE;
+
+done:
+  ml_tensors_info_destroy (info_h);
+
+  if (!created) {
     ml_single_close (single_h);
-    return NULL;
+    single_h = NULL;
   }
 
   return single_h;
@@ -1051,18 +1076,12 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
   if (nnfw == ML_NNFW_TYPE_NNTR_INF) {
     if (!in_tensors_info || !out_tensors_info) {
       if (!in_tensors_info) {
-        ml_tensors_info_h in_info;
-        status = ml_tensors_info_create (&in_info);
-        if (status != ML_ERROR_NONE) {
-          _ml_error_report_continue
-              ("NNTrainer-inference-single cannot create tensors-info handle (ml_tensors_info_h) with ml_tensors_info_create. Error Code: %d",
-              status);
-          goto error;
-        }
+        GstTensorsInfo in_info;
+
+        gst_tensors_info_init (&in_info);
 
         /* ml_single_set_input_info() can't be done as it checks num_tensors */
-        status = ml_single_set_gst_info (single_h, in_info);
-        ml_tensors_info_destroy (in_info);
+        status = ml_single_set_gst_info (single_h, &in_info);
         if (status != ML_ERROR_NONE) {
           _ml_error_report_continue
               ("NNTrainer-inference-single cannot configure single_h handle instance with the given in_info. This might be an ML-API / NNTrainer internal error. Error Code: %d",
@@ -1097,18 +1116,6 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
   }
 
   /* Setup input and output memory buffers for invoke */
-  if (in_tensors_info && in_tensors_info->is_extended) {
-    ml_tensors_info_create_extended (&single_h->in_tensors.info);
-  } else {
-    ml_tensors_info_create (&single_h->in_tensors.info);
-  }
-
-  if (out_tensors_info && out_tensors_info->is_extended) {
-    ml_tensors_info_create_extended (&single_h->out_tensors.info);
-  } else {
-    ml_tensors_info_create (&single_h->out_tensors.info);
-  }
-
   __setup_in_out_tensors (single_h);
 
   *single = single_h;
@@ -1251,14 +1258,14 @@ ml_single_close (ml_single_h single)
     single_h->klass = NULL;
   }
 
-  _ml_tensors_info_free (&single_h->in_info);
-  _ml_tensors_info_free (&single_h->out_info);
+  gst_tensors_info_free (&single_h->in_info);
+  gst_tensors_info_free (&single_h->out_info);
+
+  ml_tensors_data_destroy (single_h->in_tensors);
+  ml_tensors_data_destroy (single_h->out_tensors);
 
   g_cond_clear (&single_h->cond);
   g_mutex_clear (&single_h->mutex);
-
-  ml_tensors_info_destroy (single_h->in_tensors.info);
-  ml_tensors_info_destroy (single_h->out_tensors.info);
 
   g_free (single_h);
   return ML_ERROR_NONE;
@@ -1285,9 +1292,9 @@ _ml_single_invoke_validate_data (ml_single_h single,
         "(internal function) The parameter, 'data' (const ml_tensors_data_h), is NULL. It should be a valid instance of ml_tensors_data_h.");
 
   if (is_input)
-    _model = &single_h->in_tensors;
+    _model = (ml_tensors_data_s *) single_h->in_tensors;
   else
-    _model = &single_h->out_tensors;
+    _model = (ml_tensors_data_s *) single_h->out_tensors;
 
   if (G_UNLIKELY (_data->num_tensors != _model->num_tensors))
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -1392,7 +1399,7 @@ _ml_single_invoke_internal (ml_single_h single,
   if (need_alloc) {
     *output = NULL;
 
-    status = _ml_tensors_data_clone_no_alloc (&single_h->out_tensors,
+    status = _ml_tensors_data_clone_no_alloc (single_h->out_tensors,
         &single_h->output);
     if (status != ML_ERROR_NONE)
       goto exit;
@@ -1494,7 +1501,6 @@ ml_single_get_tensors_info (ml_single_h single, gboolean is_input,
 {
   ml_single *single_h;
   int status = ML_ERROR_NONE;
-  ml_tensors_info_s *input_info;
 
   check_feature_state (ML_FEATURE_INFERENCE);
 
@@ -1507,30 +1513,17 @@ ml_single_get_tensors_info (ml_single_h single, gboolean is_input,
 
   ML_SINGLE_GET_VALID_HANDLE_LOCKED (single_h, single, 0);
 
-  /* allocate handle for tensors info */
-  status = ml_tensors_info_create (info);
+  if (is_input)
+    status = _ml_tensors_info_create_from_gst (info, &single_h->in_info);
+  else
+    status = _ml_tensors_info_create_from_gst (info, &single_h->out_info);
+
   if (status != ML_ERROR_NONE) {
     _ml_error_report_continue
         ("(internal function) Failed to create an entry for the ml_tensors_info_h instance. Error code: %d",
         status);
-    goto exit;
   }
 
-  input_info = (ml_tensors_info_s *) (*info);
-
-  if (is_input)
-    status = ml_tensors_info_clone (input_info, &single_h->in_info);
-  else
-    status = ml_tensors_info_clone (input_info, &single_h->out_info);
-
-  if (status != ML_ERROR_NONE) {
-    _ml_error_report_continue
-        ("(internal function) Failed to clone fetched input/output metadata to output pointer (ml_tensors_info *info). Error code: %d",
-        status);
-    ml_tensors_info_destroy (input_info);
-  }
-
-exit:
   ML_SINGLE_HANDLE_UNLOCK (single_h);
   return status;
 }
@@ -1584,6 +1577,7 @@ int
 ml_single_set_input_info (ml_single_h single, const ml_tensors_info_h info)
 {
   ml_single *single_h;
+  GstTensorsInfo gst_info;
   int status = ML_ERROR_NONE;
 
   check_feature_state (ML_FEATURE_INFERENCE);
@@ -1600,7 +1594,9 @@ ml_single_set_input_info (ml_single_h single, const ml_tensors_info_h info)
         "The parameter, info (const ml_tensors_info_h), is not valid. Although it is not NULL, the content of 'info' is invalid. If it is created by ml_tensors_info_create(), which creates an empty instance, it should be filled by users afterwards. Please check if 'info' has all elements filled with valid values.");
 
   ML_SINGLE_GET_VALID_HANDLE_LOCKED (single_h, single, 0);
-  status = ml_single_set_gst_info (single_h, info);
+  _ml_tensors_info_copy_from_ml (&gst_info, info);
+  status = ml_single_set_gst_info (single_h, &gst_info);
+  gst_tensors_info_free (&gst_info);
   ML_SINGLE_HANDLE_UNLOCK (single_h);
 
   if (status != ML_ERROR_NONE)
@@ -1719,6 +1715,7 @@ ml_single_set_property (ml_single_h single, const char *name, const char *value)
   if (g_str_equal (name, "is-updatable")) {
     if (!value)
       goto error;
+
     /* boolean */
     if (g_ascii_strcasecmp (value, "true") == 0) {
       if (g_ascii_strcasecmp (old_value, "true") != 0)
@@ -1753,14 +1750,8 @@ ml_single_set_property (ml_single_h single, const char *name, const char *value)
       num = gst_tensors_info_parse_dimensions_string (&gst_info, value);
 
     if (num == gst_info.num_tensors) {
-      ml_tensors_info_h ml_info;
-
-      _ml_tensors_info_create_from_gst (&ml_info, &gst_info);
-
       /* change configuration */
-      status = ml_single_set_gst_info (single_h, ml_info);
-
-      ml_tensors_info_destroy (ml_info);
+      status = ml_single_set_gst_info (single_h, &gst_info);
     } else {
       _ml_error_report
           ("The property value, '%s', is not appropriate for the given property key, '%s'. The API has failed to parse the given property value.",
