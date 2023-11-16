@@ -58,15 +58,16 @@ convert_ml_tensor_type_from (tensor_type type)
 static gboolean
 gst_info_is_extended (const GstTensorsInfo * gst_info)
 {
-  int i, j;
+  GstTensorInfo *_info;
+  guint i;
+
   for (i = 0; i < gst_info->num_tensors; i++) {
-    GstTensorInfo *_gst_tensor_info =
-        gst_tensors_info_get_nth_info ((GstTensorsInfo *) gst_info, i);
-    for (j = ML_TENSOR_RANK_LIMIT_PREV; j < NNS_TENSOR_RANK_LIMIT; j++) {
-      if (_gst_tensor_info->dimension[j] > 1)
-        return TRUE;
-    }
+    _info = gst_tensors_info_get_nth_info ((GstTensorsInfo *) gst_info, i);
+
+    if (_info->dimension[ML_TENSOR_RANK_LIMIT_PREV] > 0)
+      return TRUE;
   }
+
   return FALSE;
 }
 
