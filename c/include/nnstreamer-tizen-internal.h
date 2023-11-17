@@ -99,12 +99,37 @@ char * ml_api_get_version_string (void);
  */
 int ml_service_remote_create (ml_option_h option, ml_service_event_cb cb, void *user_data, ml_service_h *handle);
 
+
+/**
+ * @brief Creates ml remote service handle with json string.
+ * @since_tizen 8.5
+ * @note This is not official and public API but experimental API.
+ * @remarks The @a handle should be destroyed using ml_service_destroy().
+ * @param[in] json_string json string describing ml-option. This is not the path of json file.
+ * @param[in] cb The ml-service callbacks for event handling.
+ * @param[in] user_data Private data for the callback. This value is passed to the callback when service is received.
+ * @param[out] handle Newly created query service handle is returned.
+ * @return @c 0 on Success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
+ * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
+ * @retval #ML_ERROR_STREAMS_PIPE Failed to launch the pipeline.
+ * @retval #ML_ERROR_TRY_AGAIN The pipeline is not ready yet.
+ *
+ * Here is an example of the json string:
+ * @code
+ * // Update this field later.
+ * @endcode
+ */
+int ml_service_remote_create_from_json (const char *json_string, ml_service_event_cb cb, void *user_data, ml_service_h * handle);
+
 /**
  * @todo DRAFT. API name should be determined later.
  * @brief Register new information, such as neural network models or pipeline descriptions, on a remote server.
  * @since_tizen 8.0
  * @note This is not official and public API but experimental API.
- * @param[in] handle The query service handle created by ml_service_query_create().
+ * @param[in] handle The remote service handle created by ml_service_remote_create().
  * @param[in] option The option used for registering machine learning service.
  * @param[in] data The Data to be registered on the remote server.
  * @return @c 0 on success. Otherwise a negative error value.
@@ -194,8 +219,49 @@ int ml_service_remote_create (ml_option_h option, ml_service_event_cb cb, void *
  * ml_option_destroy (remote_service_option_h);
  *
  * @endcode
+ * @todo Let's use ml_service_remote_request() instead of ml_service_remote_register(). I will replace ml_service_remote_register() with ml_service_remote_request() when ml_service_remote_request() is determined to use.
  */
 int ml_service_remote_register (ml_service_h handle, ml_option_h option, void *data, size_t data_len);
+
+/**
+ * @todo DRAFT. API name should be determined later.
+ * @brief Request remote servers to register Neural network models or launch GStreaner pipelines, etc. with ml-option handle.
+ * @since_tizen 8.5
+ * @note This is not official and public API but experimental API.
+ * @param[in] handle The remote service handle created by ml_service_remote_create() or ml_service_remote_create_from_json().
+ * @param[in] option The option used for registering machine learning service.
+ * @param[in] data The Data to be registered on the remote server.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
+ *
+ * Here is an example of the usage:
+ * @code
+ * // Update this field later.
+ * @endcode
+ */
+int ml_service_remote_request (ml_service_h handle, ml_option_h option, void *data, size_t data_len);
+
+/**
+ * @todo DRAFT. API name should be determined later.
+ * @brief Request remote servers to register Neural network models or launch GStreaner pipelines, etc. with json string.
+ * @since_tizen 8.5
+ * @note This is not official and public API but experimental API.
+ * @param[in] handle The remote service handle created by ml_service_remote_create() or ml_service_remote_create_from_json().
+ * @param[in] json_string json string describing ml-option. This is not the path of json file.
+ * @param[in] data The Data to be registered on the remote server.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
+ *
+ * Here is an example of the usage:
+ * @code
+ * // Update this field later.
+ * @endcode
+ */
+int ml_service_remote_request_from_json (ml_service_h handle, const char *json_string, void *data, size_t data_len);
 
 #ifdef __cplusplus
 }
