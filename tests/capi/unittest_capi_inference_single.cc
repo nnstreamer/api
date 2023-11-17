@@ -395,7 +395,7 @@ benchmark_single (const gboolean no_alloc, const gboolean no_timeout, const int 
   ml_tensors_info_set_tensor_type (out_info, 0, ML_TENSOR_TYPE_UINT8);
   ml_tensors_info_set_tensor_dimension (out_info, 0, out_dim);
 
-  /** Initial run to warm up the cache */
+  /* Initial run to warm up the cache */
   status = ml_single_open (&single, test_model, in_info, out_info,
       ML_NNFW_TYPE_TENSORFLOW_LITE, ML_NNFW_HW_ANY);
   if (is_enabled_tensorflow_lite) {
@@ -1099,7 +1099,7 @@ single_shot_loop_test (void *arg)
     if (ss_data->expect) {
       no_error_cond = status == ML_ERROR_NONE && output != NULL;
       if (ss_data->timeout < ss_data->min_time_to_run) {
-        /** Default timeout can return timed out with many parallel runs */
+        /* Default timeout can return timed out with many parallel runs */
         timeout_cond = output == NULL
                        && (status == ML_ERROR_TIMED_OUT || status == ML_ERROR_TRY_AGAIN);
         EXPECT_TRUE (timeout_cond || no_error_cond);
@@ -1189,7 +1189,7 @@ TEST (nnstreamer_capi_singleshot, invoke_timeout)
     /* set timeout 10 s */
     status = ml_single_set_timeout (single, SINGLE_DEF_TIMEOUT_MSEC);
     /* clear out previous buffers */
-    g_usleep (SINGLE_DEF_TIMEOUT_MSEC * 1000); /** 10 sec */
+    g_usleep (SINGLE_DEF_TIMEOUT_MSEC * 1000); /* 10 sec */
 
     status = ml_single_invoke (single, input, &output);
     EXPECT_EQ (status, ML_ERROR_NONE);
@@ -1237,15 +1237,15 @@ TEST (nnstreamer_capi_singleshot, parallel_runs)
   for (i = 0; i < num_cases; i++) {
     ss_data[i].test_model = test_model;
     ss_data[i].num_runs = 3;
-    ss_data[i].min_time_to_run = 10; /** 10 msec */
+    ss_data[i].min_time_to_run = 10; /* 10 msec */
     ss_data[i].expect = TRUE;
   }
 
-  /** Default timeout runs */
+  /* Default timeout runs */
   ss_data[0].timeout = 0;
-  /** small timeout runs */
+  /* small timeout runs */
   ss_data[1].timeout = 5;
-  /** large timeout runs - increases with each run as tests run in parallel */
+  /* large timeout runs - increases with each run as tests run in parallel */
   ss_data[2].timeout = SINGLE_DEF_TIMEOUT_MSEC * num_cases * num_threads;
 
   /**
@@ -1292,15 +1292,15 @@ TEST (nnstreamer_capi_singleshot, close_while_running)
 
   ss_data.test_model = test_model;
   ss_data.num_runs = 10;
-  ss_data.min_time_to_run = 10; /** 10 msec */
+  ss_data.min_time_to_run = 10; /* 10 msec */
   ss_data.expect = FALSE;
   ss_data.timeout = SINGLE_DEF_TIMEOUT_MSEC;
   ss_data.single = NULL;
 
   pthread_create (&thread, NULL, single_shot_loop_test, (void *) &ss_data);
 
-  /** Start the thread and let the code start */
-  g_usleep (100000); /** 100 msec */
+  /* Start the thread and let the code start */
+  g_usleep (100000); /* 100 msec */
 
   /**
    * Call single API functions while its running. One run takes 100ms on
@@ -1361,7 +1361,7 @@ TEST (nnstreamer_capi_singleshot, set_input_info_fail_01_n)
   ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_UINT8);
   ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
 
-  /** mobilenet model does not support setting different input dimension */
+  /* mobilenet model does not support setting different input dimension */
   status = ml_single_set_input_info (single, in_info);
   EXPECT_TRUE (status == ML_ERROR_NOT_SUPPORTED || status == ML_ERROR_INVALID_PARAMETER);
 
@@ -1394,7 +1394,7 @@ TEST (nnstreamer_capi_singleshot, set_input_info_fail_02_n)
   if (root_path == NULL)
     root_path = "..";
 
-  /** add.tflite adds value 2 to all the values in the input */
+  /* add.tflite adds value 2 to all the values in the input */
   test_model = g_build_filename (
       root_path, "tests", "test_models", "models", "add.tflite", NULL);
   ASSERT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
@@ -1414,7 +1414,7 @@ TEST (nnstreamer_capi_singleshot, set_input_info_fail_02_n)
   status = ml_tensors_info_get_count (in_info, &count);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  /** changing the count of number of tensors is not allowed */
+  /* changing the count of number of tensors is not allowed */
   ml_tensors_info_set_count (in_info, count + 1);
   status = ml_single_set_input_info (single, in_info);
   EXPECT_NE (status, ML_ERROR_NONE);
@@ -1424,7 +1424,7 @@ TEST (nnstreamer_capi_singleshot, set_input_info_fail_02_n)
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (type, ML_TENSOR_TYPE_FLOAT32);
 
-  /** changing the type of input tensors is not allowed */
+  /* changing the type of input tensors is not allowed */
   ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_INT32);
   status = ml_single_set_input_info (single, in_info);
   EXPECT_NE (status, ML_ERROR_NONE);
@@ -1485,7 +1485,7 @@ TEST (nnstreamer_capi_singleshot, set_input_info_success)
   ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_UINT8);
   ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
 
-  /** set the same original input dimension */
+  /* set the same original input dimension */
   status = ml_single_set_input_info (single, in_info);
   EXPECT_TRUE (status == ML_ERROR_NOT_SUPPORTED || status == ML_ERROR_NONE);
 
@@ -1536,7 +1536,7 @@ TEST (nnstreamer_capi_singleshot, set_input_info_success_01)
   if (root_path == NULL)
     root_path = "..";
 
-  /** add.tflite adds value 2 to all the values in the input */
+  /* add.tflite adds value 2 to all the values in the input */
   test_model = g_build_filename (
       root_path, "tests", "test_models", "models", "add.tflite", NULL);
   ASSERT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
@@ -1584,11 +1584,10 @@ TEST (nnstreamer_capi_singleshot, set_input_info_success_01)
    * 3. run the model file with the updated input dimensions
    * 4. verify the output
    */
-
   ml_tensors_info_get_tensor_dimension (in_res, 0, res_dim);
   EXPECT_FALSE (gst_tensor_dimension_is_equal (in_dim, res_dim));
 
-  /** set the same original input dimension */
+  /* set the same original input dimension */
   status = ml_single_set_input_info (single, in_info);
   EXPECT_TRUE (status == ML_ERROR_NOT_SUPPORTED || status == ML_ERROR_NONE);
   if (status == ML_ERROR_NONE) {
@@ -1691,7 +1690,7 @@ TEST (nnstreamer_capi_singleshot, set_input_info_extended_success)
   if (root_path == NULL)
     root_path = "..";
 
-  /** add_extended.tflite adds two input tensors and makes one output tensor */
+  /* add_extended.tflite adds two input tensors and makes one output tensor */
   test_model = g_build_filename (
       root_path, "tests", "test_models", "models", "add_extended.tflite", NULL);
   ASSERT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
@@ -2143,7 +2142,7 @@ TEST (nnstreamer_capi_singleshot, property_04_p)
   if (root_path == NULL)
     root_path = "..";
 
-  /** add.tflite adds value 2 to all the values in the input */
+  /* add.tflite adds value 2 to all the values in the input */
   test_model = g_build_filename (
       root_path, "tests", "test_models", "models", "add.tflite", NULL);
   ASSERT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
@@ -2239,7 +2238,7 @@ TEST (nnstreamer_capi_singleshot, property_05_p)
   if (root_path == NULL)
     root_path = "..";
 
-  /** add.tflite adds value 2 to all the values in the input */
+  /* add.tflite adds value 2 to all the values in the input */
   test_model = g_build_filename (
       root_path, "tests", "test_models", "models", "add.tflite", NULL);
   ASSERT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
@@ -2447,7 +2446,6 @@ TEST (nnstreamer_capi_singleshot, open_dir)
 
   g_free (test_model);
 }
-
 #endif /* ENABLE_NNFW_RUNTIME */
 
 #ifdef ENABLE_ARMNN
@@ -2514,7 +2512,7 @@ TEST (nnstreamer_capi_singleshot, invoke_06)
 
   ASSERT_TRUE (len == data_size / sizeof (float));
 
-  /** Convert uint8 data with range [0, 255] to float with range [-1, 1] */
+  /* Convert uint8 data with range [0, 255] to float with range [-1, 1] */
   contents_float = (gfloat *) g_malloc (data_size);
   for (unsigned int idx = 0; idx < len; idx++) {
     contents_float[idx] = static_cast<float> (contents_uint8[idx]);
@@ -2777,7 +2775,7 @@ TEST (nnstreamer_capi_singleshot, open_fail_03_n)
   ml_tensors_info_create (&in_info);
   ml_tensors_info_create (&out_info);
 
-  /** Set the correct input/output info */
+  /* Set the correct input/output info */
   in_dim[0] = 28;
   in_dim[1] = 28;
   in_dim[2] = 1;
@@ -2796,7 +2794,7 @@ TEST (nnstreamer_capi_singleshot, open_fail_03_n)
   ml_tensors_info_set_tensor_type (out_info, 0, ML_TENSOR_TYPE_FLOAT32);
   ml_tensors_info_set_tensor_dimension (out_info, 0, out_dim);
 
-  /** Modify the input or output name to be wrong and open */
+  /* Modify the input or output name to be wrong and open */
   ml_tensors_info_set_tensor_name (in_info, 0, "data1");
   status = ml_single_open (&single, test_model, in_info, out_info,
       ML_NNFW_TYPE_ARMNN, ML_NNFW_HW_ANY);
@@ -3147,14 +3145,14 @@ TEST (nnstreamer_capi_singleshot, invoke_11_p)
   status = ml_tensors_data_destroy (input);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  /** Access data before destroy works */
+  /* Access data before destroy works */
   status = ml_tensors_data_get_tensor_data (output, 0, &data_ptr, &data_size);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   status = ml_tensors_data_destroy (output);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  /** Close handle works normally */
+  /* Close handle works normally */
   status = ml_single_close (single);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
@@ -3241,7 +3239,7 @@ TEST (nnstreamer_capi_singleshot, invoke_12_p)
   status = ml_tensors_data_destroy (output1);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  /** Destroy the other data by closing the handle */
+  /* Destroy the other data by closing the handle */
   status = ml_single_close (single);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
@@ -3322,7 +3320,7 @@ TEST (nnstreamer_capi_singleshot, set_input_info_success_02)
   ml_tensors_data_destroy (output);
   ml_tensors_data_destroy (input);
 
-  /** modify input/output info and run again */
+  /* modify input/output info and run again */
   in_dim[0] = 10;
   ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
   out_dim[0] = 10;
@@ -3337,14 +3335,13 @@ TEST (nnstreamer_capi_singleshot, set_input_info_success_02)
    * 3. run the model file with the updated input dimensions
    * 4. verify the output
    */
-
   ml_tensors_info_get_tensor_dimension (in_res, 0, res_dim);
   EXPECT_FALSE (in_dim[0] == res_dim[0]);
   EXPECT_TRUE (in_dim[1] == res_dim[1]);
   EXPECT_TRUE (in_dim[2] == res_dim[2]);
   EXPECT_TRUE (in_dim[3] == res_dim[3]);
 
-  /** set the same original input dimension */
+  /* set the same original input dimension */
   status = ml_single_set_input_info (single, in_info);
   EXPECT_TRUE (status == ML_ERROR_NOT_SUPPORTED || status == ML_ERROR_NONE);
   if (status == ML_ERROR_NONE) {

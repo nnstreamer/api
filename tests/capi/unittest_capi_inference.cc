@@ -69,6 +69,11 @@ typedef struct {
     }                                                     \
   } while (0)
 
+/**
+ * @brief Internal lock to run pipeline.
+ */
+G_LOCK_DEFINE_STATIC (callback_lock);
+
 #if defined(__TIZEN__)
 #if TIZENPPM
 /**
@@ -235,9 +240,11 @@ TEST (nnstreamer_capi_playstop, dummy_01)
   EXPECT_NE (state, ML_PIPELINE_STATE_UNKNOWN);
   EXPECT_NE (state, ML_PIPELINE_STATE_NULL);
 
-  g_usleep (50000); /** 50ms is good for general systems, but not enough for
-                       emulators to start gst pipeline. Let a few frames flow.
-                       */
+  /**
+   * 50ms is good for general systems, but not enough for emulators to start gst pipeline.
+   * Let a few frames flow.
+   */
+  g_usleep (50000);
   status = ml_pipeline_get_state (handle, &state);
   EXPECT_EQ (status, ML_ERROR_NONE);
   wait_for_start (handle, state, status);
@@ -273,9 +280,12 @@ TEST (nnstreamer_capi_playstop, dummy_02)
   EXPECT_NE (state, ML_PIPELINE_STATE_UNKNOWN);
   EXPECT_NE (state, ML_PIPELINE_STATE_NULL);
 
-  g_usleep (50000); /** 50ms is good for general systems, but not enough for
-                       emulators to start gst pipeline. Let a few frames flow.
-                       */
+  /**
+   * 50ms is good for general systems, but not enough for emulators to start gst pipeline.
+   * Let a few frames flow.
+   */
+  g_usleep (50000);
+
   status = ml_pipeline_get_state (handle, &state);
   EXPECT_EQ (status, ML_ERROR_NONE);
   wait_for_start (handle, state, status);
@@ -421,6 +431,7 @@ TEST (nnstreamer_capi_valve, failure_02_n)
 
   g_free (pipeline);
 }
+
 /**
  * @brief Test NNStreamer pipeline valve
  * @detail Failure case to handle valve element with invalid param.
@@ -498,7 +509,6 @@ TEST (nnstreamer_capi_valve, failure_05_n)
   g_free (pipeline);
 }
 
-G_LOCK_DEFINE_STATIC (callback_lock);
 /**
  * @brief A tensor-sink callback for sink handle in a pipeline
  */
@@ -1699,10 +1709,8 @@ TEST (nnstreamer_capi_switch, dummy_02)
 
   /**
    * Prerolling problem
-   * For running the test, set async=false in the sink element
-   * when using an output selector.
-   * The pipeline state can be changed to paused
-   * after all sink element receive buffer.
+   * For running the test, set async=false in the sink element when using an output selector.
+   * The pipeline state can be changed to paused after all sink element receive buffer.
    */
   pipeline = g_strdup ("videotestsrc is-live=true ! videoconvert ! tensor_converter ! output-selector name=outs "
                        "outs.src_0 ! tensor_sink name=sink0 async=false "
@@ -2367,7 +2375,7 @@ TEST (nnstreamer_capi_util, availability_fail_06_n)
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, false);
 }
-#endif /** ENABLE_ARMNN */
+#endif /* ENABLE_ARMNN */
 
 /**
  * @brief Test NNStreamer Utility for checking an element availability
@@ -2381,7 +2389,7 @@ TEST (nnstreamer_capi_util, element_available_01_p)
    * https://github.com/nnstreamer/nnstreamer/blob/main/packaging/nnstreamer.spec#L642 (# Element allowance in Tizen)
    */
   const gchar *allowed = "tensor_converter tensor_filter tensor_query_serversrc capsfilter input-selector output-selector queue tee valve appsink appsrc audioconvert audiorate audioresample audiomixer videoconvert videocrop videorate videoscale videoflip videomixer compositor fakesrc fakesink filesrc filesink audiotestsrc videotestsrc jpegparse jpegenc jpegdec pngenc pngdec tcpclientsink tcpclientsrc tcpserversink tcpserversrc xvimagesink ximagesink evasimagesink evaspixmapsink glimagesink theoraenc lame vorbisenc wavenc volume oggmux avimux matroskamux v4l2src avsysvideosrc camerasrc tvcamerasrc pulsesrc fimcconvert tizenwlsink gdppay gdpdepay join rtpdec rtspsrc rtspclientsink zmqsrc zmqsink mqttsrc mqttsink udpsrc udpsink multiudpsink audioamplify audiochebband audiocheblimit audiodynamic audioecho audiofirfilter audioiirfilter audioinvert audiokaraoke audiopanorama audiowsincband audiowsinclimit scaletempo stereo";
-  /** This not_allowed list is written only for testing. */
+  /* This not_allowed list is written only for testing. */
   const gchar *not_allowed
       = "videobox videobalance aasink adder alpha alsasink x264enc ximagesrc webpenc wavescope v4l2sink v4l2radio urisourcebin uridecodebin typefind timeoverlay rtpstreampay rtpsession rtpgstpay queue2 fdsink fdsrc chromium capssetter cairooverlay autovideosink";
   gchar **elements;
@@ -2398,7 +2406,7 @@ TEST (nnstreamer_capi_util, element_available_01_p)
   n_elems = g_strv_length (elements);
 
   for (i = 0; i < n_elems; i++) {
-    /** If the plugin is not installed, the availability of the element cannot be tested. */
+    /* If the plugin is not installed, the availability of the element cannot be tested. */
     GstElementFactory *factory = gst_element_factory_find (elements[i]);
 
     if (factory) {
@@ -6633,7 +6641,6 @@ TEST (nnstreamer_capi_element, get_property_enum_01_p)
  */
 TEST (nnstreamer_capi_element, get_property_enum_02_n)
 {
-
   int status;
   uint32_t ret_method;
 
@@ -6873,8 +6880,7 @@ TEST (nnstreamer_capi_element, scenario_02_p)
 
   g_usleep (100000);
 
-  /** Since `emit-signals` property of appsink is set as FALSE, *count_sink
-   * should be 0 */
+  /* Since `emit-signals` property of appsink is set as FALSE, *count_sink should be 0. */
   EXPECT_TRUE (*count_sink == 0U);
 
   status = ml_pipeline_stop (handle);
@@ -7612,7 +7618,7 @@ test_if_custom_cb (const ml_tensors_data_h data, const ml_tensors_info_h info,
   for (i = 0; i < data_size; i++)
     sum += ((guint8 *) data_ptr)[i];
 
-  /* Sum value 30 means that the sixth buffer has arrived.*/
+  /* Sum value 30 means that the sixth buffer has arrived. */
   if (sum >= 30)
     *result = 0;
   else
@@ -8281,7 +8287,6 @@ TEST (nnstreamer_capi_pipeline, many_in_many_out_appsrc)
   g_autofree gchar *test_model = g_build_filename (root_path, "tests",
       "test_models", "models", "simple_32_in_32_out.tflite", NULL);
   EXPECT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
-
 
   gchar *dims_string = g_strdup ("1");
   for (int i = 0; i < 31; i++) {
