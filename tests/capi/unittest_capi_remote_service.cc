@@ -207,19 +207,17 @@ TEST_F (MLRemoteService, registerPipeline)
   status = ml_option_create (&remote_service_option_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-
   gchar *service_type = g_strdup ("pipeline_raw");
   ml_option_set (remote_service_option_h, "service-type", service_type, g_free);
 
   gchar *service_key = g_strdup ("pipeline_test_key");
   ml_option_set (remote_service_option_h, "service-key", service_key, g_free);
 
-
   status = ml_service_remote_register (client_h, remote_service_option_h,
       pipeline_desc, strlen (pipeline_desc) + 1);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  /** Wait for the server to register and check the result. */
+  /* Wait for the server to register and check the result. */
   g_usleep (1000000);
 
   status = ml_service_destroy (server_h);
@@ -314,7 +312,6 @@ TEST_F (MLRemoteService, registerPipelineURI)
   g_autofree gchar *test_file_path
       = g_build_path ("/", current_dir, "test.pipeline", NULL);
 
-
   EXPECT_TRUE (g_file_set_contents (
       test_file_path, pipeline_desc, strlen (pipeline_desc) + 1, NULL));
 
@@ -324,7 +321,7 @@ TEST_F (MLRemoteService, registerPipelineURI)
       pipeline_uri, strlen (pipeline_uri) + 1);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  /** Wait for the server to register and check the result. */
+  /* Wait for the server to register and check the result. */
   g_usleep (1000000);
 
   status = ml_service_delete_pipeline (service_key);
@@ -429,7 +426,6 @@ TEST_F (MLRemoteService, registerInvalidParam_n)
   EXPECT_EQ (ML_ERROR_NONE, status);
 }
 
-
 /**
  * @brief use case of model registration using ml remote service.
  */
@@ -507,7 +503,7 @@ TEST_F (MLRemoteService, registerModel)
       server_option_h, _ml_service_event_cb, contents, &server_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  /** Set service option */
+  /* Set service option */
   ml_option_h remote_service_option_h = NULL;
   status = ml_option_create (&remote_service_option_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
@@ -530,7 +526,7 @@ TEST_F (MLRemoteService, registerModel)
   status = ml_service_remote_register (client_h, remote_service_option_h, contents, len);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  /** Wait for the server to register and check the result. */
+  /* Wait for the server to register and check the result. */
   g_usleep (1000000);
 
   status = ml_service_model_delete (service_key, 0U);
@@ -625,7 +621,7 @@ TEST_F (MLRemoteService, registerModelURI)
       server_option_h, _ml_service_event_cb, contents, &server_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  /** Prepare model register service */
+  /* Prepare model register service */
   ml_option_h remote_service_option_h = NULL;
   status = ml_option_create (&remote_service_option_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
@@ -651,7 +647,7 @@ TEST_F (MLRemoteService, registerModelURI)
       client_h, remote_service_option_h, model_uri, strlen (model_uri) + 1);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  /** Wait for the server to register and check the result. */
+  /* Wait for the server to register and check the result. */
   g_usleep (1000000);
 
   status = ml_service_model_delete (service_key, 0U);

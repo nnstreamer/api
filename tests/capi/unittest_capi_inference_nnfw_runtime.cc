@@ -270,7 +270,6 @@ TEST_F (MLAPIInferenceNNFW, invoke_single_00)
   EXPECT_FLOAT_EQ (*data, 12.0);
 }
 
-
 /**
  * @brief Test nnfw subplugin with unsuccessful invoke (single ML-API)
  * @detail Model is not found

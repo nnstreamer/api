@@ -174,15 +174,15 @@ TEST_F (MLServiceAgentTest, usecase_00)
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_EQ (ML_PIPELINE_STATE_PAUSED, state);
 
-  /** destroy the pipeline */
+  /* destroy the pipeline */
   status = ml_service_destroy (service);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  /** delete finished service */
+  /* delete finished service */
   status = ml_service_delete_pipeline (service_name);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  /** it would fail if get the removed service */
+  /* it would fail if get the removed service */
   status = ml_service_get_pipeline (service_name, &ret_pipeline);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
@@ -267,15 +267,15 @@ TEST_F (MLServiceAgentTest, usecase_01)
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_EQ (ML_PIPELINE_STATE_PAUSED, state);
 
-  /** destroy the pipeline */
+  /* destroy the pipeline */
   status = ml_service_destroy (service);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  /** delete finished service */
+  /* delete finished service */
   status = ml_service_delete_pipeline (service_name);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  /** it would fail if get the removed service */
+  /* it would fail if get the removed service */
   status = ml_service_get_pipeline (service_name, &ret_pipeline);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
@@ -551,7 +551,7 @@ TEST_F (MLServiceAgentTest, query_client)
 {
   int status;
 
-  /** Set server pipeline and launch it */
+  /* Set server pipeline and launch it */
   const gchar *service_name = "simple_query_server_for_test";
   int num_buffers = 5;
   guint server_port = _get_available_port ();
@@ -666,11 +666,11 @@ TEST_F (MLServiceAgentTest, query_client)
     EXPECT_EQ (ML_ERROR_NONE, status);
   }
 
-  /** destroy client ml_service_h */
+  /* destroy client ml_service_h */
   status = ml_service_destroy (client);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  /** destroy server pipeline */
+  /* destroy server pipeline */
   status = ml_service_stop_pipeline (service);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
@@ -681,11 +681,11 @@ TEST_F (MLServiceAgentTest, query_client)
   status = ml_service_destroy (service);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  /** delete finished service */
+  /* delete finished service */
   status = ml_service_delete_pipeline (service_name);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  /** it would fail if get the removed service */
+  /* it would fail if get the removed service */
   status = ml_service_get_pipeline (service_name, &ret_pipeline);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 

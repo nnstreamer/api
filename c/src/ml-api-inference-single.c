@@ -413,7 +413,7 @@ __invoke (ml_single * single_h, ml_tensors_data_h in, ml_tensors_data_h out)
   in_tensors = (GstTensorMemory *) in_data->tensors;
   out_tensors = (GstTensorMemory *) out_data->tensors;
 
-  /** invoke the thread */
+  /* Invoke the thread. */
   if (!single_h->klass->invoke (single_h->filter, in_tensors, out_tensors,
           single_h->free_output)) {
     const char *fw_name = _ml_get_nnfw_subplugin_name (single_h->nnfw);
