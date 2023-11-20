@@ -289,7 +289,7 @@ __setup_in_out_tensors (ml_single * single_h)
   in_tensors->num_tensors = single_h->in_info.num_tensors;
   for (i = 0; i < in_tensors->num_tensors; i++) {
     /** memory will be allocated by tensor_filter_single */
-    in_tensors->tensors[i].tensor = NULL;
+    in_tensors->tensors[i].data = NULL;
     in_tensors->tensors[i].size =
         gst_tensors_info_get_size (&single_h->in_info, i);
   }
@@ -301,7 +301,7 @@ __setup_in_out_tensors (ml_single * single_h)
   out_tensors->num_tensors = single_h->out_info.num_tensors;
   for (i = 0; i < out_tensors->num_tensors; i++) {
     /** memory will be allocated by tensor_filter_single */
-    out_tensors->tensors[i].tensor = NULL;
+    out_tensors->tensors[i].data = NULL;
     out_tensors->tensors[i].size =
         gst_tensors_info_get_size (&single_h->out_info, i);
   }
@@ -321,8 +321,7 @@ __destroy_notify (gpointer data_h, gpointer single_data)
 
   if (G_LIKELY (single_h->filter)) {
     if (single_h->klass->allocate_in_invoke (single_h->filter)) {
-      single_h->klass->destroy_notify (single_h->filter,
-          (GstTensorMemory *) data->tensors);
+      single_h->klass->destroy_notify (single_h->filter, data->tensors);
     }
   }
 
@@ -397,7 +396,6 @@ __invoke (ml_single * single_h, ml_tensors_data_h in, ml_tensors_data_h out)
 {
   ml_tensors_data_s *in_data, *out_data;
   int status = ML_ERROR_NONE;
-  GstTensorMemory *in_tensors, *out_tensors;
 
   in_data = (ml_tensors_data_s *) in;
   out_data = (ml_tensors_data_s *) out;
@@ -408,12 +406,9 @@ __invoke (ml_single * single_h, ml_tensors_data_h in, ml_tensors_data_h out)
     return ML_ERROR_STREAMS_PIPE;
   }
 
-  in_tensors = (GstTensorMemory *) in_data->tensors;
-  out_tensors = (GstTensorMemory *) out_data->tensors;
-
   /* Invoke the thread. */
-  if (!single_h->klass->invoke (single_h->filter, in_tensors, out_tensors,
-          single_h->free_output)) {
+  if (!single_h->klass->invoke (single_h->filter, in_data->tensors,
+          out_data->tensors, single_h->free_output)) {
     const char *fw_name = _ml_get_nnfw_subplugin_name (single_h->nnfw);
     _ml_error_report
         ("Failed to invoke the tensors. The invoke callback of the tensor-filter subplugin '%s' has failed. Please contact the author of tensor-filter-%s (nnstreamer-%s) or review its source code. Note that this usually happens when the designated framework does not support the given model (e.g., trying to run tf-lite 2.6 model with tf-lite 1.13).",
@@ -1303,7 +1298,7 @@ _ml_single_invoke_validate_data (ml_single_h single,
         _model->num_tensors);
 
   for (i = 0; i < _data->num_tensors; i++) {
-    if (G_UNLIKELY (!_data->tensors[i].tensor))
+    if (G_UNLIKELY (!_data->tensors[i].data))
       _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
           "The %d-th input tensor is not valid. There is no valid dimension metadata for this tensor.",
           i);

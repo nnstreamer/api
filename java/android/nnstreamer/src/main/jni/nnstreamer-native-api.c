@@ -470,7 +470,7 @@ nns_convert_tensors_data (pipeline_info_s * pipe_info, JNIEnv * env,
     jobject tensor = (*env)->GetObjectArrayElement (env, data_arr, i);
     gpointer data_ptr = (*env)->GetDirectBufferAddress (env, tensor);
 
-    memcpy (data_ptr, data->tensors[i].tensor, data->tensors[i].size);
+    memcpy (data_ptr, data->tensors[i].data, data->tensors[i].size);
     (*env)->DeleteLocalRef (env, tensor);
   }
 
@@ -542,12 +542,12 @@ nns_parse_tensors_data (pipeline_info_s * pipe_info, JNIEnv * env,
       gpointer data_ptr = (*env)->GetDirectBufferAddress (env, tensor);
 
       if (clone) {
-        if (data->tensors[i].tensor == NULL)
-          data->tensors[i].tensor = g_malloc (data_size);
+        if (data->tensors[i].data == NULL)
+          data->tensors[i].data = g_malloc (data_size);
 
-        memcpy (data->tensors[i].tensor, data_ptr, data_size);
+        memcpy (data->tensors[i].data, data_ptr, data_size);
       } else {
-        data->tensors[i].tensor = data_ptr;
+        data->tensors[i].data = data_ptr;
       }
 
       data->tensors[i].size = data_size;

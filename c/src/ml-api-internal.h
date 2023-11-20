@@ -15,6 +15,7 @@
 
 #include <glib.h>
 #include <ml-api-common.h>
+#include <tensor_typedef.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -226,21 +227,12 @@ typedef struct {
 typedef int (*ml_handle_destroy_cb) (void *handle, void *user_data);
 
 /**
- * @brief An instance of a single input or output frame.
- * @since_tizen 5.5
- */
-typedef struct {
-  void *tensor; /**< The instance of tensor data. */
-  size_t size; /**< The size of tensor. */
-} ml_tensor_data_s;
-
-/**
  * @brief An instance of input or output frames. #ml_tensors_info_h is the handle for tensors metadata.
  * @since_tizen 5.5
  */
 typedef struct {
   unsigned int num_tensors; /**< The number of tensors. */
-  ml_tensor_data_s tensors[ML_TENSOR_SIZE_LIMIT]; /**< The list of tensor data. NULL for unused tensors. */
+  GstTensorMemory tensors[ML_TENSOR_SIZE_LIMIT]; /**< The list of tensor data. NULL for unused tensors. */
 
   /* private */
   ml_tensors_info_h info;

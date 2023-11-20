@@ -65,7 +65,7 @@ _sink_callback_for_query_client (const ml_tensors_data_h data,
   _copied_data_s = (ml_tensors_data_s *) copied_data;
 
   for (i = 0; i < count; ++i) {
-    memcpy (_copied_data_s->tensors[i].tensor, data_s->tensors[i].tensor,
+    memcpy (_copied_data_s->tensors[i].data, data_s->tensors[i].data,
         data_s->tensors[i].size);
   }
 

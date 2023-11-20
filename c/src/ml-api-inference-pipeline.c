@@ -325,7 +325,7 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
       goto error;
     }
 
-    _data->tensors[i].tensor = map[i].data;
+    _data->tensors[i].data = map[i].data;
     _data->tensors[i].size = map[i].size;
   }
 
@@ -374,7 +374,7 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
       gst_tensor_meta_info_convert (&meta,
           gst_tensors_info_get_nth_info (&gst_info, i));
 
-      _data->tensors[i].tensor = map[i].data + hsize;
+      _data->tensors[i].data = map[i].data + hsize;
       _data->tensors[i].size = map[i].size - hsize;
     }
   } else {
@@ -1715,7 +1715,7 @@ ml_pipeline_src_input_data (ml_pipeline_src_h h, ml_tensors_data_h data,
   for (i = 0; i < _data->num_tensors; i++) {
     GstTensorInfo *_gst_tensor_info =
         gst_tensors_info_get_nth_info (&gst_info, i);
-    mem_data = _data->tensors[i].tensor;
+    mem_data = _data->tensors[i].data;
     mem_size = _data->tensors[i].size;
 
     mem = tmp = gst_memory_new_wrapped (GST_MEMORY_FLAG_READONLY,
@@ -2800,7 +2800,7 @@ ml_pipeline_custom_invoke (void *data, const GstTensorFilterProperties * prop,
 
   _data = (ml_tensors_data_s *) in_data;
   for (i = 0; i < _data->num_tensors; i++)
-    _data->tensors[i].tensor = in[i].data;
+    _data->tensors[i].data = in[i].data;
 
   status = _ml_tensors_data_create_no_alloc (c->out_info, &out_data);
   if (status != ML_ERROR_NONE) {
@@ -2810,7 +2810,7 @@ ml_pipeline_custom_invoke (void *data, const GstTensorFilterProperties * prop,
 
   _data = (ml_tensors_data_s *) out_data;
   for (i = 0; i < _data->num_tensors; i++)
-    _data->tensors[i].tensor = out[i].data;
+    _data->tensors[i].data = out[i].data;
 
   /* call invoke callback */
   status = c->cb (in_data, out_data, c->pdata);
@@ -3040,7 +3040,7 @@ ml_pipeline_if_custom (const GstTensorsInfo * info,
 
   _data = (ml_tensors_data_s *) in_data;
   for (i = 0; i < _data->num_tensors; i++)
-    _data->tensors[i].tensor = input[i].data;
+    _data->tensors[i].data = input[i].data;
 
   /* call invoke callback */
   g_mutex_lock (&c->lock);
