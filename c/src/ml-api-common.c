@@ -953,9 +953,9 @@ _ml_tensors_data_destroy_internal (ml_tensors_data_h data, gboolean free_data)
             status);
     } else {
       for (i = 0; i < ML_TENSOR_SIZE_LIMIT; i++) {
-        if (_data->tensors[i].tensor) {
-          g_free (_data->tensors[i].tensor);
-          _data->tensors[i].tensor = NULL;
+        if (_data->tensors[i].data) {
+          g_free (_data->tensors[i].data);
+          _data->tensors[i].data = NULL;
         }
       }
     }
@@ -1028,7 +1028,7 @@ _ml_tensors_data_create_no_alloc (const ml_tensors_info_h info,
       ml_tensor_info_s *_tensor_info = ml_tensors_info_get_nth_info (_info, i);
       _data->tensors[i].size =
           _ml_tensor_info_get_size (_tensor_info, _info->is_extended);
-      _data->tensors[i].tensor = NULL;
+      _data->tensors[i].data = NULL;
     }
     G_UNLOCK_UNLESS_NOLOCK (*_info);
   }
@@ -1068,7 +1068,7 @@ _ml_tensors_data_clone_no_alloc (const ml_tensors_data_s * data_src,
 
   _data->num_tensors = data_src->num_tensors;
   memcpy (_data->tensors, data_src->tensors,
-      sizeof (ml_tensor_data_s) * data_src->num_tensors);
+      sizeof (GstTensorMemory) * data_src->num_tensors);
 
   *data = _data;
   G_UNLOCK_UNLESS_NOLOCK (*_data);
@@ -1107,8 +1107,7 @@ ml_tensors_data_clone (const ml_tensors_data_h in, ml_tensors_data_h * out)
   _out = (ml_tensors_data_s *) (*out);
 
   for (i = 0; i < _out->num_tensors; ++i) {
-    memcpy (_out->tensors[i].tensor, _in->tensors[i].tensor,
-        _in->tensors[i].size);
+    memcpy (_out->tensors[i].data, _in->tensors[i].data, _in->tensors[i].size);
   }
 
 error:
@@ -1154,8 +1153,8 @@ ml_tensors_data_create (const ml_tensors_info_h info, ml_tensors_data_h * data)
   }
 
   for (i = 0; i < _data->num_tensors; i++) {
-    _data->tensors[i].tensor = g_malloc0 (_data->tensors[i].size);
-    if (_data->tensors[i].tensor == NULL) {
+    _data->tensors[i].data = g_malloc0 (_data->tensors[i].size);
+    if (_data->tensors[i].data == NULL) {
       goto failed_oom;
     }
   }
@@ -1203,7 +1202,7 @@ ml_tensors_data_get_tensor_data (ml_tensors_data_h data, unsigned int index,
     goto report;
   }
 
-  *raw_data = _data->tensors[index].tensor;
+  *raw_data = _data->tensors[index].data;
   *data_size = _data->tensors[index].size;
 
 report:
@@ -1250,8 +1249,8 @@ ml_tensors_data_set_tensor_data (ml_tensors_data_h data, unsigned int index,
     goto report;
   }
 
-  if (_data->tensors[index].tensor != raw_data)
-    memcpy (_data->tensors[index].tensor, raw_data, data_size);
+  if (_data->tensors[index].data != raw_data)
+    memcpy (_data->tensors[index].data, raw_data, data_size);
 
 report:
   G_UNLOCK_UNLESS_NOLOCK (*_data);
