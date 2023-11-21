@@ -36,12 +36,12 @@ int _ml_tensors_info_create_from_gst (ml_tensors_info_h *ml_info, GstTensorsInfo
 /**
  * @brief Copies tensor metadata from gst tensors info.
  */
-int _ml_tensors_info_copy_from_gst (ml_tensors_info_s *ml_info, const GstTensorsInfo *gst_info);
+int _ml_tensors_info_copy_from_gst (ml_tensors_info_h ml_info, const GstTensorsInfo *gst_info);
 
 /**
  * @brief Copies tensor metadata from ml tensors info.
  */
-int _ml_tensors_info_copy_from_ml (GstTensorsInfo *gst_info, const ml_tensors_info_s *ml_info);
+int _ml_tensors_info_copy_from_ml (GstTensorsInfo *gst_info, const ml_tensors_info_h ml_info);
 
 #ifdef __cplusplus
 }

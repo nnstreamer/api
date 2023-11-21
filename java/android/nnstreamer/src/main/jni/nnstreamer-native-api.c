@@ -581,6 +581,7 @@ nns_convert_tensors_info (pipeline_info_s * pipe_info, JNIEnv * env,
   guint i;
   info_class_info_s *icls_info;
   ml_tensors_info_s *info;
+  GstTensorInfo *_info;
   jobject obj_info = NULL;
 
   g_return_val_if_fail (pipe_info, FALSE);
@@ -597,19 +598,21 @@ nns_convert_tensors_info (pipeline_info_s * pipe_info, JNIEnv * env,
     goto done;
   }
 
-  for (i = 0; i < info->num_tensors; i++) {
+  for (i = 0; i < info->info.num_tensors; i++) {
     jstring name = NULL;
     jint type;
     jintArray dimension;
 
-    if (info->info[i].name)
-      name = (*env)->NewStringUTF (env, info->info[i].name);
+    _info = gst_tensors_info_get_nth_info (&info->info, i);
 
-    type = (jint) info->info[i].type;
+    if (_info->name)
+      name = (*env)->NewStringUTF (env, _info->name);
+
+    type = (jint) _info->type;
 
     dimension = (*env)->NewIntArray (env, ML_TENSOR_RANK_LIMIT);
     (*env)->SetIntArrayRegion (env, dimension, 0, ML_TENSOR_RANK_LIMIT,
-        (jint *) info->info[i].dimension);
+        (jint *) _info->dimension);
 
     (*env)->CallVoidMethod (env, obj_info, icls_info->mid_add_info,
         name, type, dimension);
@@ -634,6 +637,7 @@ nns_parse_tensors_info (pipeline_info_s * pipe_info, JNIEnv * env,
   guint i;
   info_class_info_s *icls_info;
   ml_tensors_info_s *info;
+  GstTensorInfo *_info;
   jobjectArray info_arr;
 
   g_return_val_if_fail (pipe_info, FALSE);
@@ -652,15 +656,16 @@ nns_parse_tensors_info (pipeline_info_s * pipe_info, JNIEnv * env,
   info_arr = (*env)->CallObjectMethod (env, obj_info, icls_info->mid_get_array);
 
   /* number of tensors info */
-  info->num_tensors = (unsigned int) (*env)->GetArrayLength (env, info_arr);
+  info->info.num_tensors = (unsigned int) (*env)->GetArrayLength (env, info_arr);
 
   /* read tensor info */
-  for (i = 0; i < info->num_tensors; i++) {
+  for (i = 0; i < info->info.num_tensors; i++) {
     jobject item;
     jstring name_str;
     jintArray dimension;
 
     item = (*env)->GetObjectArrayElement (env, info_arr, i);
+    _info = gst_tensors_info_get_nth_info (&info->info, i);
 
     /* tensor name */
     name_str = (jstring) (*env)->GetObjectField (env, item,
@@ -668,20 +673,20 @@ nns_parse_tensors_info (pipeline_info_s * pipe_info, JNIEnv * env,
     if (name_str) {
       const gchar *name = (*env)->GetStringUTFChars (env, name_str, NULL);
 
-      info->info[i].name = g_strdup (name);
+      _info->name = g_strdup (name);
       (*env)->ReleaseStringUTFChars (env, name_str, name);
       (*env)->DeleteLocalRef (env, name_str);
     }
 
     /* tensor type */
-    info->info[i].type = (ml_tensor_type_e) (*env)->GetIntField (env, item,
+    _info->type = (tensor_type) (*env)->GetIntField (env, item,
         icls_info->fid_info_type);
 
     /* tensor dimension */
     dimension = (jintArray) (*env)->GetObjectField (env, item,
         icls_info->fid_info_dim);
     (*env)->GetIntArrayRegion (env, dimension, 0, ML_TENSOR_RANK_LIMIT,
-        (jint *) info->info[i].dimension);
+        (jint *) _info->dimension);
     (*env)->DeleteLocalRef (env, dimension);
 
     (*env)->DeleteLocalRef (env, item);
