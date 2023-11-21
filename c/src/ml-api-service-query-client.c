@@ -42,34 +42,17 @@ _sink_callback_for_query_client (const ml_tensors_data_h data,
     const ml_tensors_info_h info, void *user_data)
 {
   _ml_service_query_s *mls = (_ml_service_query_s *) user_data;
-  ml_tensors_data_s *data_s = (ml_tensors_data_s *) data;
-  ml_tensors_data_h copied_data = NULL;
-  ml_tensors_data_s *_copied_data_s;
-
-  guint i, count = 0U;
+  ml_tensors_data_h copied;
   int status;
 
-  status = ml_tensors_info_get_count (info, &count);
-  if (ML_ERROR_NONE != status) {
-    _ml_error_report_continue
-        ("Failed to get count of tensors info from tensor_sink.");
-    return;
-  }
-
-  status = ml_tensors_data_create (info, &copied_data);
+  status = ml_tensors_data_clone (data, &copied);
   if (ML_ERROR_NONE != status) {
     _ml_error_report_continue
         ("Failed to create a new tensors data for query_client.");
     return;
   }
-  _copied_data_s = (ml_tensors_data_s *) copied_data;
 
-  for (i = 0; i < count; ++i) {
-    memcpy (_copied_data_s->tensors[i].data, data_s->tensors[i].data,
-        data_s->tensors[i].size);
-  }
-
-  g_async_queue_push (mls->out_data_queue, copied_data);
+  g_async_queue_push (mls->out_data_queue, copied);
 }
 
 /**
