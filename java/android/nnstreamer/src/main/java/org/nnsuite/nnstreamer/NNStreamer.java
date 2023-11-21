@@ -24,12 +24,12 @@ public final class NNStreamer {
     /**
      * The maximum rank that NNStreamer supports.
      */
-    public static final int TENSOR_RANK_LIMIT = 4;
+    public static final int TENSOR_RANK_LIMIT = 16;
 
     /**
      * The maximum number of tensor that {@link TensorsData} instance may have.
      */
-    public static final int TENSOR_SIZE_LIMIT = 16;
+    public static final int TENSOR_SIZE_LIMIT = 256;
 
     /**
      * The enumeration for supported frameworks in NNStreamer.
