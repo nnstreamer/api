@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <glib.h>
-
+#include <nnstreamer_plugin_api_util.h>
 #include "nnstreamer.h"
 #include "nnstreamer-tizen-internal.h"
 #include "ml-api-internal.h"
@@ -73,6 +73,41 @@ ml_api_get_version (unsigned int *major, unsigned int *minor,
     *minor = VERSION_MINOR;
   if (micro)
     *micro = VERSION_MICRO;
+}
+
+/**
+ * @brief Convert the type from ml_tensor_type_e to tensor_type.
+ * @note This code is based on the same order between NNS type and ML type.
+ * The index should be the same in case of adding a new type.
+ */
+static tensor_type
+convert_tensor_type_from (ml_tensor_type_e type)
+{
+  if (type < ML_TENSOR_TYPE_INT32 || type >= ML_TENSOR_TYPE_UNKNOWN) {
+    _ml_error_report
+        ("Failed to convert the type. Input ml_tensor_type_e %d is invalid.",
+        type);
+    return _NNS_END;
+  }
+
+  return (tensor_type) type;
+}
+
+/**
+ * @brief Convert the type from tensor_type to ml_tensor_type_e.
+ * @note This code is based on the same order between NNS type and ML type.
+ * The index should be the same in case of adding a new type.
+ */
+static ml_tensor_type_e
+convert_ml_tensor_type_from (tensor_type type)
+{
+  if (type < _NNS_INT32 || type >= _NNS_END) {
+    _ml_error_report
+        ("Failed to convert the type. Input tensor_type %d is invalid.", type);
+    return ML_TENSOR_TYPE_UNKNOWN;
+  }
+
+  return (ml_tensor_type_e) type;
 }
 
 /**
@@ -155,248 +190,12 @@ ml_tensors_info_destroy (ml_tensors_info_h info)
 }
 
 /**
- * @brief Allocates memory in given tensors_info for extra tensor infos.
- */
-gboolean
-_ml_tensors_info_create_extra (ml_tensors_info_s * ml_info)
-{
-  ml_tensor_info_s *new;
-  guint i;
-
-  if (!ml_info)
-    _ml_error_report_return (FALSE, "The parameter, ml_info, is NULL.");
-
-  if (ml_info->extra) {
-    return TRUE;
-  }
-
-  new = g_try_new0 (ml_tensor_info_s, ML_TENSOR_SIZE_EXTRA_LIMIT);
-  if (!new) {
-    _ml_loge ("Failed to allocate memory for extra tensors info.");
-    return FALSE;
-  }
-
-  for (i = 0; i < ML_TENSOR_SIZE_EXTRA_LIMIT; i++) {
-    if (_ml_tensor_info_initialize (&new[i]) != ML_ERROR_NONE) {
-      _ml_loge ("Failed to initialize extra tensors info.");
-      g_free (new);
-      return FALSE;
-    }
-  }
-
-  ml_info->extra = new;
-
-  return TRUE;
-}
-
-/**
- * @brief Initializes given tensor_info with default value.
- */
-int
-_ml_tensor_info_initialize (ml_tensor_info_s * info)
-{
-  guint i;
-
-  if (!info)
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, info, is NULL. Provide a valid pointer.");
-
-  info->name = NULL;
-  info->type = ML_TENSOR_TYPE_UNKNOWN;
-  for (i = 0; i < ML_TENSOR_RANK_LIMIT; i++) {
-    info->dimension[i] = 0;
-  }
-
-  return ML_ERROR_NONE;
-}
-
-/**
- * @brief Initializes the tensors information with default value.
- */
-int
-_ml_tensors_info_initialize (ml_tensors_info_s * info)
-{
-  guint i;
-
-  if (!info)
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, info, is NULL. Provide a valid pointer.");
-
-  info->num_tensors = 0;
-
-  for (i = 0; i < ML_TENSOR_SIZE_LIMIT_STATIC; i++) {
-    _ml_tensor_info_initialize (&info->info[i]);
-  }
-
-  info->extra = NULL;
-
-  return ML_ERROR_NONE;
-}
-
-/**
- * @brief Get the pointer of nth tensor info.
- */
-ml_tensor_info_s *
-ml_tensors_info_get_nth_info (ml_tensors_info_s * info, guint nth)
-{
-  if (!info)
-    return NULL;
-
-  if (nth >= ML_TENSOR_SIZE_LIMIT) {
-    _ml_loge ("The given nth is out of range. It should be less than %d.",
-        ML_TENSOR_SIZE_LIMIT);
-    return NULL;
-  }
-
-  if (nth < ML_TENSOR_SIZE_LIMIT_STATIC)
-    return &info->info[nth];
-
-  if (!_ml_tensors_info_create_extra (info))
-    return NULL;
-
-  return &info->extra[nth - ML_TENSOR_SIZE_LIMIT_STATIC];
-}
-
-/**
- * @brief Get the rank of tensor dimension.
- */
-static guint
-_ml_tensor_dimension_get_rank (const ml_tensor_dimension dim)
-{
-  guint i;
-
-  for (i = 0; i < ML_TENSOR_RANK_LIMIT; i++) {
-    if (dim[i] == 0)
-      break;
-  }
-
-  return i;
-}
-
-/**
- * @brief Check the tensor dimension is valid
- */
-static gboolean
-_ml_tensor_dimension_is_valid (const ml_tensor_dimension dim)
-{
-  guint i;
-  gboolean is_valid = FALSE;
-
-  i = _ml_tensor_dimension_get_rank (dim);
-  if (i == 0)
-    goto done;
-
-  for (; i < ML_TENSOR_RANK_LIMIT; i++) {
-    if (dim[i] > 0)
-      goto done;
-  }
-
-  is_valid = TRUE;
-
-done:
-  if (!is_valid) {
-    _ml_error_report
-        ("Failed to validate tensor dimension. The dimension string should be in the form of d1:...:d8, d1:d2:d3:d4, d1:d2:d3, d1:d2, or d1. Here, dN is a positive integer.");
-  }
-
-  return is_valid;
-}
-
-/**
- * @brief Compares the given tensor info.
- */
-static gboolean
-ml_tensor_info_compare (const ml_tensor_info_s * i1,
-    const ml_tensor_info_s * i2)
-{
-  guint i;
-
-  if (i1 == NULL || i2 == NULL)
-    return FALSE;
-
-  if (i1->type != i2->type)
-    return FALSE;
-
-  if (!_ml_tensor_dimension_is_valid (i1->dimension)
-      || !_ml_tensor_dimension_is_valid (i2->dimension))
-    return FALSE;
-
-  for (i = 0; i < ML_TENSOR_RANK_LIMIT; i++) {
-    if (i1->dimension[i] != i2->dimension[i]) {
-      /* Supposed dimension is same if remained dimension is 1. */
-      if (i1->dimension[i] > 1 || i2->dimension[i] > 1)
-        return FALSE;
-    }
-  }
-
-  return TRUE;
-}
-
-/**
- * @brief Validates the given tensor info is valid.
- * @note info should be locked by caller if nolock == 0.
- */
-static gboolean
-ml_tensor_info_validate (const ml_tensor_info_s * info, bool is_extended)
-{
-  guint i;
-
-  if (!info)
-    return FALSE;
-
-  if (info->type < 0 || info->type >= ML_TENSOR_TYPE_UNKNOWN)
-    return FALSE;
-
-  if (!is_extended) {
-    for (i = ML_TENSOR_RANK_LIMIT_PREV; i < ML_TENSOR_RANK_LIMIT; i++) {
-      if (info->dimension[i] > 1)
-        return FALSE;
-    }
-  }
-
-  return TRUE;
-}
-
-/**
- * @brief Validates the given tensors info is valid without acquiring lock
- * @note This function assumes that lock on ml_tensors_info_h has already been acquired
- */
-static int
-_ml_tensors_info_validate_nolock (const ml_tensors_info_s * info, bool *valid)
-{
-  guint i;
-
-  G_VERIFYLOCK_UNLESS_NOLOCK (*info);
-  /* init false */
-  *valid = false;
-
-  if (info->num_tensors < 1) {
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The given tensors_info to be validated has invalid num_tensors (%u). It should be 1 or more.",
-        info->num_tensors);
-  }
-
-  for (i = 0; i < info->num_tensors; i++) {
-    ml_tensor_info_s *tensor_info =
-        ml_tensors_info_get_nth_info ((ml_tensors_info_s *) info, i);
-    if (!ml_tensor_info_validate (tensor_info, info->is_extended))
-      goto done;
-  }
-
-  *valid = true;
-
-done:
-  return ML_ERROR_NONE;
-}
-
-/**
  * @brief Validates the given tensors info is valid.
  */
 int
 ml_tensors_info_validate (const ml_tensors_info_h info, bool *valid)
 {
   ml_tensors_info_s *tensors_info;
-  int ret = ML_ERROR_NONE;
 
   check_feature_state (ML_FEATURE);
 
@@ -411,11 +210,10 @@ ml_tensors_info_validate (const ml_tensors_info_h info, bool *valid)
         "The input parameter, tensors_info, is NULL. It should be a valid ml_tensors_info_h, which is usually created by ml_tensors_info_create().");
 
   G_LOCK_UNLESS_NOLOCK (*tensors_info);
-
-  ret = _ml_tensors_info_validate_nolock (info, valid);
-
+  *valid = gst_tensors_info_validate (&tensors_info->info);
   G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
-  return ret;
+
+  return ML_ERROR_NONE;
 }
 
 /**
@@ -426,7 +224,6 @@ _ml_tensors_info_compare (const ml_tensors_info_h info1,
     const ml_tensors_info_h info2, bool *equal)
 {
   ml_tensors_info_s *i1, *i2;
-  guint i;
 
   check_feature_state (ML_FEATURE);
 
@@ -445,22 +242,8 @@ _ml_tensors_info_compare (const ml_tensors_info_h info1,
   i2 = (ml_tensors_info_s *) info2;
   G_LOCK_UNLESS_NOLOCK (*i2);
 
-  /* init false */
-  *equal = false;
+  *equal = gst_tensors_info_is_equal (&i1->info, &i2->info);
 
-  if (i1->num_tensors != i2->num_tensors)
-    goto done;
-
-  for (i = 0; i < i1->num_tensors; i++) {
-    ml_tensor_info_s *ti1 = ml_tensors_info_get_nth_info (i1, i);
-    ml_tensor_info_s *ti2 = ml_tensors_info_get_nth_info (i2, i);
-    if (!ml_tensor_info_compare (ti1, ti2))
-      goto done;
-  }
-
-  *equal = true;
-
-done:
   G_UNLOCK_UNLESS_NOLOCK (*i2);
   G_UNLOCK_UNLESS_NOLOCK (*i1);
   return ML_ERROR_NONE;
@@ -487,7 +270,7 @@ ml_tensors_info_set_count (ml_tensors_info_h info, unsigned int count)
   tensors_info = (ml_tensors_info_s *) info;
 
   /* This is atomic. No need for locks */
-  tensors_info->num_tensors = count;
+  tensors_info->info.num_tensors = count;
 
   return ML_ERROR_NONE;
 }
@@ -511,7 +294,7 @@ ml_tensors_info_get_count (ml_tensors_info_h info, unsigned int *count)
 
   tensors_info = (ml_tensors_info_s *) info;
   /* This is atomic. No need for locks */
-  *count = tensors_info->num_tensors;
+  *count = tensors_info->info.num_tensors;
 
   return ML_ERROR_NONE;
 }
@@ -524,7 +307,7 @@ ml_tensors_info_set_tensor_name (ml_tensors_info_h info,
     unsigned int index, const char *name)
 {
   ml_tensors_info_s *tensors_info;
-  ml_tensor_info_s *_tensor_info;
+  GstTensorInfo *_info;
 
   check_feature_state (ML_FEATURE);
 
@@ -535,26 +318,21 @@ ml_tensors_info_set_tensor_name (ml_tensors_info_h info,
   tensors_info = (ml_tensors_info_s *) info;
   G_LOCK_UNLESS_NOLOCK (*tensors_info);
 
-  if (tensors_info->num_tensors <= index) {
+  if (tensors_info->info.num_tensors <= index) {
     G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The number of tensors in 'info' parameter is %u, which is not larger than the given 'index' %u. Thus, we cannot get %u'th tensor from 'info'. Please set the number of tensors of 'info' correctly or check the value of the given 'index'.",
-        tensors_info->num_tensors, index, index);
+        tensors_info->info.num_tensors, index, index);
   }
 
-  _tensor_info = ml_tensors_info_get_nth_info (tensors_info, index);
-  if (!_tensor_info) {
+  _info = gst_tensors_info_get_nth_info (&tensors_info->info, index);
+  if (!_info) {
     G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
     return ML_ERROR_INVALID_PARAMETER;
   }
 
-  if (_tensor_info->name) {
-    g_free (_tensor_info->name);
-    _tensor_info->name = NULL;
-  }
-
-  if (name)
-    _tensor_info->name = g_strdup (name);
+  g_free (_info->name);
+  _info->name = g_strdup (name);
 
   G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
   return ML_ERROR_NONE;
@@ -568,7 +346,7 @@ ml_tensors_info_get_tensor_name (ml_tensors_info_h info,
     unsigned int index, char **name)
 {
   ml_tensors_info_s *tensors_info;
-  ml_tensor_info_s *_tensor_info;
+  GstTensorInfo *_info;
 
   check_feature_state (ML_FEATURE);
 
@@ -582,21 +360,20 @@ ml_tensors_info_get_tensor_name (ml_tensors_info_h info,
   tensors_info = (ml_tensors_info_s *) info;
   G_LOCK_UNLESS_NOLOCK (*tensors_info);
 
-  if (tensors_info->num_tensors <= index) {
+  if (tensors_info->info.num_tensors <= index) {
     G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The number of tensors in 'info' parameter is %u, which is not larger than the given 'index' %u. Thus, we cannot get %u'th tensor from 'info'. Please set the number of tensors of 'info' correctly or check the value of the given 'index'.",
-        tensors_info->num_tensors, index, index);
+        tensors_info->info.num_tensors, index, index);
   }
 
-  _tensor_info = ml_tensors_info_get_nth_info (tensors_info, index);
-  if (!_tensor_info) {
+  _info = gst_tensors_info_get_nth_info (&tensors_info->info, index);
+  if (!_info) {
     G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
     return ML_ERROR_INVALID_PARAMETER;
   }
 
-  *name = g_strdup (_tensor_info->name);
-
+  *name = g_strdup (_info->name);
 
   G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
   return ML_ERROR_NONE;
@@ -610,7 +387,7 @@ ml_tensors_info_set_tensor_type (ml_tensors_info_h info,
     unsigned int index, const ml_tensor_type_e type)
 {
   ml_tensors_info_s *tensors_info;
-  ml_tensor_info_s *_tensor_info;
+  GstTensorInfo *_info;
 
   check_feature_state (ML_FEATURE);
 
@@ -633,20 +410,20 @@ ml_tensors_info_set_tensor_type (ml_tensors_info_h info,
   tensors_info = (ml_tensors_info_s *) info;
   G_LOCK_UNLESS_NOLOCK (*tensors_info);
 
-  if (tensors_info->num_tensors <= index) {
+  if (tensors_info->info.num_tensors <= index) {
     G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The number of tensors in 'info' parameter is %u, which is not larger than the given 'index' %u. Thus, we cannot get %u'th tensor from 'info'. Please set the number of tensors of 'info' correctly or check the value of the given 'index'.",
-        tensors_info->num_tensors, index, index);
+        tensors_info->info.num_tensors, index, index);
   }
 
-  _tensor_info = ml_tensors_info_get_nth_info (tensors_info, index);
-  if (!_tensor_info) {
+  _info = gst_tensors_info_get_nth_info (&tensors_info->info, index);
+  if (!_info) {
     G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
     return ML_ERROR_INVALID_PARAMETER;
   }
 
-  _tensor_info->type = type;
+  _info->type = convert_tensor_type_from (type);
 
   G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
   return ML_ERROR_NONE;
@@ -660,7 +437,7 @@ ml_tensors_info_get_tensor_type (ml_tensors_info_h info,
     unsigned int index, ml_tensor_type_e * type)
 {
   ml_tensors_info_s *tensors_info;
-  ml_tensor_info_s *_tensor_info;
+  GstTensorInfo *_info;
 
   check_feature_state (ML_FEATURE);
 
@@ -674,19 +451,20 @@ ml_tensors_info_get_tensor_type (ml_tensors_info_h info,
   tensors_info = (ml_tensors_info_s *) info;
   G_LOCK_UNLESS_NOLOCK (*tensors_info);
 
-  if (tensors_info->num_tensors <= index) {
+  if (tensors_info->info.num_tensors <= index) {
     G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The number of tensors in 'info' parameter is %u, which is not larger than the given 'index' %u. Thus, we cannot get %u'th tensor from 'info'. Please set the number of tensors of 'info' correctly or check the value of the given 'index'.",
-        tensors_info->num_tensors, index, index);
+        tensors_info->info.num_tensors, index, index);
   }
 
-  _tensor_info = ml_tensors_info_get_nth_info (tensors_info, index);
-  if (!_tensor_info) {
+  _info = gst_tensors_info_get_nth_info (&tensors_info->info, index);
+  if (!_info) {
     G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
     return ML_ERROR_INVALID_PARAMETER;
   }
-  *type = _tensor_info->type;
+
+  *type = convert_ml_tensor_type_from (_info->type);
 
   G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
   return ML_ERROR_NONE;
@@ -700,7 +478,7 @@ ml_tensors_info_set_tensor_dimension (ml_tensors_info_h info,
     unsigned int index, const ml_tensor_dimension dimension)
 {
   ml_tensors_info_s *tensors_info;
-  ml_tensor_info_s *_tensor_info;
+  GstTensorInfo *_info;
   guint i;
 
   check_feature_state (ML_FEATURE);
@@ -712,25 +490,25 @@ ml_tensors_info_set_tensor_dimension (ml_tensors_info_h info,
   tensors_info = (ml_tensors_info_s *) info;
   G_LOCK_UNLESS_NOLOCK (*tensors_info);
 
-  if (tensors_info->num_tensors <= index) {
+  if (tensors_info->info.num_tensors <= index) {
     G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The number of tensors in 'info' parameter is %u, which is not larger than the given 'index' %u. Thus, we cannot get %u'th tensor from 'info'. Please set the number of tensors of 'info' correctly or check the value of the given 'index'.",
-        tensors_info->num_tensors, index, index);
+        tensors_info->info.num_tensors, index, index);
   }
 
-  _tensor_info = ml_tensors_info_get_nth_info (tensors_info, index);
-  if (!_tensor_info) {
+  _info = gst_tensors_info_get_nth_info (&tensors_info->info, index);
+  if (!_info) {
     G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
     return ML_ERROR_INVALID_PARAMETER;
   }
 
   for (i = 0; i < ML_TENSOR_RANK_LIMIT_PREV; i++) {
-    _tensor_info->dimension[i] = dimension[i];
+    _info->dimension[i] = dimension[i];
   }
 
   for (i = ML_TENSOR_RANK_LIMIT_PREV; i < ML_TENSOR_RANK_LIMIT; i++) {
-    _tensor_info->dimension[i] = (tensors_info->is_extended ? dimension[i] : 0);
+    _info->dimension[i] = (tensors_info->is_extended ? dimension[i] : 0);
   }
 
   G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
@@ -745,7 +523,7 @@ ml_tensors_info_get_tensor_dimension (ml_tensors_info_h info,
     unsigned int index, ml_tensor_dimension dimension)
 {
   ml_tensors_info_s *tensors_info;
-  ml_tensor_info_s *_tensor_info;
+  GstTensorInfo *_info;
   guint i, valid_rank = ML_TENSOR_RANK_LIMIT;
 
   check_feature_state (ML_FEATURE);
@@ -757,15 +535,15 @@ ml_tensors_info_get_tensor_dimension (ml_tensors_info_h info,
   tensors_info = (ml_tensors_info_s *) info;
   G_LOCK_UNLESS_NOLOCK (*tensors_info);
 
-  if (tensors_info->num_tensors <= index) {
+  if (tensors_info->info.num_tensors <= index) {
     G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The number of tensors in 'info' parameter is %u, which is not larger than the given 'index' %u. Thus, we cannot get %u'th tensor from 'info'. Please set the number of tensors of 'info' correctly or check the value of the given 'index'.",
-        tensors_info->num_tensors, index, index);
+        tensors_info->info.num_tensors, index, index);
   }
 
-  _tensor_info = ml_tensors_info_get_nth_info (tensors_info, index);
-  if (!_tensor_info) {
+  _info = gst_tensors_info_get_nth_info (&tensors_info->info, index);
+  if (!_info) {
     G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
     return ML_ERROR_INVALID_PARAMETER;
   }
@@ -774,7 +552,7 @@ ml_tensors_info_get_tensor_dimension (ml_tensors_info_h info,
     valid_rank = ML_TENSOR_RANK_LIMIT_PREV;
 
   for (i = 0; i < valid_rank; i++) {
-    dimension[i] = _tensor_info->dimension[i];
+    dimension[i] = _info->dimension[i];
   }
 
   for (; i < ML_TENSOR_RANK_LIMIT; i++)
@@ -785,55 +563,6 @@ ml_tensors_info_get_tensor_dimension (ml_tensors_info_h info,
 }
 
 /**
- * @brief Gets the byte size of the given tensor info.
- */
-size_t
-_ml_tensor_info_get_size (const ml_tensor_info_s * info, bool is_extended)
-{
-  size_t tensor_size;
-  gint i, valid_rank = ML_TENSOR_RANK_LIMIT;
-
-  if (!info)
-    return 0;
-
-  switch (info->type) {
-    case ML_TENSOR_TYPE_INT8:
-    case ML_TENSOR_TYPE_UINT8:
-      tensor_size = 1;
-      break;
-    case ML_TENSOR_TYPE_INT16:
-    case ML_TENSOR_TYPE_UINT16:
-    case ML_TENSOR_TYPE_FLOAT16:
-      tensor_size = 2;
-      break;
-    case ML_TENSOR_TYPE_INT32:
-    case ML_TENSOR_TYPE_UINT32:
-    case ML_TENSOR_TYPE_FLOAT32:
-      tensor_size = 4;
-      break;
-    case ML_TENSOR_TYPE_FLOAT64:
-    case ML_TENSOR_TYPE_INT64:
-    case ML_TENSOR_TYPE_UINT64:
-      tensor_size = 8;
-      break;
-    default:
-      _ml_loge ("In the given param, tensor type is invalid.");
-      return 0;
-  }
-
-  if (!is_extended)
-    valid_rank = ML_TENSOR_RANK_LIMIT_PREV;
-
-  for (i = 0; i < valid_rank; i++) {
-    if (info->dimension[i] == 0)
-      break;
-    tensor_size *= info->dimension[i];
-  }
-
-  return tensor_size;
-}
-
-/**
  * @brief Gets the byte size of the given handle of tensors information.
  */
 int
@@ -841,7 +570,6 @@ ml_tensors_info_get_tensor_size (ml_tensors_info_h info,
     int index, size_t *data_size)
 {
   ml_tensors_info_s *tensors_info;
-  ml_tensor_info_s *_tensor_info;
 
   check_feature_state (ML_FEATURE);
 
@@ -858,38 +586,31 @@ ml_tensors_info_get_tensor_size (ml_tensors_info_h info,
   /* init 0 */
   *data_size = 0;
 
-  if (index >= 0 && tensors_info->num_tensors <= index) {
+  if (index >= 0 && tensors_info->info.num_tensors <= index) {
     G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The number of tensors in 'info' parameter is %u, which is not larger than the given 'index' %u. Thus, we cannot get %u'th tensor from 'info'. Please set the number of tensors of 'info' correctly or check the value of the given 'index'.",
-        tensors_info->num_tensors, index, index);
+        tensors_info->info.num_tensors, index, index);
   }
 
-  if (index < 0) {
-    guint i;
-
-    /* get total byte size */
-    for (i = 0; i < tensors_info->num_tensors; i++) {
-      _tensor_info = ml_tensors_info_get_nth_info (tensors_info, i);
-      if (!_tensor_info) {
-        G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
-        return ML_ERROR_INVALID_PARAMETER;
-      }
-      *data_size +=
-          _ml_tensor_info_get_size (_tensor_info, tensors_info->is_extended);
-    }
-  } else {
-    _tensor_info = ml_tensors_info_get_nth_info (tensors_info, index);
-    if (!_tensor_info) {
-      G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
-      return ML_ERROR_INVALID_PARAMETER;
-    }
-
-    *data_size =
-        _ml_tensor_info_get_size (_tensor_info, tensors_info->is_extended);
-  }
+  *data_size = gst_tensors_info_get_size (&tensors_info->info, index);
 
   G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
+  return ML_ERROR_NONE;
+}
+
+/**
+ * @brief Initializes the tensors information with default value.
+ */
+int
+_ml_tensors_info_initialize (ml_tensors_info_s * info)
+{
+  if (!info)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, info, is NULL. Provide a valid pointer.");
+
+  gst_tensors_info_init (&info->info);
+
   return ML_ERROR_NONE;
 }
 
@@ -900,28 +621,10 @@ ml_tensors_info_get_tensor_size (ml_tensors_info_h info,
 void
 _ml_tensors_info_free (ml_tensors_info_s * info)
 {
-  gint i;
-
   if (!info)
     return;
 
-  for (i = 0; i < ML_TENSOR_SIZE_LIMIT_STATIC; i++) {
-    if (info->info[i].name) {
-      g_free (info->info[i].name);
-    }
-  }
-
-  if (info->extra) {
-    for (i = 0; i < ML_TENSOR_SIZE_EXTRA_LIMIT; i++) {
-      if (info->extra[i].name) {
-        g_free (info->extra[i].name);
-      }
-    }
-
-    g_free (info->extra);
-  }
-
-  _ml_tensors_info_initialize (info);
+  gst_tensors_info_free (&info->info);
 }
 
 /**
@@ -1023,11 +726,9 @@ _ml_tensors_data_create_no_alloc (const ml_tensors_info_h info,
     ml_tensors_info_clone (_data->info, info);
 
     G_LOCK_UNLESS_NOLOCK (*_info);
-    _data->num_tensors = _info->num_tensors;
+    _data->num_tensors = _info->info.num_tensors;
     for (i = 0; i < _data->num_tensors; i++) {
-      ml_tensor_info_s *_tensor_info = ml_tensors_info_get_nth_info (_info, i);
-      _data->tensors[i].size =
-          _ml_tensor_info_get_size (_tensor_info, _info->is_extended);
+      _data->tensors[i].size = gst_tensors_info_get_size (&_info->info, i);
       _data->tensors[i].data = NULL;
     }
     G_UNLOCK_UNLESS_NOLOCK (*_info);
@@ -1264,8 +965,6 @@ int
 ml_tensors_info_clone (ml_tensors_info_h dest, const ml_tensors_info_h src)
 {
   ml_tensors_info_s *dest_info, *src_info;
-  guint i, j;
-  bool valid;
   int status = ML_ERROR_NONE;
 
   check_feature_state (ML_FEATURE);
@@ -1283,49 +982,16 @@ ml_tensors_info_clone (ml_tensors_info_h dest, const ml_tensors_info_h src)
   G_LOCK_UNLESS_NOLOCK (*dest_info);
   G_LOCK_UNLESS_NOLOCK (*src_info);
 
-  status = _ml_tensors_info_validate_nolock (src_info, &valid);
-  if (status != ML_ERROR_NONE) {
-    _ml_error_report_continue
-        ("Cannot check the validity of src. Maybe src is not valid or its internal data is not consistent.");
-    goto done;
-  }
-  if (!valid) {
+  if (gst_tensors_info_validate (&src_info->info)) {
+    dest_info->is_extended = src_info->is_extended;
+    gst_tensors_info_copy (&dest_info->info, &src_info->info);
+  } else {
     _ml_error_report
         ("The parameter, src, is a ml_tensors_info_h handle without valid data. Every tensor-info of tensors-info should have a valid type and dimension information and the number of tensors should be between 1 and %d.",
         ML_TENSOR_SIZE_LIMIT);
     status = ML_ERROR_INVALID_PARAMETER;
-    goto done;
   }
 
-  _ml_tensors_info_initialize (dest_info);
-
-  dest_info->num_tensors = src_info->num_tensors;
-  dest_info->is_extended = src_info->is_extended;
-
-  for (i = 0; i < dest_info->num_tensors; i++) {
-    ml_tensor_info_s *dest_tensor_info =
-        ml_tensors_info_get_nth_info (dest_info, i);
-    ml_tensor_info_s *src_tensor_info =
-        ml_tensors_info_get_nth_info (src_info, i);
-
-    if (!dest_tensor_info || !src_tensor_info) {
-      _ml_error_report
-          ("Cannot get the %u'th tensor info from src or dest. Maybe src or dest is not valid or its internal data is not consistent.",
-          i);
-      status = ML_ERROR_INVALID_PARAMETER;
-      goto done;
-    }
-
-    dest_tensor_info->name =
-        (src_tensor_info->name) ? g_strdup (src_tensor_info->name) : NULL;
-    dest_tensor_info->type = src_tensor_info->type;
-
-    for (j = 0; j < ML_TENSOR_RANK_LIMIT; j++) {
-      dest_tensor_info->dimension[j] = src_tensor_info->dimension[j];
-    }
-  }
-
-done:
   G_UNLOCK_UNLESS_NOLOCK (*src_info);
   G_UNLOCK_UNLESS_NOLOCK (*dest_info);
 
