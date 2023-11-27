@@ -310,7 +310,7 @@ TEST_F (MLRemoteService, registerPipelineURI)
 
   gchar *current_dir = g_get_current_dir ();
   g_autofree gchar *test_file_path
-      = g_build_path ("/", current_dir, "test.pipeline", NULL);
+      = g_build_path (G_DIR_SEPARATOR_S, current_dir, "test.pipeline", NULL);
 
   EXPECT_TRUE (g_file_set_contents (
       test_file_path, pipeline_desc, strlen (pipeline_desc) + 1, NULL));

@@ -324,9 +324,9 @@ TEST (nnstreamer_capi_valve, test01)
 {
   const gchar *_tmpdir = g_get_tmp_dir ();
   const gchar *_dirname = "nns-tizen-XXXXXX";
-  gchar *fullpath = g_build_path ("/", _tmpdir, _dirname, NULL);
+  gchar *fullpath = g_build_path (G_DIR_SEPARATOR_S, _tmpdir, _dirname, NULL);
   gchar *dir = g_mkdtemp ((gchar *) fullpath);
-  gchar *file1 = g_build_path ("/", dir, "valve1", NULL);
+  gchar *file1 = g_build_path (G_DIR_SEPARATOR_S, dir, "valve1", NULL);
   gchar *pipeline = g_strdup_printf (
       "videotestsrc is-live=true ! videoconvert ! videoscale ! video/x-raw,format=RGBx,width=16,height=16,framerate=10/1 ! tensor_converter ! queue ! valve name=valve1 ! filesink location=\"%s\"",
       file1);
@@ -642,13 +642,13 @@ TEST (nnstreamer_capi_sink, dummy_01)
 {
   const gchar *_tmpdir = g_get_tmp_dir ();
   const gchar *_dirname = "nns-tizen-XXXXXX";
-  gchar *fullpath = g_build_path ("/", _tmpdir, _dirname, NULL);
+  gchar *fullpath = g_build_path (G_DIR_SEPARATOR_S, _tmpdir, _dirname, NULL);
   gchar *dir = g_mkdtemp ((gchar *) fullpath);
 
   ASSERT_NE (dir, (gchar *) NULL);
 
-  gchar *file1 = g_build_path ("/", dir, "original", NULL);
-  gchar *file2 = g_build_path ("/", dir, "sink", NULL);
+  gchar *file1 = g_build_path (G_DIR_SEPARATOR_S, dir, "original", NULL);
+  gchar *file2 = g_build_path (G_DIR_SEPARATOR_S, dir, "sink", NULL);
   gchar *pipeline = g_strdup_printf (
       "videotestsrc num-buffers=3 ! videoconvert ! videoscale ! video/x-raw,format=BGRx,width=64,height=48,famerate=30/1 ! tee name=t t. ! queue ! filesink location=\"%s\" buffer-mode=unbuffered t. ! queue ! tensor_converter ! tensor_sink name=sinkx",
       file1);
@@ -993,9 +993,9 @@ TEST (nnstreamer_capi_src, dummy_01)
 {
   const gchar *_tmpdir = g_get_tmp_dir ();
   const gchar *_dirname = "nns-tizen-XXXXXX";
-  gchar *fullpath = g_build_path ("/", _tmpdir, _dirname, NULL);
+  gchar *fullpath = g_build_path (G_DIR_SEPARATOR_S, _tmpdir, _dirname, NULL);
   gchar *dir = g_mkdtemp ((gchar *) fullpath);
-  gchar *file1 = g_build_path ("/", dir, "output", NULL);
+  gchar *file1 = g_build_path (G_DIR_SEPARATOR_S, dir, "output", NULL);
   gchar *pipeline = g_strdup_printf (
       "appsrc name=srcx ! other/tensor,dimension=(string)4:1:1:1,type=(string)uint8,framerate=(fraction)0/1 ! filesink location=\"%s\" buffer-mode=unbuffered",
       file1);
@@ -7634,9 +7634,9 @@ TEST (nnstreamer_capi_if, custom_01_p)
 {
   const gchar *_tmpdir = g_get_tmp_dir ();
   const gchar *_dirname = "nns-tizen-XXXXXX";
-  gchar *fullpath = g_build_path ("/", _tmpdir, _dirname, NULL);
+  gchar *fullpath = g_build_path (G_DIR_SEPARATOR_S, _tmpdir, _dirname, NULL);
   gchar *dir = g_mkdtemp ((gchar *) fullpath);
-  gchar *file = g_build_path ("/", dir, "output", NULL);
+  gchar *file = g_build_path (G_DIR_SEPARATOR_S, dir, "output", NULL);
   ml_pipeline_h pipe;
   ml_pipeline_src_h srchandle;
   ml_pipeline_sink_h sink_false;
