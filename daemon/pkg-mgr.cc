@@ -135,6 +135,7 @@ _parse_json (const gchar *json_path, mlsvc_json_type_e json_type, const gchar *a
             const gchar *model = json_object_get_string_member (object, "model");
             const gchar *desc = json_object_get_string_member (object, "description");
             const gchar *activate = json_object_get_string_member (object, "activate");
+            const gchar *clear = json_object_get_string_member (object, "clear");
 
             if (!name || !model) {
               _E ("Failed to get name or model from json file '%s'.", json_file);
@@ -143,6 +144,17 @@ _parse_json (const gchar *json_path, mlsvc_json_type_e json_type, const gchar *a
 
             guint version;
             bool active = (activate && g_ascii_strcasecmp (activate, "true") == 0);
+            bool clear_old = (clear && g_ascii_strcasecmp (clear, "true") == 0);
+
+            /* Remove old model from database. */
+            if (clear_old) {
+              try {
+                db.delete_model (name, 0U);
+              } catch (const std::exception &e) {
+                /* Ignore error case. */
+                _W ("%s", e.what ());
+              }
+            }
 
             db.set_model (name, model, active, desc ? desc : "",
                 app_info ? app_info : "", &version);
@@ -170,10 +182,23 @@ _parse_json (const gchar *json_path, mlsvc_json_type_e json_type, const gchar *a
             const gchar *name = json_object_get_string_member (object, "name");
             const gchar *path = json_object_get_string_member (object, "path");
             const gchar *desc = json_object_get_string_member (object, "description");
+            const gchar *clear = json_object_get_string_member (object, "clear");
 
             if (!name || !path) {
               _E ("Failed to get name or path from json file '%s'.", json_file);
               continue;
+            }
+
+            bool clear_old = (clear && g_ascii_strcasecmp (clear, "true") == 0);
+
+            /* Remove old resource from database. */
+            if (clear_old) {
+              try {
+                db.delete_resource (name);
+              } catch (const std::exception &e) {
+                /* Ignore error case. */
+                _W ("%s", e.what ());
+              }
             }
 
             db.set_resource (name, path, desc ? desc : "", app_info ? app_info : "");
