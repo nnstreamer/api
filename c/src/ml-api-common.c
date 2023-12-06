@@ -479,7 +479,7 @@ ml_tensors_info_set_tensor_dimension (ml_tensors_info_h info,
 {
   ml_tensors_info_s *tensors_info;
   GstTensorInfo *_info;
-  guint i;
+  guint i, rank, max_rank;
 
   check_feature_state (ML_FEATURE);
 
@@ -495,6 +495,27 @@ ml_tensors_info_set_tensor_dimension (ml_tensors_info_h info,
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The number of tensors in 'info' parameter is %u, which is not larger than the given 'index' %u. Thus, we cannot get %u'th tensor from 'info'. Please set the number of tensors of 'info' correctly or check the value of the given 'index'.",
         tensors_info->info.num_tensors, index, index);
+  }
+
+  /**
+   * Validate dimension.
+   * We cannot use util function to get the rank of tensor dimension here.
+   * The old rank limit is 4, and testcases or app may set old dimension.
+   */
+  max_rank = tensors_info->is_extended ?
+      ML_TENSOR_RANK_LIMIT : ML_TENSOR_RANK_LIMIT_PREV;
+  rank = max_rank + 1;
+  for (i = 0; i < max_rank; i++) {
+    if (dimension[i] == 0) {
+      if (rank > max_rank)
+        rank = i;
+    }
+
+    if (rank == 0 || (i > rank && dimension[i] > 0)) {
+      G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
+      _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+          "The parameter, dimension, is invalid. It should be a valid unsigned integer array.");
+    }
   }
 
   _info = gst_tensors_info_get_nth_info (&tensors_info->info, index);

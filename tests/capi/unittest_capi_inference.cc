@@ -3308,6 +3308,54 @@ TEST (nnstreamer_capi_util, info_set_tdimension_02_n)
 /**
  * @brief Test utility functions (public)
  */
+TEST (nnstreamer_capi_util, info_set_tdimension_03_n)
+{
+  ml_tensors_info_h info;
+  ml_tensor_dimension dim = { 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0 };
+  int status;
+
+  /* max rank 4 (ML_TENSOR_RANK_LIMIT_PREV) */
+  ml_tensors_info_create (&info);
+  ml_tensors_info_set_count (info, 1);
+
+  dim[0] = 0;
+  status = ml_tensors_info_set_tensor_dimension (info, 0, dim);
+  EXPECT_NE (status, ML_ERROR_NONE);
+
+  dim[0] = 2;
+  dim[2] = 0;
+  status = ml_tensors_info_set_tensor_dimension (info, 0, dim);
+  EXPECT_NE (status, ML_ERROR_NONE);
+
+  dim[2] = 1;
+  status = ml_tensors_info_set_tensor_dimension (info, 0, dim);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  ml_tensors_info_destroy (info);
+
+  /* max rank 16 (ML_TENSOR_RANK_LIMIT) */
+  ml_tensors_info_create_extended (&info);
+  ml_tensors_info_set_count (info, 1);
+
+  dim[0] = 0;
+  status = ml_tensors_info_set_tensor_dimension (info, 0, dim);
+  EXPECT_NE (status, ML_ERROR_NONE);
+
+  dim[0] = 2;
+  dim[7] = 0;
+  status = ml_tensors_info_set_tensor_dimension (info, 0, dim);
+  EXPECT_NE (status, ML_ERROR_NONE);
+
+  dim[7] = 1;
+  status = ml_tensors_info_set_tensor_dimension (info, 0, dim);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  ml_tensors_info_destroy (info);
+}
+
+/**
+ * @brief Test utility functions (public)
+ */
 TEST (nnstreamer_capi_util, info_get_tdimension_01_n)
 {
   int status;
