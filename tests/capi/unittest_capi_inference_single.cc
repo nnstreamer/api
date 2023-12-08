@@ -1352,18 +1352,45 @@ TEST (nnstreamer_capi_singleshot, set_input_info_fail_01_n)
   status = ml_single_set_input_info (single, NULL);
   EXPECT_NE (status, ML_ERROR_NONE);
 
-  ml_tensors_info_create (&in_info);
+  status = ml_single_get_input_info (single, &in_info);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  status = ml_tensors_info_get_tensor_dimension (in_info, 0, in_dim);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  /**
+   * Testcase : update dimension[3] (c:w:h:b 3:224:224:2)
+   */
+  in_dim[3] += 1;
+  status = ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_single_set_input_info (single, in_info);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  /**
+   * Testcase failure : update dimension[0] (c:w:h:b 4:224:224:1)
+   * mobilenet model does not support setting different input dimension.
+   */
+  in_dim[3] -= 1;
+  in_dim[0] += 1;
+  status = ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_single_set_input_info (single, in_info);
+  EXPECT_NE (status, ML_ERROR_NONE);
+
+  /**
+   * Testcase failure : update dimension (c:w:h:b 3:4:4:1)
+   */
   in_dim[0] = 3;
   in_dim[1] = 4;
   in_dim[2] = 4;
   in_dim[3] = 1;
-  ml_tensors_info_set_count (in_info, 1);
-  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_UINT8);
-  ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
+  status = ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
+  EXPECT_EQ (status, ML_ERROR_NONE);
 
-  /* mobilenet model does not support setting different input dimension */
   status = ml_single_set_input_info (single, in_info);
-  EXPECT_TRUE (status == ML_ERROR_NOT_SUPPORTED || status == ML_ERROR_INVALID_PARAMETER);
+  EXPECT_NE (status, ML_ERROR_NONE);
 
   status = ml_single_close (single);
   EXPECT_EQ (status, ML_ERROR_NONE);
