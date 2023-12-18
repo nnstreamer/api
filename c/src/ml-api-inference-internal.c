@@ -28,6 +28,10 @@ gst_info_is_extended (const GstTensorsInfo * gst_info)
 
   for (i = 0; i < gst_info->num_tensors; i++) {
     _info = gst_tensors_info_get_nth_info ((GstTensorsInfo *) gst_info, i);
+    if (!_info)
+      _ml_error_report_return (FALSE,
+          "The parameter, gst_info, has invalid number of tensors. The max number of tensors is "
+          NNS_TENSOR_SIZE_LIMIT_STR);
 
     if (_info->dimension[ML_TENSOR_RANK_LIMIT_PREV] > 0)
       return TRUE;
@@ -55,8 +59,8 @@ _ml_tensors_info_create_from_gst (ml_tensors_info_h * ml_info,
 
   is_extended = gst_info_is_extended (gst_info);
   if (is_extended)
-    _ml_error_report_return_continue_iferr (ml_tensors_info_create_extended
-        (ml_info),
+    _ml_error_report_return_continue_iferr
+        (ml_tensors_info_create_extended (ml_info),
         "The call to ml_tensors_info_create_extended has failed with %d.",
         _ERRNO);
   else
