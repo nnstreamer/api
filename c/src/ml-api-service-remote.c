@@ -579,7 +579,7 @@ ml_service_remote_create (ml_option_h option, ml_service_event_cb cb,
   g_autofree _ml_remote_service_s *remote_s = NULL;
   g_autofree edge_info_s *edge_info = NULL;
   int ret = ML_ERROR_NONE;
-  void *value;
+  gchar *_path = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
   check_feature_state (ML_FEATURE_INFERENCE);
@@ -609,17 +609,17 @@ ml_service_remote_create (ml_option_h option, ml_service_event_cb cb,
   remote_s->node_type = edge_info->node_type;
   remote_s->event_cb = cb;
   remote_s->user_data = user_data;
-  if (ML_ERROR_NONE == ml_option_get (option, "path", &value)) {
-    if (!g_file_test (value, G_FILE_TEST_IS_DIR)) {
+  if (ML_ERROR_NONE == ml_option_get (option, "path", (void **) (&_path))) {
+    if (!g_file_test (_path, G_FILE_TEST_IS_DIR)) {
       _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
           "The given param, dir path = \"%s\" is invalid or the dir is not found or accessible.",
-          value);
+          _path);
     }
-    if (g_access (value, W_OK) != 0) {
+    if (g_access (_path, W_OK) != 0) {
       _ml_error_report_return (ML_ERROR_PERMISSION_DENIED,
-          "Write permission denied, path: %s", value);
+          "Write permission denied, path: %s", _path);
     }
-    remote_s->path = g_strdup (value);
+    remote_s->path = g_strdup (_path);
   }
 
   ret = _mlrs_create_edge_handle (remote_s, edge_info);
