@@ -20,7 +20,6 @@
 #include "ml-api-inference-internal.h"
 #include "ml-api-inference-pipeline-internal.h"
 
-#include <system_info.h>
 #include <restriction.h>        /* device policy manager */
 #if TIZENPPM
 #include <privacy_privilege_manager.h>

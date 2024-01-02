@@ -5,6 +5,7 @@
 %define		enable_tizen_privilege 1
 %define		enable_tizen_feature 1
 %define		enable_ml_service 1
+%define		nnstreamer_edge_support 1
 
 # Below features are used for unittest.
 # Do not add neural network dependency in API source.
@@ -14,7 +15,6 @@
 %define		tensorflow2_gpu_delegate_support 1
 %define		nnfw_support 1
 %define		armnn_support 0
-%define		nnstreamer_edge_support 1
 
 %define		release_test 0
 %define		test_script $(pwd)/packaging/run_unittests.sh
@@ -83,6 +83,8 @@ BuildRequires:	gst-plugins-base-devel
 BuildRequires:	meson >= 0.50.0
 
 %if %{with tizen}
+BuildRequires:	pkgconfig(dlog)
+
 %if 0%{?enable_tizen_privilege}
 BuildRequires:	pkgconfig(dpm)
 %if (0%{tizen_version_major} < 7) || (0%{?tizen_version_major} == 7 && 0%{?tizen_version_minor} < 5)
@@ -93,10 +95,10 @@ BuildRequires:	pkgconfig(mm-camcorder)
 BuildRequires:	pkgconfig(mm-resource-manager)
 %endif
 %endif # enable_tizen_privilege
+
+%if 0%{?enable_tizen_feature}
 BuildRequires:	pkgconfig(capi-system-info)
-BuildRequires:	pkgconfig(capi-base-common)
-BuildRequires:	pkgconfig(dlog)
-BuildRequires:	pkgconfig(libtzplatform-config)
+%endif
 %endif # tizen
 
 # To generage gcov package, --define "gcov 1"
