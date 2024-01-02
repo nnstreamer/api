@@ -6,7 +6,6 @@ if not get_option('enable-tizen')
   nns_capi_include += include_directories('include/platform')
 endif
 
-
 # Dependencies
 nns_capi_common_deps = [glib_dep, gmodule_dep, nnstreamer_single_dep]
 nns_capi_deps = [nnstreamer_dep, glib_dep, gmodule_dep, gio_dep, gst_dep, gst_app_dep]
@@ -15,7 +14,6 @@ if (get_option('enable-tizen'))
   message('C-API is in Tizen mode')
 
   tizen_deps = [
-    dependency('capi-system-info'),
     dependency('dlog')
   ]
 
@@ -29,6 +27,10 @@ if (get_option('enable-tizen'))
     if (tizenVmajor >= 5)
       tizen_deps += dependency('mm-resource-manager')
     endif
+  endif
+
+  if get_option('enable-tizen-feature-check')
+    tizen_deps += dependency('capi-system-info')
   endif
 
   nns_capi_deps += tizen_deps
