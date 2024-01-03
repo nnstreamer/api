@@ -645,7 +645,7 @@ nns_parse_tensors_info (pipeline_info_s * pipe_info, JNIEnv * env,
   g_return_val_if_fail (obj_info, FALSE);
   g_return_val_if_fail (info_h, FALSE);
 
-  if (ml_tensors_info_create (info_h) != ML_ERROR_NONE) {
+  if (ml_tensors_info_create_extended (info_h) != ML_ERROR_NONE) {
     _ml_loge ("Failed to create handle for tensors info.");
     return FALSE;
   }

@@ -166,8 +166,8 @@ nns_native_custom_initialize (JNIEnv * env, jobject thiz, jstring name,
   priv = g_new0 (customfilter_priv_data_s, 1);
   priv->mid_invoke = (*env)->GetMethodID (env, pipe_info->cls, "invoke",
       "(L" NNS_CLS_TDATA ";)L" NNS_CLS_TDATA ";");
-  ml_tensors_info_create (&priv->in_info);
-  ml_tensors_info_create (&priv->out_info);
+  ml_tensors_info_create_extended (&priv->in_info);
+  ml_tensors_info_create_extended (&priv->out_info);
 
   nns_set_priv_data (pipe_info, priv, nns_customfilter_priv_free);
 

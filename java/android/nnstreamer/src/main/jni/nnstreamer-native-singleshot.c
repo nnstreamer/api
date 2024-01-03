@@ -178,8 +178,8 @@ nns_native_single_open (JNIEnv * env, jobject thiz,
 
   /* set private date */
   priv = g_new0 (singleshot_priv_data_s, 1);
-  ml_tensors_info_create (&priv->in_info);
-  ml_tensors_info_create (&priv->out_info);
+  ml_tensors_info_create_extended (&priv->in_info);
+  ml_tensors_info_create_extended (&priv->out_info);
   nns_set_priv_data (pipe_info, priv, nns_singleshot_priv_free);
 
   if (!nns_singleshot_priv_set_info (pipe_info, env)) {
