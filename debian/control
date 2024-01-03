@@ -13,13 +13,13 @@ Homepage: https://github.com/nnstreamer/api
 Package: ml-api-common
 Architecture: any
 Multi-Arch: same
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: nnstreamer-single, ${shlibs:Depends}, ${misc:Depends}
 Description: Common utility functions for Machine Learning API
 
 Package: ml-api-common-dev
 Architecture: any
 Multi-Arch: same
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ml-api-common, ${shlibs:Depends}, ${misc:Depends}
 Description: Machine Learning API common
  Provides headers commonly used across API, such as error definitions.
  This is a development package for ML API.
@@ -27,7 +27,7 @@ Description: Machine Learning API common
 Package: ml-inference-single-api
 Architecture: any
 Multi-Arch: same
-Depends: nnstreamer-single, ml-api-common, ${shlibs:Depends}, ${misc:Depends}
+Depends: ml-api-common, ${shlibs:Depends}, ${misc:Depends}
 Description: Machine Learning Inference Single API
  This package provides native API invoke individual input frame with NNStreamer.
 
@@ -41,7 +41,7 @@ Description: Development package for Machine Learning Inference API
 Package: ml-inference-api
 Architecture: any
 Multi-Arch: same
-Depends: ml-inference-single-api, ${shlibs:Depends}, ${misc:Depends}
+Depends: nnstreamer, ml-inference-single-api, ${shlibs:Depends}, ${misc:Depends}
 Description: Machine Learning Inference API
  This package provides native API set to easily construct a data stream pipeline with neural networks.
 

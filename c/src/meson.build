@@ -1,19 +1,19 @@
 nns_capi_common_srcs = files('ml-api-common.c', 'ml-api-inference-internal.c')
+nns_capi_single_srcs = files('ml-api-inference-single.c')
+nns_capi_pipeline_srcs = files('ml-api-inference-pipeline.c')
+nns_capi_service_srcs = files('ml-api-service-common.c', 'ml-api-service-agent-client.c', 'ml-api-service-query-client.c')
+if support_remote_service
+  nns_capi_service_srcs += files('ml-api-service-remote.c')
+endif
+
 if get_option('enable-tizen')
   if get_option('enable-tizen-feature-check')
     nns_capi_common_srcs += files('ml-api-common-tizen-feature-check.c')
   endif
 
   if get_option('enable-tizen-privilege-check')
-    nns_capi_common_srcs += files('ml-api-inference-tizen-privilege-check.c')
+    nns_capi_pipeline_srcs += files('ml-api-inference-tizen-privilege-check.c')
   endif
-endif
-
-nns_capi_single_srcs = files('ml-api-inference-single.c')
-nns_capi_pipeline_srcs = files('ml-api-inference-pipeline.c')
-nns_capi_service_srcs = files('ml-api-service-common.c','ml-api-service-agent-client.c', 'ml-api-service-query-client.c')
-if support_remote_service
-  nns_capi_service_srcs += files('ml-api-service-remote.c')
 endif
 
 # Build ML-API Common Lib First.

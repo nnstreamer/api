@@ -28,7 +28,6 @@ else
 endif
 gst_dep = dependency('gstreamer-1.0')
 gst_app_dep = dependency('gstreamer-app-1.0')
-nnstreamer_internal_dep = dependency('nnstreamer-internal')
 nnstreamer_single_dep = dependency('nnstreamer-single')
 nnstreamer_dep = dependency('nnstreamer')
 
