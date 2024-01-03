@@ -8,33 +8,28 @@ endif
 
 # Dependencies
 nns_capi_common_deps = [glib_dep, gmodule_dep, nnstreamer_single_dep]
-nns_capi_deps = [nnstreamer_dep, glib_dep, gmodule_dep, gio_dep, gst_dep, gst_app_dep]
+nns_capi_deps = [nnstreamer_dep, gst_dep, gst_app_dep]
 
 if (get_option('enable-tizen'))
   message('C-API is in Tizen mode')
 
-  tizen_deps = [
-    dependency('dlog')
-  ]
+  nns_capi_common_deps += dependency('dlog')
 
   if get_option('enable-tizen-privilege-check')
-    tizen_deps += dependency('dpm')
+    nns_capi_deps += dependency('dpm')
     if ((tizenVmajor < 7) or (tizenVmajor == 7 and tizenVminor < 5))
-      tizen_deps += dependency('capi-privacy-privilege-manager')
+      nns_capi_deps += dependency('capi-privacy-privilege-manager')
     endif
-    tizen_deps += dependency('mm-camcorder')
 
+    nns_capi_deps += dependency('mm-camcorder')
     if (tizenVmajor >= 5)
-      tizen_deps += dependency('mm-resource-manager')
+      nns_capi_deps += dependency('mm-resource-manager')
     endif
   endif
 
   if get_option('enable-tizen-feature-check')
-    tizen_deps += dependency('capi-system-info')
+    nns_capi_common_deps += dependency('capi-system-info')
   endif
-
-  nns_capi_deps += tizen_deps
-  nns_capi_common_deps += tizen_deps
 endif
 
 subdir('include')
@@ -42,7 +37,7 @@ subdir('src')
 
 ml_inf_conf = configuration_data()
 ml_inf_conf.merge_from(api_conf)
-ml_inf_conf.set('ML_INFERENCE_REQUIRE', 'capi-ml-inference-single')
+ml_inf_conf.set('ML_INFERENCE_REQUIRE', 'nnstreamer capi-ml-inference-single')
 configure_file(input: 'capi-ml-inference.pc.in', output: 'capi-ml-inference.pc',
   install_dir: join_paths(api_install_libdir, 'pkgconfig'),
   configuration: ml_inf_conf
@@ -68,11 +63,7 @@ endif
 
 ml_common_api_conf = configuration_data()
 ml_common_api_conf.merge_from(api_conf)
-if get_option('enable-tizen')
-  ml_common_api_conf.set('ML_COMMON_REQUIRE', 'capi-base-common')
-else
-  ml_common_api_conf.set('ML_COMMON_REQUIRE', '')
-endif
+ml_common_api_conf.set('ML_COMMON_REQUIRE', 'nnstreamer-single')
 configure_file(input: 'capi-ml-common.pc.in', output: 'capi-ml-common.pc',
   install_dir: join_paths(api_install_libdir, 'pkgconfig'),
   configuration: ml_common_api_conf

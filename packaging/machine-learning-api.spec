@@ -68,6 +68,7 @@ Source1001:	capi-machine-learning.manifest
 Source1002:	machine-learning-agent.manifest
 
 ## Define build requirements ##
+Requires:	nnstreamer
 Requires:	capi-machine-learning-common = %{version}-%{release}
 Requires:	capi-machine-learning-inference-single = %{version}-%{release}
 %ifarch aarch64 x86_64 riscv64
@@ -190,7 +191,7 @@ Static library of capi-machine-learning-inference-devel package.
 %package -n capi-machine-learning-common
 Summary:	Common utility functions for Tizen Machine Learning API
 Group:		Machine Learning/ML Framework
-Requires:	nnstreamer
+Requires:	nnstreamer-single
 %description -n capi-machine-learning-common
 Tizen ML(Machine Learning) native API's common parts.
 
