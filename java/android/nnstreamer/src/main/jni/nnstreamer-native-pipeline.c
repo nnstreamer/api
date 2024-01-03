@@ -112,7 +112,7 @@ nns_pipeline_sink_priv_set_out_info (element_data_s * item, JNIEnv * env,
 
   if ((priv = item->priv_data) == NULL) {
     priv = g_new0 (pipeline_sink_priv_data_s, 1);
-    ml_tensors_info_create (&priv->out_info);
+    ml_tensors_info_create_extended (&priv->out_info);
 
     item->priv_data = priv;
     item->priv_destroy_func = nns_pipeline_sink_priv_free;
