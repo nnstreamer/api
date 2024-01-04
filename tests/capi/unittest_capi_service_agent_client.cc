@@ -8,7 +8,6 @@
  */
 
 #include <gtest/gtest.h>
-#include <gdbus-util.h>
 #include <gio/gio.h>
 #include <ml-api-inference-pipeline-internal.h>
 #include <ml-api-internal.h>
@@ -18,7 +17,8 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 
-#include "dbus-interface.h"
+/** @todo remove below header after deleting ml-agent from api repo. */
+#include "gdbus-util.h"
 
 /**
  * @brief Test base class for Database of ML Service API.
@@ -1278,112 +1278,6 @@ TEST_F (MLServiceAgentTest, model_scenario)
 
   g_free (test_model1);
   g_free (test_model2);
-}
-
-/**
- * @brief Negative testcase of pipeline gdbus call.
- */
-TEST_F (MLServiceAgentTest, pipeline_gdbus_call_n)
-{
-  int ret;
-  GError *error = NULL;
-
-  MachinelearningServicePipeline *proxy_for_pipeline
-      = machinelearning_service_pipeline_proxy_new_for_bus_sync (bus_type,
-          G_DBUS_PROXY_FLAGS_NONE, DBUS_ML_BUS_NAME, DBUS_PIPELINE_PATH, NULL, &error);
-
-  if (!proxy_for_pipeline || error) {
-    g_critical ("Failed to create proxy_for_pipeline for machinelearning service pipeline");
-    if (error) {
-      g_critical ("Error Message : %s", error->message);
-      g_clear_error (&error);
-    }
-    ASSERT_TRUE (false);
-  }
-
-  /* gdbus call with empty string */
-  machinelearning_service_pipeline_call_set_pipeline_sync (
-      proxy_for_pipeline, "", "", &ret, nullptr, nullptr);
-  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, ret);
-}
-
-/**
- * @brief Negative testcase of model gdbus call.
- */
-TEST_F (MLServiceAgentTest, model_gdbus_call_n)
-{
-  int ret;
-  GError *error = NULL;
-
-  MachinelearningServiceModel *proxy_for_model
-      = machinelearning_service_model_proxy_new_for_bus_sync (bus_type,
-          G_DBUS_PROXY_FLAGS_NONE, DBUS_ML_BUS_NAME, DBUS_MODEL_PATH, NULL, &error);
-
-  if (!proxy_for_model || error) {
-    g_critical ("Failed to create proxy_for_model for machinelearning service model");
-    if (error) {
-      g_critical ("Error Message : %s", error->message);
-      g_clear_error (&error);
-    }
-    ASSERT_TRUE (false);
-  }
-
-  /* empty string */
-  machinelearning_service_model_call_register_sync (
-      proxy_for_model, "", "", false, "test", "", NULL, &ret, nullptr, nullptr);
-  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, ret);
-
-  /* empty string */
-  machinelearning_service_model_call_get_all_sync (
-      proxy_for_model, "", NULL, &ret, nullptr, nullptr);
-  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, ret);
-
-  g_object_unref (proxy_for_model);
-}
-
-/**
- * @brief Negative testcase of resource gdbus call.
- */
-TEST_F (MLServiceAgentTest, resource_gdbus_call_n)
-{
-  int ret;
-  gchar *res_info = NULL;
-  GError *error = NULL;
-
-  MachinelearningServiceResource *proxy_for_resource
-      = machinelearning_service_resource_proxy_new_for_bus_sync (bus_type,
-          G_DBUS_PROXY_FLAGS_NONE, DBUS_ML_BUS_NAME, DBUS_RESOURCE_PATH, NULL, &error);
-
-  if (!proxy_for_resource || error) {
-    g_critical ("Failed to create proxy_for_resource for machinelearning service resource");
-    if (error) {
-      g_critical ("Error Message : %s", error->message);
-      g_clear_error (&error);
-    }
-    ASSERT_TRUE (false);
-  }
-
-  machinelearning_service_resource_call_add_sync (
-      proxy_for_resource, "", "path", "description", "", &ret, nullptr, nullptr);
-  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, ret);
-
-  machinelearning_service_resource_call_add_sync (
-      proxy_for_resource, "name", "", "description", "", &ret, nullptr, nullptr);
-  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, ret);
-
-  machinelearning_service_resource_call_get_sync (
-      proxy_for_resource, "", &res_info, &ret, nullptr, nullptr);
-  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, ret);
-
-  machinelearning_service_resource_call_get_sync (
-      proxy_for_resource, "unknown", &res_info, &ret, nullptr, nullptr);
-  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, ret);
-
-  machinelearning_service_resource_call_delete_sync (
-      proxy_for_resource, "", &ret, nullptr, nullptr);
-  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, ret);
-
-  g_object_unref (proxy_for_resource);
 }
 
 /**

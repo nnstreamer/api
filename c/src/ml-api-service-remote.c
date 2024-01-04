@@ -12,6 +12,7 @@
 
 #include <glib.h>
 #include <glib/gstdio.h>
+#include <gio/gio.h>
 #include <gst/gst.h>
 #include <gst/gstbuffer.h>
 #include <gst/app/app.h>
@@ -22,6 +23,9 @@
 #include "ml-api-internal.h"
 #include "ml-api-service.h"
 #include "ml-api-service-private.h"
+
+/** @todo remove this header after ACR for ml-remote API is done. */
+#include "nnstreamer-tizen-internal.h"
 
 #define MAX_PORT_NUM_LEN 6U
 

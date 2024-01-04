@@ -87,6 +87,11 @@ if get_option('default_library') == 'static'
   ml_agent_lib = ml_agent_static_lib
 endif
 
+ml_agent_dep = declare_dependency(link_with: ml_agent_lib,
+  dependencies: ml_agent_deps,
+  include_directories: ml_agent_incs
+)
+
 ml_agent_lib_common_objs = ml_agent_shared_lib.extract_objects(ml_agent_lib_common_srcs)
 ml_agent_test_both_lib = both_libraries('ml-agent-test',
   ml_agent_lib_service_db_srcs,

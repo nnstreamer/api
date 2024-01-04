@@ -2,8 +2,7 @@ unittest_capi_inference_single = executable('unittest_capi_inference_single',
   'unittest_capi_inference_single.cc',
   dependencies: [nns_capi_single_dep, gtest_dep],
   install: get_option('install-test'),
-  install_dir: unittest_install_dir,
-  include_directories: nns_capi_include,
+  install_dir: unittest_install_dir
 )
 test('unittest_capi_inference_single', unittest_capi_inference_single, env: testenv, timeout: 100)
 
@@ -36,8 +35,7 @@ if get_option('enable-ml-service')
     'unittest_capi_service_agent_client.cc',
     dependencies: [unittest_common_dep, nns_capi_service_dep, gdbus_gen_test_dep, lib_ml_agent_test_dep],
     install: get_option('install-test'),
-    install_dir: unittest_install_dir,
-    include_directories: nns_capi_include,
+    install_dir: unittest_install_dir
   )
   test('unittest_capi_service_agent_client', unittest_capi_service_agent_client, env: testenv, timeout: 100)
 
@@ -46,8 +44,7 @@ if get_option('enable-ml-service')
       'unittest_capi_remote_service.cc',
       dependencies: [unittest_common_dep, nns_capi_service_dep, gdbus_gen_test_dep, lib_ml_agent_test_dep],
       install: get_option('install-test'),
-      install_dir: unittest_install_dir,
-      include_directories: nns_capi_include,
+      install_dir: unittest_install_dir
     )
     test('unittest_capi_remote_service', unittest_capi_remote_service, env: testenv, timeout: 100)
   endif
