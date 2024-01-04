@@ -64,7 +64,7 @@ typedef struct
 
   ml_service_event_cb event_cb;
   void *user_data;
-  gchar *path; /** A path to save the received model file */
+  gchar *path; /**< A path to save the received model file */
 } _ml_remote_service_s;
 
 /**
@@ -207,15 +207,9 @@ _mlrs_get_service_type (gchar * service_str)
  * @brief Get ml remote service activation type.
  */
 static gboolean
-_mlrs_parse_activate (gchar * activate)
+_mlrs_parse_activate (const gchar * activate)
 {
-  gboolean ret = TRUE;
-
-  if (g_ascii_strcasecmp (activate, "false") == 0) {
-    ret = FALSE;
-  }
-
-  return ret;
+  return (activate && g_ascii_strcasecmp (activate, "true") == 0);
 }
 
 /**
@@ -559,10 +553,10 @@ ml_service_remote_release_internal (void *priv)
     return ML_ERROR_INVALID_PARAMETER;
 
   nns_edge_release_handle (mlrs->edge_h);
-  g_free (mlrs->path);
 
-  /** Wait some time until release the edge handle. */
+  /* Wait some time until release the edge handle. */
   g_usleep (1000000);
+  g_free (mlrs->path);
   g_free (mlrs);
 
   return ML_ERROR_NONE;
@@ -635,12 +629,12 @@ ml_service_remote_create (ml_option_h option, ml_service_event_cb cb,
 
   _mlrs_release_edge_info (edge_info);
 
-  return ret;
+  return ML_ERROR_NONE;
 }
 
 /**
- *  @brief Register new information, such as neural network models or pipeline descriptions, on a remote server.
-*/
+ * @brief Register new information, such as neural network models or pipeline descriptions, on a remote server.
+ */
 int
 ml_service_remote_register (ml_service_h handle, ml_option_h option, void *data,
     size_t data_len)
