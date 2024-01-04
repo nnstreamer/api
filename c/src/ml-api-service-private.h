@@ -17,11 +17,6 @@
 #include <ml-api-service.h>
 #include <ml-api-inference-internal.h>
 
-#include "pipeline-dbus.h"
-#include "model-dbus.h"
-#include "resource-dbus.h"
-#include "nnstreamer-tizen-internal.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */

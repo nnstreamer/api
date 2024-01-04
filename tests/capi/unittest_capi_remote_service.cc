@@ -8,7 +8,6 @@
  */
 
 #include <gtest/gtest.h>
-#include <gdbus-util.h>
 #include <gio/gio.h>
 #include <glib/gstdio.h>
 #include <ml-api-inference-pipeline-internal.h>
@@ -18,6 +17,9 @@
 
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+
+/** @todo remove this header after ACR for ml-remote API is done. */
+#include "nnstreamer-tizen-internal.h"
 
 /**
  * @brief Test base class for Database of ML Service API.
