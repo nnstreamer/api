@@ -84,7 +84,7 @@ ml_agent_static_lib = static_library('ml-agent',
 
 ml_agent_lib = ml_agent_shared_lib
 if get_option('default_library') == 'static'
-    ml_agent_lib = ml_agent_static_lib
+  ml_agent_lib = ml_agent_static_lib
 endif
 
 ml_agent_lib_common_objs = ml_agent_shared_lib.extract_objects(ml_agent_lib_common_srcs)
@@ -102,7 +102,7 @@ ml_agent_test_both_lib = both_libraries('ml-agent-test',
 
 ml_agent_test_lib = ml_agent_test_both_lib.get_shared_lib()
 if get_option('default_library') == 'static'
-    ml_agent_test_lib = ml_agent_test_both_lib.get_static_lib()
+  ml_agent_test_lib = ml_agent_test_both_lib.get_static_lib()
 endif
 
 lib_ml_agent_test_dep = declare_dependency(
