@@ -4157,11 +4157,11 @@ skip_test:
   g_free (test_model);
 }
 
-#if defined(ENABLE_TENSORFLOW_LITE) && defined(ENABLE_TENSORFLOW2_LITE)
+#if defined(ENABLE_TENSORFLOW_LITE) || defined(ENABLE_TENSORFLOW2_LITE)
 /**
- * @brief Test ml_option with tensorflow1-lite (manually set by ml_option_se, NULLt)
+ * @brief Test ml_option with tensorflow-lite (manually set by ml_option_set, framework_name=tensorflow-lite)
  */
-TEST (nnstreamer_capi_ml_option, tensorflow1_lite)
+TEST (nnstreamer_capi_ml_option, fw_name_tensorflow_lite)
 {
   int status;
   ml_option_h option;
@@ -4214,7 +4214,7 @@ TEST (nnstreamer_capi_ml_option, tensorflow1_lite)
   status = ml_option_set (option, "nnfw", &nnfw_type, NULL);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  gchar *fw_name = g_strdup ("tensorflow1-lite");
+  gchar *fw_name = g_strdup ("tensorflow-lite");
   status = ml_option_set (option, "framework_name", fw_name, g_free);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
