@@ -436,17 +436,19 @@ cp -r ./java/android/* ./$build_dir
 mkdir -p $build_dir/external
 
 # @todo We need another mechanism for downloading third-party/external softwares
-svn --force export https://github.com/nnstreamer/nnstreamer-android-resource/trunk/android_api ./$build_dir
-
+git clone https://github.com/nnstreamer/nnstreamer-android-resource.git
+cp -r nnstreamer-android-resource/android_api/* ./$build_dir
+echo "file list for build dir $build_dir"
+ll ./$build_dir
 rm -f ./$build_dir/external/*.tar.gz ./$build_dir/external/*.tar.xz
 if [[ $enable_tracing == "yes" ]]; then
     echo "Get Gst-Shark library"
-    wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/gst-shark.tar.xz
+    cp nnstreamer-android-resource/external/gst-shark.tar.xz ./$build_dir/external
     tar -xJf ./$build_dir/external/gst-shark.tar.xz -C $gstreamer_dir
 fi
 
 if [[ $enable_tflite == "yes" ]]; then
-    wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/tensorflow-lite-$tf_lite_ver.tar.xz
+    cp nnstreamer-android-resource/external/tensorflow-lite-$tf_lite_ver.tar.xz ./$build_dir/external
 fi
 
 if [[ $enable_nnfw == "yes" ]]; then
@@ -460,23 +462,23 @@ if [[ $enable_nnfw == "yes" ]]; then
 fi
 
 if [[ $enable_pytorch == "yes" ]]; then
-    wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/pytorch-$pytorch_ver.tar.xz
+    cp nnstreamer-android-resource/external/pytorch-$pytorch_ver.tar.xz ./$build_dir/external
 fi
 
 if [[ $enable_mxnet == "yes" ]]; then
-    wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/mxnet/mxnet-$mxnet_ver.tar.xz_aa
-    wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/mxnet/mxnet-$mxnet_ver.tar.xz_ab
-    wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/mxnet/mxnet-$mxnet_ver.tar.xz_ac
-    wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/mxnet/mxnet-$mxnet_ver.tar.xz_ad
+    cp nnstreamer-android-resource/external/mxnet/mxnet-$mxnet_ver.tar.xz_aa ./$build_dir/external
+    cp nnstreamer-android-resource/external/mxnet/mxnet-$mxnet_ver.tar.xz_ab ./$build_dir/external
+    cp nnstreamer-android-resource/external/mxnet/mxnet-$mxnet_ver.tar.xz_ac ./$build_dir/external
+    cp nnstreamer-android-resource/external/mxnet/mxnet-$mxnet_ver.tar.xz_ad ./$build_dir/external
     cat ./$build_dir/external/mxnet-$mxnet_ver.tar.xz_* > ./$build_dir/external/mxnet-$mxnet_ver.tar.xz
 fi
 
 if [[ $enable_flatbuf == "yes" ]]; then
-    wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/flatbuffers-${flatbuf_ver}.tar.xz
+    cp nnstreamer-android-resource/external/mxnet/flatbuffers-${flatbuf_ver}.tar.xz ./$build_dir/external
 fi
 
 if [[ $enable_mqtt == "yes" ]]; then
-    wget --directory-prefix=./$build_dir/external https://github.com/nnstreamer/nnstreamer-android-resource/raw/master/external/paho-mqtt-c-${paho_mqtt_c_ver}.tar.xz
+    cp nnstreamer-android-resource/external/mxnet/paho-mqtt-c-${paho_mqtt_c_ver}.tar.xz ./$build_dir/external
 fi
 
 pushd ./$build_dir
@@ -700,6 +702,7 @@ fi
 
 # Remove build directory
 rm -rf $build_dir
+rm -rf nnstreamer-android-resource
 
 popd
 cd ${nnstreamer_dir} && find -name nnstreamer_version.h -delete
