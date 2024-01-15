@@ -481,14 +481,14 @@ invoke_thread (void *arg)
     /** wait for data */
     while (single_h->state != RUNNING) {
       g_cond_wait (&single_h->cond, &single_h->mutex);
-      if (single_h->state >= JOIN_REQUESTED)
+      if (single_h->state == JOIN_REQUESTED)
         goto exit;
     }
 
     input = single_h->input;
     output = single_h->output;
     /* Set null to prevent double-free. */
-    single_h->input = NULL;
+    single_h->input = single_h->output = NULL;
 
     single_h->invoking = TRUE;
     g_mutex_unlock (&single_h->mutex);
@@ -498,13 +498,15 @@ invoke_thread (void *arg)
     ml_tensors_data_destroy (input);
     single_h->invoking = FALSE;
 
-    if (status != ML_ERROR_NONE) {
+    if (status != ML_ERROR_NONE || single_h->state == JOIN_REQUESTED) {
       if (single_h->free_output) {
         single_h->destroy_data_list =
             g_list_remove (single_h->destroy_data_list, output);
         ml_tensors_data_destroy (output);
       }
 
+      if (single_h->state == JOIN_REQUESTED)
+        goto exit;
       goto wait_for_next;
     }
 
@@ -520,7 +522,19 @@ invoke_thread (void *arg)
 
 exit:
   /* Do not set IDLE if JOIN_REQUESTED */
-  if (single_h->state == RUNNING)
+  if (single_h->state == JOIN_REQUESTED) {
+    /* Release input and output data */
+    if (single_h->input)
+      ml_tensors_data_destroy (single_h->input);
+
+    if (single_h->free_output && single_h->output) {
+      single_h->destroy_data_list =
+          g_list_remove (single_h->destroy_data_list, single_h->output);
+      ml_tensors_data_destroy (single_h->output);
+    }
+
+    single_h->input = single_h->output = NULL;
+  } else if (single_h->state == RUNNING)
     single_h->state = IDLE;
   g_mutex_unlock (&single_h->mutex);
   return NULL;
@@ -1332,6 +1346,7 @@ _ml_single_invoke_internal (ml_single_h single,
     const gboolean need_alloc)
 {
   ml_single *single_h;
+  ml_tensors_data_h _in, _out;
   gint64 end_time;
   int status = ML_ERROR_NONE;
 
@@ -1394,24 +1409,25 @@ _ml_single_invoke_internal (ml_single_h single,
   if (need_alloc) {
     *output = NULL;
 
-    status = _ml_tensors_data_clone_no_alloc (single_h->out_tensors,
-        &single_h->output);
+    status = _ml_tensors_data_clone_no_alloc (single_h->out_tensors, &_out);
     if (status != ML_ERROR_NONE)
       goto exit;
   } else {
-    single_h->output = *output;
+    _out = *output;
   }
 
   /**
    * Clone input data here to prevent use-after-free case.
    * We should release single_h->input after calling __invoke() function.
    */
-  status = ml_tensors_data_clone (input, &single_h->input);
+  status = ml_tensors_data_clone (input, &_in);
   if (status != ML_ERROR_NONE)
     goto exit;
 
   single_h->state = RUNNING;
   single_h->free_output = need_alloc;
+  single_h->input = _in;
+  single_h->output = _out;
 
   if (single_h->timeout > 0) {
     /* Wake up "invoke_thread" */
@@ -1428,7 +1444,7 @@ _ml_single_invoke_internal (ml_single_h single,
       status = ML_ERROR_TIMED_OUT;
       /** This is set to notify invoke_thread to not process if timed out */
       if (need_alloc)
-        set_destroy_notify (single_h, single_h->output, TRUE);
+        set_destroy_notify (single_h, _out, TRUE);
     }
   } else {
     /**
@@ -1440,28 +1456,27 @@ _ml_single_invoke_internal (ml_single_h single,
      * having yet another mutex for __invoke.
      */
     single_h->invoking = TRUE;
-    status = __invoke (single_h, single_h->input, single_h->output);
-    ml_tensors_data_destroy (single_h->input);
-    single_h->input = NULL;
+    status = __invoke (single_h, _in, _out);
+    ml_tensors_data_destroy (_in);
     single_h->invoking = FALSE;
     single_h->state = IDLE;
 
     if (status != ML_ERROR_NONE) {
       if (need_alloc)
-        ml_tensors_data_destroy (single_h->output);
+        ml_tensors_data_destroy (_out);
       goto exit;
     }
 
-    __process_output (single_h, single_h->output);
+    __process_output (single_h, _out);
   }
 
 exit:
   if (status == ML_ERROR_NONE) {
     if (need_alloc)
-      *output = single_h->output;
+      *output = _out;
   }
 
-  single_h->output = NULL;
+  single_h->input = single_h->output = NULL;
   ML_SINGLE_HANDLE_UNLOCK (single_h);
   return status;
 }
