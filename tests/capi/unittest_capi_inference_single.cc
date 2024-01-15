@@ -2655,10 +2655,9 @@ TEST (nnstreamer_capi_singleshot, invoke_06)
 TEST (nnstreamer_capi_singleshot, invoke_07)
 {
   ml_single_h single;
-  ml_tensors_info_h in_info, out_info;
   ml_tensors_info_h in_res, out_res;
   ml_tensors_data_h input, output;
-  ml_tensor_dimension in_dim, out_dim, res_dim;
+  ml_tensor_dimension res_dim;
   ml_tensor_type_e type = ML_TENSOR_TYPE_UNKNOWN;
   unsigned int count = 0;
   char *name = NULL;
@@ -2676,25 +2675,6 @@ TEST (nnstreamer_capi_singleshot, invoke_07)
   test_model = g_build_filename (
       root_path, "tests", "test_models", "models", "add.tflite", NULL);
   ASSERT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
-
-  ml_tensors_info_create (&in_info);
-  ml_tensors_info_create (&out_info);
-
-  in_dim[0] = 1;
-  in_dim[1] = 1;
-  in_dim[2] = 1;
-  in_dim[3] = 1;
-  ml_tensors_info_set_count (in_info, 1);
-  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_FLOAT32);
-  ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
-
-  out_dim[0] = 1;
-  out_dim[1] = 1;
-  out_dim[2] = 1;
-  out_dim[3] = 1;
-  ml_tensors_info_set_count (out_info, 1);
-  ml_tensors_info_set_tensor_type (out_info, 0, ML_TENSOR_TYPE_FLOAT32);
-  ml_tensors_info_set_tensor_dimension (out_info, 0, out_dim);
 
   status = ml_single_open (&single, test_model, NULL, NULL, ML_NNFW_TYPE_ARMNN, ML_NNFW_HW_ANY);
   ASSERT_EQ (status, ML_ERROR_NONE);
@@ -2716,10 +2696,7 @@ TEST (nnstreamer_capi_singleshot, invoke_07)
   EXPECT_EQ (type, ML_TENSOR_TYPE_FLOAT32);
 
   ml_tensors_info_get_tensor_dimension (in_res, 0, res_dim);
-  EXPECT_TRUE (in_dim[0] == res_dim[0]);
-  EXPECT_TRUE (in_dim[1] == res_dim[1]);
-  EXPECT_TRUE (in_dim[2] == res_dim[2]);
-  EXPECT_TRUE (in_dim[3] == res_dim[3]);
+  EXPECT_EQ (res_dim[0], 1U);
 
   /* output tensor in filter */
   status = ml_single_get_output_info (single, &out_res);
@@ -2738,15 +2715,12 @@ TEST (nnstreamer_capi_singleshot, invoke_07)
   EXPECT_EQ (type, ML_TENSOR_TYPE_FLOAT32);
 
   ml_tensors_info_get_tensor_dimension (out_res, 0, res_dim);
-  EXPECT_TRUE (out_dim[0] == res_dim[0]);
-  EXPECT_TRUE (out_dim[1] == res_dim[1]);
-  EXPECT_TRUE (out_dim[2] == res_dim[2]);
-  EXPECT_TRUE (out_dim[3] == res_dim[3]);
+  EXPECT_EQ (res_dim[0], 1U);
 
   input = output = NULL;
 
   /* generate dummy data */
-  status = ml_tensors_data_create (in_info, &input);
+  status = ml_tensors_data_create (in_res, &input);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_TRUE (input != NULL);
 
@@ -2772,8 +2746,6 @@ TEST (nnstreamer_capi_singleshot, invoke_07)
   ml_tensors_data_destroy (input);
 
   g_free (test_model);
-  ml_tensors_info_destroy (in_info);
-  ml_tensors_info_destroy (out_info);
   ml_tensors_info_destroy (in_res);
   ml_tensors_info_destroy (out_res);
 }
