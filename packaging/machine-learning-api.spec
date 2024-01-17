@@ -15,6 +15,8 @@
 %define		tensorflow2_gpu_delegate_support 1
 %define		nnfw_support 1
 %define		armnn_support 0
+%define		onnxruntime_support 1
+%define		ncnn_support 0
 
 %define		release_test 0
 %define		test_script $(pwd)/packaging/run_unittests.sh
@@ -151,6 +153,16 @@ BuildRequires:	armnn-devel
 BuildRequires:	nnstreamer-armnn
 BuildRequires:	libarmcl
 BuildConflicts:	libarmcl-release
+%endif
+
+%if 0%{?onnxruntime_support}
+BuildRequires:	onnxruntime-devel
+BuildRequires:	nnstreamer-onnxruntime
+%endif
+
+%if 0%{?ncnn_support}
+BuildRequires:	ncnn-devel
+BuildRequires:	nnstreamer-ncnn
 %endif
 %endif # unit_test
 

@@ -71,6 +71,8 @@ typedef enum {
   ML_NNFW_TYPE_TRIX_ENGINE = 14,      /**< TRIxENGINE accesses TRIV/TRIA NPU low-level drivers directly (.tvn). (Since 6.5) You may need to use high-level drivers wrapping this low-level driver in some devices: e.g., AIFW */
   ML_NNFW_TYPE_MXNET = 15,            /**< Apache MXNet (Since 7.0) */
   ML_NNFW_TYPE_TVM = 16,              /**< Apache TVM (Since 7.0) */
+  ML_NNFW_TYPE_ONNX_RUNTIME = 17,     /**< Open Neural Network Exchange (ONNX) Runtime (Since 9.0) */
+  ML_NNFW_TYPE_NCNN = 18,             /**< Tencent ncnn (Since 9.0) */
   ML_NNFW_TYPE_SNAP = 0x2001,         /**< SNAP (Samsung Neural Acceleration Platform), only for Android. (Since 6.0) */
 } ml_nnfw_type_e;
 
