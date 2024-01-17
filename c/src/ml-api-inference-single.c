@@ -108,6 +108,8 @@ static const char *ml_nnfw_subplugin_name[] = {
   [ML_NNFW_TYPE_TRIX_ENGINE] = "trix-engine",
   [ML_NNFW_TYPE_MXNET] = "mxnet",
   [ML_NNFW_TYPE_TVM] = "tvm",
+  [ML_NNFW_TYPE_ONNX_RUNTIME] = "onnxruntime",
+  [ML_NNFW_TYPE_NCNN] = "ncnn",
   NULL
 };
 
@@ -991,7 +993,8 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
    * Note that we do not construct a pipeline since 2019.12.
    */
   if (nnfw == ML_NNFW_TYPE_TENSORFLOW || nnfw == ML_NNFW_TYPE_SNAP ||
-      nnfw == ML_NNFW_TYPE_PYTORCH || nnfw == ML_NNFW_TYPE_TRIX_ENGINE) {
+      nnfw == ML_NNFW_TYPE_PYTORCH || nnfw == ML_NNFW_TYPE_TRIX_ENGINE ||
+      nnfw == ML_NNFW_TYPE_NCNN) {
     /* set input and output tensors information */
     if (in_tensors_info && out_tensors_info) {
       status =
@@ -1936,6 +1939,8 @@ _ml_validate_model_file (const char *const *model,
   switch (*nnfw) {
     case ML_NNFW_TYPE_NNFW:
     case ML_NNFW_TYPE_TVM:
+    case ML_NNFW_TYPE_ONNX_RUNTIME:
+    case ML_NNFW_TYPE_NCNN:
       /**
        * We cannot check the file ext with NNFW.
        * NNFW itself will validate metadata and model file.
