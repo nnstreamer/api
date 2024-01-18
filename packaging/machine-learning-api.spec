@@ -161,6 +161,7 @@ BuildRequires:  pkgconfig(json-glib-1.0)
 BuildRequires:  dbus
 BuildRequires:  pkgconfig(capi-appfw-package-manager)
 BuildRequires:	pkgconfig(capi-appfw-app-common)
+BuildRequires:	pkgconfig(libtzplatform-config)
 %endif
 
 %if 0%{?nnstreamer_edge_support}
