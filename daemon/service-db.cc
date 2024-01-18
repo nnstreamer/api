@@ -167,7 +167,8 @@ MLServiceDB::connectDB ()
 
   rc = sqlite3_open (_path.c_str (), &_db);
   if (rc != SQLITE_OK) {
-    _E ("Failed to open database: %s (%d)", sqlite3_errmsg (_db), rc);
+    _E ("Failed to open database: %s (ret: %d, db_path_prefix: %s)",
+        sqlite3_errmsg (_db), rc, DB_PATH);
     goto error;
   }
 
