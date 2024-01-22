@@ -933,7 +933,7 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
   ml_nnfw_hw_e hw;
   const gchar *fw_name;
   gchar **list_models;
-  guint num_models;
+  guint i, num_models;
   char *hw_name;
 
   check_feature_state (ML_FEATURE_INFERENCE);
@@ -957,6 +957,8 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
    */
   list_models = g_strsplit (info->models, ",", -1);
   num_models = g_strv_length (list_models);
+  for (i = 0; i < num_models; i++)
+    g_strstrip (list_models[i]);
 
   status = _ml_validate_model_file ((const char **) list_models, num_models,
       &nnfw);
@@ -1847,7 +1849,8 @@ __ml_validate_model_file (const char *const *model,
   }
 
   for (i = 0; i < num_models; i++) {
-    if (!model[i] || !g_file_test (model[i], G_FILE_TEST_IS_REGULAR)) {
+    if (!model[i] ||
+        !g_file_test (model[i], G_FILE_TEST_EXISTS | G_FILE_TEST_IS_REGULAR)) {
       _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
           "The given param, model path [%d] = \"%s\" is invalid or the file is not found or accessible.",
           i, _STR_NULL (model[i]));
