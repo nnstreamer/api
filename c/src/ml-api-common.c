@@ -1395,7 +1395,7 @@ ml_option_create (ml_option_h * option)
     _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
         "Failed to allocate memory for the option handle. Out of memory?");
 
-  *option = (ml_option_h *) _option;
+  *option = _option;
   return ML_ERROR_NONE;
 }
 
@@ -1509,7 +1509,7 @@ _ml_information_create (ml_information_h * info)
     _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
         "Failed to allocate memory for the info handle. Out of memory?");
 
-  *info = (ml_information_h *) _info;
+  *info = _info;
   return ML_ERROR_NONE;
 }
 
