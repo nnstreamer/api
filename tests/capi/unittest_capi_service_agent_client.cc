@@ -181,6 +181,8 @@ TEST_F (MLServiceAgentTest, usecase_00)
   /* delete finished service */
   status = ml_service_delete_pipeline (service_name);
   EXPECT_EQ (ML_ERROR_NONE, status);
+  status = ml_service_delete_pipeline ("client");
+  EXPECT_EQ (ML_ERROR_NONE, status);
 
   /* it would fail if get the removed service */
   status = ml_service_get_pipeline (service_name, &ret_pipeline);
@@ -345,6 +347,9 @@ TEST_F (MLServiceAgentTest, delete_pipeline_01_n)
 
   status = ml_service_delete_pipeline ("invalid key");
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_service_delete_pipeline ("some key");
+  EXPECT_EQ (ML_ERROR_NONE, status);
 }
 
 /**
@@ -404,6 +409,9 @@ TEST_F (MLServiceAgentTest, launch_pipeline_02_n)
 
   status = ml_service_launch_pipeline ("key", &h);
   EXPECT_EQ (ML_ERROR_STREAMS_PIPE, status);
+
+  status = ml_service_delete_pipeline ("key");
+  EXPECT_EQ (ML_ERROR_NONE, status);
 }
 
 /**
@@ -423,6 +431,9 @@ TEST_F (MLServiceAgentTest, launch_pipeline_03_n)
 
   status = ml_service_launch_pipeline ("key", &h);
   EXPECT_EQ (ML_ERROR_STREAMS_PIPE, status);
+
+  status = ml_service_delete_pipeline ("key");
+  EXPECT_EQ (ML_ERROR_NONE, status);
 }
 
 /**
@@ -701,8 +712,9 @@ TEST_F (MLServiceAgentTest, query_create_00_n)
 {
   int status;
   ml_option_h option = NULL;
+  ml_service_h handle;
 
-  status = ml_service_query_create (NULL, NULL);
+  status = ml_service_query_create (NULL, &handle);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
   status = ml_option_create (&option);
