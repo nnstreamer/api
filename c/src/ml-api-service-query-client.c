@@ -90,7 +90,7 @@ ml_service_query_release_internal (void *priv)
  * @brief Creates query client service handle with given ml-option handle.
  */
 int
-ml_service_query_create (ml_option_h option, ml_service_h * h)
+ml_service_query_create (ml_option_h option, ml_service_h * handle)
 {
   int status = ML_ERROR_NONE;
 
@@ -117,9 +117,9 @@ ml_service_query_create (ml_option_h option, ml_service_h * h)
         "The parameter, 'option' is NULL. It should be a valid ml_option_h, which should be created by ml_option_create().");
   }
 
-  if (!h) {
+  if (!handle) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'h' (ml_service_h), is NULL. It should be a valid ml_service_h.");
+        "The parameter, 'handle' (ml_service_h), is NULL. It should be a valid ml_service_h.");
   }
 
   tensor_query_client_prop = g_string_new (NULL);
@@ -206,7 +206,7 @@ ml_service_query_create (ml_option_h option, ml_service_h * h)
   mls->type = ML_SERVICE_TYPE_CLIENT_QUERY;
   mls->priv = query_s;
 
-  *h = mls;
+  *handle = mls;
 
   return ML_ERROR_NONE;
 }
@@ -215,19 +215,25 @@ ml_service_query_create (ml_option_h option, ml_service_h * h)
  * @brief Requests query client service an output with given input data.
  */
 int
-ml_service_query_request (ml_service_h h, const ml_tensors_data_h input,
+ml_service_query_request (ml_service_h handle, const ml_tensors_data_h input,
     ml_tensors_data_h * output)
 {
   int status = ML_ERROR_NONE;
-  ml_service_s *mls = (ml_service_s *) h;
+  ml_service_s *mls = (ml_service_s *) handle;
   _ml_service_query_s *query;
 
   check_feature_state (ML_FEATURE_SERVICE);
   check_feature_state (ML_FEATURE_INFERENCE);
 
-  if (!h)
+  if (!handle)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'h' is NULL. It should be a valid ml_service_h");
+        "The parameter, 'handle' is NULL. It should be a valid ml_service_h");
+  if (!input)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'input' (ml_tensors_data_h), is NULL. It should be a valid ml_tensors_data_h.");
+  if (!output)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'output' (ml_tensors_data_h *), is NULL. It should be a valid pointer to an instance of ml_tensors_data_h.");
 
   query = (_ml_service_query_s *) mls->priv;
 

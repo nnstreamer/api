@@ -376,7 +376,7 @@ ml_service_delete_pipeline (const char *name)
  * @brief Launch the pipeline of given service.
  */
 int
-ml_service_launch_pipeline (const char *name, ml_service_h * h)
+ml_service_launch_pipeline (const char *name, ml_service_h * handle)
 {
   int ret = ML_ERROR_NONE;
   ml_service_s *mls;
@@ -385,15 +385,15 @@ ml_service_launch_pipeline (const char *name, ml_service_h * h)
 
   check_feature_state (ML_FEATURE_SERVICE);
 
-  if (h == NULL) {
+  if (handle == NULL) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The argument for 'h' should not be NULL.");
+        "The argument for 'handle' should not be NULL.");
   }
 
-  if (*h != NULL) {
-    _ml_logw (WARN_MSG_DPTR_SET_OVER, "ml_service_h *h = NULL");
+  if (*handle != NULL) {
+    _ml_logw (WARN_MSG_DPTR_SET_OVER, "ml_service_h *handle = NULL");
   }
-  *h = NULL;
+  *handle = NULL;
 
   mls = g_try_new0 (ml_service_s, 1);
   if (mls == NULL) {
@@ -420,7 +420,7 @@ ml_service_launch_pipeline (const char *name, ml_service_h * h)
   server->service_name = g_strdup (name);
   mls->type = ML_SERVICE_TYPE_SERVER_PIPELINE;
   mls->priv = server;
-  *h = mls;
+  *handle = mls;
 
   return ML_ERROR_NONE;
 }
@@ -429,7 +429,7 @@ ml_service_launch_pipeline (const char *name, ml_service_h * h)
  * @brief Start the pipeline of given ml_service_h
  */
 int
-ml_service_start_pipeline (ml_service_h h)
+ml_service_start_pipeline (ml_service_h handle)
 {
   int ret = ML_ERROR_NONE;
   ml_service_s *mls;
@@ -438,12 +438,12 @@ ml_service_start_pipeline (ml_service_h h)
 
   check_feature_state (ML_FEATURE_SERVICE);
 
-  if (!h) {
+  if (!handle) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'h' is NULL. It should be a valid ml_service_h.");
+        "The parameter, 'handle' is NULL. It should be a valid ml_service_h.");
   }
 
-  mls = (ml_service_s *) h;
+  mls = (ml_service_s *) handle;
   server = (_ml_service_server_s *) mls->priv;
   ret = ml_agent_pipeline_start (server->id, &err);
   if (ret < 0) {
@@ -458,7 +458,7 @@ ml_service_start_pipeline (ml_service_h h)
  * @brief Stop the pipeline of given ml_service_h
  */
 int
-ml_service_stop_pipeline (ml_service_h h)
+ml_service_stop_pipeline (ml_service_h handle)
 {
   int ret = ML_ERROR_NONE;
   ml_service_s *mls;
@@ -467,12 +467,12 @@ ml_service_stop_pipeline (ml_service_h h)
 
   check_feature_state (ML_FEATURE_SERVICE);
 
-  if (!h) {
+  if (!handle) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'h' is NULL. It should be a valid ml_service_h.");
+        "The parameter, 'handle' is NULL. It should be a valid ml_service_h.");
   }
 
-  mls = (ml_service_s *) h;
+  mls = (ml_service_s *) handle;
   server = (_ml_service_server_s *) mls->priv;
   ret = ml_agent_pipeline_stop (server->id, &err);
   if (ret < 0) {
@@ -487,7 +487,7 @@ ml_service_stop_pipeline (ml_service_h h)
  * @brief Return state of given ml_service_h
  */
 int
-ml_service_get_pipeline_state (ml_service_h h, ml_pipeline_state_e * state)
+ml_service_get_pipeline_state (ml_service_h handle, ml_pipeline_state_e * state)
 {
   int ret = ML_ERROR_NONE;
   gint _state = ML_PIPELINE_STATE_UNKNOWN;
@@ -503,11 +503,11 @@ ml_service_get_pipeline_state (ml_service_h h, ml_pipeline_state_e * state)
   }
   *state = ML_PIPELINE_STATE_UNKNOWN;
 
-  if (!h) {
+  if (!handle) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'h' is NULL. It should be a valid ml_service_h.");
+        "The parameter, 'handle' is NULL. It should be a valid ml_service_h.");
   }
-  mls = (ml_service_s *) h;
+  mls = (ml_service_s *) handle;
   server = (_ml_service_server_s *) mls->priv;
   ret = ml_agent_pipeline_get_state (server->id, &_state, &err);
   if (ret < 0) {

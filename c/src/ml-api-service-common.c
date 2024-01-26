@@ -17,16 +17,16 @@
  * @brief Destroy the service handle.
  */
 int
-ml_service_destroy (ml_service_h h)
+ml_service_destroy (ml_service_h handle)
 {
   int ret = ML_ERROR_NONE;
-  ml_service_s *mls = (ml_service_s *) h;
+  ml_service_s *mls = (ml_service_s *) handle;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
-  if (!h)
+  if (!handle)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'h' is NULL. It should be a valid ml_service_h.");
+        "The parameter, 'handle' is NULL. It should be a valid ml_service_h.");
 
   switch (mls->type) {
     case ML_SERVICE_TYPE_SERVER_PIPELINE:

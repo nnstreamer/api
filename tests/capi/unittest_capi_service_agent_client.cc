@@ -783,8 +783,39 @@ TEST_F (MLServiceAgentTest, query_create_02_n)
 TEST_F (MLServiceAgentTest, query_request_00_n)
 {
   int status;
-  status = ml_service_query_request (NULL, NULL, NULL);
+  ml_service_h handle;
+
+  ml_tensor_dimension in_dim = { 0 };
+  ml_tensors_info_h in_info;
+  ml_tensors_data_h in_data, out_data;
+
+  in_dim[0] = 2;
+  in_dim[1] = 2;
+  in_dim[2] = 2;
+  in_dim[3] = 1;
+  ml_tensors_info_create (&in_info);
+  ml_tensors_info_set_count (in_info, 1);
+  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_UINT8);
+  ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
+  ml_tensors_data_create (in_info, &in_data);
+
+  /* temporal condition for ml-service handle */
+  ml_service_set_pipeline ("key", "videotestsrc ! fakesink");
+  status = ml_service_launch_pipeline ("key", &handle);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  /* testcase for invalid param */
+  status = ml_service_query_request (NULL, in_data, &out_data);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+  status = ml_service_query_request (handle, NULL, &out_data);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+  status = ml_service_query_request (handle, in_data, NULL);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  ml_service_destroy (handle);
+  ml_service_delete_pipeline ("key");
+  ml_tensors_data_destroy (in_data);
+  ml_tensors_info_destroy (in_info);
 }
 
 /**
