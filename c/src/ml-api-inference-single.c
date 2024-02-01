@@ -394,7 +394,8 @@ set_destroy_notify (ml_single * single_h, ml_tensors_data_s * data,
  * @brief Internal function to call subplugin's invoke
  */
 static inline int
-__invoke (ml_single * single_h, ml_tensors_data_h in, ml_tensors_data_h out)
+__invoke (ml_single * single_h, ml_tensors_data_h in, ml_tensors_data_h out,
+    gboolean alloc_output)
 {
   ml_tensors_data_s *in_data, *out_data;
   int status = ML_ERROR_NONE;
@@ -410,7 +411,7 @@ __invoke (ml_single * single_h, ml_tensors_data_h in, ml_tensors_data_h out)
 
   /* Invoke the thread. */
   if (!single_h->klass->invoke (single_h->filter, in_data->tensors,
-          out_data->tensors, single_h->free_output)) {
+          out_data->tensors, alloc_output)) {
     const char *fw_name = _ml_get_nnfw_subplugin_name (single_h->nnfw);
     _ml_error_report
         ("Failed to invoke the tensors. The invoke callback of the tensor-filter subplugin '%s' has failed. Please contact the author of tensor-filter-%s (nnstreamer-%s) or review its source code. Note that this usually happens when the designated framework does not support the given model (e.g., trying to run tf-lite 2.6 model with tf-lite 1.13).",
@@ -423,16 +424,12 @@ __invoke (ml_single * single_h, ml_tensors_data_h in, ml_tensors_data_h out)
 
 /**
  * @brief Internal function to post-process given output.
+ * @note Do not call this if single_h->free_output is false (output data is not allocated in single-shot).
  */
 static inline void
 __process_output (ml_single * single_h, ml_tensors_data_h output)
 {
   ml_tensors_data_s *out_data;
-
-  if (!single_h->free_output) {
-    /* Do nothing. The output handle is not allocated in single-shot process. */
-    return;
-  }
 
   if (g_list_find (single_h->destroy_data_list, output)) {
     /**
@@ -472,6 +469,7 @@ invoke_thread (void *arg)
 {
   ml_single *single_h;
   ml_tensors_data_h input, output;
+  gboolean alloc_output = FALSE;
 
   single_h = (ml_single *) arg;
 
@@ -493,15 +491,16 @@ invoke_thread (void *arg)
     single_h->input = single_h->output = NULL;
 
     single_h->invoking = TRUE;
+    alloc_output = single_h->free_output;
     g_mutex_unlock (&single_h->mutex);
-    status = __invoke (single_h, input, output);
+    status = __invoke (single_h, input, output, alloc_output);
     g_mutex_lock (&single_h->mutex);
     /* Clear input data after invoke is done. */
     ml_tensors_data_destroy (input);
     single_h->invoking = FALSE;
 
     if (status != ML_ERROR_NONE || single_h->state == JOIN_REQUESTED) {
-      if (single_h->free_output) {
+      if (alloc_output) {
         single_h->destroy_data_list =
             g_list_remove (single_h->destroy_data_list, output);
         ml_tensors_data_destroy (output);
@@ -512,7 +511,8 @@ invoke_thread (void *arg)
       goto wait_for_next;
     }
 
-    __process_output (single_h, output);
+    if (alloc_output)
+      __process_output (single_h, output);
 
     /** loop over to wait for the next element */
   wait_for_next:
@@ -529,7 +529,7 @@ exit:
     if (single_h->input)
       ml_tensors_data_destroy (single_h->input);
 
-    if (single_h->free_output && single_h->output) {
+    if (alloc_output && single_h->output) {
       single_h->destroy_data_list =
           g_list_remove (single_h->destroy_data_list, single_h->output);
       ml_tensors_data_destroy (single_h->output);
@@ -1461,7 +1461,7 @@ _ml_single_invoke_internal (ml_single_h single,
      * having yet another mutex for __invoke.
      */
     single_h->invoking = TRUE;
-    status = __invoke (single_h, _in, _out);
+    status = __invoke (single_h, _in, _out, need_alloc);
     ml_tensors_data_destroy (_in);
     single_h->invoking = FALSE;
     single_h->state = IDLE;
@@ -1472,7 +1472,8 @@ _ml_single_invoke_internal (ml_single_h single,
       goto exit;
     }
 
-    __process_output (single_h, _out);
+    if (need_alloc)
+      __process_output (single_h, _out);
   }
 
 exit:
