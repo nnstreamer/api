@@ -1776,15 +1776,11 @@ static ml_pipeline_src_callbacks_s *
 get_app_src_callback (ml_pipeline_common_elem * src_h, void **data)
 {
   ml_pipeline_src_callbacks_s *src_cb = NULL;
-  ml_pipeline_element *elem;
 
-  elem = src_h->element;
-  g_mutex_lock (&elem->lock);
   if (src_h->callback_info) {
     src_cb = &src_h->callback_info->src_cb;
     *data = src_h->callback_info->pdata;
   }
-  g_mutex_unlock (&elem->lock);
 
   return src_cb;
 }

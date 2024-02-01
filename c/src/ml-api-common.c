@@ -671,10 +671,12 @@ _ml_tensors_data_destroy_internal (ml_tensors_data_h data, gboolean free_data)
   if (free_data) {
     if (_data->destroy) {
       status = _data->destroy (_data, _data->user_data);
-      if (status != ML_ERROR_NONE)
+      if (status != ML_ERROR_NONE) {
+        G_UNLOCK_UNLESS_NOLOCK (*_data);
         _ml_error_report_return_continue (status,
             "Tried to destroy internal user_data of the given parameter, data, with its destroy callback; however, it has failed with %d.",
             status);
+      }
     } else {
       for (i = 0; i < ML_TENSOR_SIZE_LIMIT; i++) {
         if (_data->tensors[i].data) {
@@ -860,7 +862,7 @@ ml_tensors_data_create (const ml_tensors_info_h info, ml_tensors_data_h * data)
   status = ml_tensors_info_validate (info, &valid);
   if (status != ML_ERROR_NONE)
     _ml_error_report_return_continue (status,
-        "_ml_error_report_return_continue has reported that the parameter, info, is not NULL, but its contents are not valid. The user must provide a valid tensor information with it.");
+        "ml_tensors_info_validate() has reported that the parameter, info, is not NULL, but its contents are not valid. The user must provide a valid tensor information with it.");
   if (!valid)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, info, is not NULL, but its contents are not valid. The user must provide a valid tensor information with it. Probably, there is an entry that is not allocated or dimension/type information not available. The given info should have valid number of tensors, entries of every tensor along with its type and dimension info.");
