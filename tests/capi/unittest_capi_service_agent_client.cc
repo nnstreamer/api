@@ -500,19 +500,17 @@ TEST_F (MLServiceAgentTest, destroy_00_n)
 TEST_F (MLServiceAgentTest, destroy_01_n)
 {
   int status;
-  ml_service_h h;
+  ml_service_s *mls = _ml_service_create_internal (ML_SERVICE_TYPE_SERVER_PIPELINE);
+  ASSERT_TRUE (mls != NULL);
 
-  ml_service_s *mls = g_new0 (ml_service_s, 1);
-  _ml_service_server_s *server = g_new0 (_ml_service_server_s, 1);
-  mls->priv = server;
+  /* invalid type */
   mls->type = ML_SERVICE_TYPE_MAX;
-
-  h = (ml_service_h) mls;
-  status = ml_service_destroy (h);
+  status = ml_service_destroy ((ml_service_h) mls);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  g_free (server);
-  g_free (mls);
+  mls->type = ML_SERVICE_TYPE_SERVER_PIPELINE;
+  status = ml_service_destroy ((ml_service_h) mls);
+  EXPECT_EQ (ML_ERROR_NONE, status);
 }
 
 /**
@@ -532,7 +530,7 @@ TEST_F (MLServiceAgentTest, explicit_invalid_handle_00_n)
   ml_service_s *mls = (ml_service_s *) h;
   _ml_service_server_s *server = (_ml_service_server_s *) mls->priv;
   gint64 _id = server->id;
-  server->id = -987654321; /* explicitly set id as invalid number */
+  server->id = 1; /* explicitly set id as invalid number */
 
   status = ml_service_start_pipeline (h);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
@@ -1505,11 +1503,12 @@ TEST (MLServiceAgentTestDbusUnconnected, pipeline_n)
   status = ml_service_launch_pipeline ("test", &service);
   EXPECT_EQ (ML_ERROR_IO_ERROR, status);
 
-  ml_service_s *mls = g_new0 (ml_service_s, 1);
+  ml_service_s *mls = _ml_service_create_internal (ML_SERVICE_TYPE_SERVER_PIPELINE);
+  ASSERT_TRUE (mls != NULL);
   _ml_service_server_s *server = g_new0 (_ml_service_server_s, 1);
   mls->priv = server;
 
-  server->id = -987654321; /* explicitly set id as invalid number */
+  server->id = 1; /* explicitly set id as invalid number */
 
   service = (ml_service_h) mls;
   status = ml_service_start_pipeline (service);
@@ -1522,12 +1521,10 @@ TEST (MLServiceAgentTestDbusUnconnected, pipeline_n)
   status = ml_service_get_pipeline_state (service, &state);
   EXPECT_EQ (ML_ERROR_IO_ERROR, status);
 
-  mls->type = ML_SERVICE_TYPE_SERVER_PIPELINE;
   status = ml_service_destroy (service);
   EXPECT_EQ (ML_ERROR_IO_ERROR, status);
 
-  g_free (server);
-  g_free (mls);
+  _ml_service_destroy_internal (mls);
 }
 
 /**
