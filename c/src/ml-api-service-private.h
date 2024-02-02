@@ -35,10 +35,11 @@ typedef enum
 } ml_service_type_e;
 
 /**
- * @brief Structure for ml_remote_service_h
+ * @brief Structure for ml_service_h
  */
 typedef struct
 {
+  uint32_t magic;
   ml_service_type_e type;
 
   void *priv;
@@ -54,20 +55,35 @@ typedef struct
 } _ml_service_server_s;
 
 /**
+ * @brief Internal function to validate ml-service handle.
+ */
+gboolean _ml_service_handle_is_valid (ml_service_s * mls);
+
+/**
+ * @brief Internal function to create new ml-service handle.
+ */
+ml_service_s * _ml_service_create_internal (ml_service_type_e ml_service_type);
+
+/**
+ * @brief Internal function to release ml-service handle.
+ */
+int _ml_service_destroy_internal (ml_service_s * mls);
+
+/**
  * @brief Internal function to release ml-service pipeline data.
  */
-int ml_service_pipeline_release_internal (void *priv);
+int ml_service_pipeline_release_internal (ml_service_s * mls);
 
 /**
  * @brief Internal function to release ml-service query data.
  */
-int ml_service_query_release_internal (void *priv);
+int ml_service_query_release_internal (ml_service_s * mls);
 
 #if defined(ENABLE_REMOTE_SERVICE)
 /**
  * @brief Internal function to release ml-service remote data.
  */
-int ml_service_remote_release_internal (void *priv);
+int ml_service_remote_release_internal (ml_service_s * mls);
 #else
 #define ml_service_remote_release_internal(...) ML_ERROR_NOT_SUPPORTED
 #endif

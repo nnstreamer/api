@@ -121,32 +121,35 @@ _mlrs_get_conn_type (const gchar * value)
  * @brief Get edge info from ml_option.
  */
 static void
-_mlrs_get_edge_info (ml_option_h option, edge_info_s * edge_info)
+_mlrs_get_edge_info (ml_option_h option, edge_info_s ** edge_info)
 {
+  edge_info_s *_info;
   void *value;
 
-  if (ML_ERROR_NONE == ml_option_get (option, "host", &value)) {
-    g_free (edge_info->host);
-    edge_info->host = g_strdup (value);
-  }
+  *edge_info = _info = g_new0 (edge_info_s, 1);
+
+  if (ML_ERROR_NONE == ml_option_get (option, "host", &value))
+    _info->host = g_strdup (value);
+  else
+    _info->host = g_strdup ("localhost");
   if (ML_ERROR_NONE == ml_option_get (option, "port", &value))
-    edge_info->port = *((guint *) value);
-  if (ML_ERROR_NONE == ml_option_get (option, "dest-host", &value)) {
-    g_free (edge_info->dest_host);
-    edge_info->dest_host = g_strdup (value);
-  }
+    _info->port = *((guint *) value);
+  if (ML_ERROR_NONE == ml_option_get (option, "dest-host", &value))
+    _info->dest_host = g_strdup (value);
+  else
+    _info->dest_host = g_strdup ("localhost");
   if (ML_ERROR_NONE == ml_option_get (option, "dest-port", &value))
-    edge_info->dest_port = *((guint *) value);
+    _info->dest_port = *((guint *) value);
   if (ML_ERROR_NONE == ml_option_get (option, "connect-type", &value))
-    edge_info->conn_type = _mlrs_get_conn_type (value);
+    _info->conn_type = _mlrs_get_conn_type (value);
+  else
+    _info->conn_type = NNS_EDGE_CONNECT_TYPE_UNKNOWN;
   if (ML_ERROR_NONE == ml_option_get (option, "topic", &value))
-    edge_info->topic = g_strdup (value);
+    _info->topic = g_strdup (value);
   if (ML_ERROR_NONE == ml_option_get (option, "node-type", &value))
-    edge_info->node_type = _mlrs_get_node_type (value);
-  if (ML_ERROR_NONE == ml_option_get (option, "id", &value)) {
-    g_free (edge_info->id);
-    edge_info->id = g_strdup (value);
-  }
+    _info->node_type = _mlrs_get_node_type (value);
+  if (ML_ERROR_NONE == ml_option_get (option, "id", &value))
+    _info->id = g_strdup (value);
 }
 
 /**
@@ -179,6 +182,7 @@ _mlrs_release_edge_info (edge_info_s * edge_info)
   g_free (edge_info->host);
   g_free (edge_info->topic);
   g_free (edge_info->id);
+  g_free (edge_info);
 }
 
 /**
@@ -359,7 +363,7 @@ _mlrs_process_remote_service (nns_edge_data_h data_h, void *user_data)
   ml_remote_service_type_e service_type;
   int ret = NNS_EDGE_ERROR_NONE;
   _ml_remote_service_s *remote_s = (_ml_remote_service_s *) user_data;
-  ml_service_event_e event_type = NNS_EDGE_EVENT_TYPE_UNKNOWN;
+  ml_service_event_e event_type = ML_SERVICE_EVENT_UNKNOWN;
 
   ret = nns_edge_data_get (data_h, 0, &data, &data_len);
   if (NNS_EDGE_ERROR_NONE != ret) {
@@ -455,7 +459,7 @@ _mlrs_process_remote_service (nns_edge_data_h data_h, void *user_data)
       break;
   }
 
-  if (remote_s && event_type != NNS_EDGE_EVENT_TYPE_UNKNOWN) {
+  if (remote_s && event_type != ML_SERVICE_EVENT_UNKNOWN) {
     if (remote_s->event_cb) {
       remote_s->event_cb (event_type, remote_s->user_data);
     }
@@ -549,17 +553,21 @@ _mlrs_create_edge_handle (_ml_remote_service_s * remote_s,
  * @brief Internal function to release ml-service remote data.
  */
 int
-ml_service_remote_release_internal (void *priv)
+ml_service_remote_release_internal (ml_service_s * mls)
 {
-  _ml_remote_service_s *mlrs = (_ml_remote_service_s *) priv;
+  _ml_remote_service_s *mlrs = (_ml_remote_service_s *) mls->priv;
 
+  /* Supposed internal function call to release handle. */
   if (!mlrs)
-    return ML_ERROR_INVALID_PARAMETER;
+    return ML_ERROR_NONE;
 
-  nns_edge_release_handle (mlrs->edge_h);
+  if (mlrs->edge_h) {
+    nns_edge_release_handle (mlrs->edge_h);
 
-  /* Wait some time until release the edge handle. */
-  g_usleep (1000000);
+    /* Wait some time until release the edge handle. */
+    g_usleep (1000000);
+  }
+
   g_free (mlrs->path);
   g_free (mlrs);
 
@@ -574,8 +582,8 @@ ml_service_remote_create (ml_option_h option, ml_service_event_cb cb,
     void *user_data, ml_service_h * handle)
 {
   ml_service_s *mls;
-  g_autofree _ml_remote_service_s *remote_s = NULL;
-  g_autofree edge_info_s *edge_info = NULL;
+  _ml_remote_service_s *remote_s = NULL;
+  edge_info_s *edge_info = NULL;
   int ret = ML_ERROR_NONE;
   gchar *_path = NULL;
 
@@ -592,21 +600,6 @@ ml_service_remote_create (ml_option_h option, ml_service_event_cb cb,
         "The parameter, 'handle' (ml_service_h), is NULL. It should be a valid ml_service_h.");
   }
 
-  edge_info = g_new0 (edge_info_s, 1);
-  edge_info->topic = NULL;
-  edge_info->host = g_strdup ("localhost");
-  edge_info->port = 0;
-  edge_info->dest_host = g_strdup ("localhost");
-  edge_info->dest_port = 0;
-  edge_info->conn_type = NNS_EDGE_CONNECT_TYPE_UNKNOWN;
-  edge_info->id = NULL;
-
-  _mlrs_get_edge_info (option, edge_info);
-
-  remote_s = g_new0 (_ml_remote_service_s, 1);
-  remote_s->node_type = edge_info->node_type;
-  remote_s->event_cb = cb;
-  remote_s->user_data = user_data;
   if (ML_ERROR_NONE == ml_option_get (option, "path", (void **) (&_path))) {
     if (!g_file_test (_path, G_FILE_TEST_IS_DIR)) {
       _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -617,23 +610,37 @@ ml_service_remote_create (ml_option_h option, ml_service_event_cb cb,
       _ml_error_report_return (ML_ERROR_PERMISSION_DENIED,
           "Write permission denied, path: %s", _path);
     }
-    remote_s->path = g_strdup (_path);
   }
+
+  mls = _ml_service_create_internal (ML_SERVICE_TYPE_REMOTE);
+  if (mls == NULL) {
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Failed to allocate memory for the service handle. Out of memory?");
+  }
+
+  mls->priv = remote_s = g_try_new0 (_ml_remote_service_s, 1);
+  if (remote_s == NULL) {
+    _ml_service_destroy_internal (mls);
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Failed to allocate memory for the service handle's private data. Out of memory?");
+  }
+
+  _mlrs_get_edge_info (option, &edge_info);
+
+  remote_s->node_type = edge_info->node_type;
+  remote_s->event_cb = cb;
+  remote_s->user_data = user_data;
+  remote_s->path = g_strdup (_path);
 
   ret = _mlrs_create_edge_handle (remote_s, edge_info);
-  if (ML_ERROR_NONE != ret) {
-    return ret;
-  }
-
-  mls = g_new0 (ml_service_s, 1);
-  mls->type = ML_SERVICE_TYPE_REMOTE;
-  mls->priv = g_steal_pointer (&remote_s);
-
-  *handle = mls;
+  if (ret != ML_ERROR_NONE)
+    _ml_service_destroy_internal (mls);
+  else
+    *handle = mls;
 
   _mlrs_release_edge_info (edge_info);
 
-  return ML_ERROR_NONE;
+  return ret;
 }
 
 /**
@@ -656,9 +663,9 @@ ml_service_remote_register (ml_service_h handle, ml_option_h option, void *data,
   check_feature_state (ML_FEATURE_SERVICE);
   check_feature_state (ML_FEATURE_INFERENCE);
 
-  if (!handle) {
+  if (!_ml_service_handle_is_valid (mls)) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'handle' is NULL. It should be a valid ml_service_h.");
+        "The parameter, 'handle' (ml_service_h), is invalid. It should be a valid ml_service_h instance.");
   }
 
   if (!option) {

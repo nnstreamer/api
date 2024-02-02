@@ -59,28 +59,28 @@ _sink_callback_for_query_client (const ml_tensors_data_h data,
  * @brief Internal function to release ml-service query data.
  */
 int
-ml_service_query_release_internal (void *priv)
+ml_service_query_release_internal (ml_service_s * mls)
 {
-  _ml_service_query_s *query = (_ml_service_query_s *) priv;
+  _ml_service_query_s *query = (_ml_service_query_s *) mls->priv;
   ml_tensors_data_h data_h;
 
+  /* Supposed internal function call to release handle. */
   if (!query)
-    return ML_ERROR_INVALID_PARAMETER;
+    return ML_ERROR_NONE;
 
-  if (ml_pipeline_src_release_handle (query->src_h))
-    _ml_error_report ("Failed to release src handle");
-
-  if (ml_pipeline_sink_unregister (query->sink_h))
-    _ml_error_report ("Failed to unregister sink handle");
-
-  if (ml_pipeline_destroy (query->pipe_h))
-    _ml_error_report ("Failed to destroy pipeline");
-
-  while ((data_h = g_async_queue_try_pop (query->out_data_queue))) {
-    ml_tensors_data_destroy (data_h);
+  if (query->pipe_h) {
+    if (ml_pipeline_destroy (query->pipe_h))
+      _ml_error_report ("Failed to destroy pipeline");
   }
 
-  g_async_queue_unref (query->out_data_queue);
+  if (query->out_data_queue) {
+    while ((data_h = g_async_queue_try_pop (query->out_data_queue))) {
+      ml_tensors_data_destroy (data_h);
+    }
+
+    g_async_queue_unref (query->out_data_queue);
+  }
+
   g_free (query);
 
   return ML_ERROR_NONE;
@@ -94,11 +94,11 @@ ml_service_query_create (ml_option_h option, ml_service_h * handle)
 {
   int status = ML_ERROR_NONE;
 
-  gchar *description = NULL;
+  g_autofree gchar *description = NULL;
   void *value;
 
   GString *tensor_query_client_prop;
-  gchar *prop = NULL;
+  g_autofree gchar *prop = NULL;
 
   ml_service_s *mls;
 
@@ -106,7 +106,7 @@ ml_service_query_create (ml_option_h option, ml_service_h * handle)
   ml_pipeline_h pipe_h;
   ml_pipeline_src_h src_h;
   ml_pipeline_sink_h sink_h;
-  gchar *caps = NULL;
+  g_autofree gchar *caps = NULL;
   guint timeout = 1000U;        /* default 1s timeout */
 
   check_feature_state (ML_FEATURE_SERVICE);
@@ -120,6 +120,19 @@ ml_service_query_create (ml_option_h option, ml_service_h * handle)
   if (!handle) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'handle' (ml_service_h), is NULL. It should be a valid ml_service_h.");
+  }
+
+  mls = _ml_service_create_internal (ML_SERVICE_TYPE_CLIENT_QUERY);
+  if (mls == NULL) {
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Failed to allocate memory for the service handle. Out of memory?");
+  }
+
+  mls->priv = query_s = g_try_new0 (_ml_service_query_s, 1);
+  if (query_s == NULL) {
+    _ml_service_destroy_internal (mls);
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Failed to allocate memory for the service handle's private data. Out of memory?");
   }
 
   tensor_query_client_prop = g_string_new (NULL);
@@ -154,6 +167,7 @@ ml_service_query_create (ml_option_h option, ml_service_h * handle)
 
   if (ML_ERROR_NONE != ml_option_get (option, "caps", &value)) {
     g_string_free (tensor_query_client_prop, TRUE);
+    _ml_service_destroy_internal (mls);
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The option 'caps' must be set before call ml_service_query_create.");
   }
@@ -165,34 +179,31 @@ ml_service_query_create (ml_option_h option, ml_service_h * handle)
       ("appsrc name=srcx caps=%s ! tensor_query_client %s name=qcx ! tensor_sink name=sinkx async=false sync=false",
       caps, prop);
 
-  g_free (caps);
-  g_free (prop);
-
   status = ml_pipeline_construct (description, NULL, NULL, &pipe_h);
-  g_free (description);
   if (ML_ERROR_NONE != status) {
+    _ml_service_destroy_internal (mls);
     _ml_error_report_return (status, "Failed to construct pipeline");
   }
 
   status = ml_pipeline_start (pipe_h);
   if (ML_ERROR_NONE != status) {
-    _ml_error_report ("Failed to start pipeline");
     ml_pipeline_destroy (pipe_h);
-    return status;
+    _ml_service_destroy_internal (mls);
+    _ml_error_report_return (status, "Failed to start pipeline");
   }
 
   status = ml_pipeline_src_get_handle (pipe_h, "srcx", &src_h);
   if (ML_ERROR_NONE != status) {
     ml_pipeline_destroy (pipe_h);
+    _ml_service_destroy_internal (mls);
     _ml_error_report_return (status, "Failed to get src handle");
   }
 
-  query_s = g_new0 (_ml_service_query_s, 1);
   status = ml_pipeline_sink_register (pipe_h, "sinkx",
       _sink_callback_for_query_client, query_s, &sink_h);
   if (ML_ERROR_NONE != status) {
     ml_pipeline_destroy (pipe_h);
-    g_free (query_s);
+    _ml_service_destroy_internal (mls);
     _ml_error_report_return (status, "Failed to register sink handle");
   }
 
@@ -201,10 +212,6 @@ ml_service_query_create (ml_option_h option, ml_service_h * handle)
   query_s->src_h = src_h;
   query_s->sink_h = sink_h;
   query_s->out_data_queue = g_async_queue_new ();
-
-  mls = g_new0 (ml_service_s, 1);
-  mls->type = ML_SERVICE_TYPE_CLIENT_QUERY;
-  mls->priv = query_s;
 
   *handle = mls;
 
@@ -225,9 +232,9 @@ ml_service_query_request (ml_service_h handle, const ml_tensors_data_h input,
   check_feature_state (ML_FEATURE_SERVICE);
   check_feature_state (ML_FEATURE_INFERENCE);
 
-  if (!handle)
+  if (!_ml_service_handle_is_valid (mls))
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'handle' is NULL. It should be a valid ml_service_h");
+        "The parameter, 'handle' (ml_service_h), is invalid. It should be a valid ml_service_h instance.");
   if (!input)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'input' (ml_tensors_data_h), is NULL. It should be a valid ml_tensors_data_h.");

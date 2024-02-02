@@ -40,6 +40,28 @@ extern "C" {
  */
 
 /**
+ * @brief A handle for ml-service instance.
+ * @since_tizen 7.0
+ */
+typedef void *ml_service_h;
+
+/**
+ * @brief Destroys the given service handle.
+ * @details If given service handle is created by ml_service_launch_pipeline(), this requests machine learning agent daemon to destroy the pipeline.
+ * @since_tizen 7.0
+ * @param[in] handle The service handle.
+ * @return @c 0 on Success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
+ * @retval #ML_ERROR_STREAMS_PIPE Failed to access the pipeline state.
+ */
+int ml_service_destroy (ml_service_h handle);
+
+/****************************************************
+ ** API for AI pipeline                            **
+ ****************************************************/
+/**
  * @brief Sets the pipeline description with a given name.
  * @since_tizen 7.0
  * @remarks If the name already exists, the pipeline description is overwritten. Overwriting an existing description is restricted to APP/service that set it. However, users should keep their @a name unexposed to prevent unexpected overwriting.
@@ -116,12 +138,6 @@ int ml_service_get_pipeline (const char *name, char **pipeline_desc);
 int ml_service_delete_pipeline (const char *name);
 
 /**
- * @brief A handle for ml-service instance.
- * @since_tizen 7.0
- */
-typedef void *ml_service_h;
-
-/**
  * @brief Launches the pipeline of given service and gets the service handle.
  * @details This requests machine learning agent daemon to launch a new pipeline of given service. The pipeline of service @a name should be set.
  * @since_tizen 7.0
@@ -165,19 +181,6 @@ int ml_service_start_pipeline (ml_service_h handle);
 int ml_service_stop_pipeline (ml_service_h handle);
 
 /**
- * @brief Destroys the given service handle.
- * @details If given service handle is created by ml_service_launch_pipeline(), this requests machine learning agent daemon to destroy the pipeline.
- * @since_tizen 7.0
- * @param[in] handle The service handle.
- * @return @c 0 on Success. Otherwise a negative error value.
- * @retval #ML_ERROR_NONE Successful.
- * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
- * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
- * @retval #ML_ERROR_STREAMS_PIPE Failed to access the pipeline state.
- */
-int ml_service_destroy (ml_service_h handle);
-
-/**
  * @brief Gets the state of given handle's pipeline.
  * @since_tizen 7.0
  * @param[in] handle The service handle.
@@ -190,6 +193,9 @@ int ml_service_destroy (ml_service_h handle);
  */
 int ml_service_get_pipeline_state (ml_service_h handle, ml_pipeline_state_e *state);
 
+/****************************************************
+ ** API for among-device AI service                **
+ ****************************************************/
 /**
  * @brief Creates query service handle with given ml-option handle.
  * @since_tizen 7.0
@@ -224,6 +230,9 @@ int ml_service_query_create (ml_option_h option, ml_service_h *handle);
  */
 int ml_service_query_request (ml_service_h handle, const ml_tensors_data_h input, ml_tensors_data_h *output);
 
+/****************************************************
+ ** API for managing AI models                     **
+ ****************************************************/
 /**
  * @brief Registers new information of a neural network model.
  * @since_tizen 8.0
@@ -371,6 +380,9 @@ int ml_service_model_get_all (const char *name, ml_information_list_h *info_list
  */
 int ml_service_model_delete (const char *name, const unsigned int version);
 
+/****************************************************
+ ** API for managing AI data files                 **
+ ****************************************************/
 /**
  * @brief Adds new information of machine learning resources those contain images, audio samples, binary files, and so on.
  * @since_tizen 8.0
