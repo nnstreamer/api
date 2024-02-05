@@ -102,7 +102,7 @@ nns_capi_dep = declare_dependency(link_with: nns_capi_lib,
 
 # Service API
 if get_option('enable-ml-service')
-  ml_service_deps = [nns_capi_dep, ml_agent_dep, gio_dep, json_glib_dep]
+  ml_service_deps = [nns_capi_dep, gio_dep, mlops_agent_dep, json_glib_dep]
   if support_remote_service
     ml_service_deps += [nnstreamer_edge_dep, curl_dep]
   endif

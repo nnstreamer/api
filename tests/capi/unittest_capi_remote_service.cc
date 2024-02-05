@@ -28,6 +28,7 @@ class MLRemoteService : public ::testing::Test
 {
   protected:
   GTestDBus *dbus;
+  GBusType bus_type;
 
   public:
   /**
@@ -35,9 +36,7 @@ class MLRemoteService : public ::testing::Test
    */
   void SetUp () override
   {
-    g_autofree gchar *current_dir = g_get_current_dir ();
-    g_autofree gchar *services_dir
-        = g_build_filename (current_dir, "tests/services", NULL);
+    g_autofree gchar *services_dir = g_build_filename ("/usr/bin/ml-test/services", NULL);
 
     dbus = g_test_dbus_new (G_TEST_DBUS_NONE);
     ASSERT_NE (nullptr, dbus);
@@ -45,6 +44,11 @@ class MLRemoteService : public ::testing::Test
     g_test_dbus_add_service_dir (dbus, services_dir);
 
     g_test_dbus_up (dbus);
+#if defined(ENABLE_GCOV)
+    bus_type = G_BUS_TYPE_SYSTEM;
+#else
+    bus_type = G_BUS_TYPE_SESSION;
+#endif
   }
 
   /**
@@ -199,7 +203,7 @@ TEST_F (MLRemoteService, registerPipeline)
   status = ml_option_set (server_option_h, "connect-type", server_connect_type, g_free);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  g_autofree gchar *pipeline_desc = g_strdup ("fakesrc ! fakesink");
+  gchar *pipeline_desc = g_strdup ("fakesrc ! fakesink");
 
   status = ml_service_remote_create (
       server_option_h, _ml_service_event_cb, pipeline_desc, &server_h);
@@ -232,6 +236,8 @@ TEST_F (MLRemoteService, registerPipeline)
   EXPECT_EQ (ML_ERROR_NONE, status);
   status = ml_option_destroy (client_option_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
+
+  g_free (pipeline_desc);
 }
 
 /**
@@ -409,7 +415,6 @@ TEST_F (MLRemoteService, registerInvalidParam_n)
   gchar *service_key = g_strdup ("pipeline_test_key");
   ml_option_set (remote_service_option_h, "service-key", service_key, g_free);
 
-  g_autofree gchar *pipeline_desc = g_strdup ("fakesrc ! fakesink");
   status = ml_service_remote_register (NULL, remote_service_option_h, str, len);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 

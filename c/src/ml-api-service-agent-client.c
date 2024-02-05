@@ -13,7 +13,8 @@
 #include <glib/gstdio.h>
 #include <json-glib/json-glib.h>
 
-#include "ml-agent-interface.h"
+#include <ml/mlops-agent-interface.h>
+
 #include "ml-api-internal.h"
 #include "ml-api-service-private.h"
 #include "ml-api-service.h"
@@ -291,7 +292,6 @@ int
 ml_service_set_pipeline (const char *name, const char *pipeline_desc)
 {
   int ret = ML_ERROR_NONE;
-  g_autoptr (GError) err = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
@@ -305,10 +305,9 @@ ml_service_set_pipeline (const char *name, const char *pipeline_desc)
         "The parameter, 'pipeline_desc' is NULL. It should be a valid string.");
   }
 
-  ret = ml_agent_pipeline_set_description (name, pipeline_desc, &err);
+  ret = ml_agent_pipeline_set_description (name, pipeline_desc);
   if (ret < 0) {
-    _ml_error_report ("Failed to invoke the method set_pipeline (%s).",
-        err ? err->message : "Unknown error");
+    _ml_error_report ("Failed to invoke the method set_pipeline.");
   }
 
   return ret;
@@ -321,7 +320,6 @@ int
 ml_service_get_pipeline (const char *name, char **pipeline_desc)
 {
   int ret = ML_ERROR_NONE;
-  g_autoptr (GError) err = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
@@ -340,10 +338,9 @@ ml_service_get_pipeline (const char *name, char **pipeline_desc)
     *pipeline_desc = NULL;
   }
 
-  ret = ml_agent_pipeline_get_description (name, pipeline_desc, &err);
+  ret = ml_agent_pipeline_get_description (name, pipeline_desc);
   if (ret < 0) {
-    _ml_error_report ("Failed to invoke the method get_pipeline (%s).",
-        err ? err->message : "Unknown error");
+    _ml_error_report ("Failed to invoke the method get_pipeline.");
   }
 
   return ret;
@@ -356,7 +353,6 @@ int
 ml_service_delete_pipeline (const char *name)
 {
   int ret = ML_ERROR_NONE;
-  g_autoptr (GError) err = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
@@ -365,10 +361,9 @@ ml_service_delete_pipeline (const char *name)
         "The parameter, 'name' is NULL, It should be a valid string.");
   }
 
-  ret = ml_agent_pipeline_delete (name, &err);
+  ret = ml_agent_pipeline_delete (name);
   if (ret < 0) {
-    _ml_error_report ("Failed to invoke the method delete_pipeline (%s).",
-        err ? err->message : "Unknown error");
+    _ml_error_report ("Failed to invoke the method delete_pipeline.");
   }
 
   return ret;
@@ -383,7 +378,6 @@ ml_service_launch_pipeline (const char *name, ml_service_h * handle)
   int ret = ML_ERROR_NONE;
   ml_service_s *mls;
   _ml_service_server_s *server;
-  g_autoptr (GError) err = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
@@ -410,12 +404,11 @@ ml_service_launch_pipeline (const char *name, ml_service_h * handle)
         "Failed to allocate memory for the service handle's private data. Out of memory?");
   }
 
-  ret = ml_agent_pipeline_launch (name, &(server->id), &err);
+  ret = ml_agent_pipeline_launch (name, &(server->id));
   if (ret < 0) {
     _ml_service_destroy_internal (mls);
     _ml_error_report_return (ret,
-        "Failed to invoke the method launch_pipeline (%s).",
-        (err ? err->message : "Unknown error"));
+        "Failed to invoke the method launch_pipeline.");
   }
 
   server->service_name = g_strdup (name);
@@ -433,7 +426,6 @@ ml_service_start_pipeline (ml_service_h handle)
   int ret = ML_ERROR_NONE;
   ml_service_s *mls = (ml_service_s *) handle;
   _ml_service_server_s *server;
-  g_autoptr (GError) err = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
@@ -443,10 +435,9 @@ ml_service_start_pipeline (ml_service_h handle)
   }
 
   server = (_ml_service_server_s *) mls->priv;
-  ret = ml_agent_pipeline_start (server->id, &err);
+  ret = ml_agent_pipeline_start (server->id);
   if (ret < 0) {
-    _ml_error_report ("Failed to invoke the method start_pipeline (%s).",
-        err ? err->message : "Unknown error");
+    _ml_error_report ("Failed to invoke the method start_pipeline.");
   }
 
   return ret;
@@ -461,7 +452,6 @@ ml_service_stop_pipeline (ml_service_h handle)
   int ret = ML_ERROR_NONE;
   ml_service_s *mls = (ml_service_s *) handle;
   _ml_service_server_s *server;
-  g_autoptr (GError) err = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
@@ -471,10 +461,9 @@ ml_service_stop_pipeline (ml_service_h handle)
   }
 
   server = (_ml_service_server_s *) mls->priv;
-  ret = ml_agent_pipeline_stop (server->id, &err);
+  ret = ml_agent_pipeline_stop (server->id);
   if (ret < 0) {
-    _ml_error_report ("Failed to invoke the method stop_pipeline (%s).",
-        err ? err->message : "Unknown error");
+    _ml_error_report ("Failed to invoke the method stop_pipeline.");
   }
 
   return ret;
@@ -490,7 +479,6 @@ ml_service_get_pipeline_state (ml_service_h handle, ml_pipeline_state_e * state)
   gint _state = ML_PIPELINE_STATE_UNKNOWN;
   ml_service_s *mls = (ml_service_s *) handle;
   _ml_service_server_s *server;
-  g_autoptr (GError) err = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
@@ -506,10 +494,9 @@ ml_service_get_pipeline_state (ml_service_h handle, ml_pipeline_state_e * state)
   }
 
   server = (_ml_service_server_s *) mls->priv;
-  ret = ml_agent_pipeline_get_state (server->id, &_state, &err);
+  ret = ml_agent_pipeline_get_state (server->id, &_state);
   if (ret < 0) {
-    _ml_error_report ("Failed to invoke the method get_state (%s).",
-        err ? err->message : "Unknown error");
+    _ml_error_report ("Failed to invoke the method get_state.");
   }
 
   *state = (ml_pipeline_state_e) _state;
@@ -523,7 +510,6 @@ int
 ml_service_pipeline_release_internal (ml_service_s * mls)
 {
   _ml_service_server_s *server = (_ml_service_server_s *) mls->priv;
-  g_autoptr (GError) err = NULL;
   int ret;
 
   /* Supposed internal function call to release handle. */
@@ -531,11 +517,10 @@ ml_service_pipeline_release_internal (ml_service_s * mls)
     return ML_ERROR_NONE;
 
   if (server->id > 0) {
-    ret = ml_agent_pipeline_destroy (server->id, &err);
+    ret = ml_agent_pipeline_destroy (server->id);
     if (ret < 0) {
       _ml_error_report_return (ret,
-          "Failed to invoke the method destroy_pipeline (%s).",
-          err ? err->message : "Unknown error");
+          "Failed to invoke the method destroy_pipeline.");
     }
   }
 
@@ -555,7 +540,6 @@ ml_service_model_register (const char *name, const char *path,
 {
   int ret = ML_ERROR_NONE;
   g_autofree gchar *app_info = NULL;
-  g_autoptr (GError) err = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
@@ -577,10 +561,9 @@ ml_service_model_register (const char *name, const char *path,
   app_info = _get_app_info ();
 
   ret = ml_agent_model_register (name, path, activate,
-      description ? description : "", app_info ? app_info : "", version, &err);
+      description ? description : "", app_info ? app_info : "", version);
   if (ret < 0) {
-    _ml_error_report ("Failed to invoke the method model_register (%s).",
-        err ? err->message : "Unknown error");
+    _ml_error_report ("Failed to invoke the method model_register.");
   }
 
   return ret;
@@ -594,7 +577,6 @@ ml_service_model_update_description (const char *name,
     const unsigned int version, const char *description)
 {
   int ret = ML_ERROR_NONE;
-  g_autoptr (GError) err = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
@@ -613,11 +595,9 @@ ml_service_model_update_description (const char *name,
         "The parameter, 'description' is NULL. It should be a valid string.");
   }
 
-  ret = ml_agent_model_update_description (name, version, description, &err);
+  ret = ml_agent_model_update_description (name, version, description);
   if (ret < 0) {
-    _ml_error_report
-        ("Failed to invoke the method model_update_description (%s).",
-        err ? err->message : "Unknown error");
+    _ml_error_report ("Failed to invoke the method model_update_description.");
   }
 
   return ret;
@@ -630,7 +610,6 @@ int
 ml_service_model_activate (const char *name, const unsigned int version)
 {
   int ret = ML_ERROR_NONE;
-  g_autoptr (GError) err = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
@@ -644,10 +623,9 @@ ml_service_model_activate (const char *name, const unsigned int version)
         "The parameter, 'version' is 0. It should be a valid unsigned int.");
   }
 
-  ret = ml_agent_model_activate (name, version, &err);
+  ret = ml_agent_model_activate (name, version);
   if (ret < 0) {
-    _ml_error_report ("Failed to invoke the method model_activate (%s).",
-        err ? err->message : "Unknown error");
+    _ml_error_report ("Failed to invoke the method model_activate.");
   }
 
   return ret;
@@ -662,7 +640,6 @@ ml_service_model_get (const char *name, const unsigned int version,
 {
   int ret = ML_ERROR_NONE;
   ml_information_h _info = NULL;
-  g_autoptr (GError) err = NULL;
   g_autofree gchar *description = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
@@ -682,10 +659,9 @@ ml_service_model_get (const char *name, const unsigned int version,
   }
   *info = NULL;
 
-  ret = ml_agent_model_get (name, version, &description, &err);
+  ret = ml_agent_model_get (name, version, &description);
   if (ML_ERROR_NONE != ret || !description) {
-    _ml_error_report ("Failed to invoke the method model_get (%s).",
-        err ? err->message : "Unknown error");
+    _ml_error_report ("Failed to invoke the method model_get.");
     return ret;
   }
 
@@ -707,7 +683,6 @@ ml_service_model_get_activated (const char *name, ml_information_h * info)
   int ret = ML_ERROR_NONE;
 
   ml_information_h _info = NULL;
-  g_autoptr (GError) err = NULL;
   g_autofree gchar *description = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
@@ -727,10 +702,9 @@ ml_service_model_get_activated (const char *name, ml_information_h * info)
   }
   *info = NULL;
 
-  ret = ml_agent_model_get_activated (name, &description, &err);
+  ret = ml_agent_model_get_activated (name, &description);
   if (ML_ERROR_NONE != ret || !description) {
-    _ml_error_report ("Failed to invoke the method model_get_activated (%s).",
-        err ? err->message : "Unknown error");
+    _ml_error_report ("Failed to invoke the method model_get_activated.");
     return ret;
   }
 
@@ -750,7 +724,6 @@ int
 ml_service_model_get_all (const char *name, ml_information_list_h * info_list)
 {
   g_autofree gchar *description = NULL;
-  g_autoptr (GError) err = NULL;
   ml_information_list_h _info_list = NULL;
   int ret = ML_ERROR_NONE;
 
@@ -767,11 +740,9 @@ ml_service_model_get_all (const char *name, ml_information_list_h * info_list)
   }
   *info_list = NULL;
 
-  ret = ml_agent_model_get_all (name, &description, &err);
+  ret = ml_agent_model_get_all (name, &description);
   if (ML_ERROR_NONE != ret || !description) {
-    _ml_error_report_return (ret,
-        "Failed to invoke the method model_get_all (%s).",
-        err ? err->message : "Unknown error");
+    _ml_error_report_return (ret, "Failed to invoke the method model_get_all.");
   }
 
   ret = _build_ml_info_from_json_cstr (description, &_info_list);
@@ -790,7 +761,6 @@ int
 ml_service_model_delete (const char *name, const unsigned int version)
 {
   int ret = ML_ERROR_NONE;
-  g_autoptr (GError) err = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
@@ -799,10 +769,9 @@ ml_service_model_delete (const char *name, const unsigned int version)
         "The parameter, 'name' is NULL. It should be a valid string.");
   }
 
-  ret = ml_agent_model_delete (name, version, &err);
+  ret = ml_agent_model_delete (name, version);
   if (ret < 0) {
-    _ml_error_report ("Failed to invoke the method model_delete (%s).",
-        err ? err->message : "Unknown error");
+    _ml_error_report ("Failed to invoke the method model_delete.");
   }
 
   return ret;
@@ -817,7 +786,6 @@ ml_service_resource_add (const char *name, const char *path,
 {
   int ret = ML_ERROR_NONE;
   g_autofree gchar *app_info = NULL;
-  g_autoptr (GError) err = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
@@ -833,10 +801,9 @@ ml_service_resource_add (const char *name, const char *path,
   app_info = _get_app_info ();
 
   ret = ml_agent_resource_add (name, path, description ? description : "",
-      app_info ? app_info : "", &err);
+      app_info ? app_info : "");
   if (ret < 0) {
-    _ml_error_report ("Failed to invoke the method resource_add (%s).",
-        err ? err->message : "Unknown error");
+    _ml_error_report ("Failed to invoke the method resource_add.");
   }
 
   return ret;
@@ -849,7 +816,6 @@ int
 ml_service_resource_delete (const char *name)
 {
   int ret = ML_ERROR_NONE;
-  g_autoptr (GError) err = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
@@ -858,10 +824,9 @@ ml_service_resource_delete (const char *name)
         "The parameter, 'name' is NULL. It should be a valid string.");
   }
 
-  ret = ml_agent_resource_delete (name, &err);
+  ret = ml_agent_resource_delete (name);
   if (ret < 0) {
-    _ml_error_report ("Failed to invoke the method resource_delete (%s).",
-        err ? err->message : "Unknown error");
+    _ml_error_report ("Failed to invoke the method resource_delete.");
   }
 
   return ret;
@@ -876,7 +841,6 @@ ml_service_resource_get (const char *name, ml_information_list_h * res)
   int ret = ML_ERROR_NONE;
   ml_information_list_h _info_list = NULL;
   g_autofree gchar *res_info = NULL;
-  g_autoptr (GError) err = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
@@ -895,11 +859,9 @@ ml_service_resource_get (const char *name, ml_information_list_h * res)
   }
   *res = NULL;
 
-  ret = ml_agent_resource_get (name, &res_info, &err);
+  ret = ml_agent_resource_get (name, &res_info);
   if (ML_ERROR_NONE != ret || !res_info) {
-    _ml_error_report_return (ret,
-        "Failed to invoke the method resource_get (%s).",
-        err ? err->message : "Unknown error");
+    _ml_error_report_return (ret, "Failed to invoke the method resource_get.");
   }
 
   ret = _build_ml_info_from_json_cstr (res_info, &_info_list);

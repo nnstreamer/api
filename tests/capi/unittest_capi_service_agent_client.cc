@@ -17,9 +17,6 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 
-/** @todo remove below header after deleting ml-agent from api repo. */
-#include "gdbus-util.h"
-
 /**
  * @brief Test base class for Database of ML Service API.
  */
@@ -35,14 +32,12 @@ class MLServiceAgentTest : public ::testing::Test
    */
   void SetUp () override
   {
-    gchar *current_dir = g_get_current_dir ();
-    gchar *services_dir = g_build_filename (current_dir, "tests/services", NULL);
+    g_autofree gchar *services_dir = g_build_filename ("/usr/bin/ml-test/services", NULL);
+
     dbus = g_test_dbus_new (G_TEST_DBUS_NONE);
     ASSERT_NE (nullptr, dbus);
 
     g_test_dbus_add_service_dir (dbus, services_dir);
-    g_free (current_dir);
-    g_free (services_dir);
 
     g_test_dbus_up (dbus);
 #if defined(ENABLE_GCOV)
@@ -1489,14 +1484,6 @@ TEST (MLServiceAgentTestDbusUnconnected, pipeline_n)
 {
   int status;
 
-  /**
-   * FIXME: The following line blocks this test from running
-   * with the ml-agent daemon, not the test daemon.
-   */
-  if (!gdbus_get_system_connection (false)) {
-    return;
-  }
-
   status = ml_service_set_pipeline ("test", "test");
   EXPECT_EQ (ML_ERROR_IO_ERROR, status);
 
@@ -1542,14 +1529,6 @@ TEST (MLServiceAgentTestDbusUnconnected, model_n)
 
   const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   unsigned int version;
-
-  /**
-   * FIXME: The following line blocks this test from running
-   * with the ml-agent daemon, not the test daemon.
-   */
-  if (!gdbus_get_system_connection (false)) {
-    return;
-  }
 
   /* ml_service_model_register() requires absolute path to model, ignore this case. */
   if (root_path == NULL)

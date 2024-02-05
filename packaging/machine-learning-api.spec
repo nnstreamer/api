@@ -67,7 +67,6 @@ Packager:	MyungJoo Ham <myungjoo.ham@samsung.com>
 License:	Apache-2.0
 Source0:	machine-learning-api-%{version}.tar
 Source1001:	capi-machine-learning.manifest
-Source1002:	machine-learning-agent.manifest
 
 ## Define build requirements ##
 Requires:	nnstreamer
@@ -164,16 +163,17 @@ BuildRequires:	nnstreamer-onnxruntime
 BuildRequires:	ncnn-devel
 BuildRequires:	nnstreamer-ncnn
 %endif
+%if 0%{?enable_ml_service}
+BuildRequires:	mlops-agent-test
+%endif
 %endif # unit_test
 
 %if 0%{?enable_ml_service}
-BuildRequires:  pkgconfig(libsystemd)
-BuildRequires:  pkgconfig(sqlite3)
-BuildRequires:  pkgconfig(json-glib-1.0)
-BuildRequires:  dbus
-BuildRequires:  pkgconfig(capi-appfw-package-manager)
 BuildRequires:	pkgconfig(capi-appfw-app-common)
-BuildRequires:	pkgconfig(libtzplatform-config)
+BuildRequires:	pkgconfig(json-glib-1.0)
+BuildRequires:	pkgconfig(mlops-agent)
+
+Requires:	mlops-agent
 %endif
 
 %if 0%{?nnstreamer_edge_support}
@@ -252,26 +252,6 @@ Requires:	capi-machine-learning-inference-devel = %{version}-%{release}
 Tizen internal headers for Tizen Machine Learning API.
 
 %if 0%{?enable_ml_service}
-%package -n libmachine-learning-agent
-Summary:	Library that exports interfaces provided by Machine Learning Agent Service
-Group:		Machine Learning/ML Framework = %{version}-%{release}
-%description -n libmachine-learning-agent
-Shared library to export interfaces provided by the Machine Learning Agent Service.
-
-%package -n libmachine-learning-agent-devel
-Summary:	Development headers and static library for interfaces provided by Machine Learning Agent Service
-Group:		Machine Learning/ML Framework
-Requires:	libmachine-learning-agent  = %{version}-%{release}
-%description -n libmachine-learning-agent-devel
-Development headers and static library for interfaces provided by Machine Learning Agent Service.
-
-%package -n machine-learning-agent
-Summary:    AI Service Daemon
-Group:		Machine Learning/ML Framework
-Requires:	libmachine-learning-agent = %{version}-%{release}
-%description -n machine-learning-agent
-AI Service Daemon
-
 %package -n capi-machine-learning-service
 Summary:	Tizen Machine Learning Service API
 Group:		Machine Learning/ML Framework
@@ -325,12 +305,7 @@ HTML pages of lcov results of ML API generated during rpm build
 %define enable_tizen_privilege_check -Denable-tizen-privilege-check=false
 %define enable_tizen_feature_check -Denable-tizen-feature-check=false
 %define enable_ml_service_check -Denable-ml-service=false
-%define service_db_path ""
-%define service_db_key_prefix %{nil}
 %define enable_gcov -Denable-gcov=false
-
-# To set prefix, use this line
-### define service_db_key_prefix -Dservice-db-key-prefix='some-prefix'
 
 %if %{with tizen}
 %define enable_tizen -Denable-tizen=true -Dtizen-version-major=0%{?tizen_version_major} -Dtizen-version-minor=0%{?tizen_version_minor}
@@ -342,7 +317,6 @@ HTML pages of lcov results of ML API generated during rpm build
 %if 0%{?enable_tizen_feature}
 %define enable_tizen_feature_check -Denable-tizen-feature-check=true
 %endif
-%define service_db_path -Dservice-db-path=%{TZ_SYS_GLOBALUSER_DB}
 
 %if 0%{?enable_ml_service}
 %define enable_ml_service_check -Denable-ml-service=true
@@ -356,10 +330,6 @@ HTML pages of lcov results of ML API generated during rpm build
 %prep
 %setup -q
 cp %{SOURCE1001} .
-
-%if 0%{?enable_ml_service}
-cp %{SOURCE1002} .
-%endif
 
 %build
 # Remove compiler flags for meson to decide the cpp version
@@ -398,14 +368,13 @@ meson --buildtype=plain --prefix=%{_prefix} --sysconfdir=%{_sysconfdir} --libdir
 	--bindir=%{_bindir} --includedir=%{_includedir} \
 	%{enable_test} %{install_test} %{enable_test_coverage} \
 	%{enable_tizen} %{enable_tizen_privilege_check} %{enable_tizen_feature_check} \
-	%{service_db_path} %{service_db_key_prefix} %{enable_ml_service_check} \
-	%{enable_gcov} \
+	%{enable_ml_service_check}  %{enable_gcov} \
 	build
 
 ninja -C build %{?_smp_mflags}
 
 export MLAPI_SOURCE_ROOT_PATH=$(pwd)
-export MLAPI_BUILD_ROOT_PATH=$(pwd)/%{builddir}
+export MLAPI_BUILD_ROOT_PATH=$(pwd)/build
 
 # Run test
 # If gcov package generation is enabled, pass the test from GBS.
@@ -415,9 +384,6 @@ bash %{test_script} ./tests/capi/unittest_capi_inference
 bash %{test_script} ./tests/capi/unittest_capi_datatype_consistency
 
 %if 0%{?enable_ml_service}
-bash %{test_script} ./tests/daemon/unittest_ml_agent
-bash %{test_script} ./tests/daemon/unittest_service_db
-bash %{test_script} ./tests/daemon/unittest_gdbus_util
 bash %{test_script} ./tests/capi/unittest_capi_service_agent_client
 %if 0%{?nnstreamer_edge_support}
 bash %{test_script} ./tests/capi/unittest_capi_remote_service
@@ -524,24 +490,6 @@ install -m 0755 packaging/run-unittest.sh %{buildroot}%{_bindir}/tizen-unittests
 %{_includedir}/nnstreamer/nnstreamer-tizen-internal.h
 
 %if 0%{?enable_ml_service}
-%files -n libmachine-learning-agent
-%manifest machine-learning-agent.manifest
-%{_libdir}/libml-agent.so.*
-
-%files -n libmachine-learning-agent-devel
-%manifest machine-learning-agent.manifest
-%{_libdir}/libml-agent.so
-%{_libdir}/libml-agent.a
-%{_includedir}/ml-agent/ml-agent-interface.h
-%{_libdir}/pkgconfig/ml-agent.pc
-
-%files -n machine-learning-agent
-%manifest machine-learning-agent.manifest
-%attr(0755,root,root) %{_bindir}/machine-learning-agent
-%attr(0644,root,root) %{_unitdir}/machine-learning-agent.service
-%attr(0644,root,root) %config %{_sysconfdir}/dbus-1/system.d/machine-learning-agent.conf
-%attr(0644,root,root) %{_datadir}/dbus-1/system-services/org.tizen.machinelearning.service.service
-
 %files -n capi-machine-learning-service
 %manifest capi-machine-learning.manifest
 %{_libdir}/libcapi-ml-service.so.*
@@ -561,8 +509,6 @@ install -m 0755 packaging/run-unittest.sh %{buildroot}%{_bindir}/tizen-unittests
 %files -n capi-machine-learning-unittests
 %manifest capi-machine-learning.manifest
 %{_bindir}/unittest-ml
-%{_libdir}/libml-agent-test.a
-%{_libdir}/libml-agent-test.so*
 %{_libdir}/libunittest_mock.so*
 %if 0%{?gcov:1}
 %{_bindir}/tizen-unittests/%{name}/run-unittest.sh

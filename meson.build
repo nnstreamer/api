@@ -33,9 +33,8 @@ nnstreamer_dep = dependency('nnstreamer')
 
 support_remote_service = false
 if get_option('enable-ml-service')
-  libsystemd_dep = dependency('libsystemd')
-  sqlite_dep = dependency('sqlite3')
   json_glib_dep = dependency('json-glib-1.0')
+  mlops_agent_dep = dependency('mlops-agent')
   nnstreamer_edge_dep = dependency('nnstreamer-edge', required: false)
   curl_dep = cc.find_library('curl', required: false)
   if nnstreamer_edge_dep.found() and curl_dep.found()
@@ -115,9 +114,6 @@ if get_option('enable-gcov')
   add_project_arguments('-DENABLE_GCOV=1', language: ['c', 'cpp'])
 endif
 
-serviceDBPath = get_option('service-db-path')
-add_project_arguments('-DSYS_DB_DIR="' + serviceDBPath + '"', language: ['c', 'cpp'])
-
 # Check neural network framework
 # TODO: add frameworks required to build and run test
 # tendorflow
@@ -181,11 +177,6 @@ api_conf.set('PREFIX', api_install_prefix)
 api_conf.set('EXEC_PREFIX', api_install_bindir)
 api_conf.set('LIB_INSTALL_DIR', api_install_libdir)
 api_conf.set('INCLUDE_INSTALL_DIR', api_install_includedir)
-
-if get_option('enable-ml-service')
-  subdir('dbus')
-  subdir('daemon')
-endif
 
 # Build C-API
 subdir('c')
