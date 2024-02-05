@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<node name="/Org/Tizen/MachineLearning/Service">
-  <interface name="org.tizen.machinelearning.service.test">
-    <method name="get_state">
-      <arg type="i" name="state" direction="out" />
-      <arg type="i" name="result" direction="out" />      
-    </method>
-  </interface>
-</node>

@@ -20,24 +20,6 @@ unittest_common_dep = declare_dependency(
   include_directories: nns_capi_include,
 )
 
-if get_option('enable-ml-service')
-  subdir('mock')
-  subdir('dbus')
-
-  ml_agent_main_objs = ml_agent_executable.extract_objects(ml_agent_main_file)
-  executable('machine-learning-agent-test',
-    test_dbus_impl_srcs,
-    dependencies: [lib_ml_agent_test_dep, gdbus_gen_test_dep],
-    install: get_option('install-test'),
-    install_dir: unittest_base_dir,
-    link_with: lib_unittest_mock,
-    objects: ml_agent_main_objs,
-  )
-
-  subdir('services')
-  subdir('daemon')
-endif
-
 subdir('capi')
 
 if get_option('install-test')
