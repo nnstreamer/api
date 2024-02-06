@@ -163,8 +163,9 @@ typedef struct _ml_pipeline_element {
  */
 typedef struct {
   ml_pipeline_sink_cb sink_cb;
+  void *sink_pdata;
   ml_pipeline_src_callbacks_s src_cb;
-  void *pdata;
+  void *src_pdata;
 } callback_info_s;
 
 /**

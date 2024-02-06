@@ -424,7 +424,7 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
 
     callback = sink->callback_info->sink_cb;
     if (callback)
-      callback (_data, out_info, sink->callback_info->pdata);
+      callback (_data, out_info, sink->callback_info->sink_pdata);
 
     /** @todo Measure time. Warn if it takes long. Kill if it takes too long. */
   }
@@ -1463,7 +1463,7 @@ ml_pipeline_sink_register (ml_pipeline_h pipe, const char *sink_name,
   sink->pipe = p;
   sink->element = elem;
   sink->callback_info->sink_cb = cb;
-  sink->callback_info->pdata = user_data;
+  sink->callback_info->sink_pdata = user_data;
   *h = sink;
 
   g_mutex_lock (&elem->lock);
@@ -1782,7 +1782,7 @@ get_app_src_callback (ml_pipeline_common_elem * src_h, void **data)
   g_mutex_lock (&elem->lock);
   if (src_h->callback_info) {
     src_cb = &src_h->callback_info->src_cb;
-    *data = src_h->callback_info->pdata;
+    *data = src_h->callback_info->src_pdata;
   }
   g_mutex_unlock (&elem->lock);
 
@@ -1875,7 +1875,7 @@ ml_pipeline_src_set_event_cb (ml_pipeline_src_h src_handle,
   }
 
   src->callback_info->src_cb = *cb;
-  src->callback_info->pdata = user_data;
+  src->callback_info->src_pdata = user_data;
 
   appsrc_cb.need_data = _pipe_src_cb_need_data;
   appsrc_cb.enough_data = _pipe_src_cb_enough_data;
