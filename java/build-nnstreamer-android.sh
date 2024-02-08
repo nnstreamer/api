@@ -439,7 +439,7 @@ mkdir -p $build_dir/external
 git clone https://github.com/nnstreamer/nnstreamer-android-resource.git
 cp -r nnstreamer-android-resource/android_api/* ./$build_dir
 echo "file list for build dir $build_dir"
-ll ./$build_dir
+ls -l ./$build_dir
 rm -f ./$build_dir/external/*.tar.gz ./$build_dir/external/*.tar.xz
 if [[ $enable_tracing == "yes" ]]; then
     echo "Get Gst-Shark library"
