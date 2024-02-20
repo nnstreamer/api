@@ -13,6 +13,7 @@
 
 #include <ml-api-service-private.h>
 #include <ml-api-service.h>
+#include "ml-api-service-extension.h"
 
 #if defined(ENABLE_TENSORFLOW_LITE) || defined(ENABLE_TENSORFLOW2_LITE)
 #define TEST_REQUIRE_TFLITE(Case, Name) TEST (Case, Name)
