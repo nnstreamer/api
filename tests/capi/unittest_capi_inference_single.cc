@@ -4111,6 +4111,9 @@ TEST (nnstreamer_capi_ml_option, test03_n)
   status = ml_option_set (option, NULL, value, NULL);
   EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
 
+  status = ml_option_set (option, "", value, NULL);
+  EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
+
   status = ml_option_set (option, "key", NULL, NULL);
   EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
 

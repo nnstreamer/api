@@ -1340,9 +1340,13 @@ _ml_info_set_value (ml_info_s * info, const char *key, void *value,
 {
   ml_info_value_s *info_value;
 
-  if (!info || !key || !value)
+  if (!STR_IS_VALID (key))
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'info', 'key' or 'value' is NULL. It should be a valid ml_info, key and value.");
+        "The parameter, 'key' is invalid. It should be a valid string.");
+
+  if (!info || !value)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'info' or 'value' is NULL. It should be a valid ml_info and value.");
 
   info_value = g_new0 (ml_info_value_s, 1);
   if (!info_value)

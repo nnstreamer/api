@@ -21,6 +21,8 @@
 extern "C" {
 #endif /* __cplusplus */
 
+#define STR_IS_VALID(s) ((s) && (s)[0] != '\0')
+
 /**
  * DO NOT USE THE LOG INFRA of NNSTREAMER.
  *  This header is supposed to be independent from nnstreamer.git
