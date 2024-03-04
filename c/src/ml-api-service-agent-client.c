@@ -227,7 +227,9 @@ _build_ml_info_from_json_cstr (const gchar * jcstring, void **handle)
       const gchar *key = l->data;
       const gchar *val = json_object_get_string_member (jobj, key);
 
-      _ml_information_set (_info, key, g_strdup (val), g_free);
+      /* Prevent empty string case. */
+      if (STR_IS_VALID (key) && STR_IS_VALID (val))
+        _ml_information_set (_info, key, g_strdup (val), g_free);
     }
 
     ret = _parse_app_info_and_update_path (_info);

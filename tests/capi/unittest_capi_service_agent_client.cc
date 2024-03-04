@@ -1051,6 +1051,7 @@ TEST_F (MLServiceAgentTest, model_ml_information_get_00_n)
   int status;
 
   const gchar *model_name = "some_model_name";
+  const gchar *model_desc = "desc-model-test";
   guint version;
   const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
 
@@ -1069,7 +1070,7 @@ TEST_F (MLServiceAgentTest, model_ml_information_get_00_n)
   status = ml_service_model_delete (model_name, 0U);
   EXPECT_TRUE (status == ML_ERROR_NONE || status == ML_ERROR_INVALID_PARAMETER);
 
-  status = ml_service_model_register (model_name, test_model, true, NULL, &version);
+  status = ml_service_model_register (model_name, test_model, true, model_desc, &version);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   status = ml_service_model_get (model_name, version, &info_h);
@@ -1083,7 +1084,7 @@ TEST_F (MLServiceAgentTest, model_ml_information_get_00_n)
   gchar *description;
   status = ml_information_get (info_h, "description", (void **) &description);
   EXPECT_EQ (ML_ERROR_NONE, status);
-  EXPECT_STREQ ("", description);
+  EXPECT_STREQ (model_desc, description);
 
 
   status = ml_information_get (info_h, key, NULL);
@@ -1266,11 +1267,6 @@ TEST_F (MLServiceAgentTest, model_scenario)
       status = ml_information_get (_info_h, "path", (void **) &path);
       EXPECT_EQ (ML_ERROR_NONE, status);
       EXPECT_STREQ (path, test_model1);
-
-      gchar *app_info;
-      status = ml_information_get (_info_h, "app_info", (void **) &app_info);
-      EXPECT_EQ (ML_ERROR_NONE, status);
-      EXPECT_STREQ (app_info, "");
     } else if (g_ascii_strcasecmp (version_str, "2") == 0) {
       gchar *is_active;
       status = ml_information_get (_info_h, "active", (void **) &is_active);
