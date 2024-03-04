@@ -35,7 +35,7 @@ _get_proxy_new_for_bus_sync (ml_agent_service_type_e type, GError ** err)
   static const GBusType bus_types[] = { G_BUS_TYPE_SYSTEM, G_BUS_TYPE_SESSION };
   static const size_t num_bus_types =
       sizeof (bus_types) / sizeof (bus_types[0]);
-  ml_agent_proxy_h *proxy = NULL;
+  ml_agent_proxy_h proxy = NULL;
   GError *_err = NULL;
   size_t i;
 
@@ -54,7 +54,7 @@ _get_proxy_new_for_bus_sync (ml_agent_service_type_e type, GError ** err)
           break;
         }
       }
-      proxy = (ml_agent_proxy_h *) mlsp;
+      proxy = (ml_agent_proxy_h) mlsp;
       break;
     }
     case ML_AGENT_SERVICE_MODEL:
@@ -71,7 +71,7 @@ _get_proxy_new_for_bus_sync (ml_agent_service_type_e type, GError ** err)
         if (mlsm)
           break;
       }
-      proxy = (ml_agent_proxy_h *) mlsm;
+      proxy = (ml_agent_proxy_h) mlsm;
       break;
     }
     case ML_AGENT_SERVICE_RESOURCE:
@@ -88,7 +88,7 @@ _get_proxy_new_for_bus_sync (ml_agent_service_type_e type, GError ** err)
         if (mlsr)
           break;
       }
-      proxy = (ml_agent_proxy_h *) mlsr;
+      proxy = (ml_agent_proxy_h) mlsr;
       break;
     }
     default:
@@ -96,7 +96,8 @@ _get_proxy_new_for_bus_sync (ml_agent_service_type_e type, GError ** err)
   }
 
   if (_err) {
-    *err = g_error_copy (_err);
+    if (err)
+      *err = g_error_copy (_err);
     g_clear_error (&_err);
   }
 
