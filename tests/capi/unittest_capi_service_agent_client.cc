@@ -500,16 +500,26 @@ TEST_F (MLServiceAgentTest, destroy_00_n)
 TEST_F (MLServiceAgentTest, destroy_01_n)
 {
   int status;
-  ml_service_s *mls = _ml_service_create_internal (ML_SERVICE_TYPE_SERVER_PIPELINE);
-  ASSERT_TRUE (mls != NULL);
+  ml_service_h h;
+
+  status = ml_service_set_pipeline ("key", "videotestsrc ! fakesink");
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_service_launch_pipeline ("key", &h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  ml_service_s *mls = (ml_service_s *) h;
 
   /* invalid type */
   mls->type = ML_SERVICE_TYPE_MAX;
-  status = ml_service_destroy ((ml_service_h) mls);
+  status = ml_service_destroy (h);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
   mls->type = ML_SERVICE_TYPE_SERVER_PIPELINE;
-  status = ml_service_destroy ((ml_service_h) mls);
+  status = ml_service_destroy (h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_service_delete_pipeline ("key");
   EXPECT_EQ (ML_ERROR_NONE, status);
 }
 

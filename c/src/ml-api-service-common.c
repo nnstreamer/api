@@ -28,6 +28,18 @@ _ml_service_handle_is_valid (ml_service_s * mls)
   if (mls->magic != ML_SERVICE_MAGIC)
     return FALSE;
 
+  switch (mls->type) {
+    case ML_SERVICE_TYPE_SERVER_PIPELINE:
+    case ML_SERVICE_TYPE_CLIENT_QUERY:
+    case ML_SERVICE_TYPE_REMOTE:
+      if (mls->priv == NULL)
+        return FALSE;
+      break;
+    default:
+      /* Invalid handle type. */
+      return FALSE;
+  }
+
   return TRUE;
 }
 
