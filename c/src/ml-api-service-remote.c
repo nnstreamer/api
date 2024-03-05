@@ -570,6 +570,7 @@ ml_service_remote_release_internal (ml_service_s * mls)
 
   g_free (mlrs->path);
   g_free (mlrs);
+  mls->priv = NULL;
 
   return ML_ERROR_NONE;
 }
