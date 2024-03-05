@@ -29,7 +29,6 @@ typedef struct
   ml_pipeline_src_h src_h;
   ml_pipeline_sink_h sink_h;
 
-  gchar *caps;
   guint timeout; /**< in ms unit */
   GAsyncQueue *out_data_queue;
 } _ml_service_query_s;
@@ -82,6 +81,7 @@ ml_service_query_release_internal (ml_service_s * mls)
   }
 
   g_free (query);
+  mls->priv = NULL;
 
   return ML_ERROR_NONE;
 }

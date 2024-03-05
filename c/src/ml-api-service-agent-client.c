@@ -541,6 +541,7 @@ ml_service_pipeline_release_internal (ml_service_s * mls)
 
   g_free (server->service_name);
   g_free (server);
+  mls->priv = NULL;
 
   return ML_ERROR_NONE;
 }
