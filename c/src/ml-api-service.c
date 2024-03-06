@@ -15,6 +15,7 @@
 #include "ml-api-service.h"
 #include "ml-api-service-extension.h"
 #include "ml-api-service-offloading.h"
+#include "ml-api-service-training-offloading.h"
 
 #define ML_SERVICE_MAGIC 0xfeeedeed
 #define ML_SERVICE_MAGIC_DEAD 0xdeaddead
@@ -70,7 +71,8 @@ _ml_service_set_information_internal (ml_service_s * mls, const char *name,
       break;
     case ML_SERVICE_TYPE_OFFLOADING:
     {
-      status = ml_service_offloading_set_information (mls, name, value);
+      if (g_strstr_len (name, -1, "path") == 0)
+        status = ml_service_offloading_set_information (mls, name, value);
       break;
     }
     default:
@@ -282,13 +284,15 @@ _ml_service_conf_parse_tensors_info (JsonNode * info_node,
  * @brief Internal function to parse service info from config file.
  */
 static int
-_ml_service_offloading_conf_to_opt (JsonObject * object, const gchar * name,
-    ml_option_h option)
+_ml_service_offloading_conf_to_opt (ml_service_s * mls, JsonObject * object,
+    const gchar * name, ml_option_h option)
 {
   int status;
   JsonObject *service_offloading_object;
   const gchar *val = NULL;
   GList *list = NULL, *iter;
+  _ml_service_offloading_s *offloading_s =
+      (_ml_service_offloading_s *) mls->priv;
 
   service_offloading_object = json_object_get_object_member (object, name);
   if (!service_offloading_object) {
@@ -298,6 +302,18 @@ _ml_service_offloading_conf_to_opt (JsonObject * object, const gchar * name,
 
   list = json_object_get_members (service_offloading_object);
   for (iter = list; iter != NULL; iter = g_list_next (iter)) {
+    if (g_ascii_strcasecmp (iter->data, "training") == 0) {
+      /* Training offloading */
+      status =
+          ml_service_training_offloading_create (offloading_s,
+          service_offloading_object);
+      if (status != ML_ERROR_NONE) {
+        _ml_error_report_return (status,
+            "Failed to parse the configuration file.");
+      }
+      offloading_s->offloading_type = ML_OFFLOADING_TYPE_TRAINING;
+      continue;
+    }
     val = json_object_get_string_member (service_offloading_object, iter->data);
     status = ml_option_set (option, iter->data, g_strdup (val), g_free);
     if (status != ML_ERROR_NONE) {
@@ -353,13 +369,19 @@ _ml_service_offloading_create_json (ml_service_s * mls, JsonObject * object)
     _ml_error_report_return (status, "Failed to create ml-option.");
   }
 
-  status = _ml_service_offloading_conf_to_opt (object, "offloading", option);
+  status = ml_service_offloading_create (mls);
+  if (status != ML_ERROR_NONE) {
+    _ml_error_report ("Failed to create ml-service-offloading.");
+  }
+
+  status =
+      _ml_service_offloading_conf_to_opt (mls, object, "offloading", option);
   if (status != ML_ERROR_NONE) {
     _ml_error_report ("Failed to set ml-option from config file.");
     goto done;
   }
 
-  status = ml_service_offloading_create (mls, option);
+  status = ml_service_offloading_start (mls, option);
   if (status != ML_ERROR_NONE) {
     _ml_error_report ("Failed to create ml-service-offloading.");
     goto done;
