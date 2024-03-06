@@ -290,12 +290,7 @@ TEST_F (MLOffloadingService, createInvalidParam_n)
   status = ml_option_create (&option_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  service_h = _ml_service_create_internal (ML_SERVICE_TYPE_OFFLOADING);
-
-  status = ml_service_offloading_create (NULL, option_h);
-  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
-
-  status = ml_service_offloading_create (service_h, NULL);
+  status = ml_service_offloading_create (service_h);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
   status = ml_option_destroy (option_h);

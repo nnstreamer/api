@@ -19,12 +19,12 @@
 #include <string.h>
 #include <curl/curl.h>
 #include <json-glib/json-glib.h>
-#include <nnstreamer-edge.h>
 
 #include "ml-api-internal.h"
 #include "ml-api-service.h"
 #include "ml-api-service-private.h"
 #include "ml-api-service-offloading.h"
+#include "ml-api-service-training-offloading.h"
 
 #define MAX_PORT_NUM_LEN 6U
 
@@ -57,18 +57,6 @@ typedef struct
   nns_edge_node_type_e node_type;
   gchar *id;
 } edge_info_s;
-
-/**
- * @brief Structure for ml_service_offloading.
- */
-typedef struct
-{
-  nns_edge_h edge_h;
-  nns_edge_node_type_e node_type;
-
-  gchar *path; /**< A path to save the received model file */
-  GHashTable *table;
-} _ml_service_offloading_s;
 
 /**
  * @brief Get ml-service node type from ml_option.
@@ -615,8 +603,10 @@ int
 ml_service_offloading_set_information (ml_service_h handle, const gchar * name,
     const gchar * value)
 {
+  int status;
   ml_service_s *mls = (ml_service_s *) handle;
-  _ml_service_offloading_s *mlrs = (_ml_service_offloading_s *) mls->priv;
+  _ml_service_offloading_s *offloading_s =
+      (_ml_service_offloading_s *) mls->priv;
 
   if (g_ascii_strcasecmp (name, "path") == 0) {
     if (!g_file_test (value, G_FILE_TEST_IS_DIR)) {
@@ -629,8 +619,17 @@ ml_service_offloading_set_information (ml_service_h handle, const gchar * name,
           "Write permission denied, path: %s", value);
     }
 
-    g_free (mlrs->path);
-    mlrs->path = g_strdup (value);
+    g_free (offloading_s->path);
+    offloading_s->path = g_strdup (value);
+  }
+
+  if (offloading_s->offloading_type == ML_OFFLOADING_TYPE_TRAINING) {
+    status =
+        ml_service_training_offloading_set_path (offloading_s, name, value);
+    if (status != ML_ERROR_NONE) {
+      _ml_error_report_return (status,
+          "Failed to parse the configuration file.");
+    }
   }
 
   return ML_ERROR_NONE;
@@ -640,13 +639,11 @@ ml_service_offloading_set_information (ml_service_h handle, const gchar * name,
  * @brief Creates ml-service handle with given ml-option handle.
  */
 int
-ml_service_offloading_create (ml_service_h handle, ml_option_h option)
+ml_service_offloading_create (ml_service_h handle)
 {
   ml_service_s *mls;
   _ml_service_offloading_s *offloading_s = NULL;
-  edge_info_s *edge_info = NULL;
   int ret = ML_ERROR_NONE;
-  gchar *_path = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
@@ -655,10 +652,6 @@ ml_service_offloading_create (ml_service_h handle, ml_option_h option)
         "The parameter, 'handle' (ml_service_h), is NULL. It should be a valid ml_service_h.");
   }
 
-  if (!option) {
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'option' is NULL. It should be a valid ml_option_h, which should be created by ml_option_create().");
-  }
   mls = (ml_service_s *) handle;
 
   mls->priv = offloading_s = g_try_new0 (_ml_service_offloading_s, 1);
@@ -674,12 +667,46 @@ ml_service_offloading_create (ml_service_h handle, ml_option_h option)
         "Failed to allocate memory for the table of ml-service offloading. Out of memory?");
   }
 
+  return ret;
+}
+
+/**
+ * @brief start ml-service handle with given ml-option handle.
+ */
+int
+ml_service_offloading_start (ml_service_h handle, ml_option_h option)
+{
+  ml_service_s *mls;
+  _ml_service_offloading_s *offloading_s = NULL;
+  edge_info_s *edge_info = NULL;
+  int ret = ML_ERROR_NONE;
+  gchar *_path;
+
+  check_feature_state (ML_FEATURE_SERVICE);
+
+  if (!handle) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'handle' (ml_service_h), is NULL. It should be a valid ml_service_h.");
+  }
+
+  if (!option) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'option' is NULL. It should be a valid ml_option_h, which should be created by ml_option_create().");
+  }
+  mls = (ml_service_s *) handle;
+
   if (ML_ERROR_NONE == ml_option_get (option, "path", (void **) (&_path))) {
     ret = ml_service_offloading_set_information (mls, "path", _path);
     if (ML_ERROR_NONE != ret) {
       _ml_error_report_return (ret,
           "Failed to set path in ml-service offloading handle.");
     }
+  }
+
+  offloading_s = (_ml_service_offloading_s *) mls->priv;
+  if (!offloading_s) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'handle' (_ml_service_offloading_s), is NULL. It should be called after create");
   }
 
   _mlrs_get_edge_info (option, &edge_info);
@@ -690,6 +717,8 @@ ml_service_offloading_create (ml_service_h handle, ml_option_h option)
 
   return ret;
 }
+
+
 
 /**
  * @brief Register new information, such as neural network models or pipeline descriptions, on a offloading server.
