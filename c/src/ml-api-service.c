@@ -15,6 +15,7 @@
 #include "ml-api-service.h"
 #include "ml-api-service-extension.h"
 #include "ml-api-service-offloading.h"
+#include "ml-api-service-training-offloading.h"
 
 #define ML_SERVICE_MAGIC 0xfeeedeed
 #define ML_SERVICE_MAGIC_DEAD 0xdeaddead
@@ -280,12 +281,14 @@ _ml_service_conf_parse_tensors_info (JsonNode * info_node,
  * @brief Internal function to parse service info from config file.
  */
 static int
-_ml_service_offloading_conf_to_opt (JsonObject * object, const gchar * name,
-    ml_option_h option)
+_ml_service_offloading_conf_to_opt (ml_service_s * mls, JsonObject * object,
+    const gchar * name, ml_option_h option)
 {
-  int status = ML_ERROR_NONE;
+  int status;
   JsonObject *offloading_object;
-  GList *list, *iter;
+  const gchar *val = NULL;
+  const gchar *key = NULL;
+  GList *list = NULL, *iter;
 
   offloading_object = json_object_get_object_member (object, name);
   if (!offloading_object) {
@@ -295,9 +298,12 @@ _ml_service_offloading_conf_to_opt (JsonObject * object, const gchar * name,
 
   list = json_object_get_members (offloading_object);
   for (iter = list; iter != NULL; iter = g_list_next (iter)) {
-    const gchar *key = iter->data;
-    const gchar *val = json_object_get_string_member (offloading_object, key);
-
+    key = iter->data;
+    if (g_ascii_strcasecmp (key, "training") == 0) {
+      /* It is not a value to set for option. */
+      continue;
+    }
+    val = json_object_get_string_member (offloading_object, key);
     status = ml_option_set (option, key, g_strdup (val), g_free);
     if (status != ML_ERROR_NONE) {
       _ml_error_report ("Failed to set %s option: %s.", key, val);
@@ -355,7 +361,8 @@ _ml_service_offloading_create_json (ml_service_s * mls, JsonObject * object)
     _ml_error_report_return (status, "Failed to create ml-option.");
   }
 
-  status = _ml_service_offloading_conf_to_opt (object, "offloading", option);
+  status =
+      _ml_service_offloading_conf_to_opt (mls, object, "offloading", option);
   if (status != ML_ERROR_NONE) {
     _ml_error_report ("Failed to set ml-option from config file.");
     goto done;
@@ -366,7 +373,6 @@ _ml_service_offloading_create_json (ml_service_s * mls, JsonObject * object)
     _ml_error_report ("Failed to create ml-service-offloading.");
     goto done;
   }
-
   if (json_object_has_member (object, "services")) {
     JsonObject *svc_object;
     svc_object = json_object_get_object_member (object, "services");
@@ -376,9 +382,13 @@ _ml_service_offloading_create_json (ml_service_s * mls, JsonObject * object)
     }
   }
 
+  status = ml_service_training_offloading_create (mls, object);
+  if (status != ML_ERROR_NONE) {
+    _ml_logw ("Failed to parse training from config file.");
+  }
+
 done:
   ml_option_destroy (option);
-
   return status;
 }
 
@@ -569,6 +579,9 @@ ml_service_start (ml_service_h handle)
     case ML_SERVICE_TYPE_EXTENSION:
       status = ml_service_extension_start (mls);
       break;
+    case ML_SERVICE_TYPE_OFFLOADING:
+      status = ml_service_offloading_start (mls);
+      break;
     default:
       /* Invalid handle type. */
       status = ML_ERROR_NOT_SUPPORTED;
@@ -607,6 +620,9 @@ ml_service_stop (ml_service_h handle)
     }
     case ML_SERVICE_TYPE_EXTENSION:
       status = ml_service_extension_stop (mls);
+      break;
+    case ML_SERVICE_TYPE_OFFLOADING:
+      status = ml_service_offloading_stop (mls);
       break;
     default:
       /* Invalid handle type. */
