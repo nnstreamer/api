@@ -30,6 +30,7 @@
 #define __ML_API_SERVICE_H__
 
 #include <nnstreamer.h>
+#include <nnstreamer-single.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,15 +47,226 @@ extern "C" {
 typedef void *ml_service_h;
 
 /**
- * @brief Destroys the given service handle.
- * @details If given service handle is created by ml_service_launch_pipeline(), this requests machine learning agent daemon to destroy the pipeline.
- * @since_tizen 7.0
- * @param[in] handle The service handle.
- * @return @c 0 on Success. Otherwise a negative error value.
+ * @brief Enumeration for the event types of machine learning service.
+ * @since_tizen 9.0
+ */
+typedef enum {
+  ML_SERVICE_EVENT_UNKNOWN = 0,             /**< Unknown or invalid event type. */
+  ML_SERVICE_EVENT_NEW_DATA = 1,            /**< New data is processed from machine learning service. */
+} ml_service_event_e;
+
+/**
+ * @brief Callback for the event from machine learning service.
+ * @details Note that the handle of event data may be deallocated after the return and this is synchronously called.
+ *           Thus, if you need the event data, copy the data and return fast. Do not spend too much time in the callback.
+ * @since_tizen 9.0
+ * @remarks The @a event_data should not be released.
+ * @param[in] event The event from machine learning service.
+ * @param[in] event_data The handle of event data. If it is null, the event does not include data field.
+ * @param[in] user_data Private data for the callback.
+ */
+typedef void (*ml_service_event_cb) (ml_service_event_e event, ml_information_h event_data, void *user_data);
+
+/**
+ * @brief Creates a handle for machine learning service using a configuration file.
+ * @since_tizen 9.0
+ * @remarks %http://tizen.org/privilege/mediastorage is needed if the configuration is relevant to media storage.
+ * @remarks %http://tizen.org/privilege/externalstorage is needed if the configuration is relevant to external storage.
+ * @remarks The @a handle should be released using ml_service_destroy().
+ * @param[in] config The absolute path to configuration file.
+ * @param[out] handle The handle of ml-service.
+ * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
- * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
- * @retval #ML_ERROR_STREAMS_PIPE Failed to access the pipeline state.
+ * @retval #ML_ERROR_PERMISSION_DENIED The application does not have the privilege to access to the media storage or external storage.
+ * @retval #ML_ERROR_INVALID_PARAMETER The parameter is invalid.
+ * @retval #ML_ERROR_IO_ERROR Failed to parse the configuration file.
+ * @retval #ML_ERROR_STREAMS_PIPE Failed to open the model.
+ * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
+ *
+ * Here is an example of the usage:
+ * @code
+ *
+ * // Callback function for the event from machine learning service.
+ * // Note that the handle of event data will be deallocated after the return and this is synchronously called.
+ * // Thus, if you need the event data, copy the data and return fast.
+ * // Do not spend too much time in the callback.
+ * static void
+ * _ml_service_event_cb (ml_service_event_e event, ml_information_h event_data, void *user_data)
+ * {
+ *   ml_tensors_data_h data;
+ *   void *_data;
+ *   size_t _size;
+ *
+ *   switch (event) {
+ *     case ML_SERVICE_EVENT_NEW_DATA:
+ *       // For the case of new data event, handle output data.
+ *       ml_information_get (event_data, "data", &data);
+ *       ml_tensors_data_get_tensor_data (data, 0, &_data, &_size);
+ *       break;
+ *     default:
+ *       break;
+ *   }
+ * }
+ *
+ * // The path to the configuration file.
+ * const char config_path[] = "/path/to/application/configuration/my_application_config.conf";
+ *
+ * // Create ml-service for model inference from configuration.
+ * ml_service_h handle;
+ *
+ * ml_service_new (config_path, &handle);
+ * ml_service_set_event_cb (handle, _ml_service_event_cb, NULL);
+ *
+ * // Get input information and allocate input buffer.
+ * ml_tensors_info_h input_info;
+ * void *input_buffer;
+ * size_t input_size;
+
+ * ml_service_get_input_information (handle, NULL, &input_info);
+ *
+ * ml_tensors_info_get_tensor_size (input_info, 0, &input_size);
+ * input_buffer = malloc (input_size);
+ *
+ * // Create input data handle.
+ * ml_tensors_data_h input;
+ *
+ * ml_tensors_data_create (input_info, &input);
+ * ml_tensors_data_set_tensor_data (input, 0, input_buffer, input_size);
+ *
+ * // Push input data into ml-service and process the output in the callback.
+ * ml_service_request (handle, NULL, input);
+ *
+ * // Finally, release all handles and allocated memories.
+ * ml_tensors_info_destroy (input_info);
+ * ml_tensors_data_destroy (input);
+ * ml_service_destroy (handle);
+ * free (input_buffer);
+ *
+ * @endcode
+ */
+int ml_service_new (const char *config, ml_service_h *handle);
+
+/**
+ * @brief Sets the callback which will be invoked when a new event occurs from machine learning service.
+ * @since_tizen 9.0
+ * @param[in] handle The handle of ml-service.
+ * @param[in] cb The callback to handle the event from ml-service.
+ * @param[in] user_data Private data for the callback. This value is passed to the callback when it's invoked.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
+ */
+int ml_service_set_event_cb (ml_service_h handle, ml_service_event_cb cb, void *user_data);
+
+/**
+ * @brief Starts the process of machine learning service.
+ * @since_tizen 9.0
+ * @param[in] handle The handle of ml-service.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
+ * @retval #ML_ERROR_STREAMS_PIPE Failed to start the process.
+ */
+int ml_service_start (ml_service_h handle);
+
+/**
+ * @brief Stops the process of machine learning service.
+ * @since_tizen 9.0
+ * @param[in] handle The handle of ml-service.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
+ * @retval #ML_ERROR_STREAMS_PIPE Failed to stop the process.
+ */
+int ml_service_stop (ml_service_h handle);
+
+/**
+ * @brief Gets the information of required input data.
+ * @details Note that a model may not have such information if its input type is not determined statically.
+ * @since_tizen 9.0
+ * @remarks The @a info should be released using ml_tensors_info_destroy().
+ * @param[in] handle The handle of ml-service.
+ * @param[in] name The name of input node in the pipeline. You can set NULL if ml-service is constructed from model configuration.
+ * @param[out] info The handle of input tensors information.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER The parameter is invalid.
+ */
+int ml_service_get_input_information (ml_service_h handle, const char *name, ml_tensors_info_h *info);
+
+/**
+ * @brief Gets the information of output data.
+ * @details Note that a model may not have such information if its output is not determined statically.
+ * @since_tizen 9.0
+ * @remarks The @a info should be released using ml_tensors_info_destroy().
+ * @param[in] handle The handle of ml-service.
+ * @param[in] name The name of output node in the pipeline. You can set NULL if ml-service is constructed from model configuration.
+ * @param[out] info The handle of output tensors information.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER The parameter is invalid.
+ */
+int ml_service_get_output_information (ml_service_h handle, const char *name, ml_tensors_info_h *info);
+
+/**
+ * @brief Sets the information for machine learning service.
+ * @since_tizen 9.0
+ * @param[in] handle The handle of ml-service.
+ * @param[in] name The name to set the corresponding value.
+ * @param[in] value The value of the name.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER The parameter is invalid.
+ */
+int ml_service_set_information (ml_service_h handle, const char *name, const char *value);
+
+/**
+ * @brief Gets the information from machine learning service.
+ * @details Note that a configuration file may not have such information field.
+ * @since_tizen 9.0
+ * @remarks The @a value should be released using free().
+ * @param[in] handle The handle of ml-service.
+ * @param[in] name The name to get the corresponding value.
+ * @param[out] value The value of the name.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER The parameter is invalid.
+ */
+int ml_service_get_information (ml_service_h handle, const char *name, char **value);
+
+/**
+ * @brief Adds an input data to process the model in machine learning service.
+ * @since_tizen 9.0
+ * @param[in] handle The handle of ml-service.
+ * @param[in] name The name of input node in the pipeline. You can set NULL if ml-service is constructed from model configuration.
+ * @param[in] data The handle of tensors data to be processed.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER The parameter is invalid.
+ * @retval #ML_ERROR_STREAMS_PIPE Failed to process the input data.
+ * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
+ */
+int ml_service_request (ml_service_h handle, const char *name, const ml_tensors_data_h data);
+
+/**
+ * @brief Destroys the handle for machine learning service.
+ * @details If given service handle is created by ml_service_launch_pipeline(), this requests machine learning agent to destroy the pipeline.
+ * @since_tizen 7.0
+ * @param[in] handle The handle of ml-service.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER The parameter is invalid.
+ * @retval #ML_ERROR_STREAMS_PIPE Failed to stop the process.
  */
 int ml_service_destroy (ml_service_h handle);
 

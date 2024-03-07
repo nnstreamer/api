@@ -387,6 +387,7 @@ bash %{test_script} ./tests/capi/unittest_capi_inference
 bash %{test_script} ./tests/capi/unittest_capi_datatype_consistency
 
 %if 0%{?enable_ml_service}
+bash %{test_script} ./tests/capi/unittest_capi_service_extension
 bash %{test_script} ./tests/capi/unittest_capi_service_agent_client
 %if 0%{?nnstreamer_edge_support}
 bash %{test_script} ./tests/capi/unittest_capi_remote_service
