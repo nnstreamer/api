@@ -31,6 +31,14 @@ unittest_capi_datatype_consistency = executable('unittest_capi_datatype_consiste
 test('unittest_capi_datatype_consistency', unittest_capi_datatype_consistency, env: testenv, timeout: 100)
 
 if get_option('enable-ml-service')
+  unittest_capi_service_extension = executable('unittest_capi_service_extension',
+    'unittest_capi_service_extension.cc',
+    dependencies: [unittest_common_dep, nns_capi_service_dep],
+    install: get_option('install-test'),
+    install_dir: unittest_install_dir
+  )
+  test('unittest_capi_extension', unittest_capi_service_extension, env: testenv, timeout: 100)
+
   unittest_capi_service_agent_client = executable('unittest_capi_service_agent_client',
     'unittest_capi_service_agent_client.cc',
     dependencies: [unittest_common_dep, nns_capi_service_dep],

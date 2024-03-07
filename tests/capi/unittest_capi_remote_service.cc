@@ -96,12 +96,13 @@ class MLRemoteService : public ::testing::Test
 /**
  * @brief ml-service event callback for test.
  */
-static int
-_ml_service_event_cb (ml_service_event_e event_type, void *user_data)
+static void
+_ml_service_event_cb (ml_service_event_e event, ml_information_h event_data, void *user_data)
 {
   int status;
 
-  switch (event_type) {
+  /** @todo remove typecast to int after new event type is added. */
+  switch ((int) event) {
     case ML_SERVICE_EVENT_PIPELINE_REGISTERED:
       {
         g_autofree gchar *ret_pipeline = NULL;
@@ -139,8 +140,6 @@ _ml_service_event_cb (ml_service_event_e event_type, void *user_data)
     default:
       break;
   }
-
-  return ML_ERROR_NONE;
 }
 
 /**

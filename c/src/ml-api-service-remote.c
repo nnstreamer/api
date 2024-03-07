@@ -461,7 +461,7 @@ _mlrs_process_remote_service (nns_edge_data_h data_h, void *user_data)
 
   if (remote_s && event_type != ML_SERVICE_EVENT_UNKNOWN) {
     if (remote_s->event_cb) {
-      remote_s->event_cb (event_type, remote_s->user_data);
+      remote_s->event_cb (event_type, NULL, remote_s->user_data);
     }
   }
 
