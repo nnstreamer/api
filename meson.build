@@ -166,9 +166,6 @@ api_install_libdir = join_paths(api_install_prefix, get_option('libdir'))
 api_install_bindir = join_paths(api_install_prefix, get_option('bindir'))
 api_install_includedir = join_paths(api_install_prefix, get_option('includedir'))
 api_install_inidir = get_option('sysconfdir')
-dbus_policy_dir = join_paths(get_option('sysconfdir'), 'dbus-1', 'system.d')
-dbus_system_service_dir = join_paths(api_install_prefix, 'share', 'dbus-1', 'system-services')
-systemd_service_dir = join_paths(api_install_prefix, 'lib', 'systemd', 'system')
 
 # Set default configuration
 api_conf = configuration_data()
