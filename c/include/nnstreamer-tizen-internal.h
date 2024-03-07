@@ -39,24 +39,6 @@ typedef struct {
   char *fw_name;                 /**< The explicit framework name given by user */
 } ml_single_preset;
 
-typedef void *ml_service_event_h;
-
-/**
- * @brief Enumeration for the event types of ml-service.
- */
-typedef enum {
-  ML_SERVICE_EVENT_MODEL_REGISTERED = 0,
-  ML_SERVICE_EVENT_PIPELINE_REGISTERED,
-
-  ML_SERVICE_EVENT_UNKNOWN
-} ml_service_event_e;
-
-/**
- * @brief Callback for the ml-service event.
- * @return User should return ML_ERROR_NONE if an event is successfully handled.
- */
-typedef int (*ml_service_event_cb) (ml_service_event_e event_type, void *user_data);
-
 /**
  * @brief Opens an ML model with the custom options and returns the instance as a handle.
  * This is internal function to handle various options in public APIs.

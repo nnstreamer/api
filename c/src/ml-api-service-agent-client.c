@@ -13,8 +13,6 @@
 #include <glib/gstdio.h>
 #include <json-glib/json-glib.h>
 
-#include <ml/mlops-agent-interface.h>
-
 #include "ml-api-internal.h"
 #include "ml-api-service-private.h"
 #include "ml-api-service.h"
