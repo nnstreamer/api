@@ -4070,6 +4070,67 @@ TEST (nnstreamer_capi_util, data_clone_04_p)
 }
 
 /**
+ * @brief Test utility functions - get tensors-info from data handle.
+ */
+TEST (nnstreamer_capi_util, data_get_info_01_p)
+{
+  int status;
+  ml_tensors_info_h in_info, out_info;
+  ml_tensors_data_h data;
+  ml_tensor_dimension dim = { 5, 1, 1, 1 };
+
+  ml_tensors_info_create (&in_info);
+  ml_tensors_info_set_count (in_info, 1);
+  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_INT32);
+  ml_tensors_info_set_tensor_dimension (in_info, 0, dim);
+  ml_tensors_data_create (in_info, &data);
+
+  status = ml_tensors_data_get_info (data, &out_info);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  EXPECT_TRUE (ml_tensors_info_is_equal (in_info, out_info));
+
+  ml_tensors_info_destroy (in_info);
+  ml_tensors_info_destroy (out_info);
+  ml_tensors_data_destroy (data);
+}
+
+/**
+ * @brief Test utility functions - get tensors-info from data handle.
+ */
+TEST (nnstreamer_capi_util, data_get_info_02_n)
+{
+  int status;
+  ml_tensors_info_h out_info;
+
+  status = ml_tensors_data_get_info (nullptr, &out_info);
+  EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
+}
+
+/**
+ * @brief Test utility functions - get tensors-info from data handle.
+ */
+TEST (nnstreamer_capi_util, data_get_info_03_n)
+{
+  int status;
+  ml_tensors_info_h in_info;
+  ml_tensors_data_h data;
+  ml_tensor_dimension dim = { 5, 1, 1, 1 };
+
+  ml_tensors_info_create (&in_info);
+  ml_tensors_info_set_count (in_info, 1);
+  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_INT32);
+  ml_tensors_info_set_tensor_dimension (in_info, 0, dim);
+  ml_tensors_data_create (in_info, &data);
+
+  status = ml_tensors_data_get_info (data, nullptr);
+  EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
+
+  ml_tensors_info_destroy (in_info);
+  ml_tensors_data_destroy (data);
+}
+
+/**
  * @brief Test to replace string.
  */
 TEST (nnstreamer_capi_util, replaceStr01)

@@ -397,6 +397,34 @@ int ml_tensors_data_get_tensor_data (ml_tensors_data_h data, unsigned int index,
 int ml_tensors_data_set_tensor_data (ml_tensors_data_h data, unsigned int index, const void *raw_data, const size_t data_size);
 
 /**
+ * @brief Copies the tensor data frame.
+ * @since_tizen 9.0
+ * @remarks The @a out should be released using ml_tensors_data_destroy().
+ * @param[in] in The handle of tensors data to be cloned.
+ * @param[out] out The handle of tensors data.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
+ * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
+ */
+int ml_tensors_data_clone (const ml_tensors_data_h in, ml_tensors_data_h *out);
+
+/**
+ * @brief Gets the tensors information of given tensor data frame.
+ * @since_tizen 9.0
+ * @remarks The @a info should be released using ml_tensors_info_destroy().
+ * @param[in] data The handle of tensors data.
+ * @param[out] info The handle of tensors information.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
+ * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
+ */
+int ml_tensors_data_get_info (const ml_tensors_data_h data, ml_tensors_info_h *info);
+
+/**
  * @brief Returns a human-readable string describing the last error.
  * @details This returns a human-readable, null-terminated string describing
  *         the most recent error that occurred from a call to one of the
