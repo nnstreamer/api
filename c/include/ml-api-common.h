@@ -155,20 +155,6 @@ typedef enum _ml_tensor_type_e
  */
 typedef void (*ml_data_destroy_cb) (void *data);
 
-/**
- * @brief Callback to execute the custom-easy filter in NNStreamer pipelines.
- * @details Note that if ml_custom_easy_invoke_cb() returns negative error values, the constructed pipeline does not work properly anymore.
- *          So developers should release the pipeline handle and recreate it again.
- * @since_tizen 6.0
- * @remarks The @a in can be used only in the callback. To use outside, make a copy.
- * @remarks The @a out can be used only in the callback. To use outside, make a copy.
- * @param[in] in The handle of the tensor input (a single frame. tensor/tensors).
- * @param[out] out The handle of the tensor output to be filled (a single frame. tensor/tensors).
- * @param[in,out] user_data User application's private data.
- * @return @c 0 on success. @c 1 to ignore the input data. Otherwise a negative error value.
- */
-typedef int (*ml_custom_easy_invoke_cb) (const ml_tensors_data_h in, ml_tensors_data_h out, void *user_data);
-
 /****************************************************
  ** NNStreamer Utilities                           **
  ****************************************************/
@@ -355,9 +341,10 @@ int ml_tensors_info_get_tensor_size (ml_tensors_info_h info, int index, size_t *
 /**
  * @brief Creates a tensor data frame with the given tensors information.
  * @since_tizen 5.5
+ * @remarks The @a data should be released using ml_tensors_data_destroy().
  * @remarks Before 6.0, this function returned #ML_ERROR_STREAMS_PIPE in case of an internal error. Since 6.0, #ML_ERROR_OUT_OF_MEMORY is returned in such cases, so #ML_ERROR_STREAMS_PIPE is not returned by this function anymore.
  * @param[in] info The handle of tensors information for the allocation.
- * @param[out] data The handle of tensors data. The caller is responsible for freeing the allocated data with ml_tensors_data_destroy().
+ * @param[out] data The handle of tensors data.
  * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.

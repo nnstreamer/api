@@ -145,6 +145,20 @@ typedef void (*ml_pipeline_sink_cb) (const ml_tensors_data_h data, const ml_tens
 typedef void (*ml_pipeline_state_cb) (ml_pipeline_state_e state, void *user_data);
 
 /**
+ * @brief Callback to execute the custom-easy filter in NNStreamer pipelines.
+ * @details Note that if ml_custom_easy_invoke_cb() returns negative error values, the constructed pipeline does not work properly anymore.
+ *          So developers should release the pipeline handle and recreate it again.
+ * @since_tizen 6.0
+ * @remarks The @a in can be used only in the callback. To use outside, make a copy.
+ * @remarks The @a out can be used only in the callback. To use outside, make a copy.
+ * @param[in] in The handle of the tensor input (a single frame. tensor/tensors).
+ * @param[out] out The handle of the tensor output to be filled (a single frame. tensor/tensors).
+ * @param[in,out] user_data User application's private data.
+ * @return @c 0 on success. @c 1 to ignore the input data. Otherwise a negative error value.
+ */
+typedef int (*ml_custom_easy_invoke_cb) (const ml_tensors_data_h in, ml_tensors_data_h out, void *user_data);
+
+/**
  * @brief Callback for custom condition of tensor_if.
  * @since_tizen 6.5
  * @remarks The @a data can be used only in the callback. To use outside, make a copy.
