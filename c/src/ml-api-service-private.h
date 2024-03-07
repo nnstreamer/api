@@ -14,8 +14,12 @@
 #ifndef __ML_API_SERVICE_PRIVATE_DATA_H__
 #define __ML_API_SERVICE_PRIVATE_DATA_H__
 
+#include <glib.h>
+#include <json-glib/json-glib.h>
+
 #include <ml-api-service.h>
 #include <ml-api-inference-internal.h>
+#include <mlops-agent-interface.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,9 +34,19 @@ typedef enum
   ML_SERVICE_TYPE_SERVER_PIPELINE,
   ML_SERVICE_TYPE_CLIENT_QUERY,
   ML_SERVICE_TYPE_REMOTE,
+  ML_SERVICE_TYPE_EXTENSION,
 
   ML_SERVICE_TYPE_MAX
 } ml_service_type_e;
+
+/**
+ * @brief Structure for ml-service callback.
+ */
+typedef struct
+{
+  ml_service_callbacks_s cb;
+  void *pdata;
+} ml_service_cb_info_s;
 
 /**
  * @brief Structure for ml_service_h
@@ -41,7 +55,10 @@ typedef struct
 {
   uint32_t magic;
   ml_service_type_e type;
-
+  GMutex lock;
+  GCond cond;
+  ml_option_h information;
+  ml_service_cb_info_s cb_info;
   void *priv;
 } ml_service_s;
 
@@ -50,7 +67,7 @@ typedef struct
  */
 typedef struct
 {
-  gint64 id;
+  int64_t id;
   gchar *service_name;
 } _ml_service_server_s;
 
@@ -68,6 +85,26 @@ ml_service_s * _ml_service_create_internal (ml_service_type_e ml_service_type);
  * @brief Internal function to release ml-service handle.
  */
 int _ml_service_destroy_internal (ml_service_s * mls);
+
+/**
+ * @brief Internal function to get ml-service callback.
+ */
+void _ml_service_get_callback_info (ml_service_s *mls, ml_service_cb_info_s *cb_info);
+
+/**
+ * @brief Internal function to parse model path from json.
+ */
+int _ml_service_conf_parse_path (JsonNode *file_node, gchar **path);
+
+/**
+ * @brief Internal function to parse tensors-info from json.
+ */
+int _ml_service_conf_parse_tensors_info (JsonNode *info_node, ml_tensors_info_h *info_h);
+
+/**
+ * @brief Internal function to parse app information from json.
+ */
+int _ml_service_conf_parse_information (ml_service_s *mls, JsonObject *info);
 
 /**
  * @brief Internal function to release ml-service pipeline data.

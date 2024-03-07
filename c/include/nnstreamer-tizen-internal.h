@@ -39,16 +39,15 @@ typedef struct {
   char *fw_name;                 /**< The explicit framework name given by user */
 } ml_single_preset;
 
-typedef void *ml_service_event_h;
-
 /**
  * @brief Enumeration for the event types of ml-service.
+ * @since_tizen 9.0
+ * @todo TBU, need ACR later (update enum for ml-service event, see ml_service_callbacks_s)
  */
 typedef enum {
-  ML_SERVICE_EVENT_MODEL_REGISTERED = 0,
-  ML_SERVICE_EVENT_PIPELINE_REGISTERED,
-
-  ML_SERVICE_EVENT_UNKNOWN
+  ML_SERVICE_EVENT_MODEL_REGISTERED = 0,    /**< TBU */
+  ML_SERVICE_EVENT_PIPELINE_REGISTERED = 1, /**< TBU */
+  ML_SERVICE_EVENT_UNKNOWN                  /**< Unknown or invalid event type. */
 } ml_service_event_e;
 
 /**
