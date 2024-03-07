@@ -163,13 +163,16 @@ BuildRequires:	nnstreamer-onnxruntime
 BuildRequires:	ncnn-devel
 BuildRequires:	nnstreamer-ncnn
 %endif
+
 %if 0%{?enable_ml_service}
 BuildRequires:	mlops-agent-test
 %endif
 %endif # unit_test
 
 %if 0%{?enable_ml_service}
+%if %{with tizen}
 BuildRequires:	pkgconfig(capi-appfw-app-common)
+%endif
 BuildRequires:	pkgconfig(json-glib-1.0)
 BuildRequires:	pkgconfig(mlops-agent)
 
@@ -368,7 +371,7 @@ meson --buildtype=plain --prefix=%{_prefix} --sysconfdir=%{_sysconfdir} --libdir
 	--bindir=%{_bindir} --includedir=%{_includedir} \
 	%{enable_test} %{install_test} %{enable_test_coverage} \
 	%{enable_tizen} %{enable_tizen_privilege_check} %{enable_tizen_feature_check} \
-	%{enable_ml_service_check}  %{enable_gcov} \
+	%{enable_ml_service_check} %{enable_gcov} \
 	build
 
 ninja -C build %{?_smp_mflags}
@@ -509,7 +512,6 @@ install -m 0755 packaging/run-unittest.sh %{buildroot}%{_bindir}/tizen-unittests
 %files -n capi-machine-learning-unittests
 %manifest capi-machine-learning.manifest
 %{_bindir}/unittest-ml
-%{_libdir}/libunittest_mock.so*
 %if 0%{?gcov:1}
 %{_bindir}/tizen-unittests/%{name}/run-unittest.sh
 %endif

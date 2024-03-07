@@ -10,14 +10,14 @@ testenv.set('MLAPI_BUILD_ROOT_PATH', meson.build_root())
 unittest_util_static = static_library('unittest_util',
   files('capi/unittest_util.c'),
   dependencies: [glib_dep],
-  install: false,
+  install: false
 )
 
 unittest_common_dep = declare_dependency(
   link_with: [unittest_util_static],
   dependencies: [nns_capi_dep, gtest_dep],
   compile_args: ['-DFAKEDLOG=1'],
-  include_directories: nns_capi_include,
+  include_directories: nns_capi_include
 )
 
 subdir('capi')
