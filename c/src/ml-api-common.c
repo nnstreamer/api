@@ -146,6 +146,32 @@ _ml_tensors_info_create_internal (ml_tensors_info_h * info, bool extended)
 }
 
 /**
+ * @brief Creates new tensors-info handle and copies tensors information.
+ */
+int
+_ml_tensors_info_create_from (const ml_tensors_info_h in,
+    ml_tensors_info_h * out)
+{
+  ml_tensors_info_s *_info;
+  int status;
+
+  if (!in || !out)
+    return ML_ERROR_INVALID_PARAMETER;
+
+  _info = (ml_tensors_info_s *) in;
+
+  if (_info->is_extended)
+    status = ml_tensors_info_create_extended (out);
+  else
+    status = ml_tensors_info_create (out);
+
+  if (status == ML_ERROR_NONE)
+    status = ml_tensors_info_clone (*out, in);
+
+  return status;
+}
+
+/**
  * @brief Allocates a tensors information handle with default value.
  */
 int
@@ -722,7 +748,7 @@ _ml_tensors_data_create_no_alloc (const ml_tensors_info_h info,
 {
   ml_tensors_data_s *_data;
   ml_tensors_info_s *_info;
-  gint i;
+  guint i;
 
   check_feature_state (ML_FEATURE);
 
@@ -742,11 +768,8 @@ _ml_tensors_data_create_no_alloc (const ml_tensors_info_h info,
 
   _info = (ml_tensors_info_s *) info;
   if (_info != NULL) {
-    if (_info->is_extended)
-      ml_tensors_info_create_extended (&_data->info);
-    else
-      ml_tensors_info_create (&_data->info);
-    ml_tensors_info_clone (_data->info, info);
+    /* Ignore error case when creating internal info handle (single-shot). */
+    _ml_tensors_info_create_from (info, &_data->info);
 
     G_LOCK_UNLESS_NOLOCK (*_info);
     _data->num_tensors = _info->info.num_tensors;
@@ -840,6 +863,41 @@ error:
 }
 
 /**
+ * @brief Gets the tensors information of given tensor data frame.
+ */
+int
+ml_tensors_data_get_info (const ml_tensors_data_h data,
+    ml_tensors_info_h * info)
+{
+  int status;
+  ml_tensors_data_s *_data;
+
+  check_feature_state (ML_FEATURE);
+
+  if (data == NULL) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, data, is NULL. It should be a valid ml_tensors_data_h handle, which is usually created by ml_tensors_data_create ().");
+  }
+
+  if (info == NULL) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, info, is NULL. It should be a valid pointer to a space that can hold a ml_tensors_info_h handle. E.g., ml_tensors_info_h info; ml_tensors_data_get_info (data, &info);.");
+  }
+
+  _data = (ml_tensors_data_s *) data;
+  G_LOCK_UNLESS_NOLOCK (*_data);
+
+  status = _ml_tensors_info_create_from (_data->info, info);
+  if (status != ML_ERROR_NONE) {
+    _ml_error_report_continue
+        ("Failed to get the tensor information from data handle.");
+  }
+
+  G_UNLOCK_UNLESS_NOLOCK (*_data);
+  return status;
+}
+
+/**
  * @brief Allocates a tensor data frame with the given tensors info. (more info in nnstreamer.h)
  */
 int
@@ -847,7 +905,7 @@ ml_tensors_data_create (const ml_tensors_info_h info, ml_tensors_data_h * data)
 {
   gint status = ML_ERROR_STREAMS_PIPE;
   ml_tensors_data_s *_data = NULL;
-  gint i;
+  guint i;
   bool valid;
 
   check_feature_state (ML_FEATURE);
