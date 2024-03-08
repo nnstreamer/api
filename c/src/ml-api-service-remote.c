@@ -440,7 +440,7 @@ _mlrs_process_remote_service (nns_edge_data_h data_h, void *user_data)
         _ml_error_report_return (ret,
             "Failed to get data from uri: %s.", (gchar *) data);
       }
-      ret = ml_service_set_pipeline (service_key, (gchar *) array->data);
+      ret = ml_service_pipeline_set (service_key, (gchar *) array->data);
       if (ML_ERROR_NONE == ret) {
         event_type = ML_SERVICE_EVENT_PIPELINE_REGISTERED;
       }
@@ -448,7 +448,7 @@ _mlrs_process_remote_service (nns_edge_data_h data_h, void *user_data)
       break;
     }
     case ML_REMOTE_SERVICE_TYPE_PIPELINE_RAW:
-      ret = ml_service_set_pipeline (service_key, (gchar *) data);
+      ret = ml_service_pipeline_set (service_key, (gchar *) data);
       if (ML_ERROR_NONE == ret) {
         event_type = ML_SERVICE_EVENT_PIPELINE_REGISTERED;
       }
