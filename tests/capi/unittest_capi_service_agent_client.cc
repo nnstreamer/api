@@ -118,27 +118,27 @@ TEST_F (MLServiceAgentTest, usecase_00)
   /* create server pipeline */
   pipeline_desc = g_strdup_printf ("tensor_query_serversrc port=%u num-buffers=10 ! other/tensors,num_tensors=1,dimensions=3:4:4:1,types=uint8,format=static,framerate=0/1 ! tensor_query_serversink async=false", port);
 
-  status = ml_service_set_pipeline (service_name, pipeline_desc);
+  status = ml_service_pipeline_set (service_name, pipeline_desc);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   gchar *ret_pipeline;
-  status = ml_service_get_pipeline (service_name, &ret_pipeline);
+  status = ml_service_pipeline_get (service_name, &ret_pipeline);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_STREQ (pipeline_desc, ret_pipeline);
   g_free (ret_pipeline);
 
   ml_service_h service;
   ml_pipeline_state_e state;
-  status = ml_service_launch_pipeline (service_name, &service);
+  status = ml_service_pipeline_launch (service_name, &service);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_service_get_pipeline_state (service, &state);
+  status = ml_service_pipeline_get_state (service, &state);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_EQ (ML_PIPELINE_STATE_PAUSED, state);
 
-  status = ml_service_start_pipeline (service);
+  status = ml_service_start (service);
   EXPECT_EQ (ML_ERROR_NONE, status);
-  status = ml_service_get_pipeline_state (service, &state);
+  status = ml_service_pipeline_get_state (service, &state);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_EQ (ML_PIPELINE_STATE_PLAYING, state);
 
@@ -146,21 +146,21 @@ TEST_F (MLServiceAgentTest, usecase_00)
   guint sink_port = _get_available_port ();
   gchar *client_pipeline_desc = g_strdup_printf ("videotestsrc num-buffers=10 ! videoconvert ! videoscale ! video/x-raw,width=4,height=4,format=RGB,framerate=10/1 ! tensor_converter ! other/tensors,num_tensors=1,format=static ! tensor_query_client dest-port=%u port=%u ! fakesink sync=true", port, sink_port);
 
-  status = ml_service_set_pipeline ("client", client_pipeline_desc);
+  status = ml_service_pipeline_set ("client", client_pipeline_desc);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   ml_service_h client;
-  status = ml_service_launch_pipeline ("client", &client);
+  status = ml_service_pipeline_launch ("client", &client);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   g_usleep (1 * 1000 * 1000);
 
-  status = ml_service_start_pipeline (client);
+  status = ml_service_start (client);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   g_usleep (1 * 1000 * 1000);
 
-  status = ml_service_stop_pipeline (client);
+  status = ml_service_stop (client);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   g_usleep (1 * 1000 * 1000);
@@ -170,12 +170,12 @@ TEST_F (MLServiceAgentTest, usecase_00)
 
   g_usleep (1 * 1000 * 1000);
 
-  status = ml_service_stop_pipeline (service);
+  status = ml_service_stop (service);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   g_usleep (1 * 1000 * 1000);
 
-  status = ml_service_get_pipeline_state (service, &state);
+  status = ml_service_pipeline_get_state (service, &state);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_EQ (ML_PIPELINE_STATE_PAUSED, state);
 
@@ -184,11 +184,11 @@ TEST_F (MLServiceAgentTest, usecase_00)
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   /** delete finished service */
-  status = ml_service_delete_pipeline (service_name);
+  status = ml_service_pipeline_delete (service_name);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   /** it would fail if get the removed service */
-  status = ml_service_get_pipeline (service_name, &ret_pipeline);
+  status = ml_service_pipeline_get (service_name, &ret_pipeline);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
   g_free (pipeline_desc);
@@ -211,27 +211,27 @@ TEST_F (MLServiceAgentTest, usecase_01)
   /* create server pipeline */
   pipeline_desc = g_strdup_printf ("tensor_query_serversrc port=%u num-buffers=10 ! other/tensors,num_tensors=1,dimensions=3:4:4:1,types=uint8,format=static,framerate=0/1 ! tensor_query_serversink async=false", port);
 
-  status = ml_service_set_pipeline (service_name, pipeline_desc);
+  status = ml_service_pipeline_set (service_name, pipeline_desc);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   gchar *ret_pipeline;
-  status = ml_service_get_pipeline (service_name, &ret_pipeline);
+  status = ml_service_pipeline_get (service_name, &ret_pipeline);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_STREQ (pipeline_desc, ret_pipeline);
   g_free (ret_pipeline);
 
   ml_service_h service;
   ml_pipeline_state_e state;
-  status = ml_service_launch_pipeline (service_name, &service);
+  status = ml_service_pipeline_launch (service_name, &service);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_service_get_pipeline_state (service, &state);
+  status = ml_service_pipeline_get_state (service, &state);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_EQ (ML_PIPELINE_STATE_PAUSED, state);
 
-  status = ml_service_start_pipeline (service);
+  status = ml_service_start (service);
   EXPECT_EQ (ML_ERROR_NONE, status);
-  status = ml_service_get_pipeline_state (service, &state);
+  status = ml_service_pipeline_get_state (service, &state);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_EQ (ML_PIPELINE_STATE_PLAYING, state);
 
@@ -260,12 +260,12 @@ TEST_F (MLServiceAgentTest, usecase_01)
 
   g_usleep (1 * 1000 * 1000);
 
-  status = ml_service_stop_pipeline (service);
+  status = ml_service_stop (service);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   g_usleep (1 * 1000 * 1000);
 
-  status = ml_service_get_pipeline_state (service, &state);
+  status = ml_service_pipeline_get_state (service, &state);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_EQ (ML_PIPELINE_STATE_PAUSED, state);
 
@@ -274,11 +274,11 @@ TEST_F (MLServiceAgentTest, usecase_01)
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   /** delete finished service */
-  status = ml_service_delete_pipeline (service_name);
+  status = ml_service_pipeline_delete (service_name);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   /** it would fail if get the removed service */
-  status = ml_service_get_pipeline (service_name, &ret_pipeline);
+  status = ml_service_pipeline_get (service_name, &ret_pipeline);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
   g_free (pipeline_desc);
@@ -287,53 +287,53 @@ TEST_F (MLServiceAgentTest, usecase_01)
 }
 
 /**
- * @brief Test ml_service_set_pipeline with invalid param.
+ * @brief Test ml_service_pipeline_set with invalid param.
  */
 TEST_F (MLServiceAgentTest, set_pipeline_00_n)
 {
   int status;
-  status = ml_service_set_pipeline (NULL, "some pipeline");
+  status = ml_service_pipeline_set (NULL, "some pipeline");
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 }
 
 /**
- * @brief Test ml_service_set_pipeline with invalid param.
+ * @brief Test ml_service_pipeline_set with invalid param.
  */
 TEST_F (MLServiceAgentTest, set_pipeline_01_n)
 {
   int status;
-  status = ml_service_set_pipeline ("some key", NULL);
+  status = ml_service_pipeline_set ("some key", NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 }
 
 /**
- * @brief Test ml_service_get_pipeline with invalid param.
+ * @brief Test ml_service_pipeline_get with invalid param.
  */
 TEST_F (MLServiceAgentTest, get_pipeline_00_n)
 {
   int status;
   gchar *ret_pipeline = NULL;
-  status = ml_service_get_pipeline (NULL, &ret_pipeline);
+  status = ml_service_pipeline_get (NULL, &ret_pipeline);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 }
 
 /**
- * @brief Test ml_service_get_pipeline with invalid param.
+ * @brief Test ml_service_pipeline_get with invalid param.
  */
 TEST_F (MLServiceAgentTest, get_pipeline_01_n)
 {
   int status;
-  status = ml_service_get_pipeline ("some key", NULL);
+  status = ml_service_pipeline_get ("some key", NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 }
 
 /**
- * @brief Test ml_service_delete_pipeline with invalid param.
+ * @brief Test ml_service_pipeline_delete with invalid param.
  */
 TEST_F (MLServiceAgentTest, delete_pipeline_00_n)
 {
   int status;
-  status = ml_service_delete_pipeline (NULL);
+  status = ml_service_pipeline_delete (NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 }
 
@@ -343,21 +343,21 @@ TEST_F (MLServiceAgentTest, delete_pipeline_00_n)
 TEST_F (MLServiceAgentTest, launch_pipeline_00_n)
 {
   int status;
-  status = ml_service_launch_pipeline (NULL, NULL);
+  status = ml_service_pipeline_launch (NULL, NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 }
 
 /**
- * @brief Test ml_service_launch_pipeline with invalid key.
+ * @brief Test ml_service_pipeline_launch with invalid key.
  */
 TEST_F (MLServiceAgentTest, launch_pipeline_01_n)
 {
   int status;
   ml_service_h service_h = NULL;
-  status = ml_service_launch_pipeline (NULL, &service_h);
+  status = ml_service_pipeline_launch (NULL, &service_h);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = ml_service_launch_pipeline ("invalid key", &service_h);
+  status = ml_service_pipeline_launch ("invalid key", &service_h);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
   /* service_h is still NULL */
@@ -366,27 +366,27 @@ TEST_F (MLServiceAgentTest, launch_pipeline_01_n)
 }
 
 /**
- * @brief Test ml_service_start_pipeline with invalid param.
+ * @brief Test ml_service_start with invalid param.
  */
 TEST_F (MLServiceAgentTest, start_pipeline_00_n)
 {
   int status;
-  status = ml_service_start_pipeline (NULL);
+  status = ml_service_start (NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 }
 
 /**
- * @brief Test ml_service_stop_pipeline with invalid param.
+ * @brief Test ml_service_stop with invalid param.
  */
 TEST_F (MLServiceAgentTest, stop_pipeline_00_n)
 {
   int status;
-  status = ml_service_stop_pipeline (NULL);
+  status = ml_service_stop (NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 }
 
 /**
- * @brief Test ml_service_get_pipeline_state with invalid param.
+ * @brief Test ml_service_pipeline_get_state with invalid param.
  */
 TEST_F (MLServiceAgentTest, get_pipeline_state_00_n)
 {
@@ -394,22 +394,22 @@ TEST_F (MLServiceAgentTest, get_pipeline_state_00_n)
   ml_service_h h;
   ml_pipeline_state_e state;
 
-  status = ml_service_get_pipeline_state (NULL, &state);
+  status = ml_service_pipeline_get_state (NULL, &state);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = ml_service_set_pipeline ("key", "videotestsrc ! fakesink");
+  status = ml_service_pipeline_set ("key", "videotestsrc ! fakesink");
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_service_launch_pipeline ("key", &h);
+  status = ml_service_pipeline_launch ("key", &h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_service_get_pipeline_state (h, NULL);
+  status = ml_service_pipeline_get_state (h, NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
   status = ml_service_destroy (h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_service_delete_pipeline ("key");
+  status = ml_service_pipeline_delete ("key");
   EXPECT_EQ (ML_ERROR_NONE, status);
 }
 
@@ -431,10 +431,10 @@ TEST_F (MLServiceAgentTest, explicit_invalid_handle_00_n)
   int status;
   ml_service_h h;
 
-  status = ml_service_set_pipeline ("key", "videotestsrc ! fakesink");
+  status = ml_service_pipeline_set ("key", "videotestsrc ! fakesink");
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_service_launch_pipeline ("key", &h);
+  status = ml_service_pipeline_launch ("key", &h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   ml_service_s *mls = (ml_service_s *) h;
@@ -442,14 +442,14 @@ TEST_F (MLServiceAgentTest, explicit_invalid_handle_00_n)
   gint64 _id = server->id;
   server->id = -987654321; /* explicitly set id as invalid number */
 
-  status = ml_service_start_pipeline (h);
+  status = ml_service_start (h);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = ml_service_stop_pipeline (h);
+  status = ml_service_stop (h);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
   ml_pipeline_state_e state;
-  status = ml_service_get_pipeline_state (h, &state);
+  status = ml_service_pipeline_get_state (h, &state);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
   status = ml_service_destroy (h);
@@ -459,7 +459,7 @@ TEST_F (MLServiceAgentTest, explicit_invalid_handle_00_n)
   status = ml_service_destroy (h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_service_delete_pipeline ("key");
+  status = ml_service_pipeline_delete ("key");
   EXPECT_EQ (ML_ERROR_NONE, status);
 }
 
@@ -476,11 +476,11 @@ TEST_F (MLServiceAgentTest, query_client)
   guint server_port = _get_available_port ();
   gchar *server_pipeline_desc = g_strdup_printf ("tensor_query_serversrc port=%u num-buffers=%d ! other/tensors,num_tensors=1,dimensions=3:4:4:1,types=uint8,format=static,framerate=0/1 ! tensor_query_serversink async=false sync=false", server_port, num_buffers);
 
-  status = ml_service_set_pipeline (service_name, server_pipeline_desc);
+  status = ml_service_pipeline_set (service_name, server_pipeline_desc);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   gchar *ret_pipeline;
-  status = ml_service_get_pipeline (service_name, &ret_pipeline);
+  status = ml_service_pipeline_get (service_name, &ret_pipeline);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_STREQ (server_pipeline_desc, ret_pipeline);
   g_free (server_pipeline_desc);
@@ -488,16 +488,16 @@ TEST_F (MLServiceAgentTest, query_client)
 
   ml_service_h service;
   ml_pipeline_state_e state;
-  status = ml_service_launch_pipeline (service_name, &service);
+  status = ml_service_pipeline_launch (service_name, &service);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_service_get_pipeline_state (service, &state);
+  status = ml_service_pipeline_get_state (service, &state);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_EQ (ML_PIPELINE_STATE_PAUSED, state);
 
-  status = ml_service_start_pipeline (service);
+  status = ml_service_start (service);
   EXPECT_EQ (ML_ERROR_NONE, status);
-  status = ml_service_get_pipeline_state (service, &state);
+  status = ml_service_pipeline_get_state (service, &state);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_EQ (ML_PIPELINE_STATE_PLAYING, state);
 
@@ -587,10 +587,10 @@ TEST_F (MLServiceAgentTest, query_client)
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   /** destroy server pipeline */
-  status = ml_service_stop_pipeline (service);
+  status = ml_service_stop (service);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_service_get_pipeline_state (service, &state);
+  status = ml_service_pipeline_get_state (service, &state);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_EQ (ML_PIPELINE_STATE_PAUSED, state);
 
@@ -598,11 +598,11 @@ TEST_F (MLServiceAgentTest, query_client)
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   /** delete finished service */
-  status = ml_service_delete_pipeline (service_name);
+  status = ml_service_pipeline_delete (service_name);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   /** it would fail if get the removed service */
-  status = ml_service_get_pipeline (service_name, &ret_pipeline);
+  status = ml_service_pipeline_get (service_name, &ret_pipeline);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
   g_free (ret_pipeline);
 
