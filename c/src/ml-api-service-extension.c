@@ -522,7 +522,7 @@ _ml_extension_conf_parse_pipeline (ml_service_s * mls, JsonObject * pipe)
     const gchar *key = json_object_get_string_member (pipe, "key");
 
     if (STR_IS_VALID (key)) {
-      status = ml_service_get_pipeline (key, &desc);
+      status = ml_service_pipeline_get (key, &desc);
       if (status != ML_ERROR_NONE) {
         _ml_error_report_return (status,
             "Failed to parse configuration file, cannot get the pipeline of '%s'.",

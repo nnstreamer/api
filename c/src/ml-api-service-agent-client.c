@@ -287,7 +287,7 @@ _ml_service_check_path (const char *path)
  * @brief Set the pipeline description with a given name.
  */
 int
-ml_service_set_pipeline (const char *name, const char *pipeline_desc)
+ml_service_pipeline_set (const char *name, const char *pipeline_desc)
 {
   int ret = ML_ERROR_NONE;
 
@@ -315,7 +315,7 @@ ml_service_set_pipeline (const char *name, const char *pipeline_desc)
  * @brief Get the pipeline description with a given name.
  */
 int
-ml_service_get_pipeline (const char *name, char **pipeline_desc)
+ml_service_pipeline_get (const char *name, char **pipeline_desc)
 {
   int ret = ML_ERROR_NONE;
 
@@ -348,7 +348,7 @@ ml_service_get_pipeline (const char *name, char **pipeline_desc)
  * @brief Delete the pipeline description with a given name.
  */
 int
-ml_service_delete_pipeline (const char *name)
+ml_service_pipeline_delete (const char *name)
 {
   int ret = ML_ERROR_NONE;
 
@@ -371,7 +371,7 @@ ml_service_delete_pipeline (const char *name)
  * @brief Launch the pipeline of given service.
  */
 int
-ml_service_launch_pipeline (const char *name, ml_service_h * handle)
+ml_service_pipeline_launch (const char *name, ml_service_h * handle)
 {
   int ret = ML_ERROR_NONE;
   ml_service_s *mls;
@@ -416,62 +416,10 @@ ml_service_launch_pipeline (const char *name, ml_service_h * handle)
 }
 
 /**
- * @brief Start the pipeline of given ml_service_h
- */
-int
-ml_service_start_pipeline (ml_service_h handle)
-{
-  int ret = ML_ERROR_NONE;
-  ml_service_s *mls = (ml_service_s *) handle;
-  _ml_service_server_s *server;
-
-  check_feature_state (ML_FEATURE_SERVICE);
-
-  if (!_ml_service_handle_is_valid (mls)) {
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'handle' (ml_service_h), is invalid. It should be a valid ml_service_h instance.");
-  }
-
-  server = (_ml_service_server_s *) mls->priv;
-  ret = ml_agent_pipeline_start (server->id);
-  if (ret < 0) {
-    _ml_error_report ("Failed to invoke the method start_pipeline.");
-  }
-
-  return ret;
-}
-
-/**
- * @brief Stop the pipeline of given ml_service_h
- */
-int
-ml_service_stop_pipeline (ml_service_h handle)
-{
-  int ret = ML_ERROR_NONE;
-  ml_service_s *mls = (ml_service_s *) handle;
-  _ml_service_server_s *server;
-
-  check_feature_state (ML_FEATURE_SERVICE);
-
-  if (!_ml_service_handle_is_valid (mls)) {
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'handle' (ml_service_h), is invalid. It should be a valid ml_service_h instance.");
-  }
-
-  server = (_ml_service_server_s *) mls->priv;
-  ret = ml_agent_pipeline_stop (server->id);
-  if (ret < 0) {
-    _ml_error_report ("Failed to invoke the method stop_pipeline.");
-  }
-
-  return ret;
-}
-
-/**
  * @brief Return state of given ml_service_h
  */
 int
-ml_service_get_pipeline_state (ml_service_h handle, ml_pipeline_state_e * state)
+ml_service_pipeline_get_state (ml_service_h handle, ml_pipeline_state_e * state)
 {
   int ret = ML_ERROR_NONE;
   gint _state = ML_PIPELINE_STATE_UNKNOWN;
