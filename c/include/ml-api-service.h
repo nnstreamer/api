@@ -59,7 +59,7 @@ extern "C" {
  * ml_pipeline_h handle;
  *
  * // Set pipeline description.
- * status = ml_service_set_pipeline ("my_pipeline", my_pipeline);
+ * status = ml_service_pipeline_set ("my_pipeline", my_pipeline);
  * if (status != ML_ERROR_NONE) {
  *   // handle error case
  *   goto error;
@@ -69,7 +69,7 @@ extern "C" {
  * // Users may register intelligence pipelines for other processes and fetch such registered pipelines.
  * // For example, a developer adds a pipeline which includes preprocessing and invoking a neural network model,
  * // then an application can fetch and construct this for intelligence service.
- * status = ml_service_get_pipeline ("my_pipeline", &pipeline);
+ * status = ml_service_pipeline_get ("my_pipeline", &pipeline);
  * if (status != ML_ERROR_NONE) {
  *   // handle error case
  *   goto error;
@@ -86,12 +86,12 @@ extern "C" {
  * g_free (pipeline);
  * @endcode
  */
-int ml_service_set_pipeline (const char *name, const char *pipeline_desc);
+int ml_service_pipeline_set (const char *name, const char *pipeline_desc);
 
 /**
  * @brief Gets the pipeline description with a given name.
  * @since_tizen 7.0
- * @remarks If the function succeeds, @a pipeline_desc must be released using g_free().
+ * @remarks If the function succeeds, @a pipeline_desc must be released using free().
  * @param[in] name The unique name to retrieve.
  * @param[out] pipeline_desc The pipeline corresponding with the given name.
  * @return @c 0 on success. Otherwise a negative error value.
@@ -100,7 +100,7 @@ int ml_service_set_pipeline (const char *name, const char *pipeline_desc);
  * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
  * @retval #ML_ERROR_IO_ERROR The operation of DB or filesystem has failed.
  */
-int ml_service_get_pipeline (const char *name, char **pipeline_desc);
+int ml_service_pipeline_get (const char *name, char **pipeline_desc);
 
 /**
  * @brief Deletes the pipeline description with a given name.
@@ -113,7 +113,7 @@ int ml_service_get_pipeline (const char *name, char **pipeline_desc);
  * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
  * @retval #ML_ERROR_IO_ERROR The operation of DB or filesystem has failed.
  */
-int ml_service_delete_pipeline (const char *name);
+int ml_service_pipeline_delete (const char *name);
 
 /**
  * @brief A handle for ml-service instance.
@@ -136,7 +136,7 @@ typedef void *ml_service_h;
  * @retval #ML_ERROR_IO_ERROR The operation of DB or filesystem has failed.
  * @retval #ML_ERROR_STREAMS_PIPE Failed to launch the pipeline.
  */
-int ml_service_launch_pipeline (const char *name, ml_service_h *handle);
+int ml_service_pipeline_launch (const char *name, ml_service_h *handle);
 
 /**
  * @brief Starts the pipeline of given service handle.
@@ -149,7 +149,7 @@ int ml_service_launch_pipeline (const char *name, ml_service_h *handle);
  * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
  * @retval #ML_ERROR_STREAMS_PIPE Failed to start the pipeline.
  */
-int ml_service_start_pipeline (ml_service_h handle);
+int ml_service_start (ml_service_h handle);
 
 /**
  * @brief Stops the pipeline of given service handle.
@@ -162,11 +162,11 @@ int ml_service_start_pipeline (ml_service_h handle);
  * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
  * @retval #ML_ERROR_STREAMS_PIPE Failed to stop the pipeline.
  */
-int ml_service_stop_pipeline (ml_service_h handle);
+int ml_service_stop (ml_service_h handle);
 
 /**
  * @brief Destroys the given service handle.
- * @details If given service handle is created by ml_service_launch_pipeline(), this requests machine learning agent daemon to destroy the pipeline.
+ * @details If given service handle is created by ml_service_pipeline_launch(), this requests machine learning agent daemon to destroy the pipeline.
  * @since_tizen 7.0
  * @param[in] handle The service handle.
  * @return @c 0 on Success. Otherwise a negative error value.
@@ -188,7 +188,7 @@ int ml_service_destroy (ml_service_h handle);
  * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
  * @retval #ML_ERROR_STREAMS_PIPE Failed to access the pipeline state.
  */
-int ml_service_get_pipeline_state (ml_service_h handle, ml_pipeline_state_e *state);
+int ml_service_pipeline_get_state (ml_service_h handle, ml_pipeline_state_e *state);
 
 /**
  * @brief Creates query service handle with given ml-option handle.
