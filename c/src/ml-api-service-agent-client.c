@@ -286,7 +286,7 @@ _ml_service_check_path (const char *path)
  * @brief Set the pipeline description with a given name.
  */
 int
-ml_service_set_pipeline (const char *name, const char *pipeline_desc)
+ml_service_pipeline_set (const char *name, const char *pipeline_desc)
 {
   int ret = ML_ERROR_NONE;
   g_autoptr (GError) err = NULL;
@@ -316,7 +316,7 @@ ml_service_set_pipeline (const char *name, const char *pipeline_desc)
  * @brief Get the pipeline description with a given name.
  */
 int
-ml_service_get_pipeline (const char *name, char **pipeline_desc)
+ml_service_pipeline_get (const char *name, char **pipeline_desc)
 {
   int ret = ML_ERROR_NONE;
   g_autoptr (GError) err = NULL;
@@ -351,7 +351,7 @@ ml_service_get_pipeline (const char *name, char **pipeline_desc)
  * @brief Delete the pipeline description with a given name.
  */
 int
-ml_service_delete_pipeline (const char *name)
+ml_service_pipeline_delete (const char *name)
 {
   int ret = ML_ERROR_NONE;
   g_autoptr (GError) err = NULL;
@@ -376,7 +376,7 @@ ml_service_delete_pipeline (const char *name)
  * @brief Launch the pipeline of given service.
  */
 int
-ml_service_launch_pipeline (const char *name, ml_service_h * h)
+ml_service_pipeline_launch (const char *name, ml_service_h * h)
 {
   int ret = ML_ERROR_NONE;
   ml_service_s *mls;
@@ -429,7 +429,7 @@ ml_service_launch_pipeline (const char *name, ml_service_h * h)
  * @brief Start the pipeline of given ml_service_h
  */
 int
-ml_service_start_pipeline (ml_service_h h)
+ml_service_start (ml_service_h h)
 {
   int ret = ML_ERROR_NONE;
   ml_service_s *mls;
@@ -458,7 +458,7 @@ ml_service_start_pipeline (ml_service_h h)
  * @brief Stop the pipeline of given ml_service_h
  */
 int
-ml_service_stop_pipeline (ml_service_h h)
+ml_service_stop (ml_service_h h)
 {
   int ret = ML_ERROR_NONE;
   ml_service_s *mls;
@@ -487,7 +487,7 @@ ml_service_stop_pipeline (ml_service_h h)
  * @brief Return state of given ml_service_h
  */
 int
-ml_service_get_pipeline_state (ml_service_h h, ml_pipeline_state_e * state)
+ml_service_pipeline_get_state (ml_service_h h, ml_pipeline_state_e * state)
 {
   int ret = ML_ERROR_NONE;
   gint _state = ML_PIPELINE_STATE_UNKNOWN;
