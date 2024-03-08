@@ -106,7 +106,7 @@ _ml_service_event_cb (ml_service_event_e event_type, void *user_data)
       {
         g_autofree gchar *ret_pipeline = NULL;
         const gchar *service_key = "pipeline_test_key";
-        status = ml_service_get_pipeline (service_key, &ret_pipeline);
+        status = ml_service_pipeline_get (service_key, &ret_pipeline);
         EXPECT_EQ (ML_ERROR_NONE, status);
         EXPECT_STREQ ((gchar *) user_data, ret_pipeline);
         break;
@@ -332,7 +332,7 @@ TEST_F (MLRemoteService, registerPipelineURI)
   /* Wait for the server to register and check the result. */
   g_usleep (1000000);
 
-  status = ml_service_delete_pipeline (service_key);
+  status = ml_service_pipeline_delete (service_key);
   EXPECT_TRUE (status == ML_ERROR_NONE);
 
   status = ml_service_destroy (server_h);
