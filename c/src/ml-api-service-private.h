@@ -40,7 +40,7 @@ typedef enum
   ML_SERVICE_TYPE_UNKNOWN = 0,
   ML_SERVICE_TYPE_SERVER_PIPELINE,
   ML_SERVICE_TYPE_CLIENT_QUERY,
-  ML_SERVICE_TYPE_REMOTE,
+  ML_SERVICE_TYPE_OFFLOADING,
   ML_SERVICE_TYPE_EXTENSION,
 
   ML_SERVICE_TYPE_MAX
@@ -118,13 +118,13 @@ int ml_service_pipeline_release_internal (ml_service_s * mls);
  */
 int ml_service_query_release_internal (ml_service_s * mls);
 
-#if defined(ENABLE_REMOTE_SERVICE)
+#if defined(ENABLE_SERVICE_OFFLOADING)
 /**
- * @brief Internal function to release ml-service remote data.
+ * @brief Internal function to release ml-service offloading data.
  */
-int ml_service_remote_release_internal (ml_service_s * mls);
+int ml_service_offloading_release_internal (ml_service_s * mls);
 #else
-#define ml_service_remote_release_internal(...) ML_ERROR_NOT_SUPPORTED
+#define ml_service_offloading_release_internal(...) ML_ERROR_NOT_SUPPORTED
 #endif
 
 #ifdef __cplusplus

@@ -47,14 +47,14 @@ if get_option('enable-ml-service')
   )
   test('unittest_capi_service_agent_client', unittest_capi_service_agent_client, env: testenv, timeout: 100)
 
-  if support_remote_service
-    unittest_capi_remote_service = executable('unittest_capi_remote_service',
-      'unittest_capi_remote_service.cc',
+  if support_service_offloading
+    unittest_capi_service_offloading = executable('unittest_capi_service_offloading',
+      'unittest_capi_service_offloading.cc',
       dependencies: [unittest_common_dep, nns_capi_service_dep],
       install: get_option('install-test'),
       install_dir: unittest_install_dir
     )
-    test('unittest_capi_remote_service', unittest_capi_remote_service, env: testenv, timeout: 100)
+    test('unittest_capi_service_offloading', unittest_capi_service_offloading, env: testenv, timeout: 100)
   endif
 endif
 

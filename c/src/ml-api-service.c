@@ -14,7 +14,7 @@
 
 #include "ml-api-service.h"
 #include "ml-api-service-extension.h"
-#include "ml-api-service-remote.h"
+#include "ml-api-service-offloading.h"
 
 #define ML_SERVICE_MAGIC 0xfeeedeed
 #define ML_SERVICE_MAGIC_DEAD 0xdeaddead
@@ -34,7 +34,7 @@ _ml_service_handle_is_valid (ml_service_s * mls)
   switch (mls->type) {
     case ML_SERVICE_TYPE_SERVER_PIPELINE:
     case ML_SERVICE_TYPE_CLIENT_QUERY:
-    case ML_SERVICE_TYPE_REMOTE:
+    case ML_SERVICE_TYPE_OFFLOADING:
     case ML_SERVICE_TYPE_EXTENSION:
       if (mls->priv == NULL)
         return FALSE;
@@ -68,7 +68,7 @@ _ml_service_set_information_internal (ml_service_s * mls, const char *name,
     case ML_SERVICE_TYPE_EXTENSION:
       status = ml_service_extension_set_information (mls, name, value);
       break;
-    case ML_SERVICE_TYPE_REMOTE:
+    case ML_SERVICE_TYPE_OFFLOADING:
     {
       status = ml_service_remote_set_information (mls, name, value);
       break;
@@ -134,8 +134,8 @@ _ml_service_destroy_internal (ml_service_s * mls)
     case ML_SERVICE_TYPE_CLIENT_QUERY:
       status = ml_service_query_release_internal (mls);
       break;
-    case ML_SERVICE_TYPE_REMOTE:
-      status = ml_service_remote_release_internal (mls);
+    case ML_SERVICE_TYPE_OFFLOADING:
+      status = ml_service_offloading_release_internal (mls);
       break;
     case ML_SERVICE_TYPE_EXTENSION:
       status = ml_service_extension_destroy (mls);
@@ -282,23 +282,23 @@ _ml_service_conf_parse_tensors_info (JsonNode * info_node,
  * @brief Internal function to parse service info from config file.
  */
 static int
-_ml_service_remote_conf_to_opt (JsonObject * object, const gchar * name,
+_ml_service_offloading_conf_to_opt (JsonObject * object, const gchar * name,
     ml_option_h option)
 {
   int status;
-  JsonObject *remote_service_object;
+  JsonObject *service_offloading_object;
   const gchar *val = NULL;
   GList *list = NULL, *iter;
 
-  remote_service_object = json_object_get_object_member (object, name);
-  if (!remote_service_object) {
+  service_offloading_object = json_object_get_object_member (object, name);
+  if (!service_offloading_object) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "Failed to get %s member from the config file", name);
   }
 
-  list = json_object_get_members (remote_service_object);
+  list = json_object_get_members (service_offloading_object);
   for (iter = list; iter != NULL; iter = g_list_next (iter)) {
-    val = json_object_get_string_member (remote_service_object, iter->data);
+    val = json_object_get_string_member (service_offloading_object, iter->data);
     status = ml_option_set (option, iter->data, g_strdup (val), g_free);
     if (status != ML_ERROR_NONE) {
       _ml_error_report ("Failed to set %s option: %s.", (gchar *) list->data,
@@ -315,7 +315,7 @@ _ml_service_remote_conf_to_opt (JsonObject * object, const gchar * name,
  * @brief Internal function to parse service info from config file.
  */
 static int
-_ml_service_remote_parse_services (ml_service_s * mls, JsonObject * object)
+_ml_service_offloading_parse_services (ml_service_s * mls, JsonObject * object)
 {
   const gchar *val = NULL;
   GList *list = NULL, *iter;
@@ -327,8 +327,8 @@ _ml_service_remote_parse_services (ml_service_s * mls, JsonObject * object)
     json_node = json_object_get_member (object, iter->data);
     val = json_to_string (json_node, TRUE);
     if (val) {
-      status = ml_service_remote_set_service (mls, iter->data, val);
-      if (status!= ML_ERROR_NONE) {
+      status = ml_service_offloading_set_service (mls, iter->data, val);
+      if (status != ML_ERROR_NONE) {
         _ml_error_report ("Failed to set service key : %s", iter->data);
         break;
       }
@@ -336,14 +336,14 @@ _ml_service_remote_parse_services (ml_service_s * mls, JsonObject * object)
   }
   g_list_free (list);
 
-  return ML_ERROR_NONE;
+  return status;
 }
 
 /**
- * @brief Internal function to parse configuration file to create remote service.
+ * @brief Internal function to parse configuration file to create offloading service.
  */
 static int
-_ml_service_remote_create_json (ml_service_s * mls, JsonObject * object)
+_ml_service_offloading_create_json (ml_service_s * mls, JsonObject * object)
 {
   int status;
   ml_option_h option;
@@ -353,21 +353,22 @@ _ml_service_remote_create_json (ml_service_s * mls, JsonObject * object)
     _ml_error_report_return (status, "Failed to create ml-option.");
   }
 
-  status = _ml_service_remote_conf_to_opt (object, "remote", option);
+  status = _ml_service_offloading_conf_to_opt (object, "offloading", option);
   if (status != ML_ERROR_NONE) {
-    goto done;
     _ml_error_report ("Failed to set ml-option from config file.");
+    goto done;
   }
 
-  status = ml_service_remote_create (mls, option);
+  status = ml_service_offloading_create (mls, option);
   if (status != ML_ERROR_NONE) {
-    _ml_error_report ("Failed to create ml-service-remote.");
+    _ml_error_report ("Failed to create ml-service-offloading.");
+    goto done;
   }
 
   if (json_object_has_member (object, "services")) {
-    JsonObject * svc_object;
+    JsonObject *svc_object;
     svc_object = json_object_get_object_member (object, "services");
-    status = _ml_service_remote_parse_services (mls, svc_object);
+    status = _ml_service_offloading_parse_services (mls, svc_object);
     if (status != ML_ERROR_NONE) {
       _ml_logw ("Failed to parse services from config file.");
     }
@@ -387,12 +388,12 @@ _ml_service_get_type (JsonObject * object)
 {
   ml_service_type_e type = ML_SERVICE_TYPE_UNKNOWN;
 
-  /** @todo add more services such as training offloading, remote service */
+  /** @todo add more services such as training offloading, offloading service */
   if (json_object_has_member (object, "single") ||
       json_object_has_member (object, "pipeline")) {
     type = ML_SERVICE_TYPE_EXTENSION;
-  } else if (json_object_has_member (object, "remote")) {
-    type = ML_SERVICE_TYPE_REMOTE;
+  } else if (json_object_has_member (object, "offloading")) {
+    type = ML_SERVICE_TYPE_OFFLOADING;
   } else {
     _ml_error_report
         ("Failed to parse configuration file, cannot get the valid type from configuration.");
@@ -458,6 +459,11 @@ ml_service_new (const char *config, ml_service_h * handle)
   object = json_node_get_object (root);
 
   service_type = _ml_service_get_type (object);
+  if (ML_SERVICE_TYPE_UNKNOWN == service_type) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "Failed to parse configuration file, cannot get the valid type from configuration.");
+  }
+
   /* Parse each service type. */
   mls = _ml_service_create_internal (service_type);
   if (mls == NULL) {
@@ -469,8 +475,8 @@ ml_service_new (const char *config, ml_service_h * handle)
     case ML_SERVICE_TYPE_EXTENSION:
       status = ml_service_extension_create (mls, object);
       break;
-    case ML_SERVICE_TYPE_REMOTE:
-      status = _ml_service_remote_create_json (mls, object);
+    case ML_SERVICE_TYPE_OFFLOADING:
+      status = _ml_service_offloading_create_json (mls, object);
       break;
     default:
       /* Invalid handle type. */
@@ -807,8 +813,8 @@ ml_service_request (ml_service_h handle, const char *name,
     case ML_SERVICE_TYPE_EXTENSION:
       status = ml_service_extension_request (mls, name, data);
       break;
-    case ML_SERVICE_TYPE_REMOTE:
-      status = ml_service_remote_request (mls, name, data);
+    case ML_SERVICE_TYPE_OFFLOADING:
+      status = ml_service_offloading_request (mls, name, data);
       break;
     default:
       /* Invalid handle type. */

@@ -31,15 +31,15 @@ gst_app_dep = dependency('gstreamer-app-1.0')
 nnstreamer_single_dep = dependency('nnstreamer-single')
 nnstreamer_dep = dependency('nnstreamer')
 
-support_remote_service = false
+support_service_offloading = false
 if get_option('enable-ml-service')
   json_glib_dep = dependency('json-glib-1.0')
   mlops_agent_dep = dependency('mlops-agent')
   nnstreamer_edge_dep = dependency('nnstreamer-edge', required: false)
   curl_dep = cc.find_library('curl', required: false)
   if nnstreamer_edge_dep.found() and curl_dep.found()
-    add_project_arguments('-DENABLE_REMOTE_SERVICE=1', language: ['c', 'cpp'])
-    support_remote_service = true
+    add_project_arguments('-DENABLE_SERVICE_OFFLOADING=1', language: ['c', 'cpp'])
+    support_service_offloading = true
   endif
 endif
 
