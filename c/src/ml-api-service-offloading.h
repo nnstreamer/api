@@ -2,7 +2,7 @@
 /**
  * Copyright (c) 2024 Samsung Electronics Co., Ltd. All Rights Reserved.
  *
- * @file	ml-api-service-remote.h
+ * @file	ml-api-service-offloading.h
  * @date	04 March 2024
  * @brief	ml-service extension internal header.
  *        This file should NOT be exported to SDK or devel package.
@@ -10,8 +10,8 @@
  * @bug		No known bugs except for NYI items
  */
 
-#ifndef __ML_SERVICE_REMOTE_INTERNAL_H__
-#define __ML_SERVICE_REMOTE_INTERNAL_H__
+#ifndef __ML_SERVICE_OFFLOADING_INTERNAL_H__
+#define __ML_SERVICE_OFFLOADING_INTERNAL_H__
 
 #include <ml-api-service.h>
 #include "nnstreamer-tizen-internal.h"
@@ -19,10 +19,10 @@
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
-typedef void * ml_service_remote_h;
+typedef void * ml_service_offloading_h;
 
 /**
- * @brief Creates ml remote service handle with given ml-option handle.
+ * @brief Creates ml offloading service handle with given ml-option handle.
  * @remarks The @a handle should be destroyed using ml_service_destroy().
  * @param[in] handle ml-service handle created by ml_service_new().
  * @param[in] option The option used for creating query service.
@@ -35,22 +35,22 @@ typedef void * ml_service_remote_h;
  * @retval #ML_ERROR_TRY_AGAIN The pipeline is not ready yet.
  * @retval #ML_ERROR_PERMISSION_DENIED The application does not have the privilege to access to the storage.
  */
-int ml_service_remote_create (ml_service_remote_h handle, ml_option_h option);
+int ml_service_offloading_create (ml_service_offloading_h handle, ml_option_h option);
 
 /**
- * @brief Request service to ml-service remote.
+ * @brief Request service to ml-service offloading.
  * @param[in] handle The query service handle created by ml_service_query_create().
  * @param[in] key The key of machine learning service.
- * @param[in] input The Data to be registered on the remote server.
+ * @param[in] input The Data to be registered on the offloading server.
  * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
  */
-int ml_service_remote_request (ml_service_remote_h handle,const char * key, const ml_tensors_data_h input);
+int ml_service_offloading_request (ml_service_offloading_h handle,const char * key, const ml_tensors_data_h input);
 
 /**
- * @brief Sets the services in ml-service remote handle.
+ * @brief Sets the services in ml-service offloading handle.
  * @param[in] handle The handle of ml-service.
  * @param[in] name The service key.
  * @param[in] value The value to be set (json string).
@@ -59,10 +59,10 @@ int ml_service_remote_request (ml_service_remote_h handle,const char * key, cons
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER The parameter is invalid.
  */
-int ml_service_remote_set_service (ml_service_h handle, const char *name, const char *value);
+int ml_service_offloading_set_service (ml_service_h handle, const char *name, const char *value);
 
 /**
- * @brief Set path in ml-service remote handle.
+ * @brief Set path in ml-service offloading handle.
  * @note This is not official and public API but experimental API.
  * @param[in] handle The query service handle created by ml_service_query_create().
  * @param[in] name The service key.
@@ -77,4 +77,4 @@ int ml_service_remote_set_information (ml_service_h handle, const char *name, co
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
-#endif /* __ML_SERVICE_REMOTE_INTERNAL_H__ */
+#endif /* __ML_SERVICE_OFFLOADING_INTERNAL_H__ */
