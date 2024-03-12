@@ -1,7 +1,7 @@
 /**
- * @file        unittest_capi_remote_service.cc
+ * @file        unittest_capi_offloading_service.cc
  * @date        26 Jun 2023
- * @brief       Unit test for ML Service C-API remote service.
+ * @brief       Unit test for ML Service C-API offloading service.
  * @see         https://github.com/nnstreamer/api
  * @author      Gichan Jang <gichan2.jang@samsung.com>
  * @bug         No known bugs
@@ -18,7 +18,7 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 
-#include "ml-api-service-remote.h"
+#include "ml-api-service-offloading.h"
 
 /**
  * @brief Internal function to get the config file path.
@@ -41,7 +41,7 @@ _get_config_path (const gchar *config_name)
 /**
  * @brief Test base class for Database of ML Service API.
  */
-class MLRemoteService : public ::testing::Test
+class MLOffloadingService : public ::testing::Test
 {
   protected:
   GTestDBus *dbus;
@@ -70,11 +70,12 @@ class MLRemoteService : public ::testing::Test
     bus_type = G_BUS_TYPE_SESSION;
 #endif
 
-    g_autofree gchar *sender_config = _get_config_path ("remote_service_sender.conf");
+    g_autofree gchar *sender_config = _get_config_path ("offloading_service_sender.conf");
     status = ml_service_new (sender_config, &client_h);
     ASSERT_EQ (status, ML_ERROR_NONE);
 
-    g_autofree gchar *receiver_config = _get_config_path ("remote_service_receiver.conf");
+    g_autofree gchar *receiver_config
+        = _get_config_path ("offloading_service_receiver.conf");
     status = ml_service_new (receiver_config, &server_h);
     ASSERT_EQ (status, ML_ERROR_NONE);
   }
@@ -130,7 +131,8 @@ class MLRemoteService : public ::testing::Test
  * @brief Callback function for scenario test.
  */
 static void
-_remote_service_cb_event (ml_service_h handle, int event_type, void *event_data, void *user_data)
+_offloading_service_cb_event (
+    ml_service_h handle, int event_type, void *event_data, void *user_data)
 {
   int status;
 
@@ -138,7 +140,7 @@ _remote_service_cb_event (ml_service_h handle, int event_type, void *event_data,
     case ML_SERVICE_EVENT_PIPELINE_REGISTERED:
       {
         g_autofree gchar *ret_pipeline = NULL;
-        const gchar *service_key = "pipeline_test_key";
+        const gchar *service_key = "pipeline_registration_test_key";
         status = ml_service_pipeline_get (service_key, &ret_pipeline);
         EXPECT_EQ (ML_ERROR_NONE, status);
         EXPECT_STREQ ((gchar *) user_data, ret_pipeline);
@@ -176,9 +178,9 @@ _remote_service_cb_event (ml_service_h handle, int event_type, void *event_data,
 }
 
 /**
- * @brief use case of pipeline registration using ml remote service using conf file.
+ * @brief use case of pipeline registration using ml offloading service using conf file.
  */
-TEST_F (MLRemoteService, registerPipeline)
+TEST_F (MLOffloadingService, registerPipeline)
 {
   ml_tensors_data_h input = NULL;
   ml_tensors_info_h in_info = NULL;
@@ -186,7 +188,7 @@ TEST_F (MLRemoteService, registerPipeline)
 
   gchar *pipeline_desc = g_strdup ("fakesrc ! fakesink");
   ml_service_callbacks_s cb = { 0 };
-  cb.event = _remote_service_cb_event;
+  cb.event = _offloading_service_cb_event;
   status = ml_service_set_event_cb (server_h, &cb, pipeline_desc);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
@@ -208,7 +210,7 @@ TEST_F (MLRemoteService, registerPipeline)
   /* Wait for the server to register and check the result. */
   g_usleep (1000000);
 
-  status = ml_service_delete_pipeline ("pipeline_registration_test_key");
+  status = ml_service_pipeline_delete ("pipeline_registration_test_key");
   EXPECT_TRUE (status == ML_ERROR_NONE);
 
   status = ml_tensors_info_destroy (in_info);
@@ -220,9 +222,9 @@ TEST_F (MLRemoteService, registerPipeline)
 }
 
 /**
- * @brief use case of pipeline registration using ml remote service using conf file.
+ * @brief use case of pipeline registration using ml offloading service using conf file.
  */
-TEST_F (MLRemoteService, registerPipelineURI)
+TEST_F (MLOffloadingService, registerPipelineURI)
 {
   ml_tensors_data_h input = NULL;
   ml_tensors_info_h in_info = NULL;
@@ -230,7 +232,7 @@ TEST_F (MLRemoteService, registerPipelineURI)
 
   g_autofree gchar *pipeline_desc = g_strdup ("fakesrc ! fakesink");
   ml_service_callbacks_s cb = { 0 };
-  cb.event = _remote_service_cb_event;
+  cb.event = _offloading_service_cb_event;
   status = ml_service_set_event_cb (server_h, &cb, pipeline_desc);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
@@ -261,7 +263,7 @@ TEST_F (MLRemoteService, registerPipelineURI)
   /* Wait for the server to register and check the result. */
   g_usleep (1000000);
 
-  status = ml_service_pipeline_delete (service_key);
+  status = ml_service_pipeline_delete ("pipeline_registration_test_key");
   EXPECT_TRUE (status == ML_ERROR_NONE);
 
   status = ml_tensors_info_destroy (in_info);
@@ -271,9 +273,9 @@ TEST_F (MLRemoteService, registerPipelineURI)
 }
 
 /**
- * @brief Test ml_service_remote_create with invalid param.
+ * @brief Test ml_service_offloading_create with invalid param.
  */
-TEST_F (MLRemoteService, createInvalidParam_n)
+TEST_F (MLOffloadingService, createInvalidParam_n)
 {
   int status;
   ml_option_h option_h = NULL;
@@ -282,12 +284,12 @@ TEST_F (MLRemoteService, createInvalidParam_n)
   status = ml_option_create (&option_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  service_h = _ml_service_create_internal (ML_SERVICE_TYPE_REMOTE);
+  service_h = _ml_service_create_internal (ML_SERVICE_TYPE_OFFLOADING);
 
-  status = ml_service_remote_create (NULL, option_h);
+  status = ml_service_offloading_create (NULL, option_h);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = ml_service_remote_create (service_h, NULL);
+  status = ml_service_offloading_create (service_h, NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
   status = ml_option_destroy (option_h);
@@ -295,9 +297,9 @@ TEST_F (MLRemoteService, createInvalidParam_n)
 }
 
 /**
- * @brief Test ml_service_remote_request with invalid param.
+ * @brief Test ml_service_offloading_request with invalid param.
  */
-TEST_F (MLRemoteService, registerInvalidParam_n)
+TEST_F (MLOffloadingService, registerInvalidParam_n)
 {
   g_autofree gchar *str = g_strdup ("Temp_test_str");
   ml_tensors_data_h input = NULL;
@@ -315,13 +317,13 @@ TEST_F (MLRemoteService, registerInvalidParam_n)
   status = ml_tensors_data_create (in_info, &input);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_service_remote_request (NULL, "pipeline_registration_raw", input);
+  status = ml_service_offloading_request (NULL, "pipeline_registration_raw", input);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = ml_service_remote_request (client_h, NULL, input);
+  status = ml_service_offloading_request (client_h, NULL, input);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = ml_service_remote_request (client_h, "pipeline_registration_raw", NULL);
+  status = ml_service_offloading_request (client_h, "pipeline_registration_raw", NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
   status = ml_tensors_info_destroy (in_info);
@@ -331,16 +333,16 @@ TEST_F (MLRemoteService, registerInvalidParam_n)
 }
 
 /**
- * @brief use case of model registration using ml remote service.
+ * @brief use case of model registration using ml offloading service.
  */
-TEST_F (MLRemoteService, registerModel)
+TEST_F (MLOffloadingService, registerModel)
 {
   ml_tensors_data_h input = NULL;
   ml_tensors_info_h in_info = NULL;
   ml_tensor_dimension in_dim = { 0 };
 
   const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
-  /* ml_service_remote_request () requires absolute path to model, ignore this case. */
+  /* ml_service_offloading_request () requires absolute path to model, ignore this case. */
   if (root_path == NULL)
     return;
 
@@ -353,7 +355,7 @@ TEST_F (MLRemoteService, registerModel)
   EXPECT_TRUE (g_file_get_contents (test_model, &contents, &len, NULL));
 
   ml_service_callbacks_s cb = { 0 };
-  cb.event = _remote_service_cb_event;
+  cb.event = _offloading_service_cb_event;
   status = ml_service_set_event_cb (server_h, &cb, contents);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
@@ -384,15 +386,15 @@ TEST_F (MLRemoteService, registerModel)
 }
 
 /**
- * @brief use case of model registration from URI using ml remote service.
+ * @brief use case of model registration from URI using ml offloading service.
  */
-TEST_F (MLRemoteService, registerModelURI)
+TEST_F (MLOffloadingService, registerModelURI)
 {
   ml_tensors_data_h input = NULL;
   ml_tensors_info_h in_info = NULL;
   ml_tensor_dimension in_dim = { 0 };
   const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
-  /* ml_service_remote_request () requires absolute path to model, ignore this case. */
+  /* ml_service_offloading_request () requires absolute path to model, ignore this case. */
   if (root_path == NULL)
     return;
 
@@ -405,7 +407,7 @@ TEST_F (MLRemoteService, registerModelURI)
   EXPECT_TRUE (g_file_get_contents (test_model_path, &contents, &len, NULL));
 
   ml_service_callbacks_s cb = { 0 };
-  cb.event = _remote_service_cb_event;
+  cb.event = _offloading_service_cb_event;
   status = ml_service_set_event_cb (server_h, &cb, contents);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
@@ -438,15 +440,15 @@ TEST_F (MLRemoteService, registerModelURI)
 }
 
 /**
- * @brief use case of model registration using ml remote service.
+ * @brief use case of model registration using ml offloading service.
  */
-TEST_F (MLRemoteService, registerModelPath)
+TEST_F (MLOffloadingService, registerModelPath)
 {
   ml_tensors_data_h input = NULL;
   ml_tensors_info_h in_info = NULL;
   ml_tensor_dimension in_dim = { 0 };
   const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
-  /* ml_service_remote_request () requires absolute path to model, ignore this case. */
+  /* ml_service_offloading_request () requires absolute path to model, ignore this case. */
   if (root_path == NULL)
     return;
 
@@ -467,7 +469,7 @@ TEST_F (MLRemoteService, registerModelPath)
   EXPECT_TRUE (g_file_get_contents (test_model, &contents, &len, NULL));
 
   ml_service_callbacks_s cb = { 0 };
-  cb.event = _remote_service_cb_event;
+  cb.event = _offloading_service_cb_event;
   status = ml_service_set_event_cb (server_h, &cb, contents);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
@@ -498,9 +500,9 @@ TEST_F (MLRemoteService, registerModelPath)
 }
 
 /**
- * @brief use case of pipeline registration using ml remote service using conf file.
+ * @brief use case of pipeline registration using ml offloading service using conf file.
  */
-TEST_F (MLRemoteService, requestInvalidParam_n)
+TEST_F (MLOffloadingService, requestInvalidParam_n)
 {
   ml_tensors_data_h input = NULL;
   ml_tensors_info_h in_info = NULL;
@@ -508,7 +510,7 @@ TEST_F (MLRemoteService, requestInvalidParam_n)
 
   g_autofree gchar *pipeline_desc = g_strdup ("fakesrc ! fakesink");
   ml_service_callbacks_s cb = { 0 };
-  cb.event = _remote_service_cb_event;
+  cb.event = _offloading_service_cb_event;
   status = ml_service_set_event_cb (server_h, &cb, pipeline_desc);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
