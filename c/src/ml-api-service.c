@@ -70,7 +70,7 @@ _ml_service_set_information_internal (ml_service_s * mls, const char *name,
       break;
     case ML_SERVICE_TYPE_OFFLOADING:
     {
-      status = ml_service_remote_set_information (mls, name, value);
+      status = ml_service_offloading_set_information (mls, name, value);
       break;
     }
     default:
