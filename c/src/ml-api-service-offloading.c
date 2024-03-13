@@ -38,6 +38,7 @@ typedef enum
   ML_SERVICE_OFFLOADING_TYPE_MODEL_URI,
   ML_SERVICE_OFFLOADING_TYPE_PIPELINE_RAW,
   ML_SERVICE_OFFLOADING_TYPE_PIPELINE_URI,
+  ML_SERVICE_OFFLOADING_TYPE_REPLY,
 
   ML_SERVICE_OFFLOADING_TYPE_MAX
 } ml_service_offloading_type_e;
@@ -82,9 +83,9 @@ _mlrs_get_node_type (const gchar * value)
     return node_type;
 
   if (g_ascii_strcasecmp (value, "sender") == 0) {
-    node_type = NNS_EDGE_NODE_TYPE_PUB;
+    node_type = NNS_EDGE_NODE_TYPE_QUERY_CLIENT;
   } else if (g_ascii_strcasecmp (value, "receiver") == 0) {
-    node_type = NNS_EDGE_NODE_TYPE_SUB;
+    node_type = NNS_EDGE_NODE_TYPE_QUERY_SERVER;
   } else {
     _ml_error_report ("Invalid node type: %s, Please check ml_option.", value);
   }
@@ -204,6 +205,8 @@ _mlrs_get_service_type (gchar * service_str)
     service_type = ML_SERVICE_OFFLOADING_TYPE_PIPELINE_RAW;
   } else if (g_ascii_strcasecmp (service_str, "pipeline_uri") == 0) {
     service_type = ML_SERVICE_OFFLOADING_TYPE_PIPELINE_URI;
+  } else if (g_ascii_strcasecmp (service_str, "reply") == 0) {
+    service_type = ML_SERVICE_OFFLOADING_TYPE_REPLY;
   } else {
     _ml_error_report ("Invalid service type: %s, Please check service type.",
         service_str);
@@ -365,6 +368,7 @@ _mlrs_process_service_offloading (nns_edge_data_h data_h, void *user_data)
   _ml_service_offloading_s *offloading_s =
       (_ml_service_offloading_s *) mls->priv;
   ml_service_event_e event_type = ML_SERVICE_EVENT_UNKNOWN;
+  ml_information_h info_h = NULL;
 
   ret = nns_edge_data_get (data_h, 0, &data, &data_len);
   if (NNS_EDGE_ERROR_NONE != ret) {
@@ -455,6 +459,20 @@ _mlrs_process_service_offloading (nns_edge_data_h data_h, void *user_data)
         event_type = ML_SERVICE_EVENT_PIPELINE_REGISTERED;
       }
       break;
+    case ML_SERVICE_OFFLOADING_TYPE_REPLY:
+    {
+      ret = _ml_information_create (&info_h);
+      if (ML_ERROR_NONE != ret) {
+        _ml_error_report_return (ret, "Failed to create information handle. ");
+      }
+      ret = _ml_information_set (info_h, "data", (void *) data, NULL);
+      if (ML_ERROR_NONE != ret) {
+        _ml_error_report ("Failed to set data information.");
+        goto done;
+      }
+      event_type = ML_SERVICE_EVENT_REPLY;
+      break;
+    }
     default:
       _ml_error_report ("Unknown service type or not supported yet. "
           "Service num: %d", service_type);
@@ -463,8 +481,14 @@ _mlrs_process_service_offloading (nns_edge_data_h data_h, void *user_data)
 
   if (mls && event_type != ML_SERVICE_EVENT_UNKNOWN) {
     if (mls->cb_info.cb) {
-      mls->cb_info.cb (event_type, NULL, mls->cb_info.pdata);
+      mls->cb_info.cb (event_type, info_h, mls->cb_info.pdata);
     }
+  }
+
+done:
+  if (info_h) {
+    ret = ml_information_destroy (info_h);
+    _ml_error_report ("Failed to destroy service info handle.");
   }
 
   return ret;
@@ -485,7 +509,8 @@ _mlrs_edge_event_cb (nns_edge_event_h event_h, void *user_data)
     return ret;
 
   switch (event) {
-    case NNS_EDGE_EVENT_NEW_DATA_RECEIVED:{
+    case NNS_EDGE_EVENT_NEW_DATA_RECEIVED:
+    {
       ret = nns_edge_event_parse_new_data (event_h, &data_h);
       if (NNS_EDGE_ERROR_NONE != ret)
         return ret;
@@ -538,7 +563,7 @@ _mlrs_create_edge_handle (ml_service_s * mls, edge_info_s * edge_info)
     return ret;
   }
 
-  if (edge_info->node_type == NNS_EDGE_NODE_TYPE_SUB) {
+  if (edge_info->node_type == NNS_EDGE_NODE_TYPE_QUERY_CLIENT) {
     ret = nns_edge_connect (edge_h, edge_info->dest_host, edge_info->dest_port);
 
     if (NNS_EDGE_ERROR_NONE != ret) {
@@ -581,10 +606,11 @@ ml_service_offloading_release_internal (ml_service_s * mls)
 }
 
 /**
- * @brief Set value in ml-service remote handle.
+ * @brief Set value in ml-service offloading handle.
  */
 int
-ml_service_remote_set_information (ml_service_h handle, const gchar * name, const gchar * value)
+ml_service_offloading_set_information (ml_service_h handle, const gchar * name,
+    const gchar * value)
 {
   ml_service_s *mls = (ml_service_s *) handle;
   _ml_service_offloading_s *mlrs = (_ml_service_offloading_s *) mls->priv;
@@ -646,7 +672,7 @@ ml_service_offloading_create (ml_service_h handle, ml_option_h option)
   }
 
   if (ML_ERROR_NONE == ml_option_get (option, "path", (void **) (&_path))) {
-    ret = ml_service_remote_set_information (mls, "path", _path);
+    ret = ml_service_offloading_set_information (mls, "path", _path);
     if (ML_ERROR_NONE != ret) {
       _ml_error_report_return (ret,
           "Failed to set path in ml-service offloading handle.");
