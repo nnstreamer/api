@@ -72,7 +72,7 @@ int ml_service_offloading_set_service (ml_service_h handle, const char *name, co
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
  */
-int ml_service_remote_set_information (ml_service_h handle, const char *name, const char *value);
+int ml_service_offloading_set_information (ml_service_h handle, const char *name, const char *value);
 
 #ifdef __cplusplus
 }
