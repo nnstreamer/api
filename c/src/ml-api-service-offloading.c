@@ -2,9 +2,9 @@
 /**
  * Copyright (c) 2023 Samsung Electronics Co., Ltd. All Rights Reserved.
  *
- * @file ml-api-service-remote.c
+ * @file ml-api-service-offloading.c
  * @date 26 Jun 2023
- * @brief ML remote service of NNStreamer/Service C-API
+ * @brief ML offloading service of NNStreamer/Service C-API
  * @see https://github.com/nnstreamer/nnstreamer
  * @author Gichan Jang <gichan2.jang@samsung.com>
  * @bug No known bugs except for NYI items
@@ -18,30 +18,30 @@
 #include <gst/app/app.h>
 #include <string.h>
 #include <curl/curl.h>
+#include <json-glib/json-glib.h>
 #include <nnstreamer-edge.h>
 
 #include "ml-api-internal.h"
 #include "ml-api-service.h"
 #include "ml-api-service-private.h"
-
-/** @todo remove this header after ACR for ml-remote API is done. */
-#include "nnstreamer-tizen-internal.h"
+#include "ml-api-service-offloading.h"
 
 #define MAX_PORT_NUM_LEN 6U
 
 /**
- * @brief Enumeration for ml-remote service type.
+ * @brief Enumeration for ml-offloading service type.
  */
 typedef enum
 {
-  ML_REMOTE_SERVICE_TYPE_UNKNOWN = 0,
-  ML_REMOTE_SERVICE_TYPE_MODEL_RAW,
-  ML_REMOTE_SERVICE_TYPE_MODEL_URI,
-  ML_REMOTE_SERVICE_TYPE_PIPELINE_RAW,
-  ML_REMOTE_SERVICE_TYPE_PIPELINE_URI,
+  ML_SERVICE_OFFLOADING_TYPE_UNKNOWN = 0,
+  ML_SERVICE_OFFLOADING_TYPE_MODEL_RAW,
+  ML_SERVICE_OFFLOADING_TYPE_MODEL_URI,
+  ML_SERVICE_OFFLOADING_TYPE_PIPELINE_RAW,
+  ML_SERVICE_OFFLOADING_TYPE_PIPELINE_URI,
+  ML_SERVICE_OFFLOADING_TYPE_REPLY,
 
-  ML_REMOTE_SERVICE_TYPE_MAX
-} ml_remote_service_type_e;
+  ML_SERVICE_OFFLOADING_TYPE_MAX
+} ml_service_offloading_type_e;
 
 /**
  * @brief Data struct for options.
@@ -59,17 +59,17 @@ typedef struct
 } edge_info_s;
 
 /**
- * @brief Structure for ml_remote_service
+ * @brief Structure for ml_service_offloading
  */
 typedef struct
 {
   nns_edge_h edge_h;
   nns_edge_node_type_e node_type;
 
-  ml_service_event_cb event_cb;
-  void *user_data;
   gchar *path; /**< A path to save the received model file */
-} _ml_remote_service_s;
+  ml_option_h info;
+  GHashTable *table;
+} _ml_service_offloading_s;
 
 /**
  * @brief Get ml-service node type from ml_option.
@@ -82,10 +82,10 @@ _mlrs_get_node_type (const gchar * value)
   if (!value)
     return node_type;
 
-  if (g_ascii_strcasecmp (value, "remote_sender") == 0) {
-    node_type = NNS_EDGE_NODE_TYPE_PUB;
-  } else if (g_ascii_strcasecmp (value, "remote_receiver") == 0) {
-    node_type = NNS_EDGE_NODE_TYPE_SUB;
+  if (g_ascii_strcasecmp (value, "sender") == 0) {
+    node_type = NNS_EDGE_NODE_TYPE_QUERY_CLIENT;
+  } else if (g_ascii_strcasecmp (value, "receiver") == 0) {
+    node_type = NNS_EDGE_NODE_TYPE_QUERY_SERVER;
   } else {
     _ml_error_report ("Invalid node type: %s, Please check ml_option.", value);
   }
@@ -133,13 +133,13 @@ _mlrs_get_edge_info (ml_option_h option, edge_info_s ** edge_info)
   else
     _info->host = g_strdup ("localhost");
   if (ML_ERROR_NONE == ml_option_get (option, "port", &value))
-    _info->port = *((guint *) value);
+    _info->port = g_ascii_strtoull (value, NULL, 10);
   if (ML_ERROR_NONE == ml_option_get (option, "dest-host", &value))
     _info->dest_host = g_strdup (value);
   else
     _info->dest_host = g_strdup ("localhost");
   if (ML_ERROR_NONE == ml_option_get (option, "dest-port", &value))
-    _info->dest_port = *((guint *) value);
+    _info->dest_port = g_ascii_strtoull (value, NULL, 10);
   if (ML_ERROR_NONE == ml_option_get (option, "connect-type", &value))
     _info->conn_type = _mlrs_get_conn_type (value);
   else
@@ -186,24 +186,27 @@ _mlrs_release_edge_info (edge_info_s * edge_info)
 }
 
 /**
- * @brief Get ml remote service type from ml_option.
+ * @brief Get ml offloading service type from ml_option.
  */
-static ml_remote_service_type_e
+static ml_service_offloading_type_e
 _mlrs_get_service_type (gchar * service_str)
 {
-  ml_remote_service_type_e service_type = ML_REMOTE_SERVICE_TYPE_UNKNOWN;
+  ml_service_offloading_type_e service_type =
+      ML_SERVICE_OFFLOADING_TYPE_UNKNOWN;
 
   if (!service_str)
     return service_type;
 
   if (g_ascii_strcasecmp (service_str, "model_raw") == 0) {
-    service_type = ML_REMOTE_SERVICE_TYPE_MODEL_RAW;
+    service_type = ML_SERVICE_OFFLOADING_TYPE_MODEL_RAW;
   } else if (g_ascii_strcasecmp (service_str, "model_uri") == 0) {
-    service_type = ML_REMOTE_SERVICE_TYPE_MODEL_URI;
+    service_type = ML_SERVICE_OFFLOADING_TYPE_MODEL_URI;
   } else if (g_ascii_strcasecmp (service_str, "pipeline_raw") == 0) {
-    service_type = ML_REMOTE_SERVICE_TYPE_PIPELINE_RAW;
+    service_type = ML_SERVICE_OFFLOADING_TYPE_PIPELINE_RAW;
   } else if (g_ascii_strcasecmp (service_str, "pipeline_uri") == 0) {
-    service_type = ML_REMOTE_SERVICE_TYPE_PIPELINE_URI;
+    service_type = ML_SERVICE_OFFLOADING_TYPE_PIPELINE_URI;
+  } else if (g_ascii_strcasecmp (service_str, "reply") == 0) {
+    service_type = ML_SERVICE_OFFLOADING_TYPE_REPLY;
   } else {
     _ml_error_report ("Invalid service type: %s, Please check service type.",
         service_str);
@@ -212,7 +215,7 @@ _mlrs_get_service_type (gchar * service_str)
 }
 
 /**
- * @brief Get ml remote service activation type.
+ * @brief Get ml offloading service activation type.
  */
 static gboolean
 _mlrs_parse_activate (const gchar * activate)
@@ -238,7 +241,7 @@ curl_mem_write_cb (void *data, size_t size, size_t nmemb, void *clientp)
 }
 
 /**
- * @brief Register model file given by the remote sender.
+ * @brief Register model file given by the offloading sender.
  */
 static gboolean
 _mlrs_model_register (gchar * service_key, nns_edge_data_h data_h,
@@ -264,7 +267,6 @@ _mlrs_model_register (gchar * service_key, nns_edge_data_h data_h,
   active_bool = _mlrs_parse_activate (activate);
 
   model_path = g_build_path (G_DIR_SEPARATOR_S, dir_path, name, NULL);
-
   if (!g_file_set_contents (model_path, (char *) data, data_len, &error)) {
     _ml_loge ("Failed to write data to file: %s",
         error ? error->message : "unknown error");
@@ -285,17 +287,17 @@ _mlrs_model_register (gchar * service_key, nns_edge_data_h data_h,
 }
 
 /**
- * @brief Get path to save the model given from remote sender.
+ * @brief Get path to save the model given from offloading sender.
  * @note The caller is responsible for freeing the returned data using g_free().
  */
 static gchar *
-_mlrs_get_model_dir_path (_ml_remote_service_s * remote_s,
+_mlrs_get_model_dir_path (_ml_service_offloading_s * offloading_s,
     const gchar * service_key)
 {
   g_autofree gchar *dir_path = NULL;
 
-  if (remote_s->path) {
-    dir_path = g_strdup (remote_s->path);
+  if (offloading_s->path) {
+    dir_path = g_strdup (offloading_s->path);
   } else {
     g_autofree gchar *current_dir = g_get_current_dir ();
 
@@ -351,40 +353,43 @@ done:
 }
 
 /**
- * @brief Process ml remote service
+ * @brief Process ml offloading service
  */
 static int
-_mlrs_process_remote_service (nns_edge_data_h data_h, void *user_data)
+_mlrs_process_service_offloading (nns_edge_data_h data_h, void *user_data)
 {
   void *data;
   nns_size_t data_len;
   g_autofree gchar *service_str = NULL;
   g_autofree gchar *service_key = NULL;
-  ml_remote_service_type_e service_type;
+  ml_service_offloading_type_e service_type;
   int ret = NNS_EDGE_ERROR_NONE;
-  _ml_remote_service_s *remote_s = (_ml_remote_service_s *) user_data;
+  ml_service_s *mls = (ml_service_s *) user_data;
+  _ml_service_offloading_s *offloading_s =
+      (_ml_service_offloading_s *) mls->priv;
   ml_service_event_e event_type = ML_SERVICE_EVENT_UNKNOWN;
+  ml_information_h info_h = NULL;
 
   ret = nns_edge_data_get (data_h, 0, &data, &data_len);
   if (NNS_EDGE_ERROR_NONE != ret) {
     _ml_error_report_return (ret,
-        "Failed to get data while processing the ml-remote service.");
+        "Failed to get data while processing the ml-offloading service.");
   }
 
   ret = nns_edge_data_get_info (data_h, "service-type", &service_str);
   if (NNS_EDGE_ERROR_NONE != ret) {
     _ml_error_report_return (ret,
-        "Failed to get service type while processing the ml-remote service.");
+        "Failed to get service type while processing the ml-offloading service.");
   }
   service_type = _mlrs_get_service_type (service_str);
   ret = nns_edge_data_get_info (data_h, "service-key", &service_key);
   if (NNS_EDGE_ERROR_NONE != ret) {
     _ml_error_report_return (ret,
-        "Failed to get service key while processing the ml-remote service.");
+        "Failed to get service key while processing the ml-offloading service.");
   }
 
   switch (service_type) {
-    case ML_REMOTE_SERVICE_TYPE_MODEL_URI:
+    case ML_SERVICE_OFFLOADING_TYPE_MODEL_URI:
     {
       GByteArray *array = g_byte_array_new ();
       g_autofree gchar *dir_path = NULL;
@@ -395,7 +400,7 @@ _mlrs_process_remote_service (nns_edge_data_h data_h, void *user_data)
             "Failed to get data from uri: %s.", (gchar *) data);
       }
 
-      dir_path = _mlrs_get_model_dir_path (remote_s, service_key);
+      dir_path = _mlrs_get_model_dir_path (offloading_s, service_key);
       if (!dir_path) {
         _ml_error_report_return (NNS_EDGE_ERROR_UNKNOWN,
             "Failed to get model directory path.");
@@ -412,10 +417,11 @@ _mlrs_process_remote_service (nns_edge_data_h data_h, void *user_data)
       g_byte_array_free (array, TRUE);
       break;
     }
-    case ML_REMOTE_SERVICE_TYPE_MODEL_RAW:
+    case ML_SERVICE_OFFLOADING_TYPE_MODEL_RAW:
     {
       g_autofree gchar *dir_path =
-          _mlrs_get_model_dir_path (remote_s, service_key);
+          _mlrs_get_model_dir_path (offloading_s, service_key);
+
       if (!dir_path) {
         _ml_error_report_return (NNS_EDGE_ERROR_UNKNOWN,
             "Failed to get model directory path.");
@@ -430,7 +436,7 @@ _mlrs_process_remote_service (nns_edge_data_h data_h, void *user_data)
       }
       break;
     }
-    case ML_REMOTE_SERVICE_TYPE_PIPELINE_URI:
+    case ML_SERVICE_OFFLOADING_TYPE_PIPELINE_URI:
     {
       GByteArray *array = g_byte_array_new ();
 
@@ -440,29 +446,49 @@ _mlrs_process_remote_service (nns_edge_data_h data_h, void *user_data)
         _ml_error_report_return (ret,
             "Failed to get data from uri: %s.", (gchar *) data);
       }
-      ret = ml_service_set_pipeline (service_key, (gchar *) array->data);
+      ret = ml_service_pipeline_set (service_key, (gchar *) array->data);
       if (ML_ERROR_NONE == ret) {
         event_type = ML_SERVICE_EVENT_PIPELINE_REGISTERED;
       }
       g_byte_array_free (array, TRUE);
       break;
     }
-    case ML_REMOTE_SERVICE_TYPE_PIPELINE_RAW:
-      ret = ml_service_set_pipeline (service_key, (gchar *) data);
+    case ML_SERVICE_OFFLOADING_TYPE_PIPELINE_RAW:
+      ret = ml_service_pipeline_set (service_key, (gchar *) data);
       if (ML_ERROR_NONE == ret) {
         event_type = ML_SERVICE_EVENT_PIPELINE_REGISTERED;
       }
       break;
+    case ML_SERVICE_OFFLOADING_TYPE_REPLY:
+    {
+      ret = _ml_information_create (&info_h);
+      if (ML_ERROR_NONE != ret) {
+        _ml_error_report_return (ret, "Failed to create information handle. ");
+      }
+      ret = _ml_information_set (info_h, "data", (void *) data, NULL);
+      if (ML_ERROR_NONE != ret) {
+        _ml_error_report ("Failed to set data information.");
+        goto done;
+      }
+      event_type = ML_SERVICE_EVENT_REPLY;
+      break;
+    }
     default:
       _ml_error_report ("Unknown service type or not supported yet. "
           "Service num: %d", service_type);
       break;
   }
 
-  if (remote_s && event_type != ML_SERVICE_EVENT_UNKNOWN) {
-    if (remote_s->event_cb) {
-      remote_s->event_cb (event_type, remote_s->user_data);
+  if (mls && event_type != ML_SERVICE_EVENT_UNKNOWN) {
+    if (mls->cb_info.cb) {
+      mls->cb_info.cb (event_type, info_h, mls->cb_info.pdata);
     }
+  }
+
+done:
+  if (info_h) {
+    ret = ml_information_destroy (info_h);
+    _ml_error_report ("Failed to destroy service info handle.");
   }
 
   return ret;
@@ -483,12 +509,13 @@ _mlrs_edge_event_cb (nns_edge_event_h event_h, void *user_data)
     return ret;
 
   switch (event) {
-    case NNS_EDGE_EVENT_NEW_DATA_RECEIVED:{
+    case NNS_EDGE_EVENT_NEW_DATA_RECEIVED:
+    {
       ret = nns_edge_event_parse_new_data (event_h, &data_h);
       if (NNS_EDGE_ERROR_NONE != ret)
         return ret;
 
-      ret = _mlrs_process_remote_service (data_h, user_data);
+      ret = _mlrs_process_service_offloading (data_h, user_data);
       break;
     }
     default:
@@ -505,11 +532,11 @@ _mlrs_edge_event_cb (nns_edge_event_h event_h, void *user_data)
  * @brief Create edge handle.
  */
 static int
-_mlrs_create_edge_handle (_ml_remote_service_s * remote_s,
-    edge_info_s * edge_info)
+_mlrs_create_edge_handle (ml_service_s * mls, edge_info_s * edge_info)
 {
   int ret = 0;
   nns_edge_h edge_h = NULL;
+  _ml_service_offloading_s *offloading_s = NULL;
 
   ret = nns_edge_create_handle (edge_info->id, edge_info->conn_type,
       edge_info->node_type, &edge_h);
@@ -519,7 +546,8 @@ _mlrs_create_edge_handle (_ml_remote_service_s * remote_s,
     return ret;
   }
 
-  ret = nns_edge_set_event_callback (edge_h, _mlrs_edge_event_cb, remote_s);
+  offloading_s = (_ml_service_offloading_s *) mls->priv;
+  ret = nns_edge_set_event_callback (edge_h, _mlrs_edge_event_cb, mls);
   if (NNS_EDGE_ERROR_NONE != ret) {
     _ml_error_report ("nns_edge_set_event_callback failed.");
     nns_edge_release_handle (edge_h);
@@ -535,7 +563,7 @@ _mlrs_create_edge_handle (_ml_remote_service_s * remote_s,
     return ret;
   }
 
-  if (edge_info->node_type == NNS_EDGE_NODE_TYPE_SUB) {
+  if (edge_info->node_type == NNS_EDGE_NODE_TYPE_QUERY_CLIENT) {
     ret = nns_edge_connect (edge_h, edge_info->dest_host, edge_info->dest_port);
 
     if (NNS_EDGE_ERROR_NONE != ret) {
@@ -544,18 +572,18 @@ _mlrs_create_edge_handle (_ml_remote_service_s * remote_s,
       return ret;
     }
   }
-  remote_s->edge_h = edge_h;
+  offloading_s->edge_h = edge_h;
 
   return ret;
 }
 
 /**
- * @brief Internal function to release ml-service remote data.
+ * @brief Internal function to release ml-service offloading data.
  */
 int
-ml_service_remote_release_internal (ml_service_s * mls)
+ml_service_offloading_release_internal (ml_service_s * mls)
 {
-  _ml_remote_service_s *mlrs = (_ml_remote_service_s *) mls->priv;
+  _ml_service_offloading_s *mlrs = (_ml_service_offloading_s *) mls->priv;
 
   /* Supposed internal function call to release handle. */
   if (!mlrs)
@@ -563,9 +591,11 @@ ml_service_remote_release_internal (ml_service_s * mls)
 
   if (mlrs->edge_h) {
     nns_edge_release_handle (mlrs->edge_h);
+  }
 
-    /* Wait some time until release the edge handle. */
-    g_usleep (1000000);
+  if (mlrs->table) {
+    g_hash_table_destroy (mlrs->table);
+    mlrs->table = NULL;
   }
 
   g_free (mlrs->path);
@@ -576,128 +606,155 @@ ml_service_remote_release_internal (ml_service_s * mls)
 }
 
 /**
+ * @brief Set value in ml-service offloading handle.
+ */
+int
+ml_service_offloading_set_information (ml_service_h handle, const gchar * name,
+    const gchar * value)
+{
+  ml_service_s *mls = (ml_service_s *) handle;
+  _ml_service_offloading_s *mlrs = (_ml_service_offloading_s *) mls->priv;
+
+  if (g_ascii_strcasecmp (name, "path") == 0) {
+    if (!g_file_test (value, G_FILE_TEST_IS_DIR)) {
+      _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+          "The given param, dir path = \"%s\" is invalid or the dir is not found or accessible.",
+          value);
+    }
+    if (g_access (value, W_OK) != 0) {
+      _ml_error_report_return (ML_ERROR_PERMISSION_DENIED,
+          "Write permission denied, path: %s", value);
+    }
+
+    g_free (mlrs->path);
+    mlrs->path = g_strdup (value);
+  }
+
+  return ML_ERROR_NONE;
+}
+
+/**
  * @brief Creates ml-service handle with given ml-option handle.
  */
 int
-ml_service_remote_create (ml_option_h option, ml_service_event_cb cb,
-    void *user_data, ml_service_h * handle)
+ml_service_offloading_create (ml_service_h handle, ml_option_h option)
 {
   ml_service_s *mls;
-  _ml_remote_service_s *remote_s = NULL;
+  _ml_service_offloading_s *offloading_s = NULL;
   edge_info_s *edge_info = NULL;
   int ret = ML_ERROR_NONE;
   gchar *_path = NULL;
 
   check_feature_state (ML_FEATURE_SERVICE);
-  check_feature_state (ML_FEATURE_INFERENCE);
-
-  if (!option) {
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'option' is NULL. It should be a valid ml_option_h, which should be created by ml_option_create().");
-  }
 
   if (!handle) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'handle' (ml_service_h), is NULL. It should be a valid ml_service_h.");
   }
 
-  if (ML_ERROR_NONE == ml_option_get (option, "path", (void **) (&_path))) {
-    if (!g_file_test (_path, G_FILE_TEST_IS_DIR)) {
-      _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-          "The given param, dir path = \"%s\" is invalid or the dir is not found or accessible.",
-          _path);
-    }
-    if (g_access (_path, W_OK) != 0) {
-      _ml_error_report_return (ML_ERROR_PERMISSION_DENIED,
-          "Write permission denied, path: %s", _path);
-    }
+  if (!option) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'option' is NULL. It should be a valid ml_option_h, which should be created by ml_option_create().");
   }
+  mls = (ml_service_s *) handle;
 
-  mls = _ml_service_create_internal (ML_SERVICE_TYPE_REMOTE);
-  if (mls == NULL) {
-    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
-        "Failed to allocate memory for the service handle. Out of memory?");
-  }
-
-  mls->priv = remote_s = g_try_new0 (_ml_remote_service_s, 1);
-  if (remote_s == NULL) {
-    _ml_service_destroy_internal (mls);
+  mls->priv = offloading_s = g_try_new0 (_ml_service_offloading_s, 1);
+  if (offloading_s == NULL) {
     _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
         "Failed to allocate memory for the service handle's private data. Out of memory?");
   }
 
+  offloading_s->table =
+      g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+  if (!offloading_s->table) {
+    _ml_error_report
+        ("Failed to allocate memory for the table of ml-service offloading. Out of memory?");
+  }
+
+  if (ML_ERROR_NONE == ml_option_get (option, "path", (void **) (&_path))) {
+    ret = ml_service_offloading_set_information (mls, "path", _path);
+    if (ML_ERROR_NONE != ret) {
+      _ml_error_report_return (ret,
+          "Failed to set path in ml-service offloading handle.");
+    }
+  }
+
   _mlrs_get_edge_info (option, &edge_info);
 
-  remote_s->node_type = edge_info->node_type;
-  remote_s->event_cb = cb;
-  remote_s->user_data = user_data;
-  remote_s->path = g_strdup (_path);
-
-  ret = _mlrs_create_edge_handle (remote_s, edge_info);
-  if (ret != ML_ERROR_NONE)
-    _ml_service_destroy_internal (mls);
-  else
-    *handle = mls;
-
+  offloading_s->node_type = edge_info->node_type;
+  ret = _mlrs_create_edge_handle (mls, edge_info);
   _mlrs_release_edge_info (edge_info);
 
   return ret;
 }
 
 /**
- * @brief Register new information, such as neural network models or pipeline descriptions, on a remote server.
+ * @brief Register new information, such as neural network models or pipeline descriptions, on a offloading server.
  */
 int
-ml_service_remote_register (ml_service_h handle, ml_option_h option, void *data,
-    size_t data_len)
+ml_service_offloading_request (ml_service_h handle, const char *key,
+    const ml_tensors_data_h input)
 {
   ml_service_s *mls = (ml_service_s *) handle;
-  _ml_remote_service_s *remote_s = NULL;
-  gchar *service_key = NULL;
+  _ml_service_offloading_s *offloading_s = NULL;
+  const gchar *service_key = NULL;
   nns_edge_data_h data_h = NULL;
   int ret = NNS_EDGE_ERROR_NONE;
-  gchar *service_str = NULL;
-  gchar *description = NULL;
-  gchar *name = NULL;
-  gchar *activate = NULL;
+  const gchar *service_str = NULL;
+  const gchar *description = NULL;
+  const gchar *name = NULL;
+  const gchar *activate = NULL;
+  ml_tensors_data_s *_in = NULL;
+  JsonNode *service_node;
+  JsonObject *service_obj;
 
   check_feature_state (ML_FEATURE_SERVICE);
-  check_feature_state (ML_FEATURE_INFERENCE);
 
   if (!_ml_service_handle_is_valid (mls)) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'handle' (ml_service_h), is invalid. It should be a valid ml_service_h instance.");
   }
 
-  if (!option) {
+  if (!STR_IS_VALID (key)) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'option' is NULL. It should be a valid ml_option_h, which should be created by ml_option_create().");
+        "The parameter, 'key' is NULL. It should be a valid string.");
   }
 
-  if (!data) {
+  if (!input)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'data' is NULL. It should be a valid pointer.");
-  }
+        "The parameter, input (ml_tensors_data_h), is NULL. It should be a valid ml_tensor_data_h instance, which is usually created by ml_tensors_data_create().");
 
-  if (data_len <= 0) {
+  offloading_s = (_ml_service_offloading_s *) mls->priv;
+
+  service_str = g_hash_table_lookup (offloading_s->table, key);
+  if (!service_str) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'data_len' should be greater than 0.");
+        "The given service key, %s, is not registered in the ml-service offloading handle.",
+        key);
   }
 
-  ret = ml_option_get (option, "service-type", (void **) &service_str);
-  if (NNS_EDGE_ERROR_NONE != ret) {
-    _ml_error_report
-        ("Failed to get ml-remote service type. It should be set by ml_option_set().");
-    return ret;
+  service_node = json_from_string (service_str, NULL);
+  if (!service_node) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "Failed to parse the json string, %s.", service_str);
   }
-  ret = ml_option_get (option, "service-key", (void **) &service_key);
-  if (NNS_EDGE_ERROR_NONE != ret) {
-    _ml_error_report
-        ("Failed to get ml-remote service key. It should be set by ml_option_set().");
-    return ret;
+  service_obj = json_node_get_object (service_node);
+  if (!service_obj) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "Failed to get the json object from the json node.");
   }
 
-  remote_s = (_ml_remote_service_s *) mls->priv;
+  service_str = json_object_get_string_member (service_obj, "service-type");
+  if (!service_str) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "Failed to get service type from the json object.");
+  }
+
+  service_key = json_object_get_string_member (service_obj, "service-key");
+  if (!service_str) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "Failed to get service type from the json object.");
+  }
 
   ret = nns_edge_data_create (&data_h);
   if (NNS_EDGE_ERROR_NONE != ret) {
@@ -715,45 +772,75 @@ ml_service_remote_register (ml_service_h handle, ml_option_h option, void *data,
     _ml_error_report ("Failed to set service key in edge data.");
     goto done;
   }
-  ret = ml_option_get (option, "description", (void **) &description);
-  if (ML_ERROR_NONE != ret) {
-    _ml_logi ("Failed to get option description.");
-  }
-  ret = nns_edge_data_set_info (data_h, "description", description);
-  if (NNS_EDGE_ERROR_NONE != ret) {
-    _ml_logi ("Failed to set description in edge data.");
-  }
-  ret = ml_option_get (option, "name", (void **) &name);
-  if (ML_ERROR_NONE != ret) {
-    _ml_logi ("Failed to get option name.");
-  }
-  ret = nns_edge_data_set_info (data_h, "name", name);
-  if (NNS_EDGE_ERROR_NONE != ret) {
-    _ml_logi ("Failed to set name in edge data.");
-  }
-  ret = ml_option_get (option, "activate", (void **) &activate);
-  if (ML_ERROR_NONE != ret) {
-    _ml_logi ("Failed to get option activate.");
-  }
-  ret = nns_edge_data_set_info (data_h, "activate", activate);
-  if (NNS_EDGE_ERROR_NONE != ret) {
-    _ml_logi ("Failed to set activate in edge data.");
+
+  description = json_object_get_string_member (service_obj, "description");
+  if (description) {
+    ret = nns_edge_data_set_info (data_h, "description", description);
+    if (NNS_EDGE_ERROR_NONE != ret) {
+      _ml_logi ("Failed to set description in edge data.");
+    }
   }
 
-  ret = nns_edge_data_add (data_h, data, data_len, NULL);
+  name = json_object_get_string_member (service_obj, "name");
+  if (name) {
+    ret = nns_edge_data_set_info (data_h, "name", name);
+    if (NNS_EDGE_ERROR_NONE != ret) {
+      _ml_logi ("Failed to set name in edge data.");
+    }
+  }
+
+  activate = json_object_get_string_member (service_obj, "activate");
+  if (activate) {
+    ret = nns_edge_data_set_info (data_h, "activate", activate);
+    if (NNS_EDGE_ERROR_NONE != ret) {
+      _ml_logi ("Failed to set activate in edge data.");
+    }
+  }
+  _in = (ml_tensors_data_s *) input;
+  ret =
+      nns_edge_data_add (data_h, _in->tensors[0].data, _in->tensors[0].size,
+      NULL);
   if (NNS_EDGE_ERROR_NONE != ret) {
     _ml_error_report ("Failed to add camera data to the edge data.");
     goto done;
   }
 
-  ret = nns_edge_send (remote_s->edge_h, data_h);
+  ret = nns_edge_send (offloading_s->edge_h, data_h);
   if (NNS_EDGE_ERROR_NONE != ret) {
     _ml_error_report
-        ("Failed to publish the data to register the remote service.");
+        ("Failed to publish the data to register the offloading service.");
   }
 
 done:
   if (data_h)
     nns_edge_data_destroy (data_h);
   return ret;
+}
+
+/**
+ * @brief Sets the services in ml-service offloading handle.
+ */
+int
+ml_service_offloading_set_service (ml_service_h handle, const char *key,
+    const char *value)
+{
+  ml_service_s *mls = (ml_service_s *) handle;
+  _ml_service_offloading_s *offloading_s = NULL;
+
+  check_feature_state (ML_FEATURE_SERVICE);
+
+  if (!_ml_service_handle_is_valid (mls)) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'handle' (ml_service_h), is invalid. It should be a valid ml_service_h instance.");
+  }
+
+  if (!STR_IS_VALID (key) || !STR_IS_VALID (value)) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'key' or 'value' is NULL. It should be a valid string.");
+  }
+  offloading_s = (_ml_service_offloading_s *) mls->priv;
+
+  g_hash_table_insert (offloading_s->table, g_strdup (key), g_strdup (value));
+
+  return ML_ERROR_NONE;
 }
