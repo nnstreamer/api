@@ -171,10 +171,17 @@ include $(BUILD_SHARED_LIBRARY)
 #------------------------------------------------------
 # gstreamer for android
 #------------------------------------------------------
-GSTREAMER_NDK_BUILD_PATH := $(GSTREAMER_ROOT)/share/gst-android/ndk-build/
+GSTREAMER_NDK_BUILD_PATH := $(GSTREAMER_ROOT)/share/gst-android/ndk-build
 include $(LOCAL_PATH)/Android-gst-plugins.mk
 
-GSTREAMER_PLUGINS        := $(GST_REQUIRED_PLUGINS)
+GST_BLOCKED_PLUGINS      := \
+        fallbackswitch livesync rsinter rstracers \
+        threadshare togglerecord cdg claxon dav1d rsclosedcaption \
+        ffv1 fmp4 mp4 gif hsv lewton rav1e json rspng regex textwrap textahead \
+        aws hlssink3 ndi rsonvif raptorq reqwest rsrtp rsrtsp webrtchttp rswebrtc uriplaylistbin \
+        rsaudiofx rsvideofx
+
+GSTREAMER_PLUGINS        := $(filter-out $(GST_BLOCKED_PLUGINS), $(GST_REQUIRED_PLUGINS))
 GSTREAMER_EXTRA_DEPS     := $(GST_REQUIRED_DEPS) glib-2.0 gio-2.0 gmodule-2.0
 GSTREAMER_EXTRA_LIBS     := $(GST_REQUIRED_LIBS) -liconv
 
