@@ -499,7 +499,6 @@ sed -i "s|mlApiRoot=ml-api-path|mlApiRoot=$ml_api_dir|" gradle.properties
 sed -i "s|nnstreamerEdgeRoot=nnstreamer-edge-path|nnstreamerEdgeRoot=$nnstreamer_edge_dir|" gradle.properties
 sed -i "s|nnstreamerRoot=nnstreamer-path|nnstreamerRoot=$nnstreamer_dir|" gradle.properties
 sed -i "s|gstAndroidRoot=gstreamer-path|gstAndroidRoot=$gstreamer_dir|" gradle.properties
-sed -i "s|ndk.dir=ndk-path|ndk.dir=$android_ndk_dir|" local.properties
 sed -i "s|sdk.dir=sdk-path|sdk.dir=$android_sdk_dir|" local.properties
 
 # Update SNAP option

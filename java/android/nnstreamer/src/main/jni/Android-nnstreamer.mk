@@ -97,8 +97,8 @@ LOCAL_C_INCLUDES += $(PAHO_MQTT_C_INCLUDES)
 endif
 
 LOCAL_EXPORT_C_INCLUDES := $(NNSTREAMER_CAPI_INCLUDES)
-LOCAL_CFLAGS := -O3 -fPIC $(NNS_API_FLAGS)
-LOCAL_CXXFLAGS := -O3 -fPIC -frtti -fexceptions $(NNS_API_FLAGS)
+LOCAL_CFLAGS := -O3 -fPIC $(NNS_API_FLAGS) -Wno-deprecated-declarations
+LOCAL_CXXFLAGS := -O3 -fPIC -frtti -fexceptions $(NNS_API_FLAGS) -Wno-c99-designator
 
 ifeq ($(ENABLE_MQTT), true)
 LOCAL_STATIC_LIBRARIES := paho-mqtt3a paho-mqtt3c
