@@ -1,16 +1,17 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 28
-    buildToolsVersion '28.0.3'
+    namespace "org.nnsuite.nnstreamer"
+    compileSdk 34
     defaultConfig {
         minSdkVersion 24
-        targetSdkVersion 28
+        targetSdkVersion 34
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             ndkBuild {
+                ndkVersion "25.2.9519653"
                 def gstRoot
 
                 if (project.hasProperty('gstAndroidRoot'))
@@ -65,6 +66,13 @@ android {
             }
         }
     }
+    compileOptions {
+        // Flag to enable support for the new language APIs
+        coreLibraryDesugaringEnabled true
+        // Sets Java compatibility to Java 8
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
     buildTypes {
         debug {
             testCoverageEnabled true
@@ -92,6 +100,7 @@ android {
                 jniLibs.srcDirs += project.properties['NNFW_EXT_LIBRARY_PATH']
                 println 'Set jniLibs.srcDirs includes libraries for NNFW'
             }
+
         }
     }
     packagingOptions {
@@ -103,6 +112,7 @@ android {
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation 'com.android.support:appcompat-v7:28.0.0'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
     testImplementation 'junit:junit:4.13.1'
     androidTestImplementation 'com.android.support.test:rules:1.0.2'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
