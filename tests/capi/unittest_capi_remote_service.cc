@@ -171,7 +171,7 @@ TEST_F (MLRemoteService, registerPipeline)
   g_usleep (1000000);
 
   g_autofree gchar *ret_pipeline = NULL;
-  status = ml_service_get_pipeline (service_key, &ret_pipeline);
+  status = ml_service_pipeline_get (service_key, &ret_pipeline);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_STREQ (pipeline_desc, ret_pipeline);
 
@@ -279,11 +279,11 @@ TEST_F (MLRemoteService, registerPipelineURI)
   g_usleep (1000000);
 
   gchar *ret_pipeline = NULL;
-  status = ml_service_get_pipeline (service_key, &ret_pipeline);
+  status = ml_service_pipeline_get (service_key, &ret_pipeline);
   EXPECT_EQ (ML_ERROR_NONE, status);
   EXPECT_STREQ (pipeline_desc, ret_pipeline);
 
-  status = ml_service_delete_pipeline (service_key);
+  status = ml_service_pipeline_delete (service_key);
   EXPECT_TRUE (status == ML_ERROR_NONE);
 
   g_free (ret_pipeline);
