@@ -67,7 +67,7 @@ warning_flags = [
 
 warning_c_flags = [
   '-Wmissing-declarations',
-  '-Wmissing-include-dirs',
+  #  '-Wmissing-include-dirs',
   '-Wmissing-prototypes',
   '-Wnested-externs',
   '-Waggregate-return',

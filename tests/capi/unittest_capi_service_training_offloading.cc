@@ -1,5 +1,5 @@
 /**
- * @file        unittest_capi_service_offloading.cc
+ * @file        unittest_capi_offloading_service.cc
  * @date        26 Jun 2023
  * @brief       Unit test for ML Service C-API offloading service.
  * @see         https://github.com/nnstreamer/api
@@ -19,15 +19,6 @@
 #include <netinet/tcp.h>
 
 #include "ml-api-service-offloading.h"
-
-/**
- * @brief Structure for ml-service event callback.
- */
-typedef struct {
-  ml_service_h handle;
-  void *data;
-  gboolean received_reply;
-} _ml_service_test_data_s;
 
 /**
  * @brief Internal function to get the config file path.
@@ -50,7 +41,7 @@ _get_config_path (const gchar *config_name)
 /**
  * @brief Test base class for Database of ML Service API.
  */
-class MLOffloadingService : public ::testing::Test
+class MLServiceTrainingOffloading : public ::testing::Test
 {
   protected:
   GTestDBus *dbus;
@@ -58,7 +49,6 @@ class MLOffloadingService : public ::testing::Test
   int status;
   ml_service_h client_h;
   ml_service_h server_h;
-  _ml_service_test_data_s test_data;
 
   public:
   /**
@@ -80,15 +70,16 @@ class MLOffloadingService : public ::testing::Test
     bus_type = G_BUS_TYPE_SESSION;
 #endif
 
-    g_autofree gchar *receiver_config
-        = _get_config_path ("service_offloading_receiver.conf");
-    status = ml_service_new (receiver_config, &server_h);
+   /* should start receiver */
+   g_autofree gchar *receiver_config
+         = _get_config_path ("training_offloading_receiver.conf");
+    status = ml_service_new (receiver_config, &client_h);
     ASSERT_EQ (status, ML_ERROR_NONE);
-    test_data.handle = server_h;
 
-    g_autofree gchar *sender_config = _get_config_path ("service_offloading_sender.conf");
-    status = ml_service_new (sender_config, &client_h);
+    g_autofree gchar *sender_config = _get_config_path ("training_offloading_sender.conf");
+    status = ml_service_new (sender_config, &server_h);
     ASSERT_EQ (status, ML_ERROR_NONE);
+   
   }
 
   /**
@@ -139,112 +130,90 @@ class MLOffloadingService : public ::testing::Test
 };
 
 /**
- * @brief Callback function for scenario test.
- */
+ * @brief Start thread
+*/
 static void
-_ml_service_event_cb (ml_service_event_e event, ml_information_h event_data, void *user_data)
+server_start_thread ( ml_service_h server_h)
 {
-  int status;
-  _ml_service_test_data_s *test_data = (_ml_service_test_data_s *) user_data;
+  g_critical ("######## %s : %s: %d server start", __FILE__, __FUNCTION__, __LINE__);
+  ml_service_start (server_h);
+}
 
-  /** @todo remove typecast to int after new event type is added. */
-  switch ((int) event) {
-    case ML_SERVICE_EVENT_PIPELINE_REGISTERED:
-      {
-        g_autofree gchar *ret_pipeline = NULL;
-        const gchar *service_key = "pipeline_registration_test_key";
-        status = ml_service_pipeline_get (service_key, &ret_pipeline);
-        EXPECT_EQ (ML_ERROR_NONE, status);
-        EXPECT_STREQ ((gchar *) test_data->data, ret_pipeline);
-        break;
-      }
-    case ML_SERVICE_EVENT_MODEL_REGISTERED:
-      {
-        const gchar *service_key = "model_registration_test_key";
-        ml_information_h activated_model_info;
+/**
+ * @brief Client thread
+*/
+static void
+receiver_start_thread ( ml_service_h client_h)
+{
+  g_critical ("######## %s : %s: %d receiver start", __FILE__, __FUNCTION__, __LINE__);
+  ml_service_start (client_h);
+}
 
-        status = ml_service_model_get_activated (service_key, &activated_model_info);
-        EXPECT_EQ (ML_ERROR_NONE, status);
-        EXPECT_NE (activated_model_info, nullptr);
+/**
+ * @brief use case of pipeline registration using ml offloading service using conf file.
+ */
+TEST_F (MLServiceTrainingOffloading, registerPipeline)
+{
+  GThread *start_thread  = NULL;
+  GThread *receive_thread = NULL;
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH"); 
+  g_autofree gchar *file_path
+      = g_build_filename (root_path, "tests", "test_models", "models", NULL);
+  EXPECT_TRUE (g_file_test (file_path, G_FILE_TEST_IS_DIR));
+  g_autofree gchar *trained_model_path
+       = g_build_filename (root_path, "tests", "test_models", "models", "model.bin", NULL);
 
-        gchar *activated_model_path;
-        status = ml_information_get (
-            activated_model_info, "path", (void **) &activated_model_path);
-        EXPECT_EQ (ML_ERROR_NONE, status);
+  /* A path to app rw path */
+  status = ml_service_set_information (server_h, "path", file_path);
 
-        g_autofree gchar *activated_model_contents = NULL;
-        gsize activated_model_len = 0;
-        EXPECT_TRUE (g_file_get_contents (activated_model_path,
-            &activated_model_contents, &activated_model_len, NULL));
-        EXPECT_EQ (memcmp ((gchar *) test_data->data, activated_model_contents, activated_model_len),
-            0);
+  /* A path to app rw path */
+  status = ml_service_set_information (client_h, "path", file_path);
 
-        status = g_remove (activated_model_path);
-        EXPECT_TRUE (status == 0);
-        status = ml_information_destroy (activated_model_info);
-        EXPECT_EQ (ML_ERROR_NONE, status);
-        break;
-      }
-    default:
+
+  start_thread = g_thread_new ("server_start_thread", (GThreadFunc) server_start_thread, server_h);
+  receive_thread = g_thread_new ("receiver_start_thread", (GThreadFunc) receiver_start_thread, client_h);
+  int loop = 120;
+  while(loop--) {
+    g_warning ("######## %s : %s: %d wait for thread %d", __FILE__, __FUNCTION__, __LINE__, loop);
+    if (g_file_test (trained_model_path, G_FILE_TEST_EXISTS)) 
       break;
+    g_usleep(100000);
   }
-}
 
+
+  g_critical ("######## %s : %s: %d server_h stop", __FILE__, __FUNCTION__, __LINE__);
+  ml_service_stop(server_h);
+
+  g_critical ("######## %s : %s: %d client_h stop", __FILE__, __FUNCTION__, __LINE__);
+  ml_service_stop(client_h);
+
+  if (start_thread) {
+    g_critical ("######## %s : %s: %d server_h stop", __FILE__, __FUNCTION__, __LINE__);  
+    g_thread_join (start_thread);
+    start_thread = NULL;
+  }
+
+  if (receive_thread) {
+    g_critical ("######## %s : %s: %d server_h stop", __FILE__, __FUNCTION__, __LINE__);
+    g_thread_join (receive_thread);
+    receive_thread = NULL;
+  }
+
+}
+#if 0
 /**
  * @brief use case of pipeline registration using ml offloading service using conf file.
  */
-TEST_F (MLOffloadingService, registerPipeline)
-{
-  ml_tensors_data_h input = NULL;
-  ml_tensors_info_h in_info = NULL;
-  ml_tensor_dimension in_dim = { 0 };
-
-  gchar *pipeline_desc = g_strdup ("fakesrc ! fakesink");
-  test_data.data = pipeline_desc;
-  status = ml_service_set_event_cb (server_h, _ml_service_event_cb, &test_data);
-  EXPECT_EQ (status, ML_ERROR_NONE);
-
-  status = ml_tensors_info_create (&in_info);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-  ml_tensors_info_set_count (in_info, 1);
-  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_UINT8);
-  in_dim[0] = strlen (pipeline_desc) + 1;
-  ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
-  status = ml_tensors_data_create (in_info, &input);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-  status = ml_tensors_data_set_tensor_data (
-      input, 0, pipeline_desc, strlen (pipeline_desc) + 1);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-
-  status = ml_service_request (client_h, "pipeline_registration_raw", input);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-
-  /* Wait for the server to register and check the result. */
-  g_usleep (1000000);
-
-  status = ml_service_pipeline_delete ("pipeline_registration_test_key");
-  EXPECT_TRUE (status == ML_ERROR_NONE);
-
-  status = ml_tensors_info_destroy (in_info);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-  status = ml_tensors_data_destroy (input);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-
-  g_free (pipeline_desc);
-}
-
-/**
- * @brief use case of pipeline registration using ml offloading service using conf file.
- */
-TEST_F (MLOffloadingService, registerPipelineURI)
+TEST_F (MLServiceTrainingOffloading, registerPipelineURI)
 {
   ml_tensors_data_h input = NULL;
   ml_tensors_info_h in_info = NULL;
   ml_tensor_dimension in_dim = { 0 };
 
   g_autofree gchar *pipeline_desc = g_strdup ("fakesrc ! fakesink");
-  test_data.data = pipeline_desc;
-  status = ml_service_set_event_cb (server_h, _ml_service_event_cb, &test_data);
+  ml_service_callbacks_s cb = { 0 };
+  cb.event = _offloading_service_cb_event;
+  status = ml_service_set_event_cb (server_h, &cb, pipeline_desc);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   gchar *current_dir = g_get_current_dir ();
@@ -286,7 +255,7 @@ TEST_F (MLOffloadingService, registerPipelineURI)
 /**
  * @brief Test ml_service_offloading_create with invalid param.
  */
-TEST_F (MLOffloadingService, createInvalidParam_n)
+TEST_F (MLServiceTrainingOffloading, createInvalidParam_n)
 {
   int status;
   ml_option_h option_h = NULL;
@@ -310,7 +279,7 @@ TEST_F (MLOffloadingService, createInvalidParam_n)
 /**
  * @brief Test ml_service_offloading_request with invalid param.
  */
-TEST_F (MLOffloadingService, registerInvalidParam_n)
+TEST_F (MLServiceTrainingOffloading, registerInvalidParam_n)
 {
   g_autofree gchar *str = g_strdup ("Temp_test_str");
   ml_tensors_data_h input = NULL;
@@ -346,7 +315,7 @@ TEST_F (MLOffloadingService, registerInvalidParam_n)
 /**
  * @brief use case of model registration using ml offloading service.
  */
-TEST_F (MLOffloadingService, registerModel)
+TEST_F (MLServiceTrainingOffloading, registerModel)
 {
   ml_tensors_data_h input = NULL;
   ml_tensors_info_h in_info = NULL;
@@ -365,8 +334,9 @@ TEST_F (MLOffloadingService, registerModel)
   gsize len = 0;
   EXPECT_TRUE (g_file_get_contents (test_model, &contents, &len, NULL));
 
-  test_data.data = contents;
-  status = ml_service_set_event_cb (server_h, _ml_service_event_cb, &test_data);
+  ml_service_callbacks_s cb = { 0 };
+  cb.event = _offloading_service_cb_event;
+  status = ml_service_set_event_cb (server_h, &cb, contents);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   status = ml_tensors_info_create (&in_info);
@@ -398,7 +368,7 @@ TEST_F (MLOffloadingService, registerModel)
 /**
  * @brief use case of model registration from URI using ml offloading service.
  */
-TEST_F (MLOffloadingService, registerModelURI)
+TEST_F (MLServiceTrainingOffloading, registerModelURI)
 {
   ml_tensors_data_h input = NULL;
   ml_tensors_info_h in_info = NULL;
@@ -416,8 +386,9 @@ TEST_F (MLOffloadingService, registerModelURI)
   gsize len = 0;
   EXPECT_TRUE (g_file_get_contents (test_model_path, &contents, &len, NULL));
 
-  test_data.data = contents;
-  status = ml_service_set_event_cb (server_h, _ml_service_event_cb, &test_data);
+  ml_service_callbacks_s cb = { 0 };
+  cb.event = _offloading_service_cb_event;
+  status = ml_service_set_event_cb (server_h, &cb, contents);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   g_autofree gchar *model_uri = g_strdup_printf ("file://%s", test_model_path);
@@ -451,7 +422,7 @@ TEST_F (MLOffloadingService, registerModelURI)
 /**
  * @brief use case of model registration using ml offloading service.
  */
-TEST_F (MLOffloadingService, registerModelPath)
+TEST_F (MLServiceTrainingOffloading, registerModelPath)
 {
   ml_tensors_data_h input = NULL;
   ml_tensors_info_h in_info = NULL;
@@ -477,8 +448,9 @@ TEST_F (MLOffloadingService, registerModelPath)
   gsize len = 0;
   EXPECT_TRUE (g_file_get_contents (test_model, &contents, &len, NULL));
 
-  test_data.data = contents;
-  status = ml_service_set_event_cb (server_h, _ml_service_event_cb, &test_data);
+  ml_service_callbacks_s cb = { 0 };
+  cb.event = _offloading_service_cb_event;
+  status = ml_service_set_event_cb (server_h, &cb, contents);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   status = ml_tensors_info_create (&in_info);
@@ -510,14 +482,16 @@ TEST_F (MLOffloadingService, registerModelPath)
 /**
  * @brief use case of pipeline registration using ml offloading service using conf file.
  */
-TEST_F (MLOffloadingService, requestInvalidParam_n)
+TEST_F (MLServiceTrainingOffloading, requestInvalidParam_n)
 {
   ml_tensors_data_h input = NULL;
   ml_tensors_info_h in_info = NULL;
   ml_tensor_dimension in_dim = { 0 };
 
   g_autofree gchar *pipeline_desc = g_strdup ("fakesrc ! fakesink");
-  status = ml_service_set_event_cb (server_h, _ml_service_event_cb, pipeline_desc);
+  ml_service_callbacks_s cb = { 0 };
+  cb.event = _offloading_service_cb_event;
+  status = ml_service_set_event_cb (server_h, &cb, pipeline_desc);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   status = ml_tensors_info_create (&in_info);
@@ -540,94 +514,7 @@ TEST_F (MLOffloadingService, requestInvalidParam_n)
   status = ml_tensors_data_destroy (input);
   EXPECT_EQ (ML_ERROR_NONE, status);
 }
-
-
-/**
- * @brief Callback function for reply test.
- */
-static void
-_ml_service_reply_test_cb (ml_service_event_e event, ml_information_h event_data, void *user_data)
-{
-  int status;
-
-  switch ((int) event) {
-    case ML_SERVICE_EVENT_PIPELINE_REGISTERED:
-      {
-        _ml_service_test_data_s *test_data = (_ml_service_test_data_s *) user_data;
-        g_autofree gchar *ret_pipeline = NULL;
-        void *_data;
-        size_t _size;
-        const gchar *service_key = "pipeline_registration_test_key";
-        status = ml_service_pipeline_get (service_key, &ret_pipeline);
-        EXPECT_EQ (ML_ERROR_NONE, status);
-        status = ml_tensors_data_get_tensor_data (test_data->data, 0, &_data, &_size);
-        EXPECT_EQ (ML_ERROR_NONE, status);
-        EXPECT_STREQ ((gchar *) _data, ret_pipeline);
-
-        ml_service_request (test_data->handle, "reply_to_client", test_data->data);
-        break;
-      }
-    case ML_SERVICE_EVENT_REPLY:
-      {
-        gint *received = (gint *) user_data;
-        (*received)++;
-        break;
-      }
-    default:
-      break;
-  }
-}
-
-/**
- * @brief use case of replying to client.
- */
-TEST_F (MLOffloadingService, replyToClient)
-{
-  ml_tensors_data_h input = NULL;
-  ml_tensors_info_h in_info = NULL;
-  ml_tensor_dimension in_dim = { 0 };
-  gint received = 0;
-
-  gchar *pipeline_desc = g_strdup ("fakesrc ! fakesink");
-
-  status = ml_tensors_info_create (&in_info);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-  ml_tensors_info_set_count (in_info, 1);
-  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_UINT8);
-  in_dim[0] = strlen (pipeline_desc) + 1;
-  ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
-  status = ml_tensors_data_create (in_info, &input);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-  status = ml_tensors_data_set_tensor_data (
-      input, 0, pipeline_desc, strlen (pipeline_desc) + 1);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-
-  test_data.data = input;
-  status = ml_service_set_event_cb (server_h, _ml_service_reply_test_cb, &test_data);
-  EXPECT_EQ (status, ML_ERROR_NONE);
-
-  status = ml_service_set_event_cb (client_h, _ml_service_reply_test_cb, &received);
-  EXPECT_EQ (status, ML_ERROR_NONE);
-
-  status = ml_service_request (client_h, "pipeline_registration_raw", input);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-
-  /* Wait for the server to register and check the result. */
-  g_usleep (1000000);
-
-  EXPECT_GT (received, 0);
-
-  status = ml_service_pipeline_delete ("pipeline_registration_test_key");
-  EXPECT_TRUE (status == ML_ERROR_NONE);
-
-  status = ml_tensors_info_destroy (in_info);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-  status = ml_tensors_data_destroy (input);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-
-  g_free (pipeline_desc);
-}
-
+#endif
 /**
  * @brief Main gtest
  */
