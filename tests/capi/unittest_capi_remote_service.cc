@@ -28,7 +28,6 @@ class MLRemoteService : public ::testing::Test
 {
   protected:
   GTestDBus *dbus;
-  GBusType bus_type;
 
   public:
   /**
@@ -44,11 +43,6 @@ class MLRemoteService : public ::testing::Test
     g_test_dbus_add_service_dir (dbus, services_dir);
 
     g_test_dbus_up (dbus);
-#if defined(ENABLE_GCOV)
-    bus_type = G_BUS_TYPE_SYSTEM;
-#else
-    bus_type = G_BUS_TYPE_SESSION;
-#endif
   }
 
   /**
