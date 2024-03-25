@@ -349,6 +349,7 @@ _mlrs_process_service_offloading (nns_edge_data_h data_h, void *user_data)
   nns_size_t data_len;
   g_autofree gchar *service_str = NULL;
   g_autofree gchar *service_key = NULL;
+  g_autofree gchar *dir_path = NULL;
   ml_service_offloading_type_e service_type;
   int ret = NNS_EDGE_ERROR_NONE;
   ml_service_s *mls = (ml_service_s *) user_data;
@@ -375,22 +376,26 @@ _mlrs_process_service_offloading (nns_edge_data_h data_h, void *user_data)
         "Failed to get service key while processing the ml-offloading service.");
   }
 
+  dir_path = _mlrs_get_model_dir_path (offloading_s, service_key);
+
+  if (offloading_s->offloading_type == ML_OFFLOADING_TYPE_TRAINING)
+    ml_service_training_offloading_save_received_file_path (offloading_s,
+        data_h, dir_path, data, service_type);
+
   switch (service_type) {
     case ML_SERVICE_OFFLOADING_TYPE_MODEL_URI:
     {
       GByteArray *array = g_byte_array_new ();
-      g_autofree gchar *dir_path = NULL;
+
+      if (!dir_path) {
+        _ml_error_report_return (NNS_EDGE_ERROR_UNKNOWN,
+            "Failed to get model directory path.");
+      }
 
       if (!_mlrs_get_data_from_uri ((gchar *) data, array)) {
         g_byte_array_free (array, TRUE);
         _ml_error_report_return (NNS_EDGE_ERROR_IO,
             "Failed to get data from uri: %s.", (gchar *) data);
-      }
-
-      dir_path = _mlrs_get_model_dir_path (offloading_s, service_key);
-      if (!dir_path) {
-        _ml_error_report_return (NNS_EDGE_ERROR_UNKNOWN,
-            "Failed to get model directory path.");
       }
 
       if (_mlrs_model_register (service_key, data_h, array->data, array->len,
@@ -406,9 +411,6 @@ _mlrs_process_service_offloading (nns_edge_data_h data_h, void *user_data)
     }
     case ML_SERVICE_OFFLOADING_TYPE_MODEL_RAW:
     {
-      g_autofree gchar *dir_path =
-          _mlrs_get_model_dir_path (offloading_s, service_key);
-
       if (!dir_path) {
         _ml_error_report_return (NNS_EDGE_ERROR_UNKNOWN,
             "Failed to get model directory path.");
@@ -574,23 +576,29 @@ _mlrs_create_edge_handle (ml_service_s * mls, edge_info_s * edge_info)
 int
 ml_service_offloading_release_internal (ml_service_s * mls)
 {
-  _ml_service_offloading_s *mlrs = (_ml_service_offloading_s *) mls->priv;
+  _ml_service_offloading_s *offloading_s =
+      (_ml_service_offloading_s *) mls->priv;
 
   /* Supposed internal function call to release handle. */
-  if (!mlrs)
+  if (!offloading_s)
     return ML_ERROR_NONE;
 
-  if (mlrs->edge_h) {
-    nns_edge_release_handle (mlrs->edge_h);
+  if (offloading_s->offloading_type == ML_OFFLOADING_TYPE_TRAINING) {
+    if (ML_ERROR_NONE != ml_service_training_offloading_destroy (offloading_s))
+      _ml_error_report ("Failed to release ml-service handle, internal error?");
   }
 
-  if (mlrs->table) {
-    g_hash_table_destroy (mlrs->table);
-    mlrs->table = NULL;
+  if (offloading_s->edge_h) {
+    nns_edge_release_handle (offloading_s->edge_h);
   }
 
-  g_free (mlrs->path);
-  g_free (mlrs);
+  if (offloading_s->table) {
+    g_hash_table_destroy (offloading_s->table);
+    offloading_s->table = NULL;
+  }
+
+  g_free (offloading_s->path);
+  g_free (offloading_s);
   mls->priv = NULL;
 
   return ML_ERROR_NONE;
@@ -603,7 +611,6 @@ int
 ml_service_offloading_set_information (ml_service_h handle, const gchar * name,
     const gchar * value)
 {
-  int status;
   ml_service_s *mls = (ml_service_s *) handle;
   _ml_service_offloading_s *offloading_s =
       (_ml_service_offloading_s *) mls->priv;
@@ -623,58 +630,14 @@ ml_service_offloading_set_information (ml_service_h handle, const gchar * name,
     offloading_s->path = g_strdup (value);
   }
 
-  if (offloading_s->offloading_type == ML_OFFLOADING_TYPE_TRAINING) {
-    status =
-        ml_service_training_offloading_set_path (offloading_s, name, value);
-    if (status != ML_ERROR_NONE) {
-      _ml_error_report_return (status,
-          "Failed to parse the configuration file.");
-    }
-  }
-
   return ML_ERROR_NONE;
 }
 
 /**
- * @brief Creates ml-service handle with given ml-option handle.
+ * @brief  Creates ml offloading service with given ml-option handle
  */
 int
-ml_service_offloading_create (ml_service_h handle)
-{
-  ml_service_s *mls;
-  _ml_service_offloading_s *offloading_s = NULL;
-  int ret = ML_ERROR_NONE;
-
-  check_feature_state (ML_FEATURE_SERVICE);
-
-  if (!handle) {
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'handle' (ml_service_h), is NULL. It should be a valid ml_service_h.");
-  }
-
-  mls = (ml_service_s *) handle;
-
-  mls->priv = offloading_s = g_try_new0 (_ml_service_offloading_s, 1);
-  if (offloading_s == NULL) {
-    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
-        "Failed to allocate memory for the service handle's private data. Out of memory?");
-  }
-
-  offloading_s->table =
-      g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
-  if (!offloading_s->table) {
-    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
-        "Failed to allocate memory for the table of ml-service offloading. Out of memory?");
-  }
-
-  return ret;
-}
-
-/**
- * @brief start ml-service handle with given ml-option handle.
- */
-int
-ml_service_offloading_start (ml_service_h handle, ml_option_h option)
+ml_service_offloading_create (ml_service_h handle, ml_option_h option)
 {
   ml_service_s *mls;
   _ml_service_offloading_s *offloading_s = NULL;
@@ -708,17 +671,96 @@ ml_service_offloading_start (ml_service_h handle, ml_option_h option)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'handle' (_ml_service_offloading_s), is NULL. It should be called after create");
   }
-
+  g_critical ("######## %s : %s: %d ", __FILE__, __FUNCTION__, __LINE__);
   _mlrs_get_edge_info (option, &edge_info);
 
   offloading_s->node_type = edge_info->node_type;
   ret = _mlrs_create_edge_handle (mls, edge_info);
   _mlrs_release_edge_info (edge_info);
+  g_critical ("######## %s : %s: %d status(%d)", __FILE__, __FUNCTION__,
+      __LINE__, ret);
+  return ret;
+}
 
+/**
+ * @brief Internal function to start ml-service offloading.
+ */
+int
+ml_service_offloading_start (ml_service_h handle)
+{
+  ml_service_s *mls;
+  _ml_service_offloading_s *offloading_s = NULL;
+  int ret = ML_ERROR_NONE;
+
+  if (!handle) {
+    _ml_error_report
+        ("The parameter, 'handle' (ml_service_h), is NULL. It should be a valid ml_service_h.");
+    goto error;
+  }
+  mls = (ml_service_s *) handle;
+
+  offloading_s = (_ml_service_offloading_s *) mls->priv;
+  if (!offloading_s) {
+    _ml_error_report
+        ("The parameter, 'handle' (ml_service_h), does not have offloading service handle.");
+    goto error;
+  }
+
+  if (offloading_s->offloading_type == ML_OFFLOADING_TYPE_TRAINING) {
+    ret = ml_service_training_offloading_start (mls);
+    if (ret != ML_ERROR_NONE) {
+      _ml_error_report ("Failed to start training offloading.");
+      goto error;
+    }
+  }
+
+  return ret;
+
+error:
+  ml_service_training_offloading_destroy (offloading_s);
   return ret;
 }
 
 
+/**
+ * @brief Internal function to stop ml-service offloading.
+ */
+int
+ml_service_offloading_stop (ml_service_h handle)
+{
+  ml_service_s *mls;
+  _ml_service_offloading_s *offloading_s = NULL;
+  int ret = ML_ERROR_NONE;
+
+  if (!handle) {
+    _ml_error_report
+        ("The parameter, 'handle' (ml_service_h), is NULL. It should be a valid ml_service_h.");
+    goto error;
+  }
+  mls = (ml_service_s *) handle;
+
+  offloading_s = (_ml_service_offloading_s *) mls->priv;
+  if (!offloading_s) {
+    _ml_error_report
+        ("The parameter, 'handle' (ml_service_h), does not have offloading service handle.");
+    goto error;
+  }
+  g_critical ("######## %s : %s: %d stop", __FILE__, __FUNCTION__, __LINE__);
+
+  if (offloading_s->offloading_type == ML_OFFLOADING_TYPE_TRAINING) {
+    ret = ml_service_training_offloading_stop (mls);
+    if (ret != ML_ERROR_NONE) {
+      _ml_error_report ("Failed to stop training offloading.");
+      goto error;
+    }
+  }
+
+  return ret;
+
+error:
+  ml_service_training_offloading_destroy (offloading_s);
+  return ret;
+}
 
 /**
  * @brief Register new information, such as neural network models or pipeline descriptions, on a offloading server.

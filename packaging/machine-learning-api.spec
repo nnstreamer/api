@@ -17,6 +17,7 @@
 %define		armnn_support 0
 %define		onnxruntime_support 1
 %define		ncnn_support 0
+%define     nntrainer_trainer_support 1
 
 %define		release_test 0
 %define		test_script $(pwd)/packaging/run_unittests.sh
@@ -162,6 +163,12 @@ BuildRequires:	nnstreamer-onnxruntime
 %if 0%{?ncnn_support}
 BuildRequires:	ncnn-devel
 BuildRequires:	nnstreamer-ncnn
+%endif
+
+%if 0%{?nntrainer_trainer_support}
+BuildRequires:  nnstreamer-datarepo
+BuildRequires:  nnstreamer-nntrainer-trainer
+BuildRequires:  nntrainer
 %endif
 
 %if 0%{?enable_ml_service}
@@ -391,6 +398,7 @@ bash %{test_script} ./tests/capi/unittest_capi_service_extension
 bash %{test_script} ./tests/capi/unittest_capi_service_agent_client
 %if 0%{?nnstreamer_edge_support}
 bash %{test_script} ./tests/capi/unittest_capi_service_offloading
+bash %{test_script} ./tests/capi/unittest_capi_service_training_offloading
 %endif
 %endif
 

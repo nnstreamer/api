@@ -278,6 +278,41 @@ _ml_service_conf_parse_tensors_info (JsonNode * info_node,
 }
 
 /**
+ * @brief Internal function to creates ml-service offloading.
+ */
+static int
+_ml_service_offloading_new (ml_service_h handle)
+{
+  ml_service_s *mls;
+  _ml_service_offloading_s *offloading_s = NULL;
+  int ret = ML_ERROR_NONE;
+
+  check_feature_state (ML_FEATURE_SERVICE);
+
+  if (!handle) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'handle' (ml_service_h), is NULL. It should be a valid ml_service_h.");
+  }
+
+  mls = (ml_service_s *) handle;
+
+  mls->priv = offloading_s = g_try_new0 (_ml_service_offloading_s, 1);
+  if (offloading_s == NULL) {
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Failed to allocate memory for the service handle's private data. Out of memory?");
+  }
+
+  offloading_s->table =
+      g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+  if (!offloading_s->table) {
+    _ml_error_report
+        ("Failed to allocate memory for the table of ml-service offloading. Out of memory?");
+  }
+
+  return ret;
+}
+
+/**
  * @brief Internal function to parse service info from config file.
  */
 static int
@@ -372,10 +407,12 @@ _ml_service_offloading_create_json (ml_service_s * mls, JsonObject * object)
     _ml_error_report_return (status, "Failed to create ml-option.");
   }
 
-  status = ml_service_offloading_create (mls);
+  status = _ml_service_offloading_new (mls);
   if (status != ML_ERROR_NONE) {
     _ml_error_report ("Failed to create ml-service-offloading.");
   }
+  g_critical ("######## %s : %s: %d ML_ERROR_NONE(%d) status(%d)", __FILE__,
+      __FUNCTION__, __LINE__, ML_ERROR_NONE, status);
 
   status =
       _ml_service_offloading_conf_to_opt (mls, object, "offloading", option);
@@ -383,13 +420,16 @@ _ml_service_offloading_create_json (ml_service_s * mls, JsonObject * object)
     _ml_error_report ("Failed to set ml-option from config file.");
     goto done;
   }
+  g_critical ("######## %s : %s: %d ML_ERROR_NONE(%d) status(%d)", __FILE__,
+      __FUNCTION__, __LINE__, ML_ERROR_NONE, status);
 
-  status = ml_service_offloading_start (mls, option);
+  status = ml_service_offloading_create (mls, option);
   if (status != ML_ERROR_NONE) {
-    _ml_error_report ("Failed to create ml-service-offloading.");
+    g_critical ("Failed to create ml-service-offloading.");
     goto done;
   }
-
+  g_critical ("######## %s : %s: %d ML_ERROR_NONE(%d) status(%d)", __FILE__,
+      __FUNCTION__, __LINE__, ML_ERROR_NONE, status);
   if (json_object_has_member (object, "services")) {
     JsonObject *svc_object;
     svc_object = json_object_get_object_member (object, "services");
@@ -401,7 +441,6 @@ _ml_service_offloading_create_json (ml_service_s * mls, JsonObject * object)
 
 done:
   ml_option_destroy (option);
-
   return status;
 }
 
@@ -532,6 +571,8 @@ error:
     _ml_error_report ("Failed to open the ml-service configuration.");
     _ml_service_destroy_internal (mls);
   }
+  g_critical ("######## %s : %s: %d ML_ERROR_NONE(%d) status(%d)", __FILE__,
+      __FUNCTION__, __LINE__, ML_ERROR_NONE, status);
 
   return status;
 }
@@ -592,6 +633,9 @@ ml_service_start (ml_service_h handle)
     case ML_SERVICE_TYPE_EXTENSION:
       status = ml_service_extension_start (mls);
       break;
+    case ML_SERVICE_TYPE_OFFLOADING:
+      status = ml_service_offloading_start (mls);
+      break;
     default:
       /* Invalid handle type. */
       status = ML_ERROR_NOT_SUPPORTED;
@@ -630,6 +674,9 @@ ml_service_stop (ml_service_h handle)
     }
     case ML_SERVICE_TYPE_EXTENSION:
       status = ml_service_extension_stop (mls);
+      break;
+    case ML_SERVICE_TYPE_OFFLOADING:
+      status = ml_service_offloading_stop (mls);
       break;
     default:
       /* Invalid handle type. */
