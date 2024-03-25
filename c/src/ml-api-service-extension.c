@@ -773,12 +773,7 @@ ml_service_extension_get_input_information (ml_service_s * mls,
       node_info = _ml_extension_node_info_get (ext, name);
 
       if (node_info && node_info->type == ML_EXTENSION_NODE_TYPE_INPUT) {
-        status = ml_tensors_info_create (info);
-        if (status != ML_ERROR_NONE)
-          break;
-        status = ml_tensors_info_clone (*info, node_info->info);
-        if (status != ML_ERROR_NONE)
-          break;
+        status = _ml_tensors_info_create_from (node_info->info, info);
       } else {
         status = ML_ERROR_INVALID_PARAMETER;
       }
@@ -813,12 +808,7 @@ ml_service_extension_get_output_information (ml_service_s * mls,
       node_info = _ml_extension_node_info_get (ext, name);
 
       if (node_info && node_info->type == ML_EXTENSION_NODE_TYPE_OUTPUT) {
-        status = ml_tensors_info_create (info);
-        if (status != ML_ERROR_NONE)
-          break;
-        status = ml_tensors_info_clone (*info, node_info->info);
-        if (status != ML_ERROR_NONE)
-          break;
+        status = _ml_tensors_info_create_from (node_info->info, info);
       } else {
         status = ML_ERROR_INVALID_PARAMETER;
       }
