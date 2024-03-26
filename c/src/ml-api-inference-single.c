@@ -280,13 +280,23 @@ ml_check_nnfw_availability (ml_nnfw_type_e nnfw, ml_nnfw_hw_e hw,
 static void
 __setup_in_out_tensors (ml_single * single_h)
 {
-  int i;
+  guint i;
   ml_tensors_data_s *in_tensors = (ml_tensors_data_s *) single_h->in_tensors;
   ml_tensors_data_s *out_tensors = (ml_tensors_data_s *) single_h->out_tensors;
 
   /* Setup input buffer */
-  _ml_tensors_info_free (in_tensors->info);
-  _ml_tensors_info_copy_from_gst (in_tensors->info, &single_h->in_info);
+  if (in_tensors) {
+    _ml_tensors_info_free (in_tensors->info);
+    _ml_tensors_info_copy_from_gst (in_tensors->info, &single_h->in_info);
+  } else {
+    ml_tensors_info_h info;
+
+    _ml_tensors_info_create_from_gst (&info, &single_h->in_info);
+    _ml_tensors_data_create_no_alloc (info, &single_h->in_tensors);
+
+    ml_tensors_info_destroy (info);
+    in_tensors = (ml_tensors_data_s *) single_h->in_tensors;
+  }
 
   in_tensors->num_tensors = single_h->in_info.num_tensors;
   for (i = 0; i < in_tensors->num_tensors; i++) {
@@ -297,8 +307,18 @@ __setup_in_out_tensors (ml_single * single_h)
   }
 
   /* Setup output buffer */
-  _ml_tensors_info_free (out_tensors->info);
-  _ml_tensors_info_copy_from_gst (out_tensors->info, &single_h->out_info);
+  if (out_tensors) {
+    _ml_tensors_info_free (out_tensors->info);
+    _ml_tensors_info_copy_from_gst (out_tensors->info, &single_h->out_info);
+  } else {
+    ml_tensors_info_h info;
+
+    _ml_tensors_info_create_from_gst (&info, &single_h->out_info);
+    _ml_tensors_data_create_no_alloc (info, &single_h->out_tensors);
+
+    ml_tensors_info_destroy (info);
+    out_tensors = (ml_tensors_data_s *) single_h->out_tensors;
+  }
 
   out_tensors->num_tensors = single_h->out_info.num_tensors;
   for (i = 0; i < out_tensors->num_tensors; i++) {
@@ -800,8 +820,6 @@ ml_single_create_handle (ml_nnfw_type_e nnfw)
 {
   ml_single *single_h;
   GError *error;
-  ml_tensors_info_h info_h;
-  int status;
   gboolean created = FALSE;
 
   single_h = g_new0 (ml_single, 1);
@@ -832,28 +850,6 @@ ml_single_create_handle (ml_nnfw_type_e nnfw)
   g_mutex_init (&single_h->mutex);
   g_cond_init (&single_h->cond);
 
-  /* Dummy info to allocate tensors-info handle in data. */
-  status = ml_tensors_info_create_extended (&info_h);
-  if (status != ML_ERROR_NONE) {
-    _ml_error_report
-        ("Failed to create tensor information in single handle. Internal error or out of memory?");
-    goto done;
-  }
-
-  status = _ml_tensors_data_create_no_alloc (info_h, &single_h->in_tensors);
-  if (status != ML_ERROR_NONE) {
-    _ml_error_report
-        ("Failed to create input data in single handle. Internal error or out of memory?");
-    goto done;
-  }
-
-  status = _ml_tensors_data_create_no_alloc (info_h, &single_h->out_tensors);
-  if (status != ML_ERROR_NONE) {
-    _ml_error_report
-        ("Failed to create output data in single handle. Internal error or out of memory?");
-    goto done;
-  }
-
   single_h->klass = g_type_class_ref (G_TYPE_TENSOR_FILTER_SINGLE);
   if (single_h->klass == NULL) {
     _ml_error_report
@@ -874,8 +870,6 @@ ml_single_create_handle (ml_nnfw_type_e nnfw)
   created = TRUE;
 
 done:
-  ml_tensors_info_destroy (info_h);
-
   if (!created) {
     ml_single_close (single_h);
     single_h = NULL;
