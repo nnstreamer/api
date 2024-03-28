@@ -8,6 +8,7 @@
  */
 
 #include <gtest/gtest.h>
+#include <gio/gio.h>
 #include <glib.h>
 
 #include <ml-api-service-private.h>
@@ -35,6 +36,45 @@ typedef struct {
   gint received;
   gboolean is_pipeline;
 } extension_test_data_s;
+
+/**
+ * @brief Test base class for database of ML Service API.
+ */
+class MLServiceExtensionTest : public ::testing::Test
+{
+  protected:
+  static GTestDBus *dbus;
+
+  /**
+   * @brief Setup method for each test case.
+   */
+  static void SetUpTestSuite ()
+  {
+    g_autofree gchar *services_dir = g_build_filename ("/usr/bin/ml-test/services", NULL);
+
+    dbus = g_test_dbus_new (G_TEST_DBUS_NONE);
+    ASSERT_NE (nullptr, dbus);
+
+    g_test_dbus_add_service_dir (dbus, services_dir);
+    g_test_dbus_up (dbus);
+  }
+
+  /**
+   * @brief Teardown method for each test case.
+   */
+  static void TearDownTestSuite ()
+  {
+    if (dbus) {
+      g_test_dbus_down (dbus);
+      g_object_unref (dbus);
+    }
+  }
+};
+
+/**
+ * @brief Test dbus to run ml-agent.
+ */
+GTestDBus *MLServiceExtensionTest::dbus = nullptr;
 
 /**
  * @brief Internal function to create test-data.
@@ -96,6 +136,24 @@ _get_data_path (const gchar *data_name)
       = g_build_filename (root_path, "tests", "test_models", "data", data_name, NULL);
 
   return data_file;
+}
+
+/**
+ * @brief Internal function to get the model file path.
+ */
+static gchar *
+_get_model_path (const gchar *model_name)
+{
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
+
+  /* Supposed to run test in build directory. */
+  if (root_path == NULL)
+    root_path = "..";
+
+  gchar *model_file = g_build_filename (
+      root_path, "tests", "test_models", "models", model_name, NULL);
+
+  return model_file;
 }
 
 /**
@@ -420,6 +478,68 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, scenarioConfig3ImgClf)
 
   status = ml_service_destroy (handle);
   EXPECT_EQ (status, ML_ERROR_NONE);
+}
+
+/**
+ * @brief Usage of ml-service extension API.
+ */
+TEST_F_REQUIRE_TFLITE (MLServiceExtensionTest, scenarioConfig4ImgClf)
+{
+  ml_service_h handle;
+  int status;
+
+  const char test_name[] = "test-single-imgclf";
+  unsigned int version = 0U;
+  g_autofree gchar *config = _get_config_path ("config_single_imgclf_key.conf");
+  g_autofree gchar *model = _get_model_path ("mobilenet_v1_1.0_224_quant.tflite");
+
+  /* Register test model. */
+  ml_service_model_delete (test_name, 0U);
+  ml_service_model_register (test_name, model, true, NULL, &version);
+
+  status = ml_service_new (config, &handle);
+  ASSERT_EQ (status, ML_ERROR_NONE);
+
+  _extension_test_imgclf (handle, FALSE);
+
+  status = ml_service_destroy (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  /* Clear test model. */
+  ml_service_model_delete (test_name, 0U);
+}
+
+/**
+ * @brief Usage of ml-service extension API.
+ */
+TEST_F_REQUIRE_TFLITE (MLServiceExtensionTest, scenarioConfig5ImgClf)
+{
+  ml_service_h handle;
+  int status;
+
+  const char test_name[] = "test-pipeline-imgclf";
+  g_autofree gchar *config = _get_config_path ("config_pipeline_imgclf_key.conf");
+  g_autofree gchar *model = _get_model_path ("mobilenet_v1_1.0_224_quant.tflite");
+  g_autofree gchar *pipeline = g_strdup_printf (
+      "appsrc name=input_img "
+      "caps=other/tensors,num_tensors=1,format=static,types=uint8,dimensions=3:224:224:1,framerate=0/1 ! "
+      "tensor_filter framework=tensorflow-lite model=%s ! tensor_sink name=result_clf",
+      model);
+
+  /* Register test pipeline. */
+  ml_service_pipeline_delete (test_name);
+  ml_service_pipeline_set (test_name, pipeline);
+
+  status = ml_service_new (config, &handle);
+  ASSERT_EQ (status, ML_ERROR_NONE);
+
+  _extension_test_imgclf (handle, TRUE);
+
+  status = ml_service_destroy (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  /* Clear test pipeline. */
+  ml_service_pipeline_delete (test_name);
 }
 
 /**
