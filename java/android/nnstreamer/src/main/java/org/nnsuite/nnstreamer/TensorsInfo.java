@@ -272,7 +272,7 @@ public final class TensorsInfo implements AutoCloseable, Cloneable {
             }
 
             for (int dim : dimension) {
-                if (dim <= 0) {
+                if (dim < 0) {
                     throw new IllegalArgumentException("The dimension should be a positive value");
                 }
             }
@@ -281,7 +281,7 @@ public final class TensorsInfo implements AutoCloseable, Cloneable {
 
             /* fill default value */
             for (int i = rank; i < NNStreamer.TENSOR_RANK_LIMIT; i++) {
-                this.dimension[i] = 1;
+                this.dimension[i] = 0;
             }
         }
 
@@ -317,6 +317,8 @@ public final class TensorsInfo implements AutoCloseable, Cloneable {
             }
 
             for (int i = 0; i < NNStreamer.TENSOR_RANK_LIMIT; i++) {
+                if (this.dimension[i] == 0)
+                    break;
                 size *= this.dimension[i];
             }
 
