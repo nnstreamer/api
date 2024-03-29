@@ -29,21 +29,6 @@
 #define MAX_PORT_NUM_LEN 6U
 
 /**
- * @brief Enumeration for ml-offloading service type.
- */
-typedef enum
-{
-  ML_SERVICE_OFFLOADING_TYPE_UNKNOWN = 0,
-  ML_SERVICE_OFFLOADING_TYPE_MODEL_RAW,
-  ML_SERVICE_OFFLOADING_TYPE_MODEL_URI,
-  ML_SERVICE_OFFLOADING_TYPE_PIPELINE_RAW,
-  ML_SERVICE_OFFLOADING_TYPE_PIPELINE_URI,
-  ML_SERVICE_OFFLOADING_TYPE_REPLY,
-
-  ML_SERVICE_OFFLOADING_TYPE_MAX
-} ml_service_offloading_type_e;
-
-/**
  * @brief Data struct for options.
  */
 typedef struct
@@ -252,7 +237,6 @@ _mlrs_model_register (gchar * service_key, nns_edge_data_h data_h,
   }
 
   active_bool = _mlrs_parse_activate (activate);
-
   model_path = g_build_path (G_DIR_SEPARATOR_S, dir_path, name, NULL);
   if (!g_file_set_contents (model_path, (char *) data, data_len, &error)) {
     _ml_loge ("Failed to write data to file: %s",
@@ -378,9 +362,28 @@ _mlrs_process_service_offloading (nns_edge_data_h data_h, void *user_data)
 
   dir_path = _mlrs_get_model_dir_path (offloading_s, service_key);
 
-  if (offloading_s->offloading_type == ML_OFFLOADING_TYPE_TRAINING)
-    ml_service_training_offloading_save_received_file_path (offloading_s,
-        data_h, dir_path, data, service_type);
+  if (offloading_s->offloading_type == ML_OFFLOADING_TYPE_TRAINING) {
+    ml_service_training_offloading_process_received_data (offloading_s, data_h,
+        dir_path, data, service_type);
+    if (service_type == ML_SERVICE_OFFLOADING_TYPE_REPLY) {
+      if (!dir_path) {
+        g_critical ("######## %s : %s: %d Failed to get model directory path.",
+            __FILE__, __FUNCTION__, __LINE__);
+        _ml_error_report_return (NNS_EDGE_ERROR_UNKNOWN,
+            "Failed to get model directory path.");
+      }
+
+      if (_mlrs_model_register (service_key, data_h, data, data_len, dir_path)) {
+        event_type = ML_SERVICE_EVENT_MODEL_REGISTERED;
+      } else {
+        g_critical
+            ("######## %s : %s: %d cb()!! Failed to register model downloaded from",
+            __FILE__, __FUNCTION__, __LINE__);
+        _ml_error_report ("Failed to register model downloaded from: %s.",
+            (gchar *) data);
+      }
+    }
+  }
 
   switch (service_type) {
     case ML_SERVICE_OFFLOADING_TYPE_MODEL_URI:
@@ -584,7 +587,10 @@ ml_service_offloading_release_internal (ml_service_s * mls)
     return ML_ERROR_NONE;
 
   if (offloading_s->offloading_type == ML_OFFLOADING_TYPE_TRAINING) {
-    if (ML_ERROR_NONE != ml_service_training_offloading_destroy (offloading_s))
+
+    /** 'ml_service_training_offloading_destroy' transfers internally trained models.
+       So keep offloading handle */
+    if (ML_ERROR_NONE != ml_service_training_offloading_destroy (mls))
       _ml_error_report ("Failed to release ml-service handle, internal error?");
   }
 
@@ -688,7 +694,7 @@ ml_service_offloading_create (ml_service_h handle, ml_option_h option)
 int
 ml_service_offloading_start (ml_service_h handle)
 {
-  ml_service_s *mls;
+  ml_service_s *mls = NULL;
   _ml_service_offloading_s *offloading_s = NULL;
   int ret = ML_ERROR_NONE;
 
@@ -717,7 +723,7 @@ ml_service_offloading_start (ml_service_h handle)
   return ret;
 
 error:
-  ml_service_training_offloading_destroy (offloading_s);
+  ml_service_offloading_release_internal (mls);
   return ret;
 }
 
@@ -728,7 +734,7 @@ error:
 int
 ml_service_offloading_stop (ml_service_h handle)
 {
-  ml_service_s *mls;
+  ml_service_s *mls = NULL;
   _ml_service_offloading_s *offloading_s = NULL;
   int ret = ML_ERROR_NONE;
 
@@ -758,7 +764,7 @@ ml_service_offloading_stop (ml_service_h handle)
   return ret;
 
 error:
-  ml_service_training_offloading_destroy (offloading_s);
+  ml_service_offloading_release_internal (mls);
   return ret;
 }
 
@@ -884,7 +890,7 @@ ml_service_offloading_request (ml_service_h handle, const char *key,
 
   ret = nns_edge_send (offloading_s->edge_h, data_h);
   if (NNS_EDGE_ERROR_NONE != ret) {
-    _ml_error_report
+    g_critical
         ("Failed to publish the data to register the offloading service.");
   }
 

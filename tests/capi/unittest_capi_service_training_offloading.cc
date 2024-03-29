@@ -91,9 +91,10 @@ class MLServiceTrainingOffloading : public ::testing::Test
       g_object_unref (dbus);
     }
 
-    status = ml_service_destroy (server_h);
-    EXPECT_EQ (ML_ERROR_NONE, status);
     status = ml_service_destroy (client_h);
+    EXPECT_EQ (ML_ERROR_NONE, status);
+
+    status = ml_service_destroy (server_h);
     EXPECT_EQ (ML_ERROR_NONE, status);
   }
 
@@ -128,13 +129,31 @@ class MLServiceTrainingOffloading : public ::testing::Test
   }
 };
 
+
+/**
+ * @brief Callback function for reply test.
+ */
+static void
+_receive_trained_model_cb (ml_service_event_e event, ml_information_h event_data, void *user_data)
+{
+  switch ((int) event) {
+
+    case ML_SERVICE_EVENT_REPLY:
+      {
+        g_warning ("received trained model");
+        break;
+      }
+    default:
+      break;
+  }
+}
+
 /**
  * @brief Start thread
 */
 static void
 server_start_thread (ml_service_h server_h)
 {
-  g_critical ("######## %s : %s: %d server start", __FILE__, __FUNCTION__, __LINE__);
   ml_service_start (server_h);
 }
 
@@ -144,7 +163,6 @@ server_start_thread (ml_service_h server_h)
 static void
 receiver_start_thread (ml_service_h client_h)
 {
-  g_critical ("######## %s : %s: %d receiver start", __FILE__, __FUNCTION__, __LINE__);
   ml_service_start (client_h);
 }
 
@@ -160,14 +178,15 @@ TEST_F (MLServiceTrainingOffloading, registerPipeline)
       = g_build_filename (root_path, "tests", "test_models", "models", NULL);
   EXPECT_TRUE (g_file_test (file_path, G_FILE_TEST_IS_DIR));
   g_autofree gchar *trained_model_path = g_build_filename (
-      root_path, "tests", "test_models", "models", "model.bin", NULL);
+      root_path, "tests", "test_models", "models", "trained-model.bin", NULL);
 
   /* A path to app rw path */
   status = ml_service_set_information (server_h, "path", file_path);
-
   /* A path to app rw path */
   status = ml_service_set_information (client_h, "path", file_path);
 
+  status = ml_service_set_event_cb (server_h, _receive_trained_model_cb, NULL);
+  EXPECT_EQ (status, ML_ERROR_NONE);
 
   start_thread = g_thread_new (
       "server_start_thread", (GThreadFunc) server_start_thread, server_h);
@@ -182,21 +201,14 @@ TEST_F (MLServiceTrainingOffloading, registerPipeline)
     g_usleep (100000);
   }
 
-
-  g_critical ("######## %s : %s: %d server_h stop", __FILE__, __FUNCTION__, __LINE__);
   ml_service_stop (server_h);
-
-  g_critical ("######## %s : %s: %d client_h stop", __FILE__, __FUNCTION__, __LINE__);
   ml_service_stop (client_h);
 
   if (start_thread) {
-    g_critical ("######## %s : %s: %d server_h stop", __FILE__, __FUNCTION__, __LINE__);
     g_thread_join (start_thread);
     start_thread = NULL;
   }
-
   if (receive_thread) {
-    g_critical ("######## %s : %s: %d server_h stop", __FILE__, __FUNCTION__, __LINE__);
     g_thread_join (receive_thread);
     receive_thread = NULL;
   }

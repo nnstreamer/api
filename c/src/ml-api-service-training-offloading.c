@@ -78,6 +78,13 @@ _ml_service_training_offloadin_conf_parse_json (_ml_service_offloading_s *
   }
   g_list_free (list);
 
+  /* Since we are only sending the trained model now, there is only 1 item in the list. */
+  if (training_s->type == ML_TRAINING_OFFLOADING_TYPE_RECEIVER) {
+    training_s->trained_model_path = g_strdup (val);
+    g_critical ("######## %s : %s: %d trained_model_path:%s", __FILE__,
+        __FUNCTION__, __LINE__, val);
+  }
+
   return ML_ERROR_NONE;
 }
 
@@ -282,18 +289,19 @@ _ml_service_training_offloading_services_request (ml_service_s * mls)
       transfer_data = NULL;
     }
   }
-  /** The remote sender sends the last in the pipeline.
-     When the pipeline arrives, the remote receiver determines that the sender has sent all the necessary files specified in the pipeline.
-     pipeline description must be sent last. */
-  g_critical ("######## %s : %s: %d pipeline=%s", __FILE__, __FUNCTION__,
-      __LINE__, pipeline);
 
-  ret =
-      _ml_service_training_offloading_request (mls, service_name, pipeline,
-      strlen (pipeline) + 1);
-  if (ret != ML_ERROR_NONE)
-    _ml_error_report ("Failed to request service(%s)", service_name);
-
+  if (pipeline) {
+    /** The remote sender sends the last in the pipeline.
+       When the pipeline arrives, the remote receiver determines that the sender has sent all the necessary files specified in the pipeline.
+       pipeline description must be sent last. */
+    g_critical ("######## %s : %s: %d pipeline=%s", __FILE__, __FUNCTION__,
+        __LINE__, pipeline);
+    ret =
+        _ml_service_training_offloading_request (mls, service_name, pipeline,
+        strlen (pipeline) + 1);
+    if (ret != ML_ERROR_NONE)
+      _ml_error_report ("Failed to request service(%s)", service_name);
+  }
 error:
   g_free (service_name);
   g_free (transfer_data);
@@ -379,9 +387,15 @@ static void
     }
   } else {
     if (training_s->receiver_pipe) {
+      training_s->trained_model_path =
+          _ml_replace_string (training_s->trained_model_path, "@APP_RW_PATH@",
+          offloading_s->path, NULL, &changed);
       training_s->receiver_pipe =
           _ml_replace_string (training_s->receiver_pipe, "@REMOTE_APP_RW_PATH@",
           offloading_s->path, NULL, &changed);
+      training_s->receiver_pipe =
+          _ml_replace_string (training_s->receiver_pipe, "@TRAINED_MODEL_FILE@",
+          training_s->trained_model_path, NULL, &changed);
       g_critical ("######## %s : %s: %d receiver_pipe = %s", __FILE__,
           __FUNCTION__, __LINE__, training_s->receiver_pipe);
     }
@@ -524,15 +538,6 @@ ml_service_training_offloading_stop (ml_service_s * mls)
     _ml_error_report_return (ret, "Failed to construct pipeline");
   }
 
-  if (training_s->type == ML_TRAINING_OFFLOADING_TYPE_RECEIVER) {
-    g_critical ("SENDER ######## %s : %s: %d ", __FILE__, __FUNCTION__,
-        __LINE__);
-
-    // ret = _ml_service_training_offloading_services_request (mls);
-    // if (ret != ML_ERROR_NONE)
-    //   _ml_error_report_return (ret, "Failed to request service");
-  }
-
   return ret;
 }
 
@@ -559,49 +564,109 @@ ml_service_training_offloading_stop (ml_service_s * mls)
 // }
 
 /**
- * @brief Save received file path.
+ * @brief Save receiver pipeline description.
  */
 void
-ml_service_training_offloading_save_received_file_path (_ml_service_offloading_s
-    * offloading_s, nns_edge_data_h data_h, const gchar * dir_path,
+ml_service_training_offloading_process_received_data (_ml_service_offloading_s *
+    offloading_s, nns_edge_data_h data_h, const gchar * dir_path,
     const gchar * data, int service_type)
 {
-  ml_training_services_s *training_s = NULL;
   g_autofree gchar *name = NULL;
-  g_autofree gchar *model_path = NULL;
+  ml_training_services_s *training_s = NULL;
 
   training_s = (ml_training_services_s *) offloading_s->priv;
-
-  g_critical ("######## %s : %s: %d cb!!! ", __FILE__, __FUNCTION__, __LINE__);
+  g_critical ("######## %s : %s: %d cb ()!! service_type(%d)", __FILE__,
+      __FUNCTION__, __LINE__, service_type);
 
   if (training_s->type == ML_TRAINING_OFFLOADING_TYPE_RECEIVER) {
-    g_critical ("######## %s : %s: %d cb!!!, service_type=%d ", __FILE__,
-        __FUNCTION__, __LINE__, service_type);
-
-    if (service_type == 3) {
+    if (service_type == ML_SERVICE_OFFLOADING_TYPE_PIPELINE_RAW) {
       training_s->receiver_pipe = g_strdup (data);
-      g_critical ("######## %s : %s: %d cb!!! pipeline = %s", __FILE__,
-          __FUNCTION__, __LINE__, training_s->receiver_pipe);
+      g_critical ("######## %s : %s: %d cb()!! received pipeline = %s",
+          __FILE__, __FUNCTION__, __LINE__, training_s->receiver_pipe);
+    }
+  } else {
+    /* receive trained model from remote */
+    if (service_type == ML_SERVICE_OFFLOADING_TYPE_REPLY) {
+      nns_edge_data_get_info (data_h, "name", &name);
+      g_critical ("######## %s : %s: %d cb()!! name = %s", __FILE__,
+          __FUNCTION__, __LINE__, name);
+      training_s->trained_model_path =
+          g_build_path (G_DIR_SEPARATOR_S, dir_path, name, NULL);
+      g_critical ("######## %s : %s: %d cb()!! received trained_model = %s",
+          __FILE__, __FUNCTION__, __LINE__, training_s->trained_model_path);
     }
   }
+}
+
+/**
+ * @brief Send trained model
+ */
+static void
+_ml_service_training_offloading_send_trained_model (ml_service_s * mls)
+{
+  ml_training_services_s *training_s = NULL;
+  _ml_service_offloading_s *offloading_s = NULL;
+  GList *list = NULL, *iter;
+  gchar *contents;
+  gsize len;
+
+  offloading_s = (_ml_service_offloading_s *) mls->priv;
+  training_s = (ml_training_services_s *) offloading_s->priv;
+
+  g_critical ("######## %s : %s: %d ", __FILE__, __FUNCTION__, __LINE__);
+
+  if (training_s->trained_model_path == NULL)
+    return;
+
+  if (!g_file_get_contents (training_s->trained_model_path, &contents, &len,
+          NULL)) {
+    _ml_error_report ("Failed to read file:%s", training_s->trained_model_path);
+    return;
+  }
+  g_critical ("######## %s : %s: %d ", __FILE__, __FUNCTION__, __LINE__);
+  list = g_hash_table_get_keys (training_s->transfer_data_table);
+
+  for (iter = list; iter != NULL; iter = g_list_next (iter)) {
+    g_critical ("######## %s : %s: %d ", __FILE__, __FUNCTION__, __LINE__);
+    _ml_service_training_offloading_request (mls, (gchar *) iter->data,
+        contents, len);
+  }
+  g_list_free (list);
+
+  return;
 }
 
 /**
  * @brief Internal function to destroy ml-service training offloading data.
  */
 int
-ml_service_training_offloading_destroy (_ml_service_offloading_s * offloading_s)
+ml_service_training_offloading_destroy (ml_service_s * mls)
 {
   int ret = ML_ERROR_NONE;
+  _ml_service_offloading_s *offloading_s = NULL;
   ml_training_services_s *training_s = NULL;
 
+  if (!mls) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'mls' is NULL.");
+  }
+
+  offloading_s = (_ml_service_offloading_s *) mls->priv;
   if (!offloading_s) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'offloading_s' is NULL.");
   }
 
   training_s = (ml_training_services_s *) offloading_s->priv;
+  if (!training_s) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'training_s' is NULL.");
+  }
 
+  if (training_s->type == ML_TRAINING_OFFLOADING_TYPE_RECEIVER) {
+    /* reply to remote sender */
+    _ml_service_training_offloading_send_trained_model (mls);
+  }
   g_cond_clear (&training_s->received_cond);
   g_mutex_clear (&training_s->received_lock);
 

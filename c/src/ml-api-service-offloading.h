@@ -34,6 +34,21 @@ typedef enum
   ML_OFFLOADING_TYPE_MAX
 } ml_offloading_type_e;
 
+/**
+ * @brief Enumeration for ml-offloading service type.
+ */
+typedef enum
+{
+  ML_SERVICE_OFFLOADING_TYPE_UNKNOWN = 0,
+  ML_SERVICE_OFFLOADING_TYPE_MODEL_RAW,
+  ML_SERVICE_OFFLOADING_TYPE_MODEL_URI,
+  ML_SERVICE_OFFLOADING_TYPE_PIPELINE_RAW,
+  ML_SERVICE_OFFLOADING_TYPE_PIPELINE_URI,
+  ML_SERVICE_OFFLOADING_TYPE_REPLY,
+
+  ML_SERVICE_OFFLOADING_TYPE_MAX
+} ml_service_offloading_type_e;
+
 /*/
  * @brief Structure for ml_service_offloading
  */

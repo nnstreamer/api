@@ -139,24 +139,21 @@ extern "C"
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
  */
-  int ml_service_training_offloading_all_services_request
-      (_ml_service_offloading_s * offloading_s);
+  int ml_service_training_offloading_all_services_request (_ml_service_offloading_s * offloading_s);
 
 /**
- * @brief Save received file path.
+ * @brief Process received data
  * @param[in] offloading_s  offloading_s The handle of ml-service offloading.
- * @param[in] data_h nnstreamer edge data handle
- * @param[in] dir_path dir path of received file
+ * @param[in] data_h handle nns_edge_data_h
  * @param[in] data data of received file
+ * @param[in] dir_path dir path
  * @param[in] service_type received service type from remote edge
  */
-  void ml_service_training_offloading_save_received_file_path
-      (_ml_service_offloading_s * offloading_s, nns_edge_data_h data_h,
-      const gchar * dir_path, const gchar * data, int service_type);
+  void ml_service_training_offloading_process_received_data (_ml_service_offloading_s * offloading_s, nns_edge_data_h data_h, const gchar *dir_path, const gchar * data, int service_type);
 
 /**
  * @brief Internal function to destroy ml-service training offloading data.
- * @param[in] offloading_s  The handle of ml-service offloading.
+ * @param[in] mls ml-service handle created by ml_service_new().
  * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
@@ -166,8 +163,7 @@ extern "C"
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
  */
-  int ml_service_training_offloading_destroy (_ml_service_offloading_s *
-      offloading_s);
+  int ml_service_training_offloading_destroy (ml_service_s * mls);
 #ifdef __cplusplus
 }
 #endif                          /* __cplusplus */
