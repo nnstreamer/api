@@ -379,15 +379,6 @@ int ml_service_pipeline_launch (const char *name, ml_service_h *handle);
  */
 int ml_service_pipeline_get_state (ml_service_h handle, ml_pipeline_state_e *state);
 
-/** @todo remove below macros after updating tct. */
-#define ml_service_set_pipeline ml_service_pipeline_set
-#define ml_service_get_pipeline ml_service_pipeline_get
-#define ml_service_delete_pipeline ml_service_pipeline_delete
-#define ml_service_launch_pipeline ml_service_pipeline_launch
-#define ml_service_start_pipeline ml_service_start
-#define ml_service_stop_pipeline ml_service_stop
-#define ml_service_get_pipeline_state ml_service_pipeline_get_state
-
 /****************************************************
  ** API for among-device AI service                **
  ****************************************************/
