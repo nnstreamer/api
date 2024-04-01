@@ -14,6 +14,7 @@
 ##@@  - GSTREAMER_ROOT_ANDROID: GStreamer prebuilt libraries for Android
 ##@@  - NNSTREAMER_ROOT: The source root directory of NNStreamer
 ##@@  - NNSTREAMER_EDGE_ROOT: The source root directory of nnstreamer-edge
+##@@  - NNSTREAMER_ANDROID_RESOURCE: The android resource directory of nnstreamer
 ##@@  - ML_API_ROOT: The source root directory of ML API
 ##@@ 
 ##@@ usage: build-nnstreamer-android.sh [OPTIONS]
@@ -171,6 +172,9 @@ for arg in "$@"; do
             ;;
         --nnstreamer_edge_dir=*)
             nnstreamer_edge_dir=${arg#*=}
+            ;;
+        --nnstreamer_android_resource_dir=*)
+            nnstreamer_android_resource_dir=${arg#*=}
             ;;
         --ml_api_dir=*)
             ml_api_dir=${arg#*=}
@@ -405,6 +409,12 @@ fi
 
 echo "ML API root directory: $ml_api_dir"
 
+# nnstreamer-android-resource root directory
+if [[ -z "$nnstreamer_android_resource_dir" ]]; then
+    [ -z "$NNSTREAMER_ANDROID_RESOURCE" ] && echo "Need to set NNSTREAMER_ANDROID_RESOURCE." && exit 1
+    nnstreamer_android_resource_dir=$NNSTREAMER_ANDROID_RESOURCE
+fi
+
 # Patch GStreamer build script
 echo "Patching Gstreamer build script for NNStreamer"
 
@@ -436,19 +446,18 @@ cp -r ./java/android/* ./$build_dir
 mkdir -p $build_dir/external
 
 # @todo We need another mechanism for downloading third-party/external softwares
-git clone https://github.com/nnstreamer/nnstreamer-android-resource.git
-cp -r nnstreamer-android-resource/android_api/* ./$build_dir
+cp -r $nnstreamer_android_resource_dir/android_api/* ./$build_dir
 echo "file list for build dir $build_dir"
 ls -l ./$build_dir
 rm -f ./$build_dir/external/*.tar.gz ./$build_dir/external/*.tar.xz
 if [[ $enable_tracing == "yes" ]]; then
     echo "Get Gst-Shark library"
-    cp nnstreamer-android-resource/external/gst-shark.tar.xz ./$build_dir/external
+    cp $nnstreamer_android_resource_dir/external/gst-shark.tar.xz ./$build_dir/external
     tar -xJf ./$build_dir/external/gst-shark.tar.xz -C $gstreamer_dir
 fi
 
 if [[ $enable_tflite == "yes" ]]; then
-    cp nnstreamer-android-resource/external/tensorflow-lite-$tf_lite_ver.tar.xz ./$build_dir/external
+    cp $nnstreamer_android_resource_dir/external/tensorflow-lite-$tf_lite_ver.tar.xz ./$build_dir/external
 fi
 
 if [[ $enable_nnfw == "yes" ]]; then
@@ -462,23 +471,23 @@ if [[ $enable_nnfw == "yes" ]]; then
 fi
 
 if [[ $enable_pytorch == "yes" ]]; then
-    cp nnstreamer-android-resource/external/pytorch-$pytorch_ver.tar.xz ./$build_dir/external
+    cp $nnstreamer_android_resource_dir/external/pytorch-$pytorch_ver.tar.xz ./$build_dir/external
 fi
 
 if [[ $enable_mxnet == "yes" ]]; then
-    cp nnstreamer-android-resource/external/mxnet/mxnet-$mxnet_ver.tar.xz_aa ./$build_dir/external
-    cp nnstreamer-android-resource/external/mxnet/mxnet-$mxnet_ver.tar.xz_ab ./$build_dir/external
-    cp nnstreamer-android-resource/external/mxnet/mxnet-$mxnet_ver.tar.xz_ac ./$build_dir/external
-    cp nnstreamer-android-resource/external/mxnet/mxnet-$mxnet_ver.tar.xz_ad ./$build_dir/external
+    cp $nnstreamer_android_resource_dir/external/mxnet/mxnet-$mxnet_ver.tar.xz_aa ./$build_dir/external
+    cp $nnstreamer_android_resource_dir/external/mxnet/mxnet-$mxnet_ver.tar.xz_ab ./$build_dir/external
+    cp $nnstreamer_android_resource_dir/external/mxnet/mxnet-$mxnet_ver.tar.xz_ac ./$build_dir/external
+    cp $nnstreamer_android_resource_dir/external/mxnet/mxnet-$mxnet_ver.tar.xz_ad ./$build_dir/external
     cat ./$build_dir/external/mxnet-$mxnet_ver.tar.xz_* > ./$build_dir/external/mxnet-$mxnet_ver.tar.xz
 fi
 
 if [[ $enable_flatbuf == "yes" ]]; then
-    cp nnstreamer-android-resource/external/mxnet/flatbuffers-${flatbuf_ver}.tar.xz ./$build_dir/external
+    cp $nnstreamer_android_resource_dir/external/mxnet/flatbuffers-${flatbuf_ver}.tar.xz ./$build_dir/external
 fi
 
 if [[ $enable_mqtt == "yes" ]]; then
-    cp nnstreamer-android-resource/external/mxnet/paho-mqtt-c-${paho_mqtt_c_ver}.tar.xz ./$build_dir/external
+    cp $nnstreamer_android_resource_dir/external/mxnet/paho-mqtt-c-${paho_mqtt_c_ver}.tar.xz ./$build_dir/external
 fi
 
 pushd ./$build_dir
@@ -701,7 +710,7 @@ fi
 
 # Remove build directory
 rm -rf $build_dir
-rm -rf nnstreamer-android-resource
+rm -rf $nnstreamer_android_resource_dir
 
 popd
 cd ${nnstreamer_dir} && find -name nnstreamer_version.h -delete
