@@ -749,6 +749,7 @@ _ml_tensors_data_create_no_alloc (const ml_tensors_info_h info,
   ml_tensors_data_s *_data;
   ml_tensors_info_s *_info;
   guint i;
+  int status = ML_ERROR_NONE;
 
   check_feature_state (ML_FEATURE);
 
@@ -762,14 +763,18 @@ _ml_tensors_data_create_no_alloc (const ml_tensors_info_h info,
   _data = g_new0 (ml_tensors_data_s, 1);
   if (!_data)
     _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
-        "Failed to allocate memory for tensors data with g_new0(). Probably the system is out of memory.");
+        "Failed to allocate memory for tensors data. Probably the system is out of memory.");
 
   g_mutex_init (&_data->lock);
 
   _info = (ml_tensors_info_s *) info;
   if (_info != NULL) {
-    /* Ignore error case when creating internal info handle (single-shot). */
-    _ml_tensors_info_create_from (info, &_data->info);
+    status = _ml_tensors_info_create_from (info, &_data->info);
+    if (status != ML_ERROR_NONE) {
+      _ml_error_report_continue
+          ("Failed to create internal information handle for tensors data.");
+      goto error;
+    }
 
     G_LOCK_UNLESS_NOLOCK (*_info);
     _data->num_tensors = _info->info.num_tensors;
@@ -780,8 +785,14 @@ _ml_tensors_data_create_no_alloc (const ml_tensors_info_h info,
     G_UNLOCK_UNLESS_NOLOCK (*_info);
   }
 
-  *data = _data;
-  return ML_ERROR_NONE;
+error:
+  if (status == ML_ERROR_NONE) {
+    *data = _data;
+  } else {
+    _ml_tensors_data_destroy_internal (_data, FALSE);
+  }
+
+  return status;
 }
 
 /**
