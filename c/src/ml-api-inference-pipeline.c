@@ -295,7 +295,6 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
   guint i, num_tensors;
   GList *l;
   ml_tensors_data_s *_data = NULL;
-  ml_tensors_info_h out_info = NULL;
   GstTensorsInfo gst_info;
   int status;
 
@@ -412,7 +411,6 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
   }
 
   /* Create new output info, data handle should be updated here. */
-  _ml_tensors_info_create_from_gst (&out_info, &gst_info);
   _ml_tensors_info_create_from_gst (&_data->info, &gst_info);
 
   /* Iterate e->handles, pass the data to them */
@@ -424,7 +422,7 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
 
     callback = sink->callback_info->sink_cb;
     if (callback)
-      callback (_data, out_info, sink->callback_info->sink_pdata);
+      callback (_data, _data->info, sink->callback_info->sink_pdata);
 
     /** @todo Measure time. Warn if it takes long. Kill if it takes too long. */
   }
@@ -436,9 +434,6 @@ error:
     gst_memory_unmap (mem[i], &map[i]);
     gst_memory_unref (mem[i]);
   }
-
-  if (out_info)
-    ml_tensors_info_destroy (out_info);
 
   _ml_tensors_data_destroy_internal (_data, FALSE);
   _data = NULL;
