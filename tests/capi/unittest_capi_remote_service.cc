@@ -35,7 +35,8 @@ class MLRemoteService : public ::testing::Test
    */
   void SetUp () override
   {
-    g_autofree gchar *services_dir = g_build_filename ("/usr/bin/ml-test/services", NULL);
+    g_autofree gchar *services_dir
+        = g_build_filename (EXEC_PREFIX, "ml-test", "services", NULL);
 
     dbus = g_test_dbus_new (G_TEST_DBUS_NONE);
     ASSERT_NE (nullptr, dbus);
