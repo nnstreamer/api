@@ -167,6 +167,9 @@ api_install_bindir = join_paths(api_install_prefix, get_option('bindir'))
 api_install_includedir = join_paths(api_install_prefix, get_option('includedir'))
 api_install_inidir = get_option('sysconfdir')
 
+# Declare path to bin directory to run mlops-agent for unittest.
+add_project_arguments('-DEXEC_PREFIX="' + api_install_bindir + '"', language: ['c', 'cpp'])
+
 # Set default configuration
 api_conf = configuration_data()
 api_conf.set('VERSION', api_version)
