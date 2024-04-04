@@ -394,9 +394,6 @@ _ml_service_get_type (JsonObject * object)
     type = ML_SERVICE_TYPE_EXTENSION;
   } else if (json_object_has_member (object, "offloading")) {
     type = ML_SERVICE_TYPE_OFFLOADING;
-  } else {
-    _ml_error_report
-        ("Failed to parse configuration file, cannot get the valid type from configuration.");
   }
 
   return type;

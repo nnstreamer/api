@@ -487,8 +487,7 @@ _mlrs_process_service_offloading (nns_edge_data_h data_h, void *user_data)
 
 done:
   if (info_h) {
-    ret = ml_information_destroy (info_h);
-    _ml_error_report ("Failed to destroy service info handle.");
+    ml_information_destroy (info_h);
   }
 
   return ret;
@@ -667,8 +666,8 @@ ml_service_offloading_create (ml_service_h handle, ml_option_h option)
   offloading_s->table =
       g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
   if (!offloading_s->table) {
-    _ml_error_report
-        ("Failed to allocate memory for the table of ml-service offloading. Out of memory?");
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Failed to allocate memory for the table of ml-service offloading. Out of memory?");
   }
 
   if (ML_ERROR_NONE == ml_option_get (option, "path", (void **) (&_path))) {
@@ -707,6 +706,7 @@ ml_service_offloading_request (ml_service_h handle, const char *key,
   ml_tensors_data_s *_in = NULL;
   JsonNode *service_node;
   JsonObject *service_obj;
+  guint i;
 
   check_feature_state (ML_FEATURE_SERVICE);
 
@@ -797,12 +797,14 @@ ml_service_offloading_request (ml_service_h handle, const char *key,
     }
   }
   _in = (ml_tensors_data_s *) input;
-  ret =
-      nns_edge_data_add (data_h, _in->tensors[0].data, _in->tensors[0].size,
-      NULL);
-  if (NNS_EDGE_ERROR_NONE != ret) {
-    _ml_error_report ("Failed to add camera data to the edge data.");
-    goto done;
+  for (i = 0; i < _in->num_tensors; i++) {
+    ret =
+        nns_edge_data_add (data_h, _in->tensors[i].data, _in->tensors[i].size,
+        NULL);
+    if (NNS_EDGE_ERROR_NONE != ret) {
+      _ml_error_report ("Failed to add camera data to the edge data.");
+      goto done;
+    }
   }
 
   ret = nns_edge_send (offloading_s->edge_h, data_h);
