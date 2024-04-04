@@ -59,7 +59,7 @@ typedef struct
 } edge_info_s;
 
 /**
- * @brief Structure for ml_service_offloading
+ * @brief Structure for ml_service_offloading.
  */
 typedef struct
 {
@@ -67,7 +67,6 @@ typedef struct
   nns_edge_node_type_e node_type;
 
   gchar *path; /**< A path to save the received model file */
-  ml_option_h info;
   GHashTable *table;
 } _ml_service_offloading_s;
 
@@ -133,13 +132,13 @@ _mlrs_get_edge_info (ml_option_h option, edge_info_s ** edge_info)
   else
     _info->host = g_strdup ("localhost");
   if (ML_ERROR_NONE == ml_option_get (option, "port", &value))
-    _info->port = g_ascii_strtoull (value, NULL, 10);
+    _info->port = (guint) g_ascii_strtoull (value, NULL, 10);
   if (ML_ERROR_NONE == ml_option_get (option, "dest-host", &value))
     _info->dest_host = g_strdup (value);
   else
     _info->dest_host = g_strdup ("localhost");
   if (ML_ERROR_NONE == ml_option_get (option, "dest-port", &value))
-    _info->dest_port = g_ascii_strtoull (value, NULL, 10);
+    _info->dest_port = (guint) g_ascii_strtoull (value, NULL, 10);
   if (ML_ERROR_NONE == ml_option_get (option, "connect-type", &value))
     _info->conn_type = _mlrs_get_conn_type (value);
   else
@@ -463,7 +462,8 @@ _mlrs_process_service_offloading (nns_edge_data_h data_h, void *user_data)
     {
       ret = _ml_information_create (&info_h);
       if (ML_ERROR_NONE != ret) {
-        _ml_error_report_return (ret, "Failed to create information handle. ");
+        _ml_error_report ("Failed to create information handle.");
+        goto done;
       }
       ret = _ml_information_set (info_h, "data", (void *) data, NULL);
       if (ML_ERROR_NONE != ret) {
@@ -479,9 +479,13 @@ _mlrs_process_service_offloading (nns_edge_data_h data_h, void *user_data)
       break;
   }
 
-  if (mls && event_type != ML_SERVICE_EVENT_UNKNOWN) {
-    if (mls->cb_info.cb) {
-      mls->cb_info.cb (event_type, info_h, mls->cb_info.pdata);
+  if (event_type != ML_SERVICE_EVENT_UNKNOWN) {
+    ml_service_event_cb_info_s cb_info = { 0 };
+
+    _ml_service_get_event_cb_info (mls, &cb_info);
+
+    if (cb_info.cb) {
+      cb_info.cb (event_type, info_h, cb_info.pdata);
     }
   }
 
@@ -751,9 +755,9 @@ ml_service_offloading_request (ml_service_h handle, const char *key,
   }
 
   service_key = json_object_get_string_member (service_obj, "service-key");
-  if (!service_str) {
+  if (!service_key) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "Failed to get service type from the json object.");
+        "Failed to get service key from the json object.");
   }
 
   ret = nns_edge_data_create (&data_h);

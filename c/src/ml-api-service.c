@@ -69,10 +69,8 @@ _ml_service_set_information_internal (ml_service_s * mls, const char *name,
       status = ml_service_extension_set_information (mls, name, value);
       break;
     case ML_SERVICE_TYPE_OFFLOADING:
-    {
       status = ml_service_offloading_set_information (mls, name, value);
       break;
-    }
     default:
       break;
   }
@@ -285,24 +283,24 @@ static int
 _ml_service_offloading_conf_to_opt (JsonObject * object, const gchar * name,
     ml_option_h option)
 {
-  int status;
-  JsonObject *service_offloading_object;
-  const gchar *val = NULL;
-  GList *list = NULL, *iter;
+  int status = ML_ERROR_NONE;
+  JsonObject *offloading_object;
+  GList *list, *iter;
 
-  service_offloading_object = json_object_get_object_member (object, name);
-  if (!service_offloading_object) {
+  offloading_object = json_object_get_object_member (object, name);
+  if (!offloading_object) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "Failed to get %s member from the config file", name);
   }
 
-  list = json_object_get_members (service_offloading_object);
+  list = json_object_get_members (offloading_object);
   for (iter = list; iter != NULL; iter = g_list_next (iter)) {
-    val = json_object_get_string_member (service_offloading_object, iter->data);
-    status = ml_option_set (option, iter->data, g_strdup (val), g_free);
+    const gchar *key = iter->data;
+    const gchar *val = json_object_get_string_member (offloading_object, key);
+
+    status = ml_option_set (option, key, g_strdup (val), g_free);
     if (status != ML_ERROR_NONE) {
-      _ml_error_report ("Failed to set %s option: %s.", (gchar *) list->data,
-          val);
+      _ml_error_report ("Failed to set %s option: %s.", key, val);
       break;
     }
   }
@@ -317,19 +315,23 @@ _ml_service_offloading_conf_to_opt (JsonObject * object, const gchar * name,
 static int
 _ml_service_offloading_parse_services (ml_service_s * mls, JsonObject * object)
 {
-  const gchar *val = NULL;
-  GList *list = NULL, *iter;
+  GList *list, *iter;
   JsonNode *json_node = NULL;
   int status = ML_ERROR_NONE;
 
   list = json_object_get_members (object);
   for (iter = list; iter != NULL; iter = g_list_next (iter)) {
-    json_node = json_object_get_member (object, iter->data);
+    const gchar *key = iter->data;
+    gchar *val = NULL;
+
+    json_node = json_object_get_member (object, key);
     val = json_to_string (json_node, TRUE);
     if (val) {
-      status = ml_service_offloading_set_service (mls, iter->data, val);
+      status = ml_service_offloading_set_service (mls, key, val);
+      g_free (val);
+
       if (status != ML_ERROR_NONE) {
-        _ml_error_report ("Failed to set service key : %s", iter->data);
+        _ml_error_report ("Failed to set service key : %s", key);
         break;
       }
     }

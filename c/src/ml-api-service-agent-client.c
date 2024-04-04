@@ -157,13 +157,13 @@ _build_ml_info_from_json_cstr (const gchar * jcstring, void **handle)
   g_autoptr (GError) err = NULL;
   g_autoptr (JsonParser) parser = NULL;
   g_autoptr (GList) members = NULL;
-  ml_information_list_h _info_list;
-  ml_information_h _info;
+  ml_information_list_h _info_list = NULL;
+  ml_information_h _info = NULL;
   JsonNode *rnode = NULL;
   JsonArray *array = NULL;
   JsonObject *jobj = NULL;
   GList *l;
-  gint ret;
+  gint ret = ML_ERROR_NONE;
   guint i, n;
 
   if (!handle) {
@@ -210,8 +210,10 @@ _build_ml_info_from_json_cstr (const gchar * jcstring, void **handle)
     ret = _ml_information_list_create (n, &_info_list);
   else
     ret = _ml_information_create (&_info);
-  if (ML_ERROR_NONE != ret)
-    return ret;
+  if (ML_ERROR_NONE != ret) {
+    _ml_error_report ("Failed to parse app_info, cannot create info handle.");
+    goto done;
+  }
 
   for (i = 0; i < n; i++) {
     if (array) {
@@ -227,24 +229,33 @@ _build_ml_info_from_json_cstr (const gchar * jcstring, void **handle)
       const gchar *val = json_object_get_string_member (jobj, key);
 
       /* Prevent empty string case. */
-      if (STR_IS_VALID (key) && STR_IS_VALID (val))
-        _ml_information_set (_info, key, g_strdup (val), g_free);
+      if (STR_IS_VALID (key) && STR_IS_VALID (val)) {
+        ret = _ml_information_set (_info, key, g_strdup (val), g_free);
+        if (ret != ML_ERROR_NONE) {
+          _ml_error_report ("Failed to append app info to the info handle.");
+          goto done;
+        }
+      }
     }
 
     ret = _parse_app_info_and_update_path (_info);
     if (ret != ML_ERROR_NONE) {
-      if (array)
-        ml_information_list_destroy (_info_list);
-      else
-        ml_information_destroy (_info);
-
-      _ml_error_report_return (ret,
-          "Failed to parse app_info and update path.");
+      _ml_error_report ("Failed to parse app_info and update path.");
+      goto done;
     }
   }
 
-  *handle = (array) ? _info_list : _info;
-  return ML_ERROR_NONE;
+done:
+  if (ret == ML_ERROR_NONE) {
+    *handle = (array) ? _info_list : _info;
+  } else {
+    if (_info_list)
+      ml_information_list_destroy (_info_list);
+    if (_info)
+      ml_information_destroy (_info);
+  }
+
+  return ret;
 }
 
 /**
