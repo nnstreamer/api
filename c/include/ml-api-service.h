@@ -122,7 +122,7 @@ typedef void (*ml_service_event_cb) (ml_service_event_e event, ml_information_h 
  * ml_tensors_info_h input_info;
  * void *input_buffer;
  * size_t input_size;
-
+ *
  * ml_service_get_input_information (handle, NULL, &input_info);
  *
  * ml_tensors_info_get_tensor_size (input_info, 0, &input_size);
