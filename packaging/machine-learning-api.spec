@@ -150,8 +150,6 @@ BuildConflicts:	libarmcl-release
 %if 0%{?armnn_support}
 BuildRequires:	armnn-devel
 BuildRequires:	nnstreamer-armnn
-BuildRequires:	libarmcl
-BuildConflicts:	libarmcl-release
 %endif
 %endif # unit_test
 
