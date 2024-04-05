@@ -150,8 +150,6 @@ BuildRequires:	nnstreamer-nnfw
 %if 0%{?armnn_support}
 BuildRequires:	armnn-devel
 BuildRequires:	nnstreamer-armnn
-BuildRequires:	libarmcl
-BuildConflicts:	libarmcl-release
 %endif
 
 %if 0%{?onnxruntime_support}
