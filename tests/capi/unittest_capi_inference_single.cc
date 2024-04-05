@@ -4480,7 +4480,27 @@ TEST (nnstreamer_capi_internal, validate_model_file_01_n)
   status = _ml_validate_model_file (&test_model, 0, &nnfw);
   EXPECT_NE (status, ML_ERROR_NONE);
 
-  status = _ml_validate_model_file (&test_model, 1, NULL);
+  status = _ml_validate_model_file (&test_model, 1, &nnfw);
+  EXPECT_NE (status, ML_ERROR_NONE);
+
+  nnfw = ML_NNFW_TYPE_MVNC;
+  status = _ml_validate_model_file (&test_model, 1, &nnfw);
+  EXPECT_NE (status, ML_ERROR_NONE);
+
+  nnfw = ML_NNFW_TYPE_VD_AIFW;
+  status = _ml_validate_model_file (&test_model, 1, &nnfw);
+  EXPECT_NE (status, ML_ERROR_NONE);
+
+  nnfw = ML_NNFW_TYPE_SNAP;
+  status = _ml_validate_model_file (&test_model, 1, &nnfw);
+  EXPECT_NE (status, ML_ERROR_NONE);
+
+  nnfw = ML_NNFW_TYPE_ARMNN;
+  status = _ml_validate_model_file (&test_model, 1, &nnfw);
+  EXPECT_NE (status, ML_ERROR_NONE);
+
+  nnfw = ML_NNFW_TYPE_MXNET;
+  status = _ml_validate_model_file (&test_model, 1, &nnfw);
   EXPECT_NE (status, ML_ERROR_NONE);
 
 skip_test:
