@@ -710,7 +710,6 @@ fi
 
 # Remove build directory
 rm -rf $build_dir
-rm -rf $nnstreamer_android_resource_dir
 
 popd
 cd ${nnstreamer_dir} && find -name nnstreamer_version.h -delete
