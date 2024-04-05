@@ -726,7 +726,7 @@ ml_service_model_delete (const char *name, const unsigned int version)
         "The parameter, 'name' is NULL. It should be a valid string.");
   }
 
-  ret = ml_agent_model_delete (name, version);
+  ret = ml_agent_model_delete (name, version, FALSE);
   if (ret < 0) {
     _ml_error_report ("Failed to invoke the method model_delete.");
   }
