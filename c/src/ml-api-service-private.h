@@ -119,15 +119,6 @@ int ml_service_pipeline_release_internal (ml_service_s * mls);
  */
 int ml_service_query_release_internal (ml_service_s * mls);
 
-#if defined(ENABLE_SERVICE_OFFLOADING)
-/**
- * @brief Internal function to release ml-service offloading data.
- */
-int ml_service_offloading_release_internal (ml_service_s * mls);
-#else
-#define ml_service_offloading_release_internal(...) ML_ERROR_NOT_SUPPORTED
-#endif
-
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
