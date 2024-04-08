@@ -283,23 +283,11 @@ TEST_F (MLOffloadingService, registerPipelineURI)
  */
 TEST_F (MLOffloadingService, createInvalidParam_n)
 {
-  int status;
-  ml_option_h option_h = NULL;
-  ml_service_h service_h = NULL;
-
-  status = ml_option_create (&option_h);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-
-  service_h = _ml_service_create_internal (ML_SERVICE_TYPE_OFFLOADING);
-
-  status = ml_service_offloading_create (NULL, option_h);
+  status = ml_service_offloading_create (NULL, NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = ml_service_offloading_create (service_h, NULL);
+  status = ml_service_offloading_create (server_h, NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
-
-  status = ml_option_destroy (option_h);
-  EXPECT_EQ (ML_ERROR_NONE, status);
 }
 
 /**
@@ -307,7 +295,6 @@ TEST_F (MLOffloadingService, createInvalidParam_n)
  */
 TEST_F (MLOffloadingService, registerInvalidParam_n)
 {
-  g_autofree gchar *str = g_strdup ("Temp_test_str");
   ml_tensors_data_h input = NULL;
   ml_tensors_info_h in_info = NULL;
   ml_tensor_dimension in_dim = { 0 };

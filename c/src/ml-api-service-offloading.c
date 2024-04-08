@@ -86,8 +86,9 @@ _mlrs_get_node_type (const gchar * value)
   } else if (g_ascii_strcasecmp (value, "receiver") == 0) {
     node_type = NNS_EDGE_NODE_TYPE_QUERY_SERVER;
   } else {
-    _ml_error_report ("Invalid node type: %s, Please check ml_option.", value);
+    _ml_error_report ("Invalid node type '%s', please check node type.", value);
   }
+
   return node_type;
 }
 
@@ -207,9 +208,10 @@ _mlrs_get_service_type (gchar * service_str)
   } else if (g_ascii_strcasecmp (service_str, "reply") == 0) {
     service_type = ML_SERVICE_OFFLOADING_TYPE_REPLY;
   } else {
-    _ml_error_report ("Invalid service type: %s, Please check service type.",
+    _ml_error_report ("Invalid service type '%s', please check service type.",
         service_str);
   }
+
   return service_type;
 }
 
@@ -246,7 +248,7 @@ static gboolean
 _mlrs_model_register (gchar * service_key, nns_edge_data_h data_h,
     void *data, nns_size_t data_len, const gchar * dir_path)
 {
-  guint version = -1;
+  guint version = 0;
   g_autofree gchar *description = NULL;
   g_autofree gchar *name = NULL;
   g_autofree gchar *activate = NULL;
@@ -278,7 +280,7 @@ _mlrs_model_register (gchar * service_key, nns_edge_data_h data_h,
    */
   if (ML_ERROR_NONE != ml_service_model_register (service_key, model_path,
           active_bool, description, &version)) {
-    _ml_loge ("Failed to register model, service ket:%s", service_key);
+    _ml_loge ("Failed to register model, service key is '%s'.", service_key);
     return FALSE;
   }
 
@@ -302,7 +304,7 @@ _mlrs_get_model_dir_path (_ml_service_offloading_s * offloading_s,
 
     dir_path = g_build_path (G_DIR_SEPARATOR_S, current_dir, service_key, NULL);
     if (g_mkdir_with_parents (dir_path, 0755) < 0) {
-      _ml_loge ("Failed to create directory %s., error: %s", dir_path,
+      _ml_loge ("Failed to create directory '%s': %s", dir_path,
           g_strerror (errno));
       return NULL;
     }
@@ -337,7 +339,7 @@ _mlrs_get_data_from_uri (gchar * uri, GByteArray * array)
     res = curl_easy_perform (curl);
 
     if (res != CURLE_OK) {
-      _ml_loge ("curl_easy_perform failed: %s\n", curl_easy_strerror (res));
+      _ml_loge ("curl_easy_perform failed: %s", curl_easy_strerror (res));
       ret = FALSE;
       goto done;
     }
@@ -474,8 +476,8 @@ _mlrs_process_service_offloading (nns_edge_data_h data_h, void *user_data)
       break;
     }
     default:
-      _ml_error_report ("Unknown service type or not supported yet. "
-          "Service num: %d", service_type);
+      _ml_error_report ("Unknown service type '%d' or not supported yet.",
+          service_type);
       break;
   }
 
@@ -621,12 +623,12 @@ ml_service_offloading_set_information (ml_service_h handle, const gchar * name,
   if (g_ascii_strcasecmp (name, "path") == 0) {
     if (!g_file_test (value, G_FILE_TEST_IS_DIR)) {
       _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-          "The given param, dir path = \"%s\" is invalid or the dir is not found or accessible.",
+          "The given param, dir path '%s' is invalid or the dir is not found or accessible.",
           value);
     }
     if (g_access (value, W_OK) != 0) {
       _ml_error_report_return (ML_ERROR_PERMISSION_DENIED,
-          "Write permission denied, path: %s", value);
+          "Write permission to dir '%s' is denied.", value);
     }
 
     g_free (mlrs->path);
@@ -637,7 +639,7 @@ ml_service_offloading_set_information (ml_service_h handle, const gchar * name,
 }
 
 /**
- * @brief Creates ml-service handle with given ml-option handle.
+ * @brief Internal function to parse configuration file to create offloading service.
  */
 int
 ml_service_offloading_create (ml_service_h handle, ml_option_h option)
@@ -647,8 +649,6 @@ ml_service_offloading_create (ml_service_h handle, ml_option_h option)
   edge_info_s *edge_info = NULL;
   int ret = ML_ERROR_NONE;
   gchar *_path = NULL;
-
-  check_feature_state (ML_FEATURE_SERVICE);
 
   if (!handle) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -711,8 +711,6 @@ ml_service_offloading_request (ml_service_h handle, const char *key,
   JsonNode *service_node;
   JsonObject *service_obj;
   guint i;
-
-  check_feature_state (ML_FEATURE_SERVICE);
 
   if (!_ml_service_handle_is_valid (mls)) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -832,8 +830,6 @@ ml_service_offloading_set_service (ml_service_h handle, const char *key,
 {
   ml_service_s *mls = (ml_service_s *) handle;
   _ml_service_offloading_s *offloading_s = NULL;
-
-  check_feature_state (ML_FEATURE_SERVICE);
 
   if (!_ml_service_handle_is_valid (mls)) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
