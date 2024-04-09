@@ -19,6 +19,32 @@
 extern "C" {
 #endif /* __cplusplus */
 
+/**
+ * @brief Enumeration for ml-offloading service type.
+ */
+typedef enum
+{
+  ML_SERVICE_OFFLOADING_TYPE_UNKNOWN = 0,
+  ML_SERVICE_OFFLOADING_TYPE_MODEL_RAW = 1,
+  ML_SERVICE_OFFLOADING_TYPE_MODEL_URI = 2,
+  ML_SERVICE_OFFLOADING_TYPE_PIPELINE_RAW = 3,
+  ML_SERVICE_OFFLOADING_TYPE_PIPELINE_URI = 4,
+  ML_SERVICE_OFFLOADING_TYPE_REPLY = 5,
+
+  ML_SERVICE_OFFLOADING_TYPE_MAX
+} ml_service_offloading_type_e;
+
+/**
+ * @brief Enumeration for ml-service offloading mode.
+ */
+typedef enum
+{
+  ML_SERVICE_OFFLOADING_MODE_NONE = 0,
+  ML_SERVICE_OFFLOADING_MODE_TRAINING = 1,
+
+  ML_SERVICE_OFFLOADING_MODE_MAX
+} ml_service_offloading_mode_e;
+
 #if defined(ENABLE_SERVICE_OFFLOADING)
 /**
  * @brief Parse configuration file and create offloading service.
@@ -34,9 +60,8 @@ int ml_service_offloading_create (ml_service_h handle, ml_option_h option);
 
 /**
  * @brief Start ml offloading service.
- * @remarks The @a handle should be destroyed using ml_service_destroy().
  * @param[in] handle ml-service handle created by ml_service_new().
- * @return @c 0 on Success. Otherwise a negative error value.
+ * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
@@ -49,9 +74,8 @@ int ml_service_offloading_start (ml_service_h handle);
 
 /**
  * @brief Stop ml offloading service.
- * @remarks The @a handle should be destroyed using ml_service_destroy().
  * @param[in] handle ml-service handle created by ml_service_new().
- * @return @c 0 on Success. Otherwise a negative error value.
+ * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
@@ -99,21 +123,28 @@ int ml_service_offloading_set_service (ml_service_h handle, const char *name, co
 int ml_service_offloading_set_information (ml_service_h handle, const char *name, const char *value);
 
 /**
- * @brief Set training offloading handle or Set null when destroying.
- * @param[in] handle The handle of ml-service
- * @param[in] training_handle training offloading handle or NULL.
+ * @brief Set offloading mode and private data.
+ * @param[in] handle The handle of ml-service.
+ * @param[in] mode The offloading mode.
+ * @param[in] priv The private data for each offloading mode.
  * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
  */
-int ml_service_offloading_set_training_handle (ml_service_h handle, void *training_handle);
+int ml_service_offloading_set_mode (ml_service_h handle, ml_service_offloading_mode_e mode, void *priv);
 
 /**
- * @brief Get training offloading handle.
+ * @brief Get offloading mode and private data.
  * @param[in] handle The handle of ml-service.
+ * @param[out] mode The offloading mode.
+ * @param[out] priv The private data for each offloading mode.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
  */
-void *ml_service_offloading_get_training_handle (ml_service_h handle);
+int ml_service_offloading_get_mode (ml_service_h handle, ml_service_offloading_mode_e *mode, void **priv);
 
 /**
  * @brief Internal function to release ml-service offloading data.
@@ -127,8 +158,8 @@ int ml_service_offloading_release_internal (ml_service_s *mls);
 #define ml_service_offloading_set_service(...) ML_ERROR_NOT_SUPPORTED
 #define ml_service_offloading_set_information(...) ML_ERROR_NOT_SUPPORTED
 #define ml_service_offloading_release_internal(...) ML_ERROR_NOT_SUPPORTED
-#define ml_service_offloading_set_training_handle(...) ML_ERROR_NOT_SUPPORTED
-#define ml_service_offloading_get_training_handle(...) ML_ERROR_NOT_SUPPORTED
+#define ml_service_offloading_set_mode(...) ML_ERROR_NOT_SUPPORTED
+#define ml_service_offloading_get_mode(...) ML_ERROR_NOT_SUPPORTED
 #endif /* ENABLE_SERVICE_OFFLOADING */
 
 #ifdef __cplusplus

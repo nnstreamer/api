@@ -284,7 +284,7 @@ static int
 _ml_service_offloading_conf_to_opt (ml_service_s * mls, JsonObject * object,
     const gchar * name, ml_option_h option)
 {
-  int status;
+  int status = ML_ERROR_NONE;
   JsonObject *offloading_object;
   const gchar *val = NULL;
   const gchar *key = NULL;
