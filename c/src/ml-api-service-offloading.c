@@ -30,32 +30,6 @@
 #define MAX_PORT_NUM_LEN 6U
 
 /**
- * @brief Enumeration for ml-service offloading mode type.
- */
-typedef enum
-{
-  ML_SERVICE_OFFLOADING_MODE_TYPE_DEFAULT = 0,
-  ML_SERVICE_OFFLOADING_MODE_TYPE_TRAINING = 1,
-
-  ML_SERVICE_OFFLOADING_MODE_TYPE_MAX
-} ml_service_offloading_mode_type_e;
-
-/**
- * @brief Enumeration for ml-offloading service type.
- */
-typedef enum
-{
-  ML_SERVICE_OFFLOADING_TYPE_UNKNOWN = 0,
-  ML_SERVICE_OFFLOADING_TYPE_MODEL_RAW,
-  ML_SERVICE_OFFLOADING_TYPE_MODEL_URI,
-  ML_SERVICE_OFFLOADING_TYPE_PIPELINE_RAW = 3,  /* The same value is defined and used in ml-api-service-training-offloading.c. */
-  ML_SERVICE_OFFLOADING_TYPE_PIPELINE_URI,
-  ML_SERVICE_OFFLOADING_TYPE_REPLY = 5, /* The same value is defined and used in ml-api-service-training-offloading.c. */
-
-  ML_SERVICE_OFFLOADING_TYPE_MAX
-} ml_service_offloading_type_e;
-
-/**
  * @brief Data struct for options.
  */
 typedef struct
@@ -71,7 +45,7 @@ typedef struct
 } edge_info_s;
 
 /**
- * @brief Structure for ml_service_offloading
+ * @brief Structure for ml_service_offloading.
  */
 typedef struct
 {
@@ -81,7 +55,7 @@ typedef struct
   gchar *path; /**< A path to save the received model file */
   GHashTable *table;
 
-  ml_service_offloading_mode_type_e offloading_mode;
+  ml_service_offloading_mode_e offloading_mode;
   void *priv;
 } _ml_service_offloading_s;
 
@@ -398,6 +372,7 @@ _mlrs_process_service_offloading (nns_edge_data_h data_h, void *user_data)
         "Failed to get service type while processing the ml-offloading service.");
   }
   service_type = _mlrs_get_service_type (service_str);
+
   ret = nns_edge_data_get_info (data_h, "service-key", &service_key);
   if (NNS_EDGE_ERROR_NONE != ret) {
     _ml_error_report_return (ret,
@@ -406,7 +381,7 @@ _mlrs_process_service_offloading (nns_edge_data_h data_h, void *user_data)
 
   dir_path = _mlrs_get_model_dir_path (offloading_s, service_key);
 
-  if (offloading_s->offloading_mode == ML_SERVICE_OFFLOADING_MODE_TYPE_TRAINING) {
+  if (offloading_s->offloading_mode == ML_SERVICE_OFFLOADING_MODE_TRAINING) {
     ml_service_training_offloading_process_received_data (mls, data_h, dir_path,
         data, service_type);
     if (service_type == ML_SERVICE_OFFLOADING_TYPE_REPLY) {
@@ -427,12 +402,14 @@ _mlrs_process_service_offloading (nns_edge_data_h data_h, void *user_data)
   switch (service_type) {
     case ML_SERVICE_OFFLOADING_TYPE_MODEL_URI:
     {
-      GByteArray *array = g_byte_array_new ();
+      GByteArray *array;
 
       if (!dir_path) {
         _ml_error_report_return (NNS_EDGE_ERROR_UNKNOWN,
             "Failed to get model directory path.");
       }
+
+      array = g_byte_array_new ();
 
       if (!_mlrs_get_data_from_uri ((gchar *) data, array)) {
         g_byte_array_free (array, TRUE);
@@ -613,56 +590,54 @@ _mlrs_create_edge_handle (ml_service_s * mls, edge_info_s * edge_info)
 }
 
 /**
- * @brief Set training offloading handle or Set null when destroying.
- * @param[in] handle The handle of ml-service
- * @param[in] training_handle training offloading handle or NULL.
+ * @brief Set offloading mode and private data.
  */
 int
-ml_service_offloading_set_training_handle (ml_service_h handle,
-    void *training_handle)
+ml_service_offloading_set_mode (ml_service_h handle,
+    ml_service_offloading_mode_e mode, void *priv)
 {
-  int ret = ML_ERROR_NONE;
-  ml_service_s *mls = NULL;
-  _ml_service_offloading_s *offloading_s = NULL;
+  ml_service_s *mls = (ml_service_s *) handle;
+  _ml_service_offloading_s *offloading_s;
 
-  if (!handle) {
+  if (!_ml_service_handle_is_valid (mls)) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'handle' (ml_service_h), is NULL. It should be a valid ml_service_h.");
+        "The parameter, 'handle' (ml_service_h), is invalid. It should be a valid ml_service_h instance.");
   }
 
-  mls = (ml_service_s *) handle;
   offloading_s = (_ml_service_offloading_s *) mls->priv;
-  if (!offloading_s) {
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "An offloading instance must be created first.");
-  }
 
-  offloading_s->priv = training_handle;
-  offloading_s->offloading_mode = ML_SERVICE_OFFLOADING_MODE_TYPE_TRAINING;
+  offloading_s->offloading_mode = mode;
+  offloading_s->priv = priv;
 
-  return ret;
+  return ML_ERROR_NONE;
 }
 
 /**
- * @brief Get training offloading handle.
+ * @brief Get offloading mode and private data.
  */
-void *
-ml_service_offloading_get_training_handle (ml_service_h handle)
+int
+ml_service_offloading_get_mode (ml_service_h handle,
+    ml_service_offloading_mode_e * mode, void **priv)
 {
-  ml_service_s *mls = NULL;
-  _ml_service_offloading_s *offloading_s = NULL;
+  ml_service_s *mls = (ml_service_s *) handle;
+  _ml_service_offloading_s *offloading_s;
 
-  if (!handle) {
-    _ml_error_report
-        ("The parameter, 'handle' (ml_service_h), is NULL. It should be a valid ml_service_h.");
-    return NULL;
+  if (!_ml_service_handle_is_valid (mls)) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'handle' (ml_service_h), is invalid. It should be a valid ml_service_h instance.");
   }
 
-  mls = (ml_service_s *) handle;
+  if (!mode || !priv) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, mode or priv, is null. It should be a valid pointer.");
+  }
 
   offloading_s = (_ml_service_offloading_s *) mls->priv;
 
-  return offloading_s->priv;
+  *mode = offloading_s->offloading_mode;
+  *priv = offloading_s->priv;
+
+  return ML_ERROR_NONE;
 }
 
 /**
@@ -671,24 +646,28 @@ ml_service_offloading_get_training_handle (ml_service_h handle)
 int
 ml_service_offloading_release_internal (ml_service_s * mls)
 {
-  _ml_service_offloading_s *offloading_s =
-      (_ml_service_offloading_s *) mls->priv;
+  _ml_service_offloading_s *offloading_s;
 
   /* Supposed internal function call to release handle. */
-  if (!offloading_s)
+  if (!mls || !mls->priv)
     return ML_ERROR_NONE;
 
-  if (offloading_s->offloading_mode == ML_SERVICE_OFFLOADING_MODE_TYPE_TRAINING) {
+  offloading_s = (_ml_service_offloading_s *) mls->priv;
 
-    /** 'ml_service_training_offloading_destroy' transfers internally trained models.
-       So keep offloading handle */
-    if (ML_ERROR_NONE != ml_service_training_offloading_destroy (mls))
+  if (offloading_s->offloading_mode == ML_SERVICE_OFFLOADING_MODE_TRAINING) {
+    /**
+     * 'ml_service_training_offloading_destroy' transfers internally trained models.
+     * So keep offloading handle.
+     */
+    if (ML_ERROR_NONE != ml_service_training_offloading_destroy (mls)) {
       _ml_error_report
           ("Failed to release ml-service training offloading handle");
+    }
   }
 
   if (offloading_s->edge_h) {
     nns_edge_release_handle (offloading_s->edge_h);
+    offloading_s->edge_h = NULL;
   }
 
   if (offloading_s->table) {
@@ -711,8 +690,14 @@ ml_service_offloading_set_information (ml_service_h handle, const gchar * name,
     const gchar * value)
 {
   ml_service_s *mls = (ml_service_s *) handle;
-  _ml_service_offloading_s *offloading_s =
-      (_ml_service_offloading_s *) mls->priv;
+  _ml_service_offloading_s *offloading_s;
+
+  if (!_ml_service_handle_is_valid (mls)) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'handle' (ml_service_h), is invalid. It should be a valid ml_service_h instance.");
+  }
+
+  offloading_s = (_ml_service_offloading_s *) mls->priv;
 
   if (g_ascii_strcasecmp (name, "path") == 0) {
     if (!g_file_test (value, G_FILE_TEST_IS_DIR)) {
@@ -720,6 +705,7 @@ ml_service_offloading_set_information (ml_service_h handle, const gchar * name,
           "The given param, dir path '%s' is invalid or the dir is not found or accessible.",
           value);
     }
+
     if (g_access (value, W_OK) != 0) {
       _ml_error_report_return (ML_ERROR_PERMISSION_DENIED,
           "Write permission to dir '%s' is denied.", value);
@@ -792,36 +778,24 @@ ml_service_offloading_create (ml_service_h handle, ml_option_h option)
 int
 ml_service_offloading_start (ml_service_h handle)
 {
-  ml_service_s *mls = NULL;
-  _ml_service_offloading_s *offloading_s = NULL;
+  ml_service_s *mls = (ml_service_s *) handle;
+  _ml_service_offloading_s *offloading_s;
   int ret = ML_ERROR_NONE;
 
-  if (!handle) {
-    _ml_error_report
-        ("The parameter, 'handle' (ml_service_h), is NULL. It should be a valid ml_service_h.");
-    goto error;
+  if (!_ml_service_handle_is_valid (mls)) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'handle' (ml_service_h), is invalid. It should be a valid ml_service_h instance.");
   }
-  mls = (ml_service_s *) handle;
 
   offloading_s = (_ml_service_offloading_s *) mls->priv;
-  if (!offloading_s) {
-    _ml_error_report
-        ("The parameter, 'handle' (ml_service_h), does not have offloading service handle.");
-    goto error;
-  }
 
-  if (offloading_s->offloading_mode == ML_SERVICE_OFFLOADING_MODE_TYPE_TRAINING) {
+  if (offloading_s->offloading_mode == ML_SERVICE_OFFLOADING_MODE_TRAINING) {
     ret = ml_service_training_offloading_start (mls);
     if (ret != ML_ERROR_NONE) {
       _ml_error_report ("Failed to start training offloading.");
-      goto error;
     }
   }
 
-  return ret;
-
-error:
-  ml_service_offloading_release_internal (mls);
   return ret;
 }
 
@@ -832,36 +806,24 @@ error:
 int
 ml_service_offloading_stop (ml_service_h handle)
 {
-  ml_service_s *mls = NULL;
-  _ml_service_offloading_s *offloading_s = NULL;
+  ml_service_s *mls = (ml_service_s *) handle;
+  _ml_service_offloading_s *offloading_s;
   int ret = ML_ERROR_NONE;
 
-  if (!handle) {
-    _ml_error_report
-        ("The parameter, 'handle' (ml_service_h), is NULL. It should be a valid ml_service_h.");
-    goto error;
+  if (!_ml_service_handle_is_valid (mls)) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'handle' (ml_service_h), is invalid. It should be a valid ml_service_h instance.");
   }
-  mls = (ml_service_s *) handle;
 
   offloading_s = (_ml_service_offloading_s *) mls->priv;
-  if (!offloading_s) {
-    _ml_error_report
-        ("The parameter, 'handle' (ml_service_h), does not have offloading service handle.");
-    goto error;
-  }
 
-  if (offloading_s->offloading_mode == ML_SERVICE_OFFLOADING_MODE_TYPE_TRAINING) {
+  if (offloading_s->offloading_mode == ML_SERVICE_OFFLOADING_MODE_TRAINING) {
     ret = ml_service_training_offloading_stop (mls);
     if (ret != ML_ERROR_NONE) {
       _ml_error_report ("Failed to stop training offloading.");
-      goto error;
     }
   }
 
-  return ret;
-
-error:
-  ml_service_offloading_release_internal (mls);
   return ret;
 }
 

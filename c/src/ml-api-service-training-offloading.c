@@ -5,7 +5,7 @@
  * @file ml-api-service-training-offloading.c
  * @date 5 Apr 2024
  * @brief ML training offloading service of NNStreamer/Service C-API
- * @see https://github.com/nnstreamer/nnstreamer
+ * @see https://github.com/nnstreamer/api
  * @author Hyunil Park <hyunil46.park@samsung.com>
  * @bug No known bugs except for NYI items
  */
@@ -21,14 +21,12 @@
 #include "ml-api-service.h"
 #include "ml-api-service-training-offloading.h"
 
-#define ML_SERVICE_OFFLOADING_TYPE_PIPELINE_RAW 3
-#define ML_SERVICE_OFFLOADING_TYPE_REPLY 5
-
 /** It(@~~@) will be replaced with the path set by the app.*/
 #define APP_RW_PATH "@APP_RW_PATH@"
 #define REMOTE_APP_RW_PATH "@REMOTE_APP_RW_PATH@"
 /** combined with trained model file name set in conf */
 #define TRAINED_MODEL_FILE "@TRAINED_MODEL_FILE@"
+
 /**
  * @brief Internal enumeration for ml-service training offloading types.
  */
@@ -60,7 +58,6 @@ typedef struct
 {
   gchar *name;
   ml_training_offloading_node_type_e type;
-  ml_tensors_info_h info;
   void *handle;
   void *mls;
 } ml_training_offloading_node_info_s;
@@ -96,18 +93,20 @@ _ml_service_training_offloadin_conf_parse_json (ml_service_s * mls,
     JsonObject * object)
 {
   ml_training_services_s *training_s = NULL;
+  ml_service_offloading_mode_e mode = ML_SERVICE_OFFLOADING_MODE_NONE;
   JsonObject *training_obj, *data_obj;
   JsonNode *training_node, *data_node, *pipline_node;
   const gchar *key;
   const gchar *val;
-  GList *list = NULL, *iter;
+  GList *list, *iter;
 
-  g_return_val_if_fail (mls != NULL, ML_ERROR_INVALID_PARAMETER);
   g_return_val_if_fail (object != NULL, ML_ERROR_INVALID_PARAMETER);
 
-  training_s = (ml_training_services_s *)
-      ml_service_offloading_get_training_handle (mls);
-  g_return_val_if_fail (training_s != NULL, ML_ERROR_INVALID_PARAMETER);
+  ml_service_offloading_get_mode (mls, &mode, (void **) &training_s);
+  if (mode != ML_SERVICE_OFFLOADING_MODE_TRAINING || training_s == NULL) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The ml service is not training mode.");
+  }
 
   val = json_object_get_string_member (object, "node-type");
 
@@ -126,9 +125,10 @@ _ml_service_training_offloadin_conf_parse_json (ml_service_s * mls,
   val = json_object_get_string_member (training_obj, "sender-pipeline");
   training_s->sender_pipe = g_strdup (val);
 
-  if (!json_object_has_member (training_obj, "transfer-data"))
+  if (!json_object_has_member (training_obj, "transfer-data")) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The given param, \"transfer-data\" is invalid.");
+  }
 
   data_node = json_object_get_member (training_obj, "transfer-data");
   data_obj = json_node_get_object (data_node);
@@ -140,20 +140,23 @@ _ml_service_training_offloadin_conf_parse_json (ml_service_s * mls,
 
   for (iter = list; iter != NULL; iter = g_list_next (iter)) {
     key = iter->data;
+
     if (!STR_IS_VALID (key)) {
       _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-          "The parameter, 'key' is NULL. It should be a valid string.");
+          "The parameter, 'key' is invalid. It should be a valid string.");
     }
 
-    val = json_object_get_string_member (data_obj, iter->data);
+    val = json_object_get_string_member (data_obj, key);
+
     if (!STR_IS_VALID (val)) {
       /* pipeline is a JSON string */
-      pipline_node = json_object_get_member (data_obj, iter->data);
+      pipline_node = json_object_get_member (data_obj, key);
       val = json_to_string (pipline_node, TRUE);
 
-      if (!g_strstr_len (val, -1, "pipeline"))
+      if (!g_strstr_len (val, -1, "pipeline")) {
         _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
             "The parameter, 'val' is invalid. It should be a valid string.");
+      }
     }
 
     g_hash_table_insert (training_s->transfer_data_table, g_strdup (key),
@@ -189,7 +192,6 @@ _ml_training_offloading_node_info_free (gpointer data)
 static int
 _ml_service_create_training_offloading (ml_service_s * mls)
 {
-  int ret = ML_ERROR_NONE;
   ml_training_services_s *training_s = NULL;
 
   g_return_val_if_fail (mls != NULL, ML_ERROR_INVALID_PARAMETER);
@@ -200,27 +202,32 @@ _ml_service_create_training_offloading (ml_service_s * mls)
         "Failed to allocate memory for the service handle's private data. Out of memory?");
   }
 
+  g_cond_init (&training_s->received_cond);
+  g_mutex_init (&training_s->received_lock);
+
+  training_s->type = ML_TRAINING_OFFLOADING_TYPE_UNKNOWN;
+
+  ml_service_offloading_set_mode (mls,
+      ML_SERVICE_OFFLOADING_MODE_TRAINING, training_s);
+
   training_s->transfer_data_table =
       g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
   if (!training_s->transfer_data_table) {
-    _ml_error_report ("Failed to allocate memory for the hash table.");
+    ml_service_training_offloading_destroy (mls);
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Failed to allocate memory for the data table. Out of memory?");
   }
 
   training_s->node_table =
       g_hash_table_new_full (g_str_hash, g_str_equal, g_free,
       _ml_training_offloading_node_info_free);
   if (!training_s->node_table) {
-    _ml_error_report ("Failed to allocate memory for the hash table.");
+    ml_service_training_offloading_destroy (mls);
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Failed to allocate memory for the node table. Out of memory?");
   }
 
-  g_cond_init (&training_s->received_cond);
-  g_mutex_init (&training_s->received_lock);
-
-  training_s->type = ML_TRAINING_OFFLOADING_TYPE_UNKNOWN;
-
-  ret = ml_service_offloading_set_training_handle (mls, training_s);
-
-  return ret;
+  return ML_ERROR_NONE;
 }
 
 /**
@@ -242,7 +249,8 @@ ml_service_training_offloading_create (ml_service_s * mls, JsonObject * object)
   if (!node) {
     _ml_logw
         ("The parameter, 'object' has not `training`. It's not training offloading");
-    return ret;
+    /* Internal condition when given configuration is not training. */
+    return ML_ERROR_NONE;
   }
 
   ret = _ml_service_create_training_offloading (mls);
@@ -275,20 +283,21 @@ _ml_service_training_offloading_request (ml_service_s * mls,
   g_return_val_if_fail (data != NULL, ML_ERROR_INVALID_PARAMETER);
   g_return_val_if_fail (len > 0, ML_ERROR_INVALID_PARAMETER);
 
-  ret = ml_tensors_info_create (&in_info);
+  ml_tensors_info_create (&in_info);
   ml_tensors_info_set_count (in_info, 1);
   ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_UINT8);
   in_dim[0] = len;
   ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
-  ret = ml_tensors_data_create (in_info, &input);
-  ret = ml_tensors_data_set_tensor_data (input, 0, data, len);
+  ml_tensors_data_create (in_info, &input);
+  ml_tensors_data_set_tensor_data (input, 0, data, len);
 
   ret = ml_service_offloading_request (mls, service_name, input);
-  if (ret != ML_ERROR_NONE)
-    _ml_error_report_return (ret, "Failed to request service(name:%s)",
-        service_name);
-  ret = ml_tensors_info_destroy (in_info);
-  ret = ml_tensors_data_destroy (input);
+  if (ret != ML_ERROR_NONE) {
+    _ml_error_report ("Failed to request service '%s'.)", service_name);
+  }
+
+  ml_tensors_info_destroy (in_info);
+  ml_tensors_data_destroy (input);
 
   return ret;
 }
@@ -300,18 +309,19 @@ static int
 _ml_service_training_offloading_services_request (ml_service_s * mls)
 {
   ml_training_services_s *training_s = NULL;
+  ml_service_offloading_mode_e mode = ML_SERVICE_OFFLOADING_MODE_NONE;
   int ret = ML_ERROR_NONE;
-  GList *list = NULL, *iter;
-  gchar *transfer_data = NULL, *service_name = NULL, *contents =
-      NULL, *pipeline = NULL;
+  GList *list, *iter;
+  gchar *transfer_data = NULL, *service_name = NULL;
+  gchar *contents = NULL, *pipeline = NULL;
   guint changed;
   gsize len;
 
-  g_return_val_if_fail (mls != NULL, ML_ERROR_INVALID_PARAMETER);
-
-  training_s = (ml_training_services_s *)
-      ml_service_offloading_get_training_handle (mls);
-  g_return_val_if_fail (training_s != NULL, ML_ERROR_INVALID_PARAMETER);
+  ml_service_offloading_get_mode (mls, &mode, (void **) &training_s);
+  if (mode != ML_SERVICE_OFFLOADING_MODE_TRAINING || training_s == NULL) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The ml service is not training mode.");
+  }
 
   _ml_logd ("path set by app:%s ", training_s->path);
 
@@ -322,13 +332,13 @@ _ml_service_training_offloading_services_request (ml_service_s * mls)
   }
 
   for (iter = list; iter != NULL; iter = g_list_next (iter)) {
+    const gchar *name = iter->data;
+
     transfer_data =
-        g_strdup (g_hash_table_lookup (training_s->transfer_data_table,
-            (gchar *) iter->data));
+        g_strdup (g_hash_table_lookup (training_s->transfer_data_table, name));
 
     if (g_strstr_len (transfer_data, -1, APP_RW_PATH)) {
-      transfer_data =
-          _ml_replace_string (transfer_data, APP_RW_PATH,
+      transfer_data = _ml_replace_string (transfer_data, APP_RW_PATH,
           training_s->path, NULL, &changed);
 
       _ml_logd ("transfer_data:%s", transfer_data);
@@ -337,19 +347,15 @@ _ml_service_training_offloading_services_request (ml_service_s * mls)
         _ml_error_report ("Failed to read file:%s", transfer_data);
         goto error;
       }
-      ret =
-          _ml_service_training_offloading_request (mls, (gchar *) iter->data,
-          contents, len);
+      ret = _ml_service_training_offloading_request (mls, name, contents, len);
       if (ret != ML_ERROR_NONE) {
-        _ml_error_report ("Failed to request service(%s)",
-            (gchar *) iter->data);
+        _ml_error_report ("Failed to request service '%s'.", name);
         goto error;
       }
       g_free (transfer_data);
       g_free (contents);
       transfer_data = NULL;
       contents = NULL;
-
     } else if (g_strstr_len (transfer_data, -1, "pipeline")) {
       service_name = g_strdup (iter->data);
       pipeline = g_strdup (transfer_data);
@@ -358,17 +364,19 @@ _ml_service_training_offloading_services_request (ml_service_s * mls)
   }
 
   if (pipeline) {
-    /** The remote sender sends the last in the pipeline.
-       When the pipeline arrives, the remote receiver determines that the sender has sent all the necessary files specified in the pipeline.
-       pipeline description must be sent last. */
+    /**
+     * The remote sender sends the last in the pipeline.
+     * When the pipeline arrives, the remote receiver determines that the sender has sent all the necessary files specified in the pipeline.
+     * pipeline description must be sent last.
+     */
     _ml_logd
         ("In case of pipeline, @REMOTE_APP_RW_PATH@ will be replaced at the remote receiver.\n transfer_data:pipeline(%s),",
         pipeline);
-    ret =
-        _ml_service_training_offloading_request (mls, service_name, pipeline,
+    ret = _ml_service_training_offloading_request (mls, service_name, pipeline,
         strlen (pipeline) + 1);
-    if (ret != ML_ERROR_NONE)
+    if (ret != ML_ERROR_NONE) {
       _ml_error_report ("Failed to request service(%s)", service_name);
+    }
   }
 
 error:
@@ -386,7 +394,8 @@ error:
 static void
 check_received_data (ml_training_services_s * training_s)
 {
-  int loop = 100;               /*FIXME: let's value by conf */
+  /** @todo FIXME: let's value by conf */
+  int loop = 100;
 
   g_return_if_fail (training_s != NULL);
 
@@ -409,8 +418,8 @@ check_received_data (ml_training_services_s * training_s)
 
   _ml_loge ("Required data is null, receive_pipe:%s",
       training_s->receiver_pipe_json_str);
-  training_s->is_received = FALSE;
   g_mutex_lock (&training_s->received_lock);
+  training_s->is_received = FALSE;
   g_cond_signal (&training_s->received_cond);
   g_mutex_unlock (&training_s->received_lock);
 }
@@ -418,11 +427,13 @@ check_received_data (ml_training_services_s * training_s)
 /**
  * @brief Check if all necessary data is received
 */
-static int
+static gboolean
 _ml_service_training_offloading_check_received_data (ml_training_services_s *
     training_s)
 {
-  g_return_val_if_fail (training_s != NULL, ML_ERROR_INVALID_PARAMETER);
+  gboolean is_received = FALSE;
+
+  g_return_val_if_fail (training_s != NULL, FALSE);
 
   training_s->received_thread =
       g_thread_new ("check_received_file", (GThreadFunc) check_received_data,
@@ -437,10 +448,11 @@ _ml_service_training_offloading_check_received_data (ml_training_services_s *
       break;
   }
 
+  is_received = training_s->is_received;
   g_mutex_unlock (&training_s->received_lock);
   _ml_logd ("unlock, receive all data");
 
-  return training_s->is_received;
+  return is_received;
 }
 
 /**
@@ -451,12 +463,13 @@ _ml_service_training_offloading_replce_pipeline_data_path (ml_service_s * mls)
 {
   guint changed = 0;
   ml_training_services_s *training_s = NULL;
+  ml_service_offloading_mode_e mode = ML_SERVICE_OFFLOADING_MODE_NONE;
 
-  g_return_if_fail (mls != NULL);
-
-  training_s = (ml_training_services_s *)
-      ml_service_offloading_get_training_handle (mls);
-  g_return_if_fail (training_s != NULL);
+  ml_service_offloading_get_mode (mls, &mode, (void **) &training_s);
+  if (mode != ML_SERVICE_OFFLOADING_MODE_TRAINING || training_s == NULL) {
+    _ml_error_report ("The ml service is not training mode.");
+    return;
+  }
 
   if (training_s->type == ML_TRAINING_OFFLOADING_TYPE_SENDER) {
     if (training_s->sender_pipe) {
@@ -512,13 +525,16 @@ _invoke_event_new_data (ml_service_s * mls, const char *name,
       goto done;
 
     status = _ml_information_set (info, "data", (void *) data, NULL);
-    if (status == ML_ERROR_NONE)
-      cb_info.cb (ML_SERVICE_EVENT_NEW_DATA, info, cb_info.pdata);
+    if (status != ML_ERROR_NONE)
+      goto done;
+
+    cb_info.cb (ML_SERVICE_EVENT_NEW_DATA, info, cb_info.pdata);
   }
 
 done:
-  if (info)
+  if (info) {
     ml_information_destroy (info);
+  }
 
   if (status != ML_ERROR_NONE) {
     _ml_error_report ("Failed to invoke 'new data' event.");
@@ -557,13 +573,14 @@ _ml_service_training_offloading_node_info_new (ml_service_s * mls,
 {
   ml_training_offloading_node_info_s *node_info;
   ml_training_services_s *training_s = NULL;
+  ml_service_offloading_mode_e mode = ML_SERVICE_OFFLOADING_MODE_NONE;
 
-  g_return_val_if_fail (mls != NULL, NULL);
   g_return_val_if_fail (name != NULL, NULL);
 
-  training_s = (ml_training_services_s *)
-      ml_service_offloading_get_training_handle (mls);
-  g_return_val_if_fail (training_s != NULL, NULL);
+  ml_service_offloading_get_mode (mls, &mode, (void **) &training_s);
+  if (mode != ML_SERVICE_OFFLOADING_MODE_TRAINING || training_s == NULL) {
+    _ml_error_report_return (NULL, "The ml service is not training mode.");
+  }
 
   if (g_hash_table_lookup (training_s->node_table, name)) {
     _ml_error_report_return (NULL,
@@ -585,7 +602,6 @@ _ml_service_training_offloading_node_info_new (ml_service_s * mls,
   return node_info;
 }
 
-
 /**
  * @brief Internal function to parse the node info in pipeline.
  */
@@ -600,13 +616,15 @@ _ml_service_training_offloading_conf_parse_pipeline_node (ml_service_s * mls,
   JsonObject *node_object;
   ml_training_offloading_node_info_s *node_info = NULL;
   ml_training_services_s *training_s = NULL;
+  ml_service_offloading_mode_e mode = ML_SERVICE_OFFLOADING_MODE_NONE;
 
-  g_return_val_if_fail (mls != NULL, ML_ERROR_INVALID_PARAMETER);
   g_return_val_if_fail (node != NULL, ML_ERROR_INVALID_PARAMETER);
 
-  training_s = (ml_training_services_s *)
-      ml_service_offloading_get_training_handle (mls);
-  g_return_val_if_fail (training_s != NULL, ML_ERROR_INVALID_PARAMETER);
+  ml_service_offloading_get_mode (mls, &mode, (void **) &training_s);
+  if (mode != ML_SERVICE_OFFLOADING_MODE_TRAINING || training_s == NULL) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The ml service is not training mode.");
+  }
 
   n = 1;
   if (JSON_NODE_HOLDS_ARRAY (node)) {
@@ -620,9 +638,10 @@ _ml_service_training_offloading_conf_parse_pipeline_node (ml_service_s * mls,
     else
       node_object = json_node_get_object (node);
 
-    if (!json_object_has_member (node_object, "name"))
+    if (!json_object_has_member (node_object, "name")) {
       _ml_error_report_return (ret,
           "Failed to parse configuration file, cannot get the name for pipeline node.");
+    }
 
     name = json_object_get_string_member (node_object, "name");
 
@@ -634,13 +653,11 @@ _ml_service_training_offloading_conf_parse_pipeline_node (ml_service_s * mls,
 
     switch (type) {
       case ML_TRAINING_OFFLOADING_NODE_TYPE_TRAINING:
-        ret =
-            ml_pipeline_element_get_handle (training_s->pipeline_h, name,
+        ret = ml_pipeline_element_get_handle (training_s->pipeline_h, name,
             &node_info->handle);
         break;
       case ML_TRAINING_OFFLOADING_NODE_TYPE_OUTPUT:
-        ret =
-            ml_pipeline_sink_register (training_s->pipeline_h, name,
+        ret = ml_pipeline_sink_register (training_s->pipeline_h, name,
             _pipeline_sink_cb, node_info, &node_info->handle);
         break;
       default:
@@ -657,7 +674,6 @@ _ml_service_training_offloading_conf_parse_pipeline_node (ml_service_s * mls,
   return ret;
 }
 
-
 /**
  * @brief register sink callback
  */
@@ -673,8 +689,7 @@ _ml_service_training_offloading_conf_parse_pipeline (ml_service_s * mls,
 
   if (json_object_has_member (pipe, "output_node")) {
     node = json_object_get_member (pipe, "output_node");
-    ret =
-        _ml_service_training_offloading_conf_parse_pipeline_node (mls, node,
+    ret = _ml_service_training_offloading_conf_parse_pipeline_node (mls, node,
         ML_TRAINING_OFFLOADING_NODE_TYPE_OUTPUT);
     if (ret != ML_ERROR_NONE) {
       _ml_error_report_return (ret,
@@ -684,8 +699,7 @@ _ml_service_training_offloading_conf_parse_pipeline (ml_service_s * mls,
 
   if (json_object_has_member (pipe, "training_node")) {
     node = json_object_get_member (pipe, "training_node");
-    ret =
-        _ml_service_training_offloading_conf_parse_pipeline_node (mls, node,
+    ret = _ml_service_training_offloading_conf_parse_pipeline_node (mls, node,
         ML_TRAINING_OFFLOADING_NODE_TYPE_TRAINING);
     if (ret != ML_ERROR_NONE) {
       _ml_error_report_return (ret,
@@ -704,13 +718,15 @@ ml_service_training_offloading_set_path (ml_service_s * mls, const gchar * path)
 {
   int ret = ML_ERROR_NONE;
   ml_training_services_s *training_s = NULL;
+  ml_service_offloading_mode_e mode = ML_SERVICE_OFFLOADING_MODE_NONE;
 
-  g_return_val_if_fail (mls != NULL, ML_ERROR_INVALID_PARAMETER);
   g_return_val_if_fail (path != NULL, ML_ERROR_INVALID_PARAMETER);
 
-  training_s = (ml_training_services_s *)
-      ml_service_offloading_get_training_handle (mls);
-  g_return_val_if_fail (training_s != NULL, ML_ERROR_INVALID_PARAMETER);
+  ml_service_offloading_get_mode (mls, &mode, (void **) &training_s);
+  if (mode != ML_SERVICE_OFFLOADING_MODE_TRAINING || training_s == NULL) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The ml service is not training mode.");
+  }
 
   g_free (training_s->path);
   training_s->path = g_strdup (path);
@@ -729,24 +745,23 @@ ml_service_training_offloading_start (ml_service_s * mls)
   JsonObject *pipeline_obj;
   JsonObject *pipe;
   ml_training_services_s *training_s = NULL;
+  ml_service_offloading_mode_e mode = ML_SERVICE_OFFLOADING_MODE_NONE;
 
-  if (!mls) {
+  ml_service_offloading_get_mode (mls, &mode, (void **) &training_s);
+  if (mode != ML_SERVICE_OFFLOADING_MODE_TRAINING || training_s == NULL) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'mls' (ml_service_s), is NULL.");
+        "The ml service is not training mode.");
   }
-
-  training_s = (ml_training_services_s *)
-      ml_service_offloading_get_training_handle (mls);
-  g_return_val_if_fail (training_s != NULL, ML_ERROR_INVALID_PARAMETER);
 
   if (training_s->type == ML_TRAINING_OFFLOADING_TYPE_SENDER) {
     ret = _ml_service_training_offloading_services_request (mls);
-    if (ret != ML_ERROR_NONE)
+    if (ret != ML_ERROR_NONE) {
       _ml_error_report_return (ret, "Failed to request service");
+    }
+
     _ml_service_training_offloading_replce_pipeline_data_path (mls);
 
-    ret =
-        ml_pipeline_construct (training_s->sender_pipe, NULL, NULL,
+    ret = ml_pipeline_construct (training_s->sender_pipe, NULL, NULL,
         &training_s->pipeline_h);
     if (ML_ERROR_NONE != ret) {
       _ml_error_report_return (ret, "Failed to construct pipeline");
@@ -754,15 +769,14 @@ ml_service_training_offloading_start (ml_service_s * mls)
 
     ret = ml_pipeline_start (training_s->pipeline_h);
     if (ret != ML_ERROR_NONE) {
-      _ml_error_report_return (ret, "Failed to start ml pipeline ret", ret);
+      _ml_error_report_return (ret, "Failed to start ml pipeline.");
     }
-
   } else if (training_s->type == ML_TRAINING_OFFLOADING_TYPE_RECEIVER) {
     /* checking if all required files are received */
-    if (FALSE ==
-        _ml_service_training_offloading_check_received_data (training_s))
+    if (!_ml_service_training_offloading_check_received_data (training_s)) {
       _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
           "Failed to receive the required data");
+    }
 
     _ml_service_training_offloading_replce_pipeline_data_path (mls);
 
@@ -779,9 +793,10 @@ ml_service_training_offloading_start (ml_service_s * mls)
           "Failed to get the json object from the json node.");
     }
 
-    if (!json_object_has_member (pipeline_obj, "pipeline"))
+    if (!json_object_has_member (pipeline_obj, "pipeline")) {
       _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
           "Failed to parse configuration file, cannot get the pipeline JSON object.");
+    }
 
     pipe = json_object_get_object_member (pipeline_obj, "pipeline");
 
@@ -793,16 +808,16 @@ ml_service_training_offloading_start (ml_service_s * mls)
           "Failed to parse configuration file, cannot get the pipeline description.");
     }
 
-    ret =
-        ml_pipeline_construct (training_s->receiver_pipe, NULL, NULL,
+    ret = ml_pipeline_construct (training_s->receiver_pipe, NULL, NULL,
         &training_s->pipeline_h);
     if (ML_ERROR_NONE != ret) {
       _ml_error_report_return (ret, "Failed to construct pipeline");
     }
 
     ret = _ml_service_training_offloading_conf_parse_pipeline (mls, pipe);
-    if (ret != ML_ERROR_NONE)
+    if (ret != ML_ERROR_NONE) {
       return ret;
+    }
 
     ret = ml_pipeline_start (training_s->pipeline_h);
     if (ret != ML_ERROR_NONE) {
@@ -824,16 +839,16 @@ _ml_service_training_offloading_ready_to_complete (ml_service_s * mls)
 {
   int ret = ML_ERROR_NONE;
   int loop = 120;
-  GList *list = NULL, *iter;
+  GList *list, *iter;
   ml_training_services_s *training_s = NULL;
   ml_training_offloading_node_info_s *node_info = NULL;
+  ml_service_offloading_mode_e mode = ML_SERVICE_OFFLOADING_MODE_NONE;
 
-  g_return_val_if_fail (mls != NULL, ML_ERROR_INVALID_PARAMETER);
-
-  training_s = (ml_training_services_s *)
-      ml_service_offloading_get_training_handle (mls);
-  g_return_val_if_fail (training_s != NULL, ML_ERROR_INVALID_PARAMETER);
-
+  ml_service_offloading_get_mode (mls, &mode, (void **) &training_s);
+  if (mode != ML_SERVICE_OFFLOADING_MODE_TRAINING || training_s == NULL) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The ml service is not training mode.");
+  }
 
   list = g_hash_table_get_keys (training_s->node_table);
   if (!list) {
@@ -843,17 +858,19 @@ _ml_service_training_offloading_ready_to_complete (ml_service_s * mls)
 
   /* For now, let's set values for all tensor_trainers */
   for (iter = list; iter != NULL; iter = g_list_next (iter)) {
-    node_info =
-        g_hash_table_lookup (training_s->node_table, (gchar *) iter->data);
-    if (node_info->type == ML_TRAINING_OFFLOADING_NODE_TYPE_TRAINING) {
-      _ml_logd ("Set `ready to complete` to tensor_trainer node name:%s",
-          (gchar *) iter->data);
+    const gchar *name = iter->data;
+
+    node_info = g_hash_table_lookup (training_s->node_table, name);
+    if (node_info &&
+        node_info->type == ML_TRAINING_OFFLOADING_NODE_TYPE_TRAINING) {
+      _ml_logd ("Set `ready to complete` to tensor_trainer node name:%s", name);
+
       ml_pipeline_element_set_property_bool (node_info->handle,
           "ready-to-complete", TRUE);
     }
   }
 
-  /* FIXME : Let's make up for it later. */
+  /** @todo FIXME : Let's make up for it later. */
   while (loop--) {
     if (g_file_test (training_s->trained_model_path, G_FILE_TEST_EXISTS))
       break;
@@ -871,15 +888,13 @@ ml_service_training_offloading_stop (ml_service_s * mls)
 {
   int ret = ML_ERROR_NONE;
   ml_training_services_s *training_s = NULL;
+  ml_service_offloading_mode_e mode = ML_SERVICE_OFFLOADING_MODE_NONE;
 
-  if (!mls) {
+  ml_service_offloading_get_mode (mls, &mode, (void **) &training_s);
+  if (mode != ML_SERVICE_OFFLOADING_MODE_TRAINING || training_s == NULL) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'mls' (ml_service_s), is NULL.");
+        "The ml service is not training mode.");
   }
-
-  training_s = (ml_training_services_s *)
-      ml_service_offloading_get_training_handle (mls);
-  g_return_val_if_fail (training_s != NULL, ML_ERROR_INVALID_PARAMETER);
 
   if (training_s->type == ML_TRAINING_OFFLOADING_TYPE_RECEIVER) {
     if (!g_file_test (training_s->trained_model_path, G_FILE_TEST_EXISTS)) {
@@ -887,9 +902,10 @@ ml_service_training_offloading_stop (ml_service_s * mls)
     }
   }
 
-  if (!training_s->pipeline_h)
+  if (!training_s->pipeline_h) {
     _ml_error_report_return (ML_ERROR_STREAMS_PIPE,
         "Pipeline is not constructed.");
+  }
 
   ret = ml_pipeline_stop (training_s->pipeline_h);
   if (ML_ERROR_NONE != ret) {
@@ -908,15 +924,17 @@ ml_service_training_offloading_process_received_data (ml_service_s * mls,
 {
   g_autofree gchar *name = NULL;
   ml_training_services_s *training_s = NULL;
+  ml_service_offloading_mode_e mode = ML_SERVICE_OFFLOADING_MODE_NONE;
 
-  g_return_if_fail (mls != NULL);
   g_return_if_fail (data_h != NULL);
   g_return_if_fail (dir_path != NULL);
   g_return_if_fail (data != NULL);
 
-  training_s = (ml_training_services_s *)
-      ml_service_offloading_get_training_handle (mls);
-  g_return_if_fail (training_s != NULL);
+  ml_service_offloading_get_mode (mls, &mode, (void **) &training_s);
+  if (mode != ML_SERVICE_OFFLOADING_MODE_TRAINING || training_s == NULL) {
+    _ml_error_report ("The ml service is not training mode.");
+    return;
+  }
 
   _ml_logd ("Received data, service_type:%d", service_type);
 
@@ -945,15 +963,16 @@ static void
 _ml_service_training_offloading_send_trained_model (ml_service_s * mls)
 {
   ml_training_services_s *training_s = NULL;
-  GList *list = NULL, *iter;
-  gchar *contents;
+  ml_service_offloading_mode_e mode = ML_SERVICE_OFFLOADING_MODE_NONE;
+  GList *list, *iter;
+  gchar *contents = NULL;
   gsize len;
 
-  g_return_if_fail (mls != NULL);
-
-  training_s = (ml_training_services_s *)
-      ml_service_offloading_get_training_handle (mls);
-  g_return_if_fail (training_s != NULL);
+  ml_service_offloading_get_mode (mls, &mode, (void **) &training_s);
+  if (mode != ML_SERVICE_OFFLOADING_MODE_TRAINING || training_s == NULL) {
+    _ml_error_report ("The ml service is not training mode.");
+    return;
+  }
 
   if (training_s->trained_model_path == NULL)
     return;
@@ -973,8 +992,9 @@ _ml_service_training_offloading_send_trained_model (ml_service_s * mls)
     _ml_service_training_offloading_request (mls, (gchar *) iter->data,
         contents, len);
   }
-  g_list_free (list);
 
+  g_list_free (list);
+  g_free (contents);
   return;
 }
 
@@ -986,18 +1006,12 @@ ml_service_training_offloading_destroy (ml_service_s * mls)
 {
   int ret = ML_ERROR_NONE;
   ml_training_services_s *training_s = NULL;
+  ml_service_offloading_mode_e mode = ML_SERVICE_OFFLOADING_MODE_NONE;
 
-  if (!mls) {
+  ml_service_offloading_get_mode (mls, &mode, (void **) &training_s);
+  if (mode != ML_SERVICE_OFFLOADING_MODE_TRAINING || training_s == NULL) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'mls' is NULL.");
-  }
-
-  training_s = (ml_training_services_s *)
-      ml_service_offloading_get_training_handle (mls);
-
-  if (!training_s) {
-    _ml_logw ("training_s(%p) is already destroyed", training_s);
-    return ret;
+        "The ml service is not training mode.");
   }
 
   if (training_s->type == ML_TRAINING_OFFLOADING_TYPE_RECEIVER) {
@@ -1026,9 +1040,9 @@ ml_service_training_offloading_destroy (ml_service_s * mls)
   if (training_s->pipeline_h) {
     ret = ml_pipeline_destroy (training_s->pipeline_h);
     if (ret != ML_ERROR_NONE) {
-      _ml_error_report_return (ret, "Failed to destroy ml pipeline ret");
-      return ret;
+      _ml_error_report ("Failed to destroy ml pipeline, clear handle anyway.");
     }
+
     training_s->pipeline_h = NULL;
   }
 
@@ -1047,10 +1061,8 @@ ml_service_training_offloading_destroy (ml_service_s * mls)
   g_free (training_s->sender_pipe);
   training_s->sender_pipe = NULL;
 
-
   g_free (training_s);
-  training_s = NULL;
-  ml_service_offloading_set_training_handle (mls, training_s);
 
+  ml_service_offloading_set_mode (mls, ML_SERVICE_OFFLOADING_MODE_NONE, NULL);
   return ret;
 }
