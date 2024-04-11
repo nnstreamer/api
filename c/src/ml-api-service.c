@@ -15,7 +15,6 @@
 #include "ml-api-service.h"
 #include "ml-api-service-extension.h"
 #include "ml-api-service-offloading.h"
-#include "ml-api-service-training-offloading.h"
 
 #define ML_SERVICE_MAGIC 0xfeeedeed
 #define ML_SERVICE_MAGIC_DEAD 0xdeaddead
@@ -278,121 +277,6 @@ _ml_service_conf_parse_tensors_info (JsonNode * info_node,
 }
 
 /**
- * @brief Internal function to parse service info from config file.
- */
-static int
-_ml_service_offloading_conf_to_opt (ml_service_s * mls, JsonObject * object,
-    const gchar * name, ml_option_h option)
-{
-  int status = ML_ERROR_NONE;
-  JsonObject *offloading_object;
-  const gchar *val = NULL;
-  const gchar *key = NULL;
-  GList *list = NULL, *iter;
-
-  offloading_object = json_object_get_object_member (object, name);
-  if (!offloading_object) {
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "Failed to get %s member from the config file", name);
-  }
-
-  list = json_object_get_members (offloading_object);
-  for (iter = list; iter != NULL; iter = g_list_next (iter)) {
-    key = iter->data;
-    if (g_ascii_strcasecmp (key, "training") == 0) {
-      /* It is not a value to set for option. */
-      continue;
-    }
-    val = json_object_get_string_member (offloading_object, key);
-    status = ml_option_set (option, key, g_strdup (val), g_free);
-    if (status != ML_ERROR_NONE) {
-      _ml_error_report ("Failed to set %s option: %s.", key, val);
-      break;
-    }
-  }
-  g_list_free (list);
-
-  return status;
-}
-
-/**
- * @brief Internal function to parse service info from config file.
- */
-static int
-_ml_service_offloading_parse_services (ml_service_s * mls, JsonObject * object)
-{
-  GList *list, *iter;
-  JsonNode *json_node = NULL;
-  int status = ML_ERROR_NONE;
-
-  list = json_object_get_members (object);
-  for (iter = list; iter != NULL; iter = g_list_next (iter)) {
-    const gchar *key = iter->data;
-    gchar *val = NULL;
-
-    json_node = json_object_get_member (object, key);
-    val = json_to_string (json_node, TRUE);
-    if (val) {
-      status = ml_service_offloading_set_service (mls, key, val);
-      g_free (val);
-
-      if (status != ML_ERROR_NONE) {
-        _ml_error_report ("Failed to set service key : %s", key);
-        break;
-      }
-    }
-  }
-  g_list_free (list);
-
-  return status;
-}
-
-/**
- * @brief Internal function to parse configuration file to create offloading service.
- */
-static int
-_ml_service_offloading_create_json (ml_service_s * mls, JsonObject * object)
-{
-  int status;
-  ml_option_h option;
-
-  status = ml_option_create (&option);
-  if (status != ML_ERROR_NONE) {
-    _ml_error_report_return (status, "Failed to create ml-option.");
-  }
-
-  status =
-      _ml_service_offloading_conf_to_opt (mls, object, "offloading", option);
-  if (status != ML_ERROR_NONE) {
-    _ml_error_report ("Failed to set ml-option from config file.");
-    goto done;
-  }
-
-  status = ml_service_offloading_create (mls, option);
-  if (status != ML_ERROR_NONE) {
-    _ml_error_report ("Failed to create ml-service-offloading.");
-    goto done;
-  }
-  if (json_object_has_member (object, "services")) {
-    JsonObject *svc_object;
-    svc_object = json_object_get_object_member (object, "services");
-    status = _ml_service_offloading_parse_services (mls, svc_object);
-    if (status != ML_ERROR_NONE) {
-      _ml_logw ("Failed to parse services from config file.");
-    }
-  }
-
-  status = ml_service_training_offloading_create (mls, object);
-  if (status != ML_ERROR_NONE) {
-    _ml_logw ("Failed to parse training from config file.");
-  }
-
-done:
-  ml_option_destroy (option);
-  return status;
-}
-
-/**
  * @brief Internal function to get ml-service type.
  */
 static ml_service_type_e
@@ -485,7 +369,7 @@ ml_service_new (const char *config, ml_service_h * handle)
       status = ml_service_extension_create (mls, object);
       break;
     case ML_SERVICE_TYPE_OFFLOADING:
-      status = _ml_service_offloading_create_json (mls, object);
+      status = ml_service_offloading_create (mls, object);
       break;
     default:
       /* Invalid handle type. */

@@ -25,7 +25,7 @@ extern "C" {
 /**
  * @brief Creates a training offloading handle for ml-service training offloading service.
  * @param[in] mls ml-service handle created by ml_service_new().
- * @param[in] object The Json object containing the service option.
+ * @param[in] offloading The Json object containing the service option.
  * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
@@ -35,7 +35,7 @@ extern "C" {
  * @retval #ML_ERROR_STREAMS_PIPE Failed to open the model.
  * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
  */
-int ml_service_training_offloading_create (ml_service_s *mls, JsonObject *object);
+int ml_service_training_offloading_create (ml_service_s *mls, JsonObject *offloading);
 
 /**
  * @brief Set path in ml-service training offloading handle.
@@ -75,16 +75,6 @@ int ml_service_training_offloading_start (ml_service_s *mls);
  * @retval #ML_ERROR_PERMISSION_DENIED The application does not have the privilege to access to the storage.
  */
 int ml_service_training_offloading_stop (ml_service_s *mls);
-
-/**
- * @brief Request all services to ml-service offloading.
- * @param[in] mls ml-service handle created by ml_service_new().
- * @return @c 0 on success. Otherwise a negative error value.
- * @retval #ML_ERROR_NONE Successful.
- * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
- * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
- */
-int ml_service_training_offloading_all_services_request (ml_service_s *mls);
 
 /**
  * @brief Process received data

@@ -276,7 +276,8 @@ TEST_F (MLServiceTrainingOffloading, createInvalidParam2_n)
   object = json_node_get_object (root);
   ASSERT_NE (nullptr, object);
 
-  status = ml_service_training_offloading_create (NULL, object);
+  JsonObject *offloading = json_object_get_object_member (object, "offloading");
+  status = ml_service_training_offloading_create (NULL, offloading);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 }
 
@@ -287,18 +288,12 @@ TEST_F (MLServiceTrainingOffloading, create_p)
 {
   int status;
   ml_service_s *mls;
-  ml_option_h option = NULL;
 
   g_autoptr (JsonParser) parser = NULL;
   g_autofree gchar *json_string = NULL;
   JsonNode *root;
   JsonObject *object;
   g_autofree gchar *receiver_config = _get_config_path ("training_offloading_receiver.conf");
-
-  JsonObject *offloading_object;
-  const gchar *val = NULL;
-  const gchar *key = NULL;
-  GList *list = NULL, *iter;
 
   ASSERT_TRUE (g_file_get_contents (receiver_config, &json_string, NULL, NULL));
   parser = json_parser_new ();
@@ -311,40 +306,19 @@ TEST_F (MLServiceTrainingOffloading, create_p)
   mls = _ml_service_create_internal (ML_SERVICE_TYPE_OFFLOADING);
   ASSERT_NE (nullptr, mls);
 
-  status = ml_option_create (&option);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-
-  offloading_object = json_object_get_object_member (object, "offloading");
-  ASSERT_NE (nullptr, offloading_object);
-
-  list = json_object_get_members (offloading_object);
-  for (iter = list; iter != NULL; iter = g_list_next (iter)) {
-    key = (gchar *) iter->data;
-    if (g_ascii_strcasecmp (key, "training") == 0) {
-      /* It is not a value to set for option. */
-      continue;
-    }
-    val = json_object_get_string_member (offloading_object, key);
-    status = ml_option_set (option, key, g_strdup (val), g_free);
-    EXPECT_EQ (ML_ERROR_NONE, status);
-  }
-  g_list_free (list);
-
-  status = ml_service_offloading_create (mls, option);
+  status = ml_service_offloading_create (mls, object);
   /* nns-edge error occurs because there is no remote to connect to. */
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   /* An offloading instance must be created first. */
-  status = ml_service_training_offloading_create (mls, object);
+  JsonObject *offloading = json_object_get_object_member (object, "offloading");
+  status = ml_service_training_offloading_create (mls, offloading);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   status = ml_service_training_offloading_destroy (mls);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   status = ml_service_offloading_release_internal (mls);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-
-  status = ml_option_destroy (option);
   EXPECT_EQ (ML_ERROR_NONE, status);
 }
 

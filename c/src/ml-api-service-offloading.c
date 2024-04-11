@@ -552,37 +552,43 @@ _mlrs_create_edge_handle (ml_service_s * mls, edge_info_s * edge_info)
       edge_info->node_type, &edge_h);
 
   if (NNS_EDGE_ERROR_NONE != ret) {
-    _ml_error_report ("nns_edge_create_handle failed.");
-    return ret;
+    _ml_error_report_return_continue (ret,
+        "Failed to create edge handle for ml-service offloading. Internal error?");
   }
 
   offloading_s = (_ml_service_offloading_s *) mls->priv;
   ret = nns_edge_set_event_callback (edge_h, _mlrs_edge_event_cb, mls);
   if (NNS_EDGE_ERROR_NONE != ret) {
-    _ml_error_report ("nns_edge_set_event_callback failed.");
-    nns_edge_release_handle (edge_h);
-    return ret;
+    _ml_error_report
+        ("Failed to set event callback in edge handle for ml-service offloading. Internal error?");
+    goto error;
   }
 
   _mlrs_set_edge_info (edge_info, edge_h);
 
   ret = nns_edge_start (edge_h);
   if (NNS_EDGE_ERROR_NONE != ret) {
-    _ml_error_report ("nns_edge_start failed.");
-    nns_edge_release_handle (edge_h);
-    return ret;
+    _ml_error_report
+        ("Failed to start edge for ml-service offloading. Internal error?");
+    goto error;
   }
 
   if (edge_info->node_type == NNS_EDGE_NODE_TYPE_QUERY_CLIENT) {
     ret = nns_edge_connect (edge_h, edge_info->dest_host, edge_info->dest_port);
 
     if (NNS_EDGE_ERROR_NONE != ret) {
-      _ml_error_report ("nns_edge_connect failed.");
-      nns_edge_release_handle (edge_h);
-      return ret;
+      _ml_error_report
+          ("Failed to connect edge for ml-service offloading. Internal error?");
+      goto error;
     }
   }
+
   offloading_s->edge_h = edge_h;
+
+error:
+  if (ret != NNS_EDGE_ERROR_NONE) {
+    nns_edge_release_handle (edge_h);
+  }
 
   return ret;
 }
@@ -711,34 +717,76 @@ ml_service_offloading_set_information (ml_service_h handle, const gchar * name,
 
     g_free (offloading_s->path);
     offloading_s->path = g_strdup (value);
-    ml_service_training_offloading_set_path (mls, offloading_s->path);
+
+    if (offloading_s->offloading_mode == ML_SERVICE_OFFLOADING_MODE_TRAINING) {
+      ml_service_training_offloading_set_path (mls, offloading_s->path);
+    }
   }
 
   return ML_ERROR_NONE;
 }
 
 /**
- * @brief Internal function to parse configuration file to create offloading service.
+ * @brief Internal function to set the services in ml-service offloading handle.
  */
-int
-ml_service_offloading_create (ml_service_h handle, ml_option_h option)
+static int
+_ml_service_offloading_set_service (ml_service_s * mls, const gchar * key,
+    const gchar * value)
 {
-  ml_service_s *mls;
-  _ml_service_offloading_s *offloading_s = NULL;
+  _ml_service_offloading_s *offloading_s;
+
+  if (!STR_IS_VALID (key) || !STR_IS_VALID (value)) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'key' or 'value' is null or empty string. It should be a valid string.");
+  }
+  offloading_s = (_ml_service_offloading_s *) mls->priv;
+
+  g_hash_table_insert (offloading_s->table, g_strdup (key), g_strdup (value));
+
+  return ML_ERROR_NONE;
+}
+
+/**
+ * @brief Internal function to parse service info from config file.
+ */
+static int
+_ml_service_offloading_parse_services (ml_service_s * mls, JsonObject * object)
+{
+  GList *list, *iter;
+  int status = ML_ERROR_NONE;
+
+  list = json_object_get_members (object);
+  for (iter = list; iter != NULL; iter = g_list_next (iter)) {
+    const gchar *key = iter->data;
+    JsonNode *json_node = json_object_get_member (object, key);
+    gchar *val = json_to_string (json_node, TRUE);
+
+    if (val) {
+      status = _ml_service_offloading_set_service (mls, key, val);
+      g_free (val);
+
+      if (status != ML_ERROR_NONE) {
+        _ml_error_report ("Failed to set service key '%s'.", key);
+        break;
+      }
+    }
+  }
+  g_list_free (list);
+
+  return status;
+}
+
+/**
+ * @brief Internal function to create ml-offloading data with given ml-option handle.
+ */
+static int
+_ml_service_offloading_create_from_option (ml_service_s * mls,
+    ml_option_h option)
+{
+  _ml_service_offloading_s *offloading_s;
   edge_info_s *edge_info = NULL;
   int ret = ML_ERROR_NONE;
   gchar *_path = NULL;
-
-  if (!handle) {
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'handle' (ml_service_h), is NULL. It should be a valid ml_service_h.");
-  }
-
-  if (!option) {
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'option' is NULL. It should be a valid ml_option_h, which should be created by ml_option_create().");
-  }
-  mls = (ml_service_s *) handle;
 
   mls->priv = offloading_s = g_try_new0 (_ml_service_offloading_s, 1);
   if (offloading_s == NULL) {
@@ -771,6 +819,113 @@ ml_service_offloading_create (ml_service_h handle, ml_option_h option)
 }
 
 /**
+ * @brief Internal function to convert json (string member) to ml-option.
+ */
+static int
+_ml_service_offloading_convert_to_option (JsonObject * object,
+    ml_option_h * option_h)
+{
+  ml_option_h tmp = NULL;
+  int status = ML_ERROR_NONE;
+  const gchar *key, *val;
+  GList *list, *iter;
+
+  if (!object || !option_h)
+    return ML_ERROR_INVALID_PARAMETER;
+
+  status = ml_option_create (&tmp);
+  if (status != ML_ERROR_NONE) {
+    _ml_error_report_return (status,
+        "Failed to convert json to ml-option, cannot create ml-option handle.");
+  }
+
+  list = json_object_get_members (object);
+  for (iter = list; iter != NULL; iter = g_list_next (iter)) {
+    key = iter->data;
+
+    if (g_ascii_strcasecmp (key, "training") == 0) {
+      /* It is not a value to set for option. */
+      continue;
+    }
+
+    val = json_object_get_string_member (object, key);
+
+    status = ml_option_set (tmp, key, g_strdup (val), g_free);
+    if (status != ML_ERROR_NONE) {
+      _ml_error_report ("Failed to set %s option: %s.", key, val);
+      break;
+    }
+  }
+  g_list_free (list);
+
+  if (status == ML_ERROR_NONE) {
+    *option_h = tmp;
+  } else {
+    ml_option_destroy (tmp);
+  }
+
+  return status;
+}
+
+/**
+ * @brief Internal function to parse configuration file to create offloading service.
+ */
+int
+ml_service_offloading_create (ml_service_h handle, JsonObject * object)
+{
+  ml_service_s *mls = (ml_service_s *) handle;
+  int status;
+  ml_option_h option = NULL;
+  JsonObject *offloading;
+
+  if (!mls || !object) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "Failed to create offloading handle, invalid parameter.");
+  }
+
+  offloading = json_object_get_object_member (object, "offloading");
+  if (!offloading) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "Failed to get 'offloading' member from configuration file.");
+  }
+
+  status = _ml_service_offloading_convert_to_option (offloading, &option);
+  if (status != ML_ERROR_NONE) {
+    _ml_error_report ("Failed to set ml-option from configuration file.");
+    goto done;
+  }
+
+  status = _ml_service_offloading_create_from_option (mls, option);
+  if (status != ML_ERROR_NONE) {
+    _ml_error_report ("Failed to create ml-service offloading.");
+    goto done;
+  }
+
+  if (json_object_has_member (object, "services")) {
+    JsonObject *svc_object;
+
+    svc_object = json_object_get_object_member (object, "services");
+    status = _ml_service_offloading_parse_services (mls, svc_object);
+    if (status != ML_ERROR_NONE) {
+      _ml_logw ("Failed to parse services from configuration file.");
+    }
+  }
+
+  if (json_object_has_member (offloading, "training")) {
+    status = ml_service_training_offloading_create (mls, offloading);
+    if (status != ML_ERROR_NONE) {
+      _ml_logw ("Failed to parse training from configuration file.");
+    }
+  }
+
+done:
+  if (option)
+    ml_option_destroy (option);
+
+  return status;
+}
+
+/**
  * @brief Internal function to start ml-service offloading.
  */
 int
@@ -796,7 +951,6 @@ ml_service_offloading_start (ml_service_h handle)
 
   return ret;
 }
-
 
 /**
  * @brief Internal function to stop ml-service offloading.
@@ -953,30 +1107,4 @@ done:
   if (data_h)
     nns_edge_data_destroy (data_h);
   return ret;
-}
-
-/**
- * @brief Sets the services in ml-service offloading handle.
- */
-int
-ml_service_offloading_set_service (ml_service_h handle, const char *key,
-    const char *value)
-{
-  ml_service_s *mls = (ml_service_s *) handle;
-  _ml_service_offloading_s *offloading_s = NULL;
-
-  if (!_ml_service_handle_is_valid (mls)) {
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'handle' (ml_service_h), is invalid. It should be a valid ml_service_h instance.");
-  }
-
-  if (!STR_IS_VALID (key) || !STR_IS_VALID (value)) {
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'key' or 'value' is NULL. It should be a valid string.");
-  }
-  offloading_s = (_ml_service_offloading_s *) mls->priv;
-
-  g_hash_table_insert (offloading_s->table, g_strdup (key), g_strdup (value));
-
-  return ML_ERROR_NONE;
 }
