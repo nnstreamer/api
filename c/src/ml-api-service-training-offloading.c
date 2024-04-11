@@ -89,7 +89,7 @@ typedef struct
  * @brief Internal function to parse configuration file.
  */
 static int
-_ml_service_training_offloadin_conf_parse_json (ml_service_s * mls,
+_ml_service_training_offloading_conf_parse_json (ml_service_s * mls,
     JsonObject * object)
 {
   ml_training_services_s *training_s = NULL;
@@ -258,7 +258,8 @@ ml_service_training_offloading_create (ml_service_s * mls, JsonObject * object)
     _ml_error_report_return (ret, "Failed to create the ml-service extension.");
   }
 
-  ret = _ml_service_training_offloadin_conf_parse_json (mls, offloading_object);
+  ret = _ml_service_training_offloading_conf_parse_json (mls,
+      offloading_object);
   if (ret != ML_ERROR_NONE) {
     _ml_error_report_return (ret, "Failed to parse the configuration file.");
   }
@@ -821,7 +822,7 @@ ml_service_training_offloading_start (ml_service_s * mls)
 
     ret = ml_pipeline_start (training_s->pipeline_h);
     if (ret != ML_ERROR_NONE) {
-      _ml_error_report_return (ret, "Failed to start ml pipeline ret", ret);
+      _ml_error_report_return (ret, "Failed to start ml pipeline.");
     }
   } else {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
