@@ -8,15 +8,10 @@
  */
 
 #include <gtest/gtest.h>
-#include <gio/gio.h>
-#include <glib/gstdio.h>
 #include <ml-api-inference-pipeline-internal.h>
 #include <ml-api-internal.h>
 #include <ml-api-service-private.h>
 #include <ml-api-service.h>
-
-#include <netinet/in.h>
-#include <netinet/tcp.h>
 
 #include "ml-api-service-offloading.h"
 #include "ml-api-service-training-offloading.h"
@@ -46,7 +41,6 @@ class MLServiceTrainingOffloading : public ::testing::Test
 {
   protected:
   GTestDBus *dbus;
-  int status;
 
   public:
   /**
@@ -54,7 +48,8 @@ class MLServiceTrainingOffloading : public ::testing::Test
    */
   void SetUp () override
   {
-    g_autofree gchar *services_dir = g_build_filename ("/usr/bin/ml-test/services", NULL);
+    g_autofree gchar *services_dir
+        = g_build_filename (EXEC_PREFIX, "ml-test", "services", NULL);
 
     dbus = g_test_dbus_new (G_TEST_DBUS_NONE);
     ASSERT_NE (nullptr, dbus);
@@ -89,9 +84,8 @@ _receive_trained_model_cb (ml_service_event_e event, ml_information_h event_data
   g_autofree gchar *registered_trained_model_path = g_build_filename (root_path,
       "tests", "test_models", "models", "registered-trained-model.bin", NULL);
 
-  /** @todo  case value '4' not in enumerated type 'ml_service_event_e', so it is necessary casting  */
+  /** @todo  case value '4' not in enumerated type 'ml_service_event_e', so it is necessary casting. */
   switch ((int) event) {
-
     case ML_SERVICE_EVENT_REPLY:
       {
         g_debug ("Get ML_SERVICE_EVENT_REPLY and received trained model");
@@ -146,21 +140,27 @@ _sink_register_cb (ml_service_event_e event, ml_information_h event_data, void *
 }
 
 /**
- * @brief Start thread
+ * @brief Start thread (sender).
 */
-static void
-sender_start_thread (ml_service_h sender_h)
+static gpointer
+sender_start_thread (gpointer data)
 {
+  ml_service_h sender_h = (ml_service_h) data;
+
   ml_service_start (sender_h);
+  return NULL;
 }
 
 /**
- * @brief Client thread
+ * @brief Start thread (receiver).
 */
-static void
-receiver_start_thread (ml_service_h receiver_h)
+static gpointer
+receiver_start_thread (gpointer data)
 {
+  ml_service_h receiver_h = (ml_service_h) data;
+
   ml_service_start (receiver_h);
+  return NULL;
 }
 
 /**
@@ -168,6 +168,7 @@ receiver_start_thread (ml_service_h receiver_h)
  */
 TEST_F (MLServiceTrainingOffloading, trainingOffloading_p)
 {
+  int status;
   ml_service_h receiver_h;
   ml_service_h sender_h;
 
@@ -202,8 +203,10 @@ TEST_F (MLServiceTrainingOffloading, trainingOffloading_p)
   status = ml_service_set_event_cb (receiver_h, _sink_register_cb, NULL);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  /** Use thread, if the test app uses the same thread as the receiver and sender,
-      when the receiver does lock for wait required file, the sender will not work. */
+  /**
+   * Use thread, if the test app uses the same thread as the receiver and sender,
+   * when the receiver does lock for wait required file, the sender will not work.
+   */
   start_thread = g_thread_new (
       "sender_start_thread", (GThreadFunc) sender_start_thread, sender_h);
   receive_thread = g_thread_new (
@@ -240,15 +243,16 @@ TEST_F (MLServiceTrainingOffloading, trainingOffloading_p)
 TEST_F (MLServiceTrainingOffloading, createInvalidParam1_n)
 {
   int status;
-  ml_service_h service_h = NULL;
-  ml_service_s *mls = NULL;
+  ml_service_s *mls;
 
-  service_h = _ml_service_create_internal (ML_SERVICE_TYPE_OFFLOADING);
-  mls = (ml_service_s *) service_h;
+  mls = _ml_service_create_internal (ML_SERVICE_TYPE_OFFLOADING);
   ASSERT_NE (nullptr, mls);
 
   status = ml_service_training_offloading_create (mls, NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_service_offloading_release_internal (mls);
+  EXPECT_EQ (ML_ERROR_NONE, status);
 }
 
 /**
@@ -257,11 +261,8 @@ TEST_F (MLServiceTrainingOffloading, createInvalidParam1_n)
 TEST_F (MLServiceTrainingOffloading, createInvalidParam2_n)
 {
   int status;
-  ml_service_h service_h = NULL;
-  ml_service_s *mls = NULL;
 
   g_autoptr (JsonParser) parser = NULL;
-  g_autoptr (GError) err = NULL;
   g_autofree gchar *json_string = NULL;
   JsonNode *root;
   JsonObject *object;
@@ -269,15 +270,11 @@ TEST_F (MLServiceTrainingOffloading, createInvalidParam2_n)
 
   ASSERT_TRUE (g_file_get_contents (receiver_config, &json_string, NULL, NULL));
   parser = json_parser_new ();
-  ASSERT_TRUE (json_parser_load_from_data (parser, json_string, -1, &err));
+  ASSERT_TRUE (json_parser_load_from_data (parser, json_string, -1, NULL));
   root = json_parser_get_root (parser);
   ASSERT_NE (nullptr, root);
   object = json_node_get_object (root);
   ASSERT_NE (nullptr, object);
-
-  service_h = _ml_service_create_internal (ML_SERVICE_TYPE_OFFLOADING);
-  mls = (ml_service_s *) service_h;
-  ASSERT_NE (nullptr, mls);
 
   status = ml_service_training_offloading_create (NULL, object);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
@@ -289,12 +286,10 @@ TEST_F (MLServiceTrainingOffloading, createInvalidParam2_n)
 TEST_F (MLServiceTrainingOffloading, create_p)
 {
   int status;
-  ml_service_h service_h = NULL;
-  ml_service_s *mls = NULL;
+  ml_service_s *mls;
   ml_option_h option = NULL;
 
   g_autoptr (JsonParser) parser = NULL;
-  g_autoptr (GError) err = NULL;
   g_autofree gchar *json_string = NULL;
   JsonNode *root;
   JsonObject *object;
@@ -307,14 +302,13 @@ TEST_F (MLServiceTrainingOffloading, create_p)
 
   ASSERT_TRUE (g_file_get_contents (receiver_config, &json_string, NULL, NULL));
   parser = json_parser_new ();
-  ASSERT_TRUE (json_parser_load_from_data (parser, json_string, -1, &err));
+  ASSERT_TRUE (json_parser_load_from_data (parser, json_string, -1, NULL));
   root = json_parser_get_root (parser);
   ASSERT_NE (nullptr, root);
   object = json_node_get_object (root);
   ASSERT_NE (nullptr, object);
 
-  service_h = _ml_service_create_internal (ML_SERVICE_TYPE_OFFLOADING);
-  mls = (ml_service_s *) service_h;
+  mls = _ml_service_create_internal (ML_SERVICE_TYPE_OFFLOADING);
   ASSERT_NE (nullptr, mls);
 
   status = ml_option_create (&option);
@@ -337,7 +331,7 @@ TEST_F (MLServiceTrainingOffloading, create_p)
   g_list_free (list);
 
   status = ml_service_offloading_create (mls, option);
-  /** nns-edge error occurs because there is no remote to connect to.*/
+  /* nns-edge error occurs because there is no remote to connect to. */
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   /* An offloading instance must be created first. */
@@ -419,7 +413,7 @@ TEST_F (MLServiceTrainingOffloading, startInvalidParam1_n)
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   status = ml_service_training_offloading_start (mls);
-  /** Not receiving data needed for training*/
+  /* Not receiving data needed for training. */
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
   status = ml_service_training_offloading_start (NULL);

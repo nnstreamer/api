@@ -8,7 +8,6 @@
  */
 
 #include <gtest/gtest.h>
-#include <gio/gio.h>
 #include <ml-api-inference-pipeline-internal.h>
 #include <ml-api-internal.h>
 #include <ml-api-service-private.h>
