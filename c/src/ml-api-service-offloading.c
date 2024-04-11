@@ -390,11 +390,9 @@ _mlrs_process_service_offloading (nns_edge_data_h data_h, void *user_data)
             "Failed to get model directory path.");
       }
 
-      if (_mlrs_model_register (service_key, data_h, data, data_len, dir_path)) {
-        event_type = ML_SERVICE_EVENT_MODEL_REGISTERED;
-      } else {
-        _ml_error_report ("Failed to register model downloaded from: %s.",
-            (gchar *) data);
+      if (!_mlrs_model_register (service_key, data_h, data, data_len, dir_path)) {
+        _ml_error_report_return (NNS_EDGE_ERROR_UNKNOWN,
+            "Failed to register model downloaded from: %s.", (gchar *) data);
       }
     }
   }
