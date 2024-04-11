@@ -8,7 +8,6 @@
  */
 
 #include <gtest/gtest.h>
-#include <gio/gio.h>
 #include <glib.h>
 
 #include <ml-api-service-private.h>
