@@ -49,14 +49,14 @@ typedef enum
 /**
  * @brief Parse configuration file and create offloading service.
  * @param[in] handle The handle of ml-service created by ml_service_new().
- * @param[in] option The option used for creating query service.
- * @return @c 0 on Success. Otherwise a negative error value.
+ * @param[in] object The json object from config file.
+ * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
  * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
  */
-int ml_service_offloading_create (ml_service_h handle, ml_option_h option);
+int ml_service_offloading_create (ml_service_h handle, JsonObject *object);
 
 /**
  * @brief Start ml offloading service.
@@ -97,18 +97,6 @@ int ml_service_offloading_stop (ml_service_h handle);
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
  */
 int ml_service_offloading_request (ml_service_h handle, const char *key, const ml_tensors_data_h input);
-
-/**
- * @brief Sets the services in ml-service offloading handle.
- * @param[in] handle The handle of ml-service.
- * @param[in] name The service key.
- * @param[in] value The value to be set (json string).
- * @return @c 0 on success. Otherwise a negative error value.
- * @retval #ML_ERROR_NONE Successful.
- * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
- * @retval #ML_ERROR_INVALID_PARAMETER The parameter is invalid.
- */
-int ml_service_offloading_set_service (ml_service_h handle, const char *name, const char *value);
 
 /**
  * @brief Set a required value in ml-service offloading handle.
@@ -155,7 +143,6 @@ int ml_service_offloading_release_internal (ml_service_s *mls);
 #define ml_service_offloading_start(...) ML_ERROR_NOT_SUPPORTED
 #define ml_service_offloading_stop(...) ML_ERROR_NOT_SUPPORTED
 #define ml_service_offloading_request(...) ML_ERROR_NOT_SUPPORTED
-#define ml_service_offloading_set_service(...) ML_ERROR_NOT_SUPPORTED
 #define ml_service_offloading_set_information(...) ML_ERROR_NOT_SUPPORTED
 #define ml_service_offloading_release_internal(...) ML_ERROR_NOT_SUPPORTED
 #define ml_service_offloading_set_mode(...) ML_ERROR_NOT_SUPPORTED
