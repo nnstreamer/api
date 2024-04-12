@@ -338,9 +338,10 @@ TEST_F (MLOffloadingService, registerModel)
   if (root_path == NULL)
     return;
 
-  g_autofree gchar *test_model = g_build_filename (root_path, "tests",
-      "test_models", "models", "mobilenet_v1_1.0_224_quant.tflite", NULL);
-  EXPECT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
+  g_autofree gchar *model_dir
+      = g_build_filename (root_path, "tests", "test_models", "models", NULL);
+  g_autofree gchar *test_model
+      = g_build_filename (model_dir, "mobilenet_v1_1.0_224_quant.tflite", NULL);
 
   g_autofree gchar *contents = NULL;
   gsize len = 0;
@@ -348,6 +349,9 @@ TEST_F (MLOffloadingService, registerModel)
 
   test_data.data = contents;
   status = ml_service_set_event_cb (server_h, _ml_service_event_cb, &test_data);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_service_offloading_set_information (server_h, "path", model_dir);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   status = ml_tensors_info_create (&in_info);
