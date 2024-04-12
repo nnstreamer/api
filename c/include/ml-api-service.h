@@ -162,7 +162,7 @@ int ml_service_set_event_cb (ml_service_h handle, ml_service_event_cb cb, void *
 
 /**
  * @brief Starts the process of machine learning service.
- * @since_tizen 9.0
+ * @since_tizen 7.0
  * @param[in] handle The handle of ml-service.
  * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
@@ -174,7 +174,7 @@ int ml_service_start (ml_service_h handle);
 
 /**
  * @brief Stops the process of machine learning service.
- * @since_tizen 9.0
+ * @since_tizen 7.0
  * @param[in] handle The handle of ml-service.
  * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
