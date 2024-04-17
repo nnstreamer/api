@@ -41,7 +41,17 @@ NNSTREAMER_API_OPTION := all
 ENABLE_TENSOR_QUERY := true
 
 # tensorflow-lite (nnstreamer tf-lite subplugin)
+ifdef TFLITE_ROOT_ANDROID
+ifneq ($(filter $(TARGET_ARCH_ABI), armeabi-v7a arm64-v8a),)
+TFLITE_ROOT        := $(TFLITE_ROOT_ANDROID)
+endif
+endif
+
+ifdef TFLITE_ROOT
+ENABLE_TF_LITE := true
+else
 ENABLE_TF_LITE := false
+endif
 
 # SNAP (Samsung Neural Acceleration Platform)
 ENABLE_SNAP := false
