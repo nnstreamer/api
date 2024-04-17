@@ -578,10 +578,9 @@ fi
 
 # Update tf-lite option
 if [[ $enable_tflite == "yes" ]]; then
-    sed -i "s|ENABLE_TF_LITE := false|ENABLE_TF_LITE := true|" nnstreamer/src/main/jni/Android-nnstreamer-prebuilt.mk
-    sed -i "s|ENABLE_TF_LITE := false|ENABLE_TF_LITE := true|" nnstreamer/src/main/jni/Android.mk
     sed -i "s|TFLITE_VERSION := 2.8.1|TFLITE_VERSION := $tf_lite_ver|" nnstreamer/src/main/jni/Android-tensorflow-lite.mk
     tar -xJf ./external/tensorflow-lite-$tf_lite_ver.tar.xz -C ./nnstreamer/src/main/jni
+    export TFLITE_ROOT_ANDROID=$ml_api_dir/$build_dir/nnstreamer/src/main/jni/tensorflow-lite
 fi
 
 if [[ $enable_flatbuf == "yes" ]]; then

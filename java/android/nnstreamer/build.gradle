@@ -63,6 +63,16 @@ android {
                 targets "nnstreamer-native"
 
                 abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
+
+                def tfliteRoot
+
+                if (project.hasProperty('tfliteRoot'))
+                    tfliteRoot = project.tfliteRoot
+                else
+                    tfliteRoot = System.env.TFLITE_ROOT_ANDROID
+
+                if (tfliteRoot != null)
+                    arguments "TFLITE_ROOT_ANDROID=$tfliteRoot"
             }
         }
     }
