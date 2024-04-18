@@ -40,13 +40,12 @@ _get_config_path (const gchar *config_name)
 class MLServiceTrainingOffloading : public ::testing::Test
 {
   protected:
-  GTestDBus *dbus;
+  static GTestDBus *dbus;
 
-  public:
   /**
-   * @brief Setup method for each test case.
+   * @brief Setup method for entire testsuite.
    */
-  void SetUp () override
+  static void SetUpTestSuite ()
   {
     g_autofree gchar *services_dir
         = g_build_filename (EXEC_PREFIX, "ml-test", "services", NULL);
@@ -59,16 +58,19 @@ class MLServiceTrainingOffloading : public ::testing::Test
   }
 
   /**
-   * @brief Teardown method for each test case.
+   * @brief Teardown method for entire testsuite.
    */
-  void TearDown () override
+  static void TearDownTestSuite ()
   {
-    if (dbus) {
-      g_test_dbus_down (dbus);
-      g_object_unref (dbus);
-    }
+    g_test_dbus_down (dbus);
+    g_object_unref (dbus);
   }
 };
+
+/**
+ * @brief GTestDbus object to run ml-agent.
+ */
+GTestDBus *MLServiceTrainingOffloading::dbus = nullptr;
 
 /**
  * @brief Callback function for reply test.

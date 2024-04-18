@@ -46,7 +46,7 @@ class MLServiceExtensionTest : public ::testing::Test
   static GTestDBus *dbus;
 
   /**
-   * @brief Setup method for each test case.
+   * @brief Setup method for entire testsuite.
    */
   static void SetUpTestSuite ()
   {
@@ -61,19 +61,17 @@ class MLServiceExtensionTest : public ::testing::Test
   }
 
   /**
-   * @brief Teardown method for each test case.
+   * @brief Teardown method for entire testsuite.
    */
   static void TearDownTestSuite ()
   {
-    if (dbus) {
-      g_test_dbus_down (dbus);
-      g_object_unref (dbus);
-    }
+    g_test_dbus_down (dbus);
+    g_object_unref (dbus);
   }
 };
 
 /**
- * @brief Test dbus to run ml-agent.
+ * @brief GTestDbus object to run ml-agent.
  */
 GTestDBus *MLServiceExtensionTest::dbus = nullptr;
 
