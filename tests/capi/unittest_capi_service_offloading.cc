@@ -53,7 +53,6 @@ class MLOffloadingService : public ::testing::Test
 {
   protected:
   static GTestDBus *dbus;
-  int status;
   ml_service_h client_h;
   ml_service_h server_h;
   _ml_service_test_data_s test_data;
@@ -104,7 +103,7 @@ class MLOffloadingService : public ::testing::Test
    */
   void TearDown ()
   {
-    status = ml_service_destroy (server_h);
+    int status = ml_service_destroy (server_h);
     EXPECT_EQ (ML_ERROR_NONE, status);
     status = ml_service_destroy (client_h);
     EXPECT_EQ (ML_ERROR_NONE, status);
@@ -203,6 +202,7 @@ _ml_service_event_cb (ml_service_event_e event, ml_information_h event_data, voi
  */
 TEST_F (MLOffloadingService, registerPipeline)
 {
+  int status;
   ml_tensors_data_h input = NULL;
   ml_tensors_info_h in_info = NULL;
   ml_tensor_dimension in_dim = { 0 };
@@ -246,6 +246,7 @@ TEST_F (MLOffloadingService, registerPipeline)
  */
 TEST_F (MLOffloadingService, registerPipelineURI)
 {
+  int status;
   ml_tensors_data_h input = NULL;
   ml_tensors_info_h in_info = NULL;
   ml_tensor_dimension in_dim = { 0 };
@@ -296,6 +297,7 @@ TEST_F (MLOffloadingService, registerPipelineURI)
  */
 TEST_F (MLOffloadingService, createInvalidParam_n)
 {
+  int status;
   status = ml_service_offloading_create (NULL, NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
@@ -308,6 +310,7 @@ TEST_F (MLOffloadingService, createInvalidParam_n)
  */
 TEST_F (MLOffloadingService, registerInvalidParam_n)
 {
+  int status;
   ml_tensors_data_h input = NULL;
   ml_tensors_info_h in_info = NULL;
   ml_tensor_dimension in_dim = { 0 };
@@ -343,6 +346,7 @@ TEST_F (MLOffloadingService, registerInvalidParam_n)
  */
 TEST_F (MLOffloadingService, registerModel)
 {
+  int status;
   ml_tensors_data_h input = NULL;
   ml_tensors_info_h in_info = NULL;
   ml_tensor_dimension in_dim = { 0 };
@@ -399,6 +403,7 @@ TEST_F (MLOffloadingService, registerModel)
  */
 TEST_F (MLOffloadingService, registerModelURI)
 {
+  int status;
   ml_tensors_data_h input = NULL;
   ml_tensors_info_h in_info = NULL;
   ml_tensor_dimension in_dim = { 0 };
@@ -452,6 +457,7 @@ TEST_F (MLOffloadingService, registerModelURI)
  */
 TEST_F (MLOffloadingService, registerModelPath)
 {
+  int status;
   ml_tensors_data_h input = NULL;
   ml_tensors_info_h in_info = NULL;
   ml_tensor_dimension in_dim = { 0 };
@@ -511,6 +517,7 @@ TEST_F (MLOffloadingService, registerModelPath)
  */
 TEST_F (MLOffloadingService, requestInvalidParam_n)
 {
+  int status;
   ml_tensors_data_h input = NULL;
   ml_tensors_info_h in_info = NULL;
   ml_tensor_dimension in_dim = { 0 };
@@ -582,6 +589,7 @@ _ml_service_reply_test_cb (ml_service_event_e event, ml_information_h event_data
  */
 TEST_F (MLOffloadingService, replyToClient)
 {
+  int status;
   ml_tensors_data_h input = NULL;
   ml_tensors_info_h in_info = NULL;
   ml_tensor_dimension in_dim = { 0 };
