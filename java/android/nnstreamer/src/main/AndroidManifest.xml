@@ -5,5 +5,6 @@
     <application
         android:extractNativeLibs="true"
         android:largeHeap="true" >
+        <uses-libaray android:name="libOpenCL.so" android:required="false" />
     </application>
 </manifest>
