@@ -52,17 +52,16 @@ _get_config_path (const gchar *config_name)
 class MLOffloadingService : public ::testing::Test
 {
   protected:
-  GTestDBus *dbus;
+  static GTestDBus *dbus;
   int status;
   ml_service_h client_h;
   ml_service_h server_h;
   _ml_service_test_data_s test_data;
 
-  public:
   /**
-   * @brief Setup method for each test case.
+   * @brief Setup method for entire testsuite.
    */
-  void SetUp () override
+  static void SetUpTestSuite ()
   {
     g_autofree gchar *services_dir
         = g_build_filename (EXEC_PREFIX, "ml-test", "services", NULL);
@@ -73,10 +72,25 @@ class MLOffloadingService : public ::testing::Test
     g_test_dbus_add_service_dir (dbus, services_dir);
 
     g_test_dbus_up (dbus);
+  }
 
+  /**
+   * @brief Teardown method for entire testsuite.
+   */
+  static void TearDownTestSuite ()
+  {
+    g_test_dbus_down (dbus);
+    g_object_unref (dbus);
+  }
+
+  /**
+   * @brief Setup method for each test case.
+   */
+  void SetUp () override
+  {
     g_autofree gchar *receiver_config
         = _get_config_path ("service_offloading_receiver.conf");
-    status = ml_service_new (receiver_config, &server_h);
+    int status = ml_service_new (receiver_config, &server_h);
     ASSERT_EQ (status, ML_ERROR_NONE);
     test_data.handle = server_h;
 
@@ -88,13 +102,8 @@ class MLOffloadingService : public ::testing::Test
   /**
    * @brief Teardown method for each test case.
    */
-  void TearDown () override
+  void TearDown ()
   {
-    if (dbus) {
-      g_test_dbus_down (dbus);
-      g_object_unref (dbus);
-    }
-
     status = ml_service_destroy (server_h);
     EXPECT_EQ (ML_ERROR_NONE, status);
     status = ml_service_destroy (client_h);
@@ -131,6 +140,11 @@ class MLOffloadingService : public ::testing::Test
     return port;
   }
 };
+
+/**
+ * @brief GTestDbus object to run ml-agent.
+ */
+GTestDBus *MLOffloadingService::dbus = nullptr;
 
 /**
  * @brief Callback function for scenario test.
