@@ -31,9 +31,19 @@ unittest_capi_datatype_consistency = executable('unittest_capi_datatype_consiste
 test('unittest_capi_datatype_consistency', unittest_capi_datatype_consistency, env: testenv, timeout: 100)
 
 if get_option('enable-ml-service')
+  # Declare path to bin directory to run mlops-agent for unittest.
+  mlops_agent_test_exec_prefix = mlops_agent_dep.get_pkgconfig_variable('exec_prefix', default: api_install_bindir)
+
+  # Set dependency for ml-service unittests.
+  service_unittest_deps = [
+    unittest_common_dep,
+    nns_capi_service_dep,
+    declare_dependency(compile_args : '-DEXEC_PREFIX="' + mlops_agent_test_exec_prefix + '"')
+  ]
+
   unittest_capi_service_extension = executable('unittest_capi_service_extension',
     'unittest_capi_service_extension.cc',
-    dependencies: [unittest_common_dep, nns_capi_service_dep],
+    dependencies: service_unittest_deps,
     install: get_option('install-test'),
     install_dir: unittest_install_dir
   )
@@ -41,7 +51,7 @@ if get_option('enable-ml-service')
 
   unittest_capi_service_agent_client = executable('unittest_capi_service_agent_client',
     'unittest_capi_service_agent_client.cc',
-    dependencies: [unittest_common_dep, nns_capi_service_dep],
+    dependencies: service_unittest_deps,
     install: get_option('install-test'),
     install_dir: unittest_install_dir
   )
@@ -50,7 +60,7 @@ if get_option('enable-ml-service')
   if support_service_offloading
     unittest_capi_service_offloading = executable('unittest_capi_service_offloading',
       'unittest_capi_service_offloading.cc',
-      dependencies: [unittest_common_dep, nns_capi_service_dep],
+      dependencies: service_unittest_deps,
       install: get_option('install-test'),
       install_dir: unittest_install_dir
     )
@@ -58,7 +68,7 @@ if get_option('enable-ml-service')
 
     unittest_capi_service_training_offloading = executable('unittest_capi_service_training_offloading',
       'unittest_capi_service_training_offloading.cc',
-      dependencies: [unittest_common_dep, nns_capi_service_dep],
+      dependencies: service_unittest_deps,
       install: get_option('install-test'),
       install_dir: unittest_install_dir
     )
