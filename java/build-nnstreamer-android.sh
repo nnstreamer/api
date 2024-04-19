@@ -616,14 +616,12 @@ echo "Starting gradle build for Android library."
 # Build Android library.
 chmod +x gradlew
 sh ./gradlew nnstreamer:build
-
+android_lib_build_res=$?
 # Check if build procedure is done.
 nnstreamer_android_api_lib=./nnstreamer/build/outputs/aar/nnstreamer-release.aar
 
-android_lib_build_res=1
-if [[ -e "$nnstreamer_android_api_lib" ]]; then
+if [[ $android_lib_build_res -eq 0 ]]; then
     today=$(date "+%Y-%m-%d")
-    android_lib_build_res=0
 
     # Prepare native libraries and header files for C-API
     unzip $nnstreamer_android_api_lib -d aar_extracted
