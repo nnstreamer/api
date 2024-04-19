@@ -60,6 +60,12 @@ jobs:
         else
           bash ${{ github.workspace }}/api/java/build-nnstreamer-android.sh --target_abi=${{ matrix.abi }} --enable_nnfw=no --enable_tflite=no
         fi
+
+        result=$?
+        if [[ ${result} -ne 0 ]]; then
+          echo "NDK build failed"
+          exit 1
+        fi
     - name: Upload android library
       uses: actions/upload-artifact@v4
       with:
