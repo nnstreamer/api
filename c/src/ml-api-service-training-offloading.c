@@ -24,6 +24,9 @@
 /** combined with trained model file name set in conf */
 #define TRAINED_MODEL_FILE "@TRAINED_MODEL_FILE@"
 
+/** default receive time limit (second) */
+#define DEFAULT_TIME_LIMIT 10
+
 /**
  * @brief Internal enumeration for ml-service training offloading types.
  */
@@ -74,6 +77,7 @@ typedef struct
   gchar *path;                  /* Readable and writable path set by the app */
 
   gboolean is_received;
+  gint time_limit;              /* second, For receiving the data necessary for training */
   GMutex received_lock;
   GCond received_cond;
   GThread *received_thread;
@@ -239,6 +243,14 @@ _training_offloading_conf_parse_json (ml_service_s * mls, JsonObject * object)
 
   training_node = json_object_get_member (object, "training");
   training_obj = json_node_get_object (training_node);
+
+  if (json_object_has_member (training_obj, "time-limit")) {
+    training_s->time_limit =
+        json_object_get_int_member (training_obj, "time-limit");
+  } else {
+    _ml_logw
+        ("The default time-limit(10 sec) is set because `time-limit` is not set.");
+  }
 
   val = json_object_get_string_member (training_obj, "sender-pipeline");
   training_s->sender_pipe = g_strdup (val);
@@ -419,6 +431,7 @@ _training_offloading_create (ml_service_s * mls)
   g_mutex_init (&training_s->received_lock);
 
   training_s->type = ML_TRAINING_OFFLOADING_TYPE_UNKNOWN;
+  training_s->time_limit = DEFAULT_TIME_LIMIT;
 
   ml_service_offloading_set_mode (mls,
       ML_SERVICE_OFFLOADING_MODE_TRAINING, training_s);
@@ -602,12 +615,11 @@ static gpointer
 _check_received_data_thread (gpointer data)
 {
   ml_training_services_s *training_s = (ml_training_services_s *) data;
-  /** @todo FIXME: let's value by conf */
-  int loop = 100;
+  int usec = training_s->time_limit * 1000000;
 
   g_return_val_if_fail (training_s != NULL, NULL);
 
-  while (loop--) {
+  while (usec > 0) {
     g_usleep (100000);
     if (training_s->receiver_pipe_json_str != NULL) {
       _ml_logd
@@ -622,6 +634,7 @@ _check_received_data_thread (gpointer data)
       g_mutex_unlock (&training_s->received_lock);
       return NULL;
     }
+    usec -= 100000;
   }
 
   _ml_loge ("Required data is null, receive_pipe:%s",
