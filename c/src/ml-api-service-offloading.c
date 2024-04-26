@@ -382,8 +382,13 @@ _mlrs_process_service_offloading (nns_edge_data_h data_h, void *user_data)
   dir_path = _mlrs_get_model_dir_path (offloading_s, service_key);
 
   if (offloading_s->offloading_mode == ML_SERVICE_OFFLOADING_MODE_TRAINING) {
-    ml_service_training_offloading_process_received_data (mls, data_h, dir_path,
-        data, service_type);
+    ret = ml_service_training_offloading_process_received_data (mls, data_h,
+        dir_path, data, service_type);
+    if (NNS_EDGE_ERROR_NONE != ret) {
+      _ml_error_report_return (ret,
+          "Failed to process received data on training offloading.");
+    }
+
     if (service_type == ML_SERVICE_OFFLOADING_TYPE_REPLY) {
       if (!dir_path) {
         _ml_error_report_return (NNS_EDGE_ERROR_UNKNOWN,
