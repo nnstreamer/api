@@ -84,8 +84,12 @@ int ml_service_training_offloading_stop (ml_service_s *mls);
  * @param[in] data data of received file
  * @param[in] dir_path dir path
  * @param[in] service_type received service type from remote edge
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
  */
-void ml_service_training_offloading_process_received_data (ml_service_s *mls, void *data_h, const gchar *dir_path, const gchar *data, int service_type);
+int ml_service_training_offloading_process_received_data (ml_service_s *mls, void *data_h, const gchar *dir_path, const gchar *data, int service_type);
 
 /**
  * @brief Internal function to destroy ml-service training offloading data.
@@ -101,7 +105,7 @@ int ml_service_training_offloading_destroy (ml_service_s *mls);
 #define ml_service_training_offloading_set_path(...) ML_ERROR_NOT_SUPPORTED
 #define ml_service_training_offloading_start(...) ML_ERROR_NOT_SUPPORTED
 #define ml_service_training_offloading_stop(...) ML_ERROR_NOT_SUPPORTED
-#define ml_service_training_offloading_process_received_data(...)
+#define ml_service_training_offloading_process_received_data(...) ML_ERROR_NOT_SUPPORTED
 #define ml_service_training_offloading_destroy(...) ML_ERROR_NOT_SUPPORTED
 #endif /* ENABLE_TRAINING_OFFLOADING */
 #ifdef __cplusplus

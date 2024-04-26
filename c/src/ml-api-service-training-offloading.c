@@ -925,22 +925,24 @@ ml_service_training_offloading_stop (ml_service_s * mls)
 /**
  * @brief Save receiver pipeline description.
  */
-void
+int
 ml_service_training_offloading_process_received_data (ml_service_s * mls,
     void *data_h, const gchar * dir_path, const gchar * data, int service_type)
 {
   g_autofree gchar *name = NULL;
   ml_training_services_s *training_s = NULL;
   ml_service_offloading_mode_e mode = ML_SERVICE_OFFLOADING_MODE_NONE;
+  int ret;
 
-  g_return_if_fail (data_h != NULL);
-  g_return_if_fail (dir_path != NULL);
-  g_return_if_fail (data != NULL);
+  g_return_val_if_fail (data_h != NULL, ML_ERROR_INVALID_PARAMETER);
+  g_return_val_if_fail (dir_path != NULL, ML_ERROR_INVALID_PARAMETER);
+  g_return_val_if_fail (data != NULL, ML_ERROR_INVALID_PARAMETER);
 
-  ml_service_offloading_get_mode (mls, &mode, (void **) &training_s);
-  if (mode != ML_SERVICE_OFFLOADING_MODE_TRAINING || training_s == NULL) {
-    _ml_error_report ("The ml service is not training mode.");
-    return;
+  ret = ml_service_offloading_get_mode (mls, &mode, (void **) &training_s);
+  if (ret != ML_ERROR_NONE ||
+      mode != ML_SERVICE_OFFLOADING_MODE_TRAINING || training_s == NULL) {
+    _ml_error_report_return_continue (ret,
+        "The ml service is not training mode.");
   }
 
   _ml_logd ("Received data, service_type:%d", service_type);
@@ -961,6 +963,8 @@ ml_service_training_offloading_process_received_data (ml_service_s * mls,
           training_s->trained_model_path);
     }
   }
+
+  return ML_ERROR_NONE;
 }
 
 /**
