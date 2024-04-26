@@ -43,6 +43,12 @@ if get_option('enable-ml-service')
   endif
 endif
 
+support_training_offloading = false
+if get_option('enable-nntrainer')
+  add_project_arguments('-DENABLE_TRAINING_OFFLOADING=1', language: ['c', 'cpp'])
+  support_training_offloading = true
+endif
+
 # Set version info
 api_version = meson.project_version()
 api_version_split = api_version.split('.')

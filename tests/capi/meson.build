@@ -66,13 +66,15 @@ if get_option('enable-ml-service')
     )
     test('unittest_capi_service_offloading', unittest_capi_service_offloading, env: testenv, timeout: 100)
 
-    unittest_capi_service_training_offloading = executable('unittest_capi_service_training_offloading',
-      'unittest_capi_service_training_offloading.cc',
-      dependencies: service_unittest_deps,
-      install: get_option('install-test'),
-      install_dir: unittest_install_dir
-    )
-    test('unittest_capi_service_training_offloading', unittest_capi_service_training_offloading, env: testenv, timeout: 100)
+    if support_training_offloading
+      unittest_capi_service_training_offloading = executable('unittest_capi_service_training_offloading',
+        'unittest_capi_service_training_offloading.cc',
+        dependencies: service_unittest_deps,
+        install: get_option('install-test'),
+        install_dir: unittest_install_dir
+      )
+      test('unittest_capi_service_training_offloading', unittest_capi_service_training_offloading, env: testenv, timeout: 100)
+    endif
   endif
 endif
 
