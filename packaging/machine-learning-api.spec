@@ -110,6 +110,7 @@ BuildRequires:	pkgconfig(capi-system-info)
 %define		unit_test 1
 %define		release_test 1
 %define		testcoverage 1
+%define		nntrainer_support 0
 %endif
 
 # For test
@@ -314,6 +315,7 @@ HTML pages of lcov results of ML API generated during rpm build
 %define enable_tizen_feature_check -Denable-tizen-feature-check=false
 %define enable_ml_service_check -Denable-ml-service=false
 %define enable_gcov -Denable-gcov=false
+%define enable_nntrainer -Denable-nntrainer=false
 
 %if %{with tizen}
 %define enable_tizen -Denable-tizen=true -Dtizen-version-major=0%{?tizen_version_major} -Dtizen-version-minor=0%{?tizen_version_minor}
@@ -333,6 +335,10 @@ HTML pages of lcov results of ML API generated during rpm build
 
 %if 0%{?gcov}
 %define enable_gcov -Denable-gcov=true
+%endif
+
+%if 0%{?nntrainer_support}
+%define enable_nntrainer -Denable-nntrainer=true
 %endif
 
 %prep
@@ -376,7 +382,7 @@ meson --buildtype=plain --prefix=%{_prefix} --sysconfdir=%{_sysconfdir} --libdir
 	--bindir=%{_bindir} --includedir=%{_includedir} \
 	%{enable_test} %{install_test} %{enable_test_coverage} \
 	%{enable_tizen} %{enable_tizen_privilege_check} %{enable_tizen_feature_check} \
-	%{enable_ml_service_check} %{enable_gcov} \
+	%{enable_ml_service_check} %{enable_gcov} %{enable_nntrainer} \
 	build
 
 ninja -C build %{?_smp_mflags}
@@ -396,7 +402,9 @@ bash %{test_script} ./tests/capi/unittest_capi_service_extension
 bash %{test_script} ./tests/capi/unittest_capi_service_agent_client
 %if 0%{?nnstreamer_edge_support}
 bash %{test_script} ./tests/capi/unittest_capi_service_offloading
+%if 0%{?nntrainer_support}
 bash %{test_script} ./tests/capi/unittest_capi_service_training_offloading
+%endif
 %endif
 %endif
 

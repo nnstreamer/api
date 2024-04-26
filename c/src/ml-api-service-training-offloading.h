@@ -22,6 +22,7 @@
 extern "C" {
 #endif /* __cplusplus */
 
+#if defined(ENABLE_TRAINING_OFFLOADING)
 /**
  * @brief Creates a training offloading handle for ml-service training offloading service.
  * @param[in] mls ml-service handle created by ml_service_new().
@@ -95,7 +96,14 @@ void ml_service_training_offloading_process_received_data (ml_service_s *mls, vo
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
  */
 int ml_service_training_offloading_destroy (ml_service_s *mls);
-
+#else
+#define ml_service_training_offloading_create(...) ML_ERROR_NOT_SUPPORTED
+#define ml_service_training_offloading_set_path(...) ML_ERROR_NOT_SUPPORTED
+#define ml_service_training_offloading_start(...) ML_ERROR_NOT_SUPPORTED
+#define ml_service_training_offloading_stop(...) ML_ERROR_NOT_SUPPORTED
+#define ml_service_training_offloading_process_received_data(...)
+#define ml_service_training_offloading_destroy(...) ML_ERROR_NOT_SUPPORTED
+#endif /* ENABLE_TRAINING_OFFLOADING */
 #ifdef __cplusplus
 }
 #endif  /* __cplusplus */

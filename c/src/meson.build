@@ -3,7 +3,10 @@ nns_capi_single_srcs = files('ml-api-inference-single.c')
 nns_capi_pipeline_srcs = files('ml-api-inference-pipeline.c')
 nns_capi_service_srcs = files('ml-api-service.c', 'ml-api-service-extension.c', 'ml-api-service-agent-client.c', 'ml-api-service-query-client.c')
 if support_service_offloading
-  nns_capi_service_srcs += files('ml-api-service-offloading.c', 'ml-api-service-training-offloading.c')
+  nns_capi_service_srcs += files('ml-api-service-offloading.c')
+  if support_training_offloading
+    nns_capi_service_srcs += files('ml-api-service-training-offloading.c')
+  endif
 endif
 
 if get_option('enable-tizen')

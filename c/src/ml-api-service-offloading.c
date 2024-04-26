@@ -695,6 +695,7 @@ ml_service_offloading_set_information (ml_service_h handle, const gchar * name,
 {
   ml_service_s *mls = (ml_service_s *) handle;
   _ml_service_offloading_s *offloading_s;
+  int ret = ML_ERROR_NONE;
 
   if (!_ml_service_handle_is_valid (mls)) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -719,11 +720,11 @@ ml_service_offloading_set_information (ml_service_h handle, const gchar * name,
     offloading_s->path = g_strdup (value);
 
     if (offloading_s->offloading_mode == ML_SERVICE_OFFLOADING_MODE_TRAINING) {
-      ml_service_training_offloading_set_path (mls, offloading_s->path);
+      ret = ml_service_training_offloading_set_path (mls, offloading_s->path);
     }
   }
 
-  return ML_ERROR_NONE;
+  return ret;
 }
 
 /**
