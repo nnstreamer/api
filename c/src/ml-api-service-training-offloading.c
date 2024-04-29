@@ -87,6 +87,30 @@ typedef struct
 } ml_training_services_s;
 
 /**
+ * @brief Internal function to check offloading mode and get private data for training.
+ */
+static int
+_training_offloading_get_priv (ml_service_s * mls,
+    ml_training_services_s ** training_s)
+{
+  ml_service_offloading_mode_e mode = ML_SERVICE_OFFLOADING_MODE_NONE;
+  int ret;
+
+  ret = ml_service_offloading_get_mode (mls, &mode, (void **) training_s);
+  if (ret != ML_ERROR_NONE) {
+    _ml_error_report_return (ret,
+        "Failed to get offloading mode and private data.");
+  }
+
+  if (mode != ML_SERVICE_OFFLOADING_MODE_TRAINING || *training_s == NULL) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The ml service is not training mode.");
+  }
+
+  return ML_ERROR_NONE;
+}
+
+/**
  * @brief Internal function to invoke ml-service event for new data.
  */
 static int
@@ -179,14 +203,12 @@ _training_offloading_node_info_new (ml_service_s * mls,
 {
   ml_training_offloading_node_info_s *node_info;
   ml_training_services_s *training_s = NULL;
-  ml_service_offloading_mode_e mode = ML_SERVICE_OFFLOADING_MODE_NONE;
+  int ret;
 
   g_return_val_if_fail (name != NULL, NULL);
 
-  ml_service_offloading_get_mode (mls, &mode, (void **) &training_s);
-  if (mode != ML_SERVICE_OFFLOADING_MODE_TRAINING || training_s == NULL) {
-    _ml_error_report_return (NULL, "The ml service is not training mode.");
-  }
+  ret = _training_offloading_get_priv (mls, &training_s);
+  g_return_val_if_fail (ret == ML_ERROR_NONE, NULL);
 
   if (g_hash_table_lookup (training_s->node_table, name)) {
     _ml_error_report_return (NULL,
@@ -215,20 +237,17 @@ static int
 _training_offloading_conf_parse_json (ml_service_s * mls, JsonObject * object)
 {
   ml_training_services_s *training_s = NULL;
-  ml_service_offloading_mode_e mode = ML_SERVICE_OFFLOADING_MODE_NONE;
   JsonObject *training_obj, *data_obj;
   JsonNode *training_node, *data_node, *pipline_node;
   const gchar *key, *val;
   gchar *transfer_data = NULL;
   GList *list, *iter;
+  int ret;
 
   g_return_val_if_fail (object != NULL, ML_ERROR_INVALID_PARAMETER);
 
-  ml_service_offloading_get_mode (mls, &mode, (void **) &training_s);
-  if (mode != ML_SERVICE_OFFLOADING_MODE_TRAINING || training_s == NULL) {
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The ml service is not training mode.");
-  }
+  ret = _training_offloading_get_priv (mls, &training_s);
+  g_return_val_if_fail (ret == ML_ERROR_NONE, ret);
 
   val = json_object_get_string_member (object, "node-type");
 
@@ -318,15 +337,11 @@ _training_offloading_conf_parse_pipeline_node (ml_service_s * mls,
   JsonObject *node_object;
   ml_training_offloading_node_info_s *node_info = NULL;
   ml_training_services_s *training_s = NULL;
-  ml_service_offloading_mode_e mode = ML_SERVICE_OFFLOADING_MODE_NONE;
 
   g_return_val_if_fail (node != NULL, ML_ERROR_INVALID_PARAMETER);
 
-  ml_service_offloading_get_mode (mls, &mode, (void **) &training_s);
-  if (mode != ML_SERVICE_OFFLOADING_MODE_TRAINING || training_s == NULL) {
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The ml service is not training mode.");
-  }
+  ret = _training_offloading_get_priv (mls, &training_s);
+  g_return_val_if_fail (ret == ML_ERROR_NONE, ret);
 
   n = 1;
   if (JSON_NODE_HOLDS_ARRAY (node)) {
@@ -527,7 +542,6 @@ static int
 _training_offloading_services_request (ml_service_s * mls)
 {
   ml_training_services_s *training_s = NULL;
-  ml_service_offloading_mode_e mode = ML_SERVICE_OFFLOADING_MODE_NONE;
   int ret = ML_ERROR_NONE;
   GList *list, *iter;
   gchar *transfer_data = NULL, *service_name = NULL;
@@ -535,11 +549,8 @@ _training_offloading_services_request (ml_service_s * mls)
   guint changed;
   gsize len;
 
-  ml_service_offloading_get_mode (mls, &mode, (void **) &training_s);
-  if (mode != ML_SERVICE_OFFLOADING_MODE_TRAINING || training_s == NULL) {
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The ml service is not training mode.");
-  }
+  ret = _training_offloading_get_priv (mls, &training_s);
+  g_return_val_if_fail (ret == ML_ERROR_NONE, ret);
 
   _ml_logd ("path set by app:%s ", training_s->path);
 
@@ -683,13 +694,10 @@ _training_offloading_replce_pipeline_data_path (ml_service_s * mls)
 {
   guint changed = 0;
   ml_training_services_s *training_s = NULL;
-  ml_service_offloading_mode_e mode = ML_SERVICE_OFFLOADING_MODE_NONE;
+  int ret;
 
-  ml_service_offloading_get_mode (mls, &mode, (void **) &training_s);
-  if (mode != ML_SERVICE_OFFLOADING_MODE_TRAINING || training_s == NULL) {
-    _ml_error_report ("The ml service is not training mode.");
-    return;
-  }
+  ret = _training_offloading_get_priv (mls, &training_s);
+  g_return_if_fail (ret == ML_ERROR_NONE);
 
   if (training_s->type == ML_TRAINING_OFFLOADING_TYPE_SENDER) {
     if (training_s->sender_pipe) {
@@ -725,15 +733,11 @@ ml_service_training_offloading_set_path (ml_service_s * mls, const gchar * path)
 {
   int ret = ML_ERROR_NONE;
   ml_training_services_s *training_s = NULL;
-  ml_service_offloading_mode_e mode = ML_SERVICE_OFFLOADING_MODE_NONE;
 
   g_return_val_if_fail (path != NULL, ML_ERROR_INVALID_PARAMETER);
 
-  ml_service_offloading_get_mode (mls, &mode, (void **) &training_s);
-  if (mode != ML_SERVICE_OFFLOADING_MODE_TRAINING || training_s == NULL) {
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The ml service is not training mode.");
-  }
+  ret = _training_offloading_get_priv (mls, &training_s);
+  g_return_val_if_fail (ret == ML_ERROR_NONE, ret);
 
   g_free (training_s->path);
   training_s->path = g_strdup (path);
@@ -752,13 +756,9 @@ ml_service_training_offloading_start (ml_service_s * mls)
   JsonObject *pipeline_obj;
   JsonObject *pipe;
   ml_training_services_s *training_s = NULL;
-  ml_service_offloading_mode_e mode = ML_SERVICE_OFFLOADING_MODE_NONE;
 
-  ml_service_offloading_get_mode (mls, &mode, (void **) &training_s);
-  if (mode != ML_SERVICE_OFFLOADING_MODE_TRAINING || training_s == NULL) {
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The ml service is not training mode.");
-  }
+  ret = _training_offloading_get_priv (mls, &training_s);
+  g_return_val_if_fail (ret == ML_ERROR_NONE, ret);
 
   if (training_s->type == ML_TRAINING_OFFLOADING_TYPE_SENDER) {
     ret = _training_offloading_services_request (mls);
@@ -849,13 +849,9 @@ _training_offloading_ready_to_complete (ml_service_s * mls)
   GList *list, *iter;
   ml_training_services_s *training_s = NULL;
   ml_training_offloading_node_info_s *node_info = NULL;
-  ml_service_offloading_mode_e mode = ML_SERVICE_OFFLOADING_MODE_NONE;
 
-  ml_service_offloading_get_mode (mls, &mode, (void **) &training_s);
-  if (mode != ML_SERVICE_OFFLOADING_MODE_TRAINING || training_s == NULL) {
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The ml service is not training mode.");
-  }
+  ret = _training_offloading_get_priv (mls, &training_s);
+  g_return_val_if_fail (ret == ML_ERROR_NONE, ret);
 
   list = g_hash_table_get_keys (training_s->node_table);
   if (!list) {
@@ -895,13 +891,9 @@ ml_service_training_offloading_stop (ml_service_s * mls)
 {
   int ret = ML_ERROR_NONE;
   ml_training_services_s *training_s = NULL;
-  ml_service_offloading_mode_e mode = ML_SERVICE_OFFLOADING_MODE_NONE;
 
-  ml_service_offloading_get_mode (mls, &mode, (void **) &training_s);
-  if (mode != ML_SERVICE_OFFLOADING_MODE_TRAINING || training_s == NULL) {
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The ml service is not training mode.");
-  }
+  ret = _training_offloading_get_priv (mls, &training_s);
+  g_return_val_if_fail (ret == ML_ERROR_NONE, ret);
 
   if (training_s->type == ML_TRAINING_OFFLOADING_TYPE_RECEIVER) {
     if (!g_file_test (training_s->trained_model_path, G_FILE_TEST_EXISTS)) {
@@ -931,19 +923,14 @@ ml_service_training_offloading_process_received_data (ml_service_s * mls,
 {
   g_autofree gchar *name = NULL;
   ml_training_services_s *training_s = NULL;
-  ml_service_offloading_mode_e mode = ML_SERVICE_OFFLOADING_MODE_NONE;
   int ret;
 
   g_return_val_if_fail (data_h != NULL, ML_ERROR_INVALID_PARAMETER);
   g_return_val_if_fail (dir_path != NULL, ML_ERROR_INVALID_PARAMETER);
   g_return_val_if_fail (data != NULL, ML_ERROR_INVALID_PARAMETER);
 
-  ret = ml_service_offloading_get_mode (mls, &mode, (void **) &training_s);
-  if (ret != ML_ERROR_NONE ||
-      mode != ML_SERVICE_OFFLOADING_MODE_TRAINING || training_s == NULL) {
-    _ml_error_report_return_continue (ret,
-        "The ml service is not training mode.");
-  }
+  ret = _training_offloading_get_priv (mls, &training_s);
+  g_return_val_if_fail (ret == ML_ERROR_NONE, ret);
 
   _ml_logd ("Received data, service_type:%d", service_type);
 
@@ -974,16 +961,13 @@ static void
 _training_offloading_send_trained_model (ml_service_s * mls)
 {
   ml_training_services_s *training_s = NULL;
-  ml_service_offloading_mode_e mode = ML_SERVICE_OFFLOADING_MODE_NONE;
   GList *list, *iter;
   gchar *contents = NULL;
   gsize len;
+  int ret;
 
-  ml_service_offloading_get_mode (mls, &mode, (void **) &training_s);
-  if (mode != ML_SERVICE_OFFLOADING_MODE_TRAINING || training_s == NULL) {
-    _ml_error_report ("The ml service is not training mode.");
-    return;
-  }
+  ret = _training_offloading_get_priv (mls, &training_s);
+  g_return_if_fail (ret == ML_ERROR_NONE);
 
   if (training_s->trained_model_path == NULL)
     return;
@@ -1016,13 +1000,9 @@ ml_service_training_offloading_destroy (ml_service_s * mls)
 {
   int ret = ML_ERROR_NONE;
   ml_training_services_s *training_s = NULL;
-  ml_service_offloading_mode_e mode = ML_SERVICE_OFFLOADING_MODE_NONE;
 
-  ml_service_offloading_get_mode (mls, &mode, (void **) &training_s);
-  if (mode != ML_SERVICE_OFFLOADING_MODE_TRAINING || training_s == NULL) {
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The ml service is not training mode.");
-  }
+  ret = _training_offloading_get_priv (mls, &training_s);
+  g_return_val_if_fail (ret == ML_ERROR_NONE, ret);
 
   if (training_s->type == ML_TRAINING_OFFLOADING_TYPE_RECEIVER) {
     /* reply to remote sender */
