@@ -110,7 +110,6 @@ android {
                 jniLibs.srcDirs += project.properties['NNFW_EXT_LIBRARY_PATH']
                 println 'Set jniLibs.srcDirs includes libraries for NNFW'
             }
-
         }
     }
     packagingOptions {
