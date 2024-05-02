@@ -28,6 +28,13 @@
 %define		tensorflow2_gpu_delegate_support 0
 %endif
 
+# Enable a few features from Tizen 9.0 release.
+%if 0%{tizen_version_major} < 9
+%define		onnxruntime_support 0
+%define		ncnn_support 0
+%define		nntrainer_support 0
+%endif
+
 %ifnarch %arm aarch64 x86_64 i586 i686 %ix86
 %define		nnfw_support 0
 %endif
