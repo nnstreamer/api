@@ -655,10 +655,11 @@ static gpointer
 _check_received_data_thread (gpointer data)
 {
   ml_training_services_s *training_s = (ml_training_services_s *) data;
-  int usec = training_s->time_limit * 1000000;
+  gint usec;
 
   g_return_val_if_fail (training_s != NULL, NULL);
 
+  usec = training_s->time_limit * 1000000;
   while (usec > 0) {
     g_usleep (100000);
     if (training_s->receiver_pipe_json_str != NULL) {
