@@ -516,19 +516,48 @@ _training_offloading_request (ml_service_s * mls,
   g_return_val_if_fail (data != NULL, ML_ERROR_INVALID_PARAMETER);
   g_return_val_if_fail (len > 0, ML_ERROR_INVALID_PARAMETER);
 
-  ml_tensors_info_create (&in_info);
-  ml_tensors_info_set_count (in_info, 1);
-  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_UINT8);
+  ret = ml_tensors_info_create (&in_info);
+  if (ret != ML_ERROR_NONE) {
+    _ml_error_report_return (ret, "Failed to create tensors info");
+  }
+
+  ret = ml_tensors_info_set_count (in_info, 1);
+  if (ret != ML_ERROR_NONE) {
+    _ml_error_report ("Failed to set count to tensors info");
+    goto done;
+  }
+
+  ret = ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_UINT8);
+  if (ret != ML_ERROR_NONE) {
+    _ml_error_report ("Failed to set tensor type to tensors info");
+    goto done;
+  }
+
   in_dim[0] = len;
-  ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
-  ml_tensors_data_create (in_info, &input);
-  ml_tensors_data_set_tensor_data (input, 0, data, len);
+  ret = ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
+  if (ret != ML_ERROR_NONE) {
+    _ml_error_report ("Failed to set tensor dimension to tensors info");
+    goto done;
+  }
+
+  ret = ml_tensors_data_create (in_info, &input);
+  if (ret != ML_ERROR_NONE) {
+    _ml_error_report ("Failed to create tensors data");
+    goto done;
+  }
+
+  ret = ml_tensors_data_set_tensor_data (input, 0, data, len);
+  if (ret != ML_ERROR_NONE) {
+    _ml_error_report ("Failed to set tensor data to tensors data");
+    goto done;
+  }
 
   ret = ml_service_offloading_request (mls, service_name, input);
   if (ret != ML_ERROR_NONE) {
     _ml_error_report ("Failed to request service '%s'.)", service_name);
   }
 
+done:
   ml_tensors_info_destroy (in_info);
   ml_tensors_data_destroy (input);
 
@@ -943,7 +972,11 @@ ml_service_training_offloading_process_received_data (ml_service_s * mls,
   } else {
     /* receive trained model from remote */
     if (service_type == ML_SERVICE_OFFLOADING_TYPE_REPLY) {
-      nns_edge_data_get_info (data_h, "name", &name);
+      ret = nns_edge_data_get_info (data_h, "name", &name);
+      if (NNS_EDGE_ERROR_NONE != ret) {
+        _ml_error_report_return (ret,
+            "Failed to get name while processing the ml-offloading service.");
+      }
       training_s->trained_model_path =
           g_build_path (G_DIR_SEPARATOR_S, dir_path, name, NULL);
       _ml_logd ("Reply: name:%s, received trained_model:%s", name,
