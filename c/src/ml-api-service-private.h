@@ -32,6 +32,7 @@ extern "C" {
 #define ML_SERVICE_EVENT_MODEL_REGISTERED 2
 #define ML_SERVICE_EVENT_PIPELINE_REGISTERED 3
 #define ML_SERVICE_EVENT_REPLY 4
+#define ML_SERVICE_EVENT_LAUNCH 5
 
 /**
  * @brief Enumeration for ml-service type.

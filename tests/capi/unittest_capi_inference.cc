@@ -17,6 +17,7 @@
 #include <nnstreamer.h>
 #include <nnstreamer_internal.h>
 #include <nnstreamer_plugin_api.h>
+#include "unittest_util.h"
 
 #if defined(__APPLE__)
 #define SO_FILE_EXTENSION ".dylib"
@@ -609,30 +610,6 @@ file_cmp (const gchar *f1, const gchar *f2)
   g_free (content2);
 
   return cmp;
-}
-
-/**
- * @brief Wait until the change in pipeline status is done
- * @return ML_ERROR_NONE success, ML_ERROR_UNKNOWN if failed, ML_ERROR_TIMED_OUT if timeout happens.
- */
-static int
-waitPipelineStateChange (ml_pipeline_h handle, ml_pipeline_state_e state, guint timeout_ms)
-{
-  int status = ML_ERROR_UNKNOWN;
-  guint counter = 0;
-  ml_pipeline_state_e cur_state = ML_PIPELINE_STATE_NULL;
-
-  do {
-    status = ml_pipeline_get_state (handle, &cur_state);
-    EXPECT_EQ (status, ML_ERROR_NONE);
-    if (cur_state == ML_PIPELINE_STATE_UNKNOWN)
-      return ML_ERROR_UNKNOWN;
-    if (cur_state == state)
-      return ML_ERROR_NONE;
-    g_usleep (10000);
-  } while ((timeout_ms / 10) >= counter++);
-
-  return ML_ERROR_TIMED_OUT;
 }
 
 /**

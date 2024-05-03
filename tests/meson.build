@@ -9,7 +9,7 @@ testenv.set('MLAPI_BUILD_ROOT_PATH', meson.build_root())
 
 unittest_util_static = static_library('unittest_util',
   files('capi/unittest_util.c'),
-  dependencies: [glib_dep],
+  dependencies: [glib_dep, nns_capi_dep],
   install: false
 )
 

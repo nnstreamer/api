@@ -8,10 +8,12 @@
  */
 
 #include <unistd.h>
+#include <stdint.h>
+#include <netinet/tcp.h>
+#include <netinet/in.h>
 #include "unittest_util.h"
 
 #ifdef FAKEDLOG
-#include <glib.h>
 
 /**
  * @brief A faked dlog_print for unittest execution.
@@ -53,4 +55,29 @@ guint get_available_port (void)
   close (sock);
 
   return port;
+}
+
+/**
+ * @brief Wait until the change in pipeline status is done
+ * @return ML_ERROR_NONE success, ML_ERROR_UNKNOWN if failed, ML_ERROR_TIMED_OUT if timeout happens.
+ */
+int
+waitPipelineStateChange (ml_pipeline_h handle, ml_pipeline_state_e state, guint timeout_ms)
+{
+  int status = ML_ERROR_UNKNOWN;
+  guint counter = 0;
+  ml_pipeline_state_e cur_state = ML_PIPELINE_STATE_NULL;
+
+  do {
+    status = ml_pipeline_get_state (handle, &cur_state);
+    if (ML_ERROR_NONE != status)
+      return status;
+    if (cur_state == ML_PIPELINE_STATE_UNKNOWN)
+      return ML_ERROR_UNKNOWN;
+    if (cur_state == state)
+      return ML_ERROR_NONE;
+    g_usleep (10000);
+  } while ((timeout_ms / 10) >= counter++);
+
+  return ML_ERROR_TIMED_OUT;
 }

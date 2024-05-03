@@ -53,7 +53,8 @@ typedef struct
   nns_edge_node_type_e node_type;
 
   gchar *path; /**< A path to save the received model file */
-  GHashTable *table;
+  GHashTable *option_table;
+  GHashTable *service_table;
 
   ml_service_offloading_mode_e offloading_mode;
   void *priv;
@@ -196,6 +197,8 @@ _mlrs_get_service_type (gchar * service_str)
     service_type = ML_SERVICE_OFFLOADING_TYPE_PIPELINE_URI;
   } else if (g_ascii_strcasecmp (service_str, "reply") == 0) {
     service_type = ML_SERVICE_OFFLOADING_TYPE_REPLY;
+  } else if (g_ascii_strcasecmp (service_str, "launch") == 0) {
+    service_type = ML_SERVICE_OFFLOADING_TYPE_LAUNCH;
   } else {
     _ml_error_report ("Invalid service type '%s', please check service type.",
         service_str);
@@ -485,6 +488,43 @@ _mlrs_process_service_offloading (nns_edge_data_h data_h, void *user_data)
       event_type = ML_SERVICE_EVENT_REPLY;
       break;
     }
+    case ML_SERVICE_OFFLOADING_TYPE_LAUNCH:
+    {
+      ml_service_h service_h = NULL;
+
+      /**
+       * @todo Check privilege and availability here.
+       */
+
+      service_h =
+          g_hash_table_lookup (offloading_s->service_table, service_key);
+      if (service_h) {
+        _ml_logi ("The registered service as key %s is already launched.",
+            service_key);
+        break;
+      }
+
+      ret = ml_service_pipeline_launch (service_key, &service_h);
+      if (ret != ML_ERROR_NONE) {
+        _ml_error_report
+            ("Failed to launch the registered pipeline. service key: %s",
+            service_key);
+        goto done;
+      }
+      ret = ml_service_start (service_h);
+      if (ret != ML_ERROR_NONE) {
+        _ml_error_report
+            ("Failed to start the registered pipeline. service key: %s",
+            service_key);
+        ml_service_destroy (service_h);
+        goto done;
+      }
+
+      g_hash_table_insert (offloading_s->service_table, g_strdup (service_key),
+          service_h);
+      event_type = ML_SERVICE_EVENT_LAUNCH;
+      break;
+    }
     default:
       _ml_error_report ("Unknown service type '%d' or not supported yet.",
           service_type);
@@ -679,9 +719,14 @@ ml_service_offloading_release_internal (ml_service_s * mls)
     offloading_s->edge_h = NULL;
   }
 
-  if (offloading_s->table) {
-    g_hash_table_destroy (offloading_s->table);
-    offloading_s->table = NULL;
+  if (offloading_s->option_table) {
+    g_hash_table_destroy (offloading_s->option_table);
+    offloading_s->option_table = NULL;
+  }
+
+  if (offloading_s->service_table) {
+    g_hash_table_destroy (offloading_s->service_table);
+    offloading_s->service_table = NULL;
   }
 
   g_free (offloading_s->path);
@@ -747,7 +792,8 @@ _ml_service_offloading_set_service (ml_service_s * mls, const gchar * key,
   }
   offloading_s = (_ml_service_offloading_s *) mls->priv;
 
-  g_hash_table_insert (offloading_s->table, g_strdup (key), g_strdup (value));
+  g_hash_table_insert (offloading_s->option_table, g_strdup (key),
+      g_strdup (value));
 
   return ML_ERROR_NONE;
 }
@@ -783,6 +829,21 @@ _ml_service_offloading_parse_services (ml_service_s * mls, JsonObject * object)
 }
 
 /**
+ * @brief Private function to release the pipeline service
+ */
+static void
+_cleanup_pipeline_service (gpointer data)
+{
+  int ret;
+  ml_service_h service_h = data;
+
+  ret = ml_service_destroy (service_h);
+  if (ML_ERROR_NONE != ret) {
+    _ml_error_report ("Failed to destry the pipeline service.");
+  }
+}
+
+/**
  * @brief Internal function to create ml-offloading data with given ml-option handle.
  */
 static int
@@ -800,11 +861,19 @@ _ml_service_offloading_create_from_option (ml_service_s * mls,
         "Failed to allocate memory for the service handle's private data. Out of memory?");
   }
 
-  offloading_s->table =
+  offloading_s->option_table =
       g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
-  if (!offloading_s->table) {
+  if (!offloading_s->option_table) {
     _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
-        "Failed to allocate memory for the table of ml-service offloading. Out of memory?");
+        "Failed to allocate memory for the option table of ml-service offloading. Out of memory?");
+  }
+
+  offloading_s->service_table =
+      g_hash_table_new_full (g_str_hash, g_str_equal, g_free,
+      _cleanup_pipeline_service);
+  if (!offloading_s->service_table) {
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Failed to allocate memory for the service table of ml-service offloading. Out of memory?");
   }
 
   if (ML_ERROR_NONE == ml_option_get (option, "path", (void **) (&_path))) {
@@ -1022,7 +1091,7 @@ ml_service_offloading_request (ml_service_h handle, const char *key,
 
   offloading_s = (_ml_service_offloading_s *) mls->priv;
 
-  service_str = g_hash_table_lookup (offloading_s->table, key);
+  service_str = g_hash_table_lookup (offloading_s->option_table, key);
   if (!service_str) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The given service key, %s, is not registered in the ml-service offloading handle.",
