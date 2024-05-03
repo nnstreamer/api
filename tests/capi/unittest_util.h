@@ -11,9 +11,7 @@
 #ifndef __ML_API_UNITTEST_UTIL_H__
 #define __ML_API_UNITTEST_UTIL_H__
 #include <glib.h>
-#include <stdint.h>
-#include <netinet/tcp.h>
-#include <netinet/in.h>
+#include "nnstreamer.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -23,6 +21,12 @@ extern "C" {
  * @brief Get available port number.
  */
 guint get_available_port (void);
+
+/**
+ * @brief Wait until the change in pipeline status is done
+ * @return ML_ERROR_NONE success, ML_ERROR_UNKNOWN if failed, ML_ERROR_TIMED_OUT if timeout happens.
+ */
+int waitPipelineStateChange (ml_pipeline_h handle, ml_pipeline_state_e state, guint timeout_ms);
 
 #ifdef FAKEDLOG
 /**

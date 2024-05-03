@@ -18,6 +18,8 @@
 #include <netinet/tcp.h>
 
 #include "ml-api-service-offloading.h"
+#include "nnstreamer.h"
+#include "unittest_util.h"
 
 /**
  * @brief Structure for ml-service event callback.
@@ -108,36 +110,6 @@ class MLOffloadingService : public ::testing::Test
     status = ml_service_destroy (client_h);
     EXPECT_EQ (ML_ERROR_NONE, status);
   }
-
-  /**
-   * @brief Get available port number.
-   */
-  static guint _get_available_port (void)
-  {
-    struct sockaddr_in sin;
-    guint port = 0;
-    gint sock;
-    socklen_t len = sizeof (struct sockaddr);
-
-    sin.sin_family = AF_INET;
-    sin.sin_addr.s_addr = INADDR_ANY;
-    sin.sin_port = htons (0);
-
-    sock = socket (AF_INET, SOCK_STREAM, 0);
-    EXPECT_TRUE (sock > 0);
-    if (sock < 0)
-      return 0;
-
-    if (bind (sock, (struct sockaddr *) &sin, sizeof (struct sockaddr)) == 0) {
-      if (getsockname (sock, (struct sockaddr *) &sin, &len) == 0) {
-        port = ntohs (sin.sin_port);
-      }
-    }
-    close (sock);
-
-    EXPECT_TRUE (port > 0);
-    return port;
-  }
 };
 
 /**
@@ -198,30 +170,46 @@ _ml_service_event_cb (ml_service_event_e event, ml_information_h event_data, voi
 }
 
 /**
+ * @brief Create tensor data from the input string.
+ */
+static int
+_create_tensor_data_from_str (const gchar *raw_data, const gsize len, ml_tensors_data_h *data_h)
+{
+  int status;
+  ml_tensor_dimension in_dim = { 0 };
+  ml_tensors_info_h in_info = NULL;
+
+  status = ml_tensors_info_create (&in_info);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  ml_tensors_info_set_count (in_info, 1);
+  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_UINT8);
+  in_dim[0] = len;
+  ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
+  status = ml_tensors_data_create (in_info, data_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  status = ml_tensors_data_set_tensor_data (*data_h, 0, raw_data, len);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_tensors_info_destroy (in_info);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  return status;
+}
+
+/**
  * @brief use case of pipeline registration using ml offloading service using conf file.
  */
 TEST_F (MLOffloadingService, registerPipeline)
 {
   int status;
   ml_tensors_data_h input = NULL;
-  ml_tensors_info_h in_info = NULL;
-  ml_tensor_dimension in_dim = { 0 };
 
   gchar *pipeline_desc = g_strdup ("fakesrc ! fakesink");
   test_data.data = pipeline_desc;
   status = ml_service_set_event_cb (server_h, _ml_service_event_cb, &test_data);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  status = ml_tensors_info_create (&in_info);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-  ml_tensors_info_set_count (in_info, 1);
-  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_UINT8);
-  in_dim[0] = strlen (pipeline_desc) + 1;
-  ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
-  status = ml_tensors_data_create (in_info, &input);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-  status = ml_tensors_data_set_tensor_data (
-      input, 0, pipeline_desc, strlen (pipeline_desc) + 1);
+  status = _create_tensor_data_from_str (pipeline_desc, strlen (pipeline_desc) + 1, &input);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   status = ml_service_request (client_h, "pipeline_registration_raw", input);
@@ -233,8 +221,6 @@ TEST_F (MLOffloadingService, registerPipeline)
   status = ml_service_pipeline_delete ("pipeline_registration_test_key");
   EXPECT_TRUE (status == ML_ERROR_NONE);
 
-  status = ml_tensors_info_destroy (in_info);
-  EXPECT_EQ (ML_ERROR_NONE, status);
   status = ml_tensors_data_destroy (input);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
@@ -248,8 +234,6 @@ TEST_F (MLOffloadingService, registerPipelineURI)
 {
   int status;
   ml_tensors_data_h input = NULL;
-  ml_tensors_info_h in_info = NULL;
-  ml_tensor_dimension in_dim = { 0 };
 
   g_autofree gchar *pipeline_desc = g_strdup ("fakesrc ! fakesink");
   test_data.data = pipeline_desc;
@@ -265,16 +249,7 @@ TEST_F (MLOffloadingService, registerPipelineURI)
 
   g_autofree gchar *pipeline_uri = g_strdup_printf ("file://%s", test_file_path);
 
-  status = ml_tensors_info_create (&in_info);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-  ml_tensors_info_set_count (in_info, 1);
-  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_UINT8);
-  in_dim[0] = strlen (pipeline_uri) + 1;
-  ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
-  status = ml_tensors_data_create (in_info, &input);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-  status = ml_tensors_data_set_tensor_data (
-      input, 0, pipeline_uri, strlen (pipeline_uri) + 1);
+  status = _create_tensor_data_from_str (pipeline_uri, strlen (pipeline_uri) + 1, &input);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   status = ml_service_request (client_h, "pipeline_registration_uri", input);
@@ -286,8 +261,6 @@ TEST_F (MLOffloadingService, registerPipelineURI)
   status = ml_service_pipeline_delete ("pipeline_registration_test_key");
   EXPECT_TRUE (status == ML_ERROR_NONE);
 
-  status = ml_tensors_info_destroy (in_info);
-  EXPECT_EQ (ML_ERROR_NONE, status);
   status = ml_tensors_data_destroy (input);
   EXPECT_EQ (ML_ERROR_NONE, status);
 }
@@ -312,18 +285,10 @@ TEST_F (MLOffloadingService, registerInvalidParam_n)
 {
   int status;
   ml_tensors_data_h input = NULL;
-  ml_tensors_info_h in_info = NULL;
-  ml_tensor_dimension in_dim = { 0 };
 
   g_autofree gchar *pipeline_desc = g_strdup ("fakesrc ! fakesink");
 
-  status = ml_tensors_info_create (&in_info);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-  ml_tensors_info_set_count (in_info, 1);
-  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_UINT8);
-  in_dim[0] = strlen (pipeline_desc) + 1;
-  ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
-  status = ml_tensors_data_create (in_info, &input);
+  status = _create_tensor_data_from_str (pipeline_desc, strlen (pipeline_desc) + 1, &input);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   status = ml_service_offloading_request (NULL, "pipeline_registration_raw", input);
@@ -335,8 +300,6 @@ TEST_F (MLOffloadingService, registerInvalidParam_n)
   status = ml_service_offloading_request (client_h, "pipeline_registration_raw", NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = ml_tensors_info_destroy (in_info);
-  EXPECT_EQ (ML_ERROR_NONE, status);
   status = ml_tensors_data_destroy (input);
   EXPECT_EQ (ML_ERROR_NONE, status);
 }
@@ -348,8 +311,6 @@ TEST_F (MLOffloadingService, registerModel)
 {
   int status;
   ml_tensors_data_h input = NULL;
-  ml_tensors_info_h in_info = NULL;
-  ml_tensor_dimension in_dim = { 0 };
 
   const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   /* ml_service_offloading_request () requires absolute path to model, ignore this case. */
@@ -372,15 +333,7 @@ TEST_F (MLOffloadingService, registerModel)
   status = ml_service_offloading_set_information (server_h, "path", model_dir);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  status = ml_tensors_info_create (&in_info);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-  ml_tensors_info_set_count (in_info, 1);
-  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_UINT8);
-  in_dim[0] = len;
-  ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
-  status = ml_tensors_data_create (in_info, &input);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-  status = ml_tensors_data_set_tensor_data (input, 0, contents, len);
+  status = _create_tensor_data_from_str (contents, len, &input);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   status = ml_service_request (client_h, "model_registration_raw", input);
@@ -392,8 +345,6 @@ TEST_F (MLOffloadingService, registerModel)
   status = ml_service_model_delete ("model_registration_test_key", 0U);
   EXPECT_TRUE (status == ML_ERROR_NONE);
 
-  status = ml_tensors_info_destroy (in_info);
-  EXPECT_EQ (ML_ERROR_NONE, status);
   status = ml_tensors_data_destroy (input);
   EXPECT_EQ (ML_ERROR_NONE, status);
 }
@@ -405,8 +356,6 @@ TEST_F (MLOffloadingService, registerModelURI)
 {
   int status;
   ml_tensors_data_h input = NULL;
-  ml_tensors_info_h in_info = NULL;
-  ml_tensor_dimension in_dim = { 0 };
   const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   /* ml_service_offloading_request () requires absolute path to model, ignore this case. */
   if (root_path == NULL)
@@ -426,15 +375,7 @@ TEST_F (MLOffloadingService, registerModelURI)
 
   g_autofree gchar *model_uri = g_strdup_printf ("file://%s", test_model_path);
 
-  status = ml_tensors_info_create (&in_info);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-  ml_tensors_info_set_count (in_info, 1);
-  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_UINT8);
-  in_dim[0] = strlen (model_uri) + 1;
-  ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
-  status = ml_tensors_data_create (in_info, &input);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-  status = ml_tensors_data_set_tensor_data (input, 0, model_uri, strlen (model_uri) + 1);
+  status = _create_tensor_data_from_str (model_uri, strlen (model_uri) + 1, &input);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   status = ml_service_request (client_h, "model_registration_uri", input);
@@ -446,8 +387,6 @@ TEST_F (MLOffloadingService, registerModelURI)
   status = ml_service_model_delete ("model_registration_test_key", 0U);
   EXPECT_TRUE (status == ML_ERROR_NONE);
 
-  status = ml_tensors_info_destroy (in_info);
-  EXPECT_EQ (ML_ERROR_NONE, status);
   status = ml_tensors_data_destroy (input);
   EXPECT_EQ (ML_ERROR_NONE, status);
 }
@@ -459,8 +398,6 @@ TEST_F (MLOffloadingService, registerModelPath)
 {
   int status;
   ml_tensors_data_h input = NULL;
-  ml_tensors_info_h in_info = NULL;
-  ml_tensor_dimension in_dim = { 0 };
   const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   /* ml_service_offloading_request () requires absolute path to model, ignore this case. */
   if (root_path == NULL)
@@ -486,15 +423,7 @@ TEST_F (MLOffloadingService, registerModelPath)
   status = ml_service_set_event_cb (server_h, _ml_service_event_cb, &test_data);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  status = ml_tensors_info_create (&in_info);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-  ml_tensors_info_set_count (in_info, 1);
-  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_UINT8);
-  in_dim[0] = len;
-  ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
-  status = ml_tensors_data_create (in_info, &input);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-  status = ml_tensors_data_set_tensor_data (input, 0, contents, len);
+  status = _create_tensor_data_from_str (contents, len, &input);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   status = ml_service_request (client_h, "model_registration_raw", input);
@@ -506,8 +435,6 @@ TEST_F (MLOffloadingService, registerModelPath)
   status = ml_service_model_delete ("model_registration_test_key", 0U);
   EXPECT_TRUE (status == ML_ERROR_NONE);
 
-  status = ml_tensors_info_destroy (in_info);
-  EXPECT_EQ (ML_ERROR_NONE, status);
   status = ml_tensors_data_destroy (input);
   EXPECT_EQ (ML_ERROR_NONE, status);
 }
@@ -519,30 +446,17 @@ TEST_F (MLOffloadingService, requestInvalidParam_n)
 {
   int status;
   ml_tensors_data_h input = NULL;
-  ml_tensors_info_h in_info = NULL;
-  ml_tensor_dimension in_dim = { 0 };
 
   g_autofree gchar *pipeline_desc = g_strdup ("fakesrc ! fakesink");
   status = ml_service_set_event_cb (server_h, _ml_service_event_cb, pipeline_desc);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  status = ml_tensors_info_create (&in_info);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-  ml_tensors_info_set_count (in_info, 1);
-  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_UINT8);
-  in_dim[0] = strlen (pipeline_desc) + 1;
-  ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
-  status = ml_tensors_data_create (in_info, &input);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-  status = ml_tensors_data_set_tensor_data (
-      input, 0, pipeline_desc, strlen (pipeline_desc) + 1);
+  status = _create_tensor_data_from_str (pipeline_desc, strlen (pipeline_desc) + 1, &input);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   status = ml_service_request (client_h, NULL, input);
   EXPECT_NE (ML_ERROR_NONE, status);
 
-  status = ml_tensors_info_destroy (in_info);
-  EXPECT_EQ (ML_ERROR_NONE, status);
   status = ml_tensors_data_destroy (input);
   EXPECT_EQ (ML_ERROR_NONE, status);
 }
@@ -591,22 +505,11 @@ TEST_F (MLOffloadingService, replyToClient)
 {
   int status;
   ml_tensors_data_h input = NULL;
-  ml_tensors_info_h in_info = NULL;
-  ml_tensor_dimension in_dim = { 0 };
   gint received = 0;
 
   gchar *pipeline_desc = g_strdup ("fakesrc ! fakesink");
 
-  status = ml_tensors_info_create (&in_info);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-  ml_tensors_info_set_count (in_info, 1);
-  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_UINT8);
-  in_dim[0] = strlen (pipeline_desc) + 1;
-  ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
-  status = ml_tensors_data_create (in_info, &input);
-  EXPECT_EQ (ML_ERROR_NONE, status);
-  status = ml_tensors_data_set_tensor_data (
-      input, 0, pipeline_desc, strlen (pipeline_desc) + 1);
+  status = _create_tensor_data_from_str (pipeline_desc, strlen (pipeline_desc) + 1, &input);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   test_data.data = input;
@@ -627,12 +530,232 @@ TEST_F (MLOffloadingService, replyToClient)
   status = ml_service_pipeline_delete ("pipeline_registration_test_key");
   EXPECT_TRUE (status == ML_ERROR_NONE);
 
-  status = ml_tensors_info_destroy (in_info);
-  EXPECT_EQ (ML_ERROR_NONE, status);
   status = ml_tensors_data_destroy (input);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   g_free (pipeline_desc);
+}
+
+
+/**
+ * @brief A tensor-sink callback for sink handle in a pipeline
+ */
+static void
+test_sink_callback (const ml_tensors_data_h data, const ml_tensors_info_h info, void *user_data)
+{
+  gint *received = (gint *) user_data;
+
+  (*received)++;
+}
+
+
+/**
+ * @brief use case of launching the pipeline on server.
+ */
+TEST_F (MLOffloadingService, launchPipeline)
+{
+  int status;
+  ml_tensors_data_h input = NULL;
+  gint received = 0;
+
+  guint server_port = get_available_port ();
+  EXPECT_TRUE (server_port > 0);
+  g_autofree gchar *server_pipeline_desc = g_strdup_printf (
+      "tensor_query_serversrc port=%u ! other/tensors,num_tensors=1,dimensions=3:4:4:1,types=uint8,format=static,framerate=0/1 ! tensor_query_serversink async=false sync=false",
+      server_port);
+
+  status = _create_tensor_data_from_str (
+      server_pipeline_desc, strlen (server_pipeline_desc) + 1, &input);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  test_data.data = input;
+  status = ml_service_set_event_cb (server_h, _ml_service_reply_test_cb, &test_data);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_service_set_event_cb (client_h, _ml_service_reply_test_cb, &received);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_service_request (client_h, "pipeline_registration_raw", input);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  /* Wait for the server to register and check the result. */
+  g_usleep (1000000);
+
+  status = ml_service_request (client_h, "pipeline_launch_test", input);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  g_usleep (1000000);
+
+  /* create client pipeline */
+  g_autofree gchar *client_pipeline_desc = g_strdup_printf (
+      "videotestsrc num-buffers=100 ! videoconvert ! videoscale ! video/x-raw,width=4,height=4,format=RGB,framerate=60/1 ! tensor_converter ! other/tensors,num_tensors=1,format=static ! tensor_query_client dest-port=%u port=0 ! other/tensors,num_tensors=1,dimensions=3:4:4:1,types=uint8,format=static,framerate=0/1 ! tensor_sink sync=true name=sinkx",
+      server_port);
+
+  ml_pipeline_h handle;
+  ml_pipeline_sink_h sinkhandle;
+  status = ml_pipeline_construct (client_pipeline_desc, NULL, NULL, &handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  gint sink_received = 0;
+  status = ml_pipeline_sink_register (
+      handle, "sinkx", test_sink_callback, &sink_received, &sinkhandle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  EXPECT_TRUE (sinkhandle != NULL);
+
+  status = ml_pipeline_start (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = waitPipelineStateChange (handle, ML_PIPELINE_STATE_PLAYING, 200);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  /* Give enough time for frames to flow. */
+  g_usleep (1000000);
+
+  EXPECT_GT (received, 0);
+  EXPECT_GT (sink_received, 0);
+
+  status = ml_service_pipeline_delete ("pipeline_registration_test_key");
+  EXPECT_TRUE (status == ML_ERROR_NONE);
+
+  status = ml_tensors_data_destroy (input);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_pipeline_stop (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_sink_unregister (sinkhandle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_destroy (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+}
+
+/**
+ * @brief use case of launching the pipeline on server.
+ */
+TEST_F (MLOffloadingService, launchPipeline2)
+{
+  int status;
+  ml_tensors_data_h input = NULL;
+  gint received = 0;
+
+  guint server_port = get_available_port ();
+  EXPECT_TRUE (server_port > 0);
+  g_autofree gchar *server_pipeline_desc = g_strdup_printf (
+      "tensor_query_serversrc port=%u ! other/tensors,num_tensors=1,dimensions=3:4:4:1,types=uint8,format=static,framerate=0/1 ! tensor_query_serversink async=false sync=false",
+      server_port);
+
+  status = _create_tensor_data_from_str (
+      server_pipeline_desc, strlen (server_pipeline_desc) + 1, &input);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  test_data.data = input;
+  status = ml_service_set_event_cb (server_h, _ml_service_reply_test_cb, &test_data);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_service_set_event_cb (client_h, _ml_service_reply_test_cb, &received);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_service_request (client_h, "pipeline_registration_raw", input);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  /* Wait for the server to register and check the result. */
+  g_usleep (1000000);
+
+  status = ml_service_request (client_h, "pipeline_launch_test", input);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  g_usleep (1000000);
+
+  ml_option_h query_client_option = NULL;
+
+  status = ml_option_create (&query_client_option);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  guint client_port = 0;
+
+  status = ml_option_set (query_client_option, "port", &client_port, NULL);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  guint dest_port = server_port;
+  status = ml_option_set (query_client_option, "dest-port", &dest_port, NULL);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  guint timeout = 200000U;
+  status = ml_option_set (query_client_option, "timeout", &timeout, NULL);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  g_autofree gchar *caps_str = g_strdup (
+      "other/tensors,num_tensors=1,format=static,types=uint8,dimensions=3:4:4:1,framerate=0/1");
+  status = ml_option_set (query_client_option, "caps", caps_str, g_free);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  /* set input tensor */
+  ml_tensors_info_h in_info;
+  ml_tensor_dimension in_dim;
+  ml_tensors_data_h query_input;
+
+  ml_tensors_info_create (&in_info);
+  in_dim[0] = 3;
+  in_dim[1] = 4;
+  in_dim[2] = 4;
+  in_dim[3] = 1;
+
+  ml_tensors_info_set_count (in_info, 1);
+  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_UINT8);
+  ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
+
+  ml_service_h query_h;
+  status = ml_service_query_create (query_client_option, &query_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = ml_tensors_data_create (in_info, &query_input);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  EXPECT_TRUE (NULL != query_input);
+
+  int num_buffers = 5;
+  /* request output tensor with input tensor */
+  for (int i = 0; i < num_buffers; ++i) {
+    ml_tensors_data_h output;
+    uint8_t *cnt;
+    size_t input_data_size, output_data_size;
+    uint8_t test_data = (uint8_t) i;
+
+    ml_tensors_data_set_tensor_data (query_input, 0, &test_data, sizeof (uint8_t));
+
+    status = ml_service_query_request (query_h, query_input, &output);
+    EXPECT_EQ (ML_ERROR_NONE, status);
+    EXPECT_TRUE (NULL != output);
+
+    g_usleep (1000000);
+
+    status = ml_tensors_info_get_tensor_size (in_info, 0, &input_data_size);
+    EXPECT_EQ (ML_ERROR_NONE, status);
+
+    status = ml_tensors_data_get_tensor_data (output, 0, (void **) &cnt, &output_data_size);
+    EXPECT_EQ (ML_ERROR_NONE, status);
+    EXPECT_EQ (input_data_size, output_data_size);
+    EXPECT_EQ (test_data, cnt[0]);
+
+    status = ml_tensors_data_destroy (output);
+    EXPECT_EQ (ML_ERROR_NONE, status);
+  }
+
+  EXPECT_GT (received, 0);
+
+  status = ml_service_pipeline_delete ("pipeline_registration_test_key");
+  EXPECT_TRUE (status == ML_ERROR_NONE);
+
+
+  status = ml_tensors_data_destroy (input);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+  status = ml_tensors_data_destroy (query_input);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  status = ml_tensors_info_destroy (in_info);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_service_destroy (query_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
 }
 
 /**
