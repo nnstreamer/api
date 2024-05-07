@@ -139,8 +139,9 @@ _ml_service_destroy_internal (ml_service_s * mls)
       status = ml_service_extension_destroy (mls);
       break;
     default:
-      _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-          "Invalid type of ml_service_h.");
+      _ml_error_report ("Invalid type of ml_service_h.");
+      status = ML_ERROR_INVALID_PARAMETER;
+      break;
   }
 
   if (status == ML_ERROR_NONE) {
