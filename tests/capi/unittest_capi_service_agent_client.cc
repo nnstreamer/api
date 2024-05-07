@@ -15,6 +15,7 @@
 
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include "unittest_util.h"
 
 /**
  * @brief Test base class for Database of ML Service API.
@@ -48,36 +49,6 @@ class MLServiceAgentTest : public ::testing::Test
     g_test_dbus_down (dbus);
     g_object_unref (dbus);
   }
-
-  /**
-   * @brief Get available port number.
-   */
-  static guint _get_available_port (void)
-  {
-    struct sockaddr_in sin;
-    guint port = 0;
-    gint sock;
-    socklen_t len = sizeof (struct sockaddr);
-
-    sin.sin_family = AF_INET;
-    sin.sin_addr.s_addr = INADDR_ANY;
-    sin.sin_port = htons (0);
-
-    sock = socket (AF_INET, SOCK_STREAM, 0);
-    EXPECT_TRUE (sock > 0);
-    if (sock < 0)
-      return 0;
-
-    if (bind (sock, (struct sockaddr *) &sin, sizeof (struct sockaddr)) == 0) {
-      if (getsockname (sock, (struct sockaddr *) &sin, &len) == 0) {
-        port = ntohs (sin.sin_port);
-      }
-    }
-    close (sock);
-
-    EXPECT_TRUE (port > 0);
-    return port;
-  }
 };
 
 /**
@@ -95,7 +66,8 @@ TEST_F (MLServiceAgentTest, usecase_00)
   const gchar *service_name = "simple_query_server_for_test";
   gchar *pipeline_desc;
 
-  guint port = _get_available_port ();
+  guint port = get_available_port ();
+  EXPECT_TRUE (port > 0);
 
   /* create server pipeline */
   pipeline_desc = g_strdup_printf (
@@ -127,7 +99,9 @@ TEST_F (MLServiceAgentTest, usecase_00)
   EXPECT_EQ (ML_PIPELINE_STATE_PLAYING, state);
 
   /* create client pipeline */
-  guint sink_port = _get_available_port ();
+  guint sink_port = get_available_port ();
+  EXPECT_TRUE (sink_port > 0);
+
   gchar *client_pipeline_desc = g_strdup_printf (
       "videotestsrc num-buffers=10 ! videoconvert ! videoscale ! video/x-raw,width=4,height=4,format=RGB,framerate=10/1 ! tensor_converter ! other/tensors,num_tensors=1,format=static ! tensor_query_client dest-port=%u port=%u ! fakesink sync=true",
       port, sink_port);
@@ -193,7 +167,8 @@ TEST_F (MLServiceAgentTest, usecase_01)
   const gchar *service_name = "simple_query_server_for_test";
   gchar *pipeline_desc;
 
-  guint port = _get_available_port ();
+  guint port = get_available_port ();
+  EXPECT_TRUE (port > 0);
 
   /* create server pipeline */
   pipeline_desc = g_strdup_printf (
@@ -225,7 +200,9 @@ TEST_F (MLServiceAgentTest, usecase_01)
   EXPECT_EQ (ML_PIPELINE_STATE_PLAYING, state);
 
   /* create client pipeline */
-  guint sink_port = _get_available_port ();
+  guint sink_port = get_available_port ();
+  EXPECT_TRUE (sink_port > 0);
+
   gchar *client_pipeline_desc = g_strdup_printf (
       "videotestsrc num-buffers=10 ! videoconvert ! videoscale ! video/x-raw,width=4,height=4,format=RGB,framerate=10/1 ! tensor_converter ! other/tensors,num_tensors=1,format=static ! tensor_query_client dest-port=%u port=%u ! fakesink sync=true",
       port, sink_port);
@@ -564,7 +541,9 @@ TEST_F (MLServiceAgentTest, query_client)
   /* Set server pipeline and launch it */
   const gchar *service_name = "simple_query_server_for_test";
   int num_buffers = 5;
-  guint server_port = _get_available_port ();
+  guint server_port = get_available_port ();
+  EXPECT_TRUE (server_port > 0);
+
   gchar *server_pipeline_desc = g_strdup_printf (
       "tensor_query_serversrc port=%u num-buffers=%d ! other/tensors,num_tensors=1,dimensions=3:4:4:1,types=uint8,format=static,framerate=0/1 ! tensor_query_serversink async=false sync=false",
       server_port, num_buffers);
@@ -604,7 +583,9 @@ TEST_F (MLServiceAgentTest, query_client)
   status = ml_option_set (query_client_option, "host", host, g_free);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  guint client_port = _get_available_port ();
+  guint client_port = get_available_port ();
+  EXPECT_TRUE (client_port > 0);
+
   status = ml_option_set (query_client_option, "port", &client_port, NULL);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
