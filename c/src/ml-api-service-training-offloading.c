@@ -249,7 +249,7 @@ _training_offloading_conf_parse_json (ml_service_s * mls, JsonObject * object)
   ret = _training_offloading_get_priv (mls, &training_s);
   g_return_val_if_fail (ret == ML_ERROR_NONE, ret);
 
-  val = json_object_get_string_member (object, "node-type");
+  val = _ml_service_get_json_string_member (object, "node-type");
 
   if (g_ascii_strcasecmp (val, "sender") == 0) {
     training_s->type = ML_TRAINING_OFFLOADING_TYPE_SENDER;
@@ -271,7 +271,7 @@ _training_offloading_conf_parse_json (ml_service_s * mls, JsonObject * object)
         ("The default time-limit(10 sec) is set because `time-limit` is not set.");
   }
 
-  val = json_object_get_string_member (training_obj, "sender-pipeline");
+  val = _ml_service_get_json_string_member (training_obj, "sender-pipeline");
   training_s->sender_pipe = g_strdup (val);
 
   if (!json_object_has_member (training_obj, "transfer-data")) {
@@ -295,7 +295,7 @@ _training_offloading_conf_parse_json (ml_service_s * mls, JsonObject * object)
           "The parameter, 'key' is invalid. It should be a valid string.");
     }
 
-    val = json_object_get_string_member (data_obj, key);
+    val = _ml_service_get_json_string_member (data_obj, key);
 
     if (STR_IS_VALID (val)) {
       transfer_data = g_strdup (val);
@@ -839,7 +839,7 @@ ml_service_training_offloading_start (ml_service_s * mls)
 
     if (json_object_has_member (pipe, "description")) {
       training_s->receiver_pipe =
-          g_strdup (json_object_get_string_member (pipe, "description"));
+          g_strdup (_ml_service_get_json_string_member (pipe, "description"));
     } else {
       _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
           "Failed to parse configuration file, cannot get the pipeline description.");

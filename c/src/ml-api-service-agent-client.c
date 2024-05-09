@@ -62,10 +62,11 @@ _parse_app_info_and_update_path (ml_information_h ml_info)
         "Failed to get json object from the app_info. Skip it.");
   }
 
-  if (g_strcmp0 (json_object_get_string_member (jobj, "is_rpk"), "T") == 0) {
+  if (g_strcmp0 (_ml_service_get_json_string_member (jobj, "is_rpk"), "T") == 0) {
     gchar *ori_path, *new_path;
     g_autofree gchar *global_resource_path;
-    const gchar *res_type = json_object_get_string_member (jobj, "res_type");
+    const gchar *res_type =
+        _ml_service_get_json_string_member (jobj, "res_type");
 
     ret = ml_information_get (ml_info, "path", (void **) &ori_path);
     if (ret != ML_ERROR_NONE) {
@@ -226,7 +227,7 @@ _build_ml_info_from_json_cstr (const gchar * jcstring, void **handle)
     members = json_object_get_members (jobj);
     for (l = members; l != NULL; l = l->next) {
       const gchar *key = l->data;
-      const gchar *val = json_object_get_string_member (jobj, key);
+      const gchar *val = _ml_service_get_json_string_member (jobj, key);
 
       /* Prevent empty string case. */
       if (STR_IS_VALID (key) && STR_IS_VALID (val)) {
