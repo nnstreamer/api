@@ -119,6 +119,11 @@ int ml_service_pipeline_release_internal (ml_service_s *mls);
  */
 int ml_service_query_release_internal (ml_service_s *mls);
 
+/**
+ * @brief Internal function to get json string member.
+ */
+const gchar * _ml_service_get_json_string_member (JsonObject* object, const gchar* member_name);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

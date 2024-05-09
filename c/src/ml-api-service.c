@@ -389,7 +389,7 @@ ml_service_new (const char *config, ml_service_h * handle)
 
     for (iter = members; iter; iter = g_list_next (iter)) {
       const gchar *name = iter->data;
-      const gchar *value = json_object_get_string_member (info, name);
+      const gchar *value = _ml_service_get_json_string_member (info, name);
 
       status = _ml_service_set_information_internal (mls, name, value);
       if (status != ML_ERROR_NONE)
@@ -741,4 +741,30 @@ ml_service_destroy (ml_service_h handle)
   }
 
   return _ml_service_destroy_internal (mls);
+}
+
+/**
+ * @brief Internal function to get json string member.
+ */
+const gchar *
+_ml_service_get_json_string_member (JsonObject * object,
+    const gchar * member_name)
+{
+  const gchar *ret = NULL;
+
+  if (!object) {
+    _ml_error_report_return (ret,
+        "The parameter, object (JsonObject *), is NULL. It should be a valid JsonObject instance.");
+  }
+
+  if (!member_name) {
+    _ml_error_report_return (ret,
+        "The parameter, member_name (const gchar *), is NULL.");
+  }
+
+  if (json_object_has_member (object, member_name)) {
+    ret = json_object_get_string_member (object, member_name);
+  }
+
+  return ret;
 }

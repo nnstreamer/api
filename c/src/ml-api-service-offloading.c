@@ -854,7 +854,7 @@ _ml_service_offloading_convert_to_option (JsonObject * object,
       continue;
     }
 
-    val = json_object_get_string_member (object, key);
+    val = _ml_service_get_json_string_member (object, key);
 
     status = ml_option_set (tmp, key, g_strdup (val), g_free);
     if (status != ML_ERROR_NONE) {
@@ -1040,13 +1040,14 @@ ml_service_offloading_request (ml_service_h handle, const char *key,
         "Failed to get the json object from the json node.");
   }
 
-  service_str = json_object_get_string_member (service_obj, "service-type");
+  service_str =
+      _ml_service_get_json_string_member (service_obj, "service-type");
   if (!service_str) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "Failed to get service type from the json object.");
   }
 
-  service_key = json_object_get_string_member (service_obj, "service-key");
+  service_key = _ml_service_get_json_string_member (service_obj, "service-key");
   if (!service_key) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "Failed to get service key from the json object.");
@@ -1069,7 +1070,7 @@ ml_service_offloading_request (ml_service_h handle, const char *key,
     goto done;
   }
 
-  description = json_object_get_string_member (service_obj, "description");
+  description = _ml_service_get_json_string_member (service_obj, "description");
   if (description) {
     ret = nns_edge_data_set_info (data_h, "description", description);
     if (NNS_EDGE_ERROR_NONE != ret) {
@@ -1077,7 +1078,7 @@ ml_service_offloading_request (ml_service_h handle, const char *key,
     }
   }
 
-  name = json_object_get_string_member (service_obj, "name");
+  name = _ml_service_get_json_string_member (service_obj, "name");
   if (name) {
     ret = nns_edge_data_set_info (data_h, "name", name);
     if (NNS_EDGE_ERROR_NONE != ret) {
@@ -1085,7 +1086,7 @@ ml_service_offloading_request (ml_service_h handle, const char *key,
     }
   }
 
-  activate = json_object_get_string_member (service_obj, "activate");
+  activate = _ml_service_get_json_string_member (service_obj, "activate");
   if (activate) {
     ret = nns_edge_data_set_info (data_h, "activate", activate);
     if (NNS_EDGE_ERROR_NONE != ret) {

@@ -458,8 +458,7 @@ _ml_extension_conf_parse_pipeline_node (ml_service_s * mls, JsonNode * node,
     else
       object = json_node_get_object (node);
 
-    if (json_object_has_member (object, "name"))
-      name = json_object_get_string_member (object, "name");
+    name = _ml_service_get_json_string_member (object, "name");
 
     node_info = _ml_extension_node_info_new (mls, name, type);
     if (!node_info) {
