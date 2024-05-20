@@ -15,24 +15,7 @@
 
 #include "ml-api-service-offloading.h"
 #include "ml-api-service-training-offloading.h"
-
-/**
- * @brief Internal function to get the config file path.
- */
-static gchar *
-_get_config_path (const gchar *config_name)
-{
-  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
-
-  /* Supposed to run test in build directory. */
-  if (root_path == NULL)
-    root_path = "..";
-
-  gchar *config_file = g_build_filename (
-      root_path, "tests", "test_models", "config", config_name, NULL);
-
-  return config_file;
-}
+#include "unittest_util.h"
 
 /**
  * @brief Test base class for Database of ML Service API.
@@ -184,11 +167,15 @@ TEST_F (MLServiceTrainingOffloading, trainingOffloading_p)
       root_path, "tests", "test_models", "models", "trained-model.bin", NULL);
 
   /* If you run the sender without running the receiver first, a connect error occurs in nns-edge. */
-  g_autofree gchar *receiver_config = _get_config_path ("training_offloading_receiver.conf");
+  guint avail_port = get_available_port ();
+  g_autofree gchar *receiver_config
+      = prepare_test_config ("training_offloading_receiver.conf", avail_port);
+  g_autofree gchar *sender_config
+      = prepare_test_config ("training_offloading_sender.conf", avail_port);
+
   status = ml_service_new (receiver_config, &receiver_h);
   ASSERT_EQ (status, ML_ERROR_NONE);
 
-  g_autofree gchar *sender_config = _get_config_path ("training_offloading_sender.conf");
   status = ml_service_new (sender_config, &sender_h);
   ASSERT_EQ (status, ML_ERROR_NONE);
 
@@ -237,6 +224,9 @@ TEST_F (MLServiceTrainingOffloading, trainingOffloading_p)
 
   status = ml_service_destroy (sender_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
+
+  EXPECT_EQ (g_remove (receiver_config), 0);
+  EXPECT_EQ (g_remove (sender_config), 0);
 }
 
 /**
@@ -268,7 +258,10 @@ TEST_F (MLServiceTrainingOffloading, createInvalidParam2_n)
   g_autofree gchar *json_string = NULL;
   JsonNode *root;
   JsonObject *object;
-  g_autofree gchar *receiver_config = _get_config_path ("training_offloading_receiver.conf");
+
+  guint avail_port = get_available_port ();
+  g_autofree gchar *receiver_config
+      = prepare_test_config ("training_offloading_receiver.conf", avail_port);
 
   ASSERT_TRUE (g_file_get_contents (receiver_config, &json_string, NULL, NULL));
   parser = json_parser_new ();
@@ -281,6 +274,8 @@ TEST_F (MLServiceTrainingOffloading, createInvalidParam2_n)
   JsonObject *offloading = json_object_get_object_member (object, "offloading");
   status = ml_service_training_offloading_create (NULL, offloading);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  EXPECT_EQ (g_remove (receiver_config), 0);
 }
 
 /**
@@ -295,7 +290,10 @@ TEST_F (MLServiceTrainingOffloading, create_p)
   g_autofree gchar *json_string = NULL;
   JsonNode *root;
   JsonObject *object;
-  g_autofree gchar *receiver_config = _get_config_path ("training_offloading_receiver.conf");
+
+  guint avail_port = get_available_port ();
+  g_autofree gchar *receiver_config
+      = prepare_test_config ("training_offloading_receiver.conf", avail_port);
 
   ASSERT_TRUE (g_file_get_contents (receiver_config, &json_string, NULL, NULL));
   parser = json_parser_new ();
@@ -322,6 +320,8 @@ TEST_F (MLServiceTrainingOffloading, create_p)
 
   status = ml_service_offloading_release_internal (mls);
   EXPECT_EQ (ML_ERROR_NONE, status);
+
+  EXPECT_EQ (g_remove (receiver_config), 0);
 }
 
 /**
@@ -348,7 +348,10 @@ TEST_F (MLServiceTrainingOffloading, setPathInvalidParam1_n)
   g_autofree gchar *file_path
       = g_build_filename (root_path, "tests", "test_models", "models", NULL);
 
-  g_autofree gchar *receiver_config = _get_config_path ("training_offloading_receiver.conf");
+  guint avail_port = get_available_port ();
+  g_autofree gchar *receiver_config
+      = prepare_test_config ("training_offloading_receiver.conf", avail_port);
+
   status = ml_service_new (receiver_config, &service_h);
   ASSERT_EQ (status, ML_ERROR_NONE);
 
@@ -363,6 +366,8 @@ TEST_F (MLServiceTrainingOffloading, setPathInvalidParam1_n)
 
   status = ml_service_destroy (service_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
+
+  EXPECT_EQ (g_remove (receiver_config), 0);
 }
 
 /**
@@ -377,7 +382,10 @@ TEST_F (MLServiceTrainingOffloading, startInvalidParam1_n)
   g_autofree gchar *file_path
       = g_build_filename (root_path, "tests", "test_models", "models", NULL);
 
-  g_autofree gchar *receiver_config = _get_config_path ("training_offloading_receiver.conf");
+  guint avail_port = get_available_port ();
+  g_autofree gchar *receiver_config
+      = prepare_test_config ("training_offloading_receiver.conf", avail_port);
+
   /* If you run the sender without running the receiver first, a connect error occurs in nns-edge. */
   status = ml_service_new (receiver_config, &receiver_h);
   EXPECT_EQ (status, ML_ERROR_NONE);
@@ -397,6 +405,8 @@ TEST_F (MLServiceTrainingOffloading, startInvalidParam1_n)
 
   status = ml_service_destroy (receiver_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
+
+  EXPECT_EQ (g_remove (receiver_config), 0);
 }
 
 /**
@@ -411,7 +421,10 @@ TEST_F (MLServiceTrainingOffloading, stopInvalidParam1_n)
   g_autofree gchar *file_path
       = g_build_filename (root_path, "tests", "test_models", "models", NULL);
 
-  g_autofree gchar *receiver_config = _get_config_path ("training_offloading_receiver.conf");
+  guint avail_port = get_available_port ();
+  g_autofree gchar *receiver_config
+      = prepare_test_config ("training_offloading_receiver.conf", avail_port);
+
   /* If you run the sender without running the receiver first, a connect error occurs in nns-edge. */
   status = ml_service_new (receiver_config, &receiver_h);
   EXPECT_EQ (status, ML_ERROR_NONE);
@@ -428,6 +441,8 @@ TEST_F (MLServiceTrainingOffloading, stopInvalidParam1_n)
 
   status = ml_service_destroy (receiver_h);
   EXPECT_EQ (ML_ERROR_NONE, status);
+
+  EXPECT_EQ (g_remove (receiver_config), 0);
 }
 
 /**
