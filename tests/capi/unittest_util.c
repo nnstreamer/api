@@ -32,7 +32,8 @@ int dlog_print (int level, const char *tag, const char *fmt, ...)
 /**
  * @brief Get available port number.
  */
-guint get_available_port (void)
+guint
+get_available_port (void)
 {
   struct sockaddr_in sin;
   guint port = 0;
@@ -55,6 +56,73 @@ guint get_available_port (void)
   close (sock);
 
   return port;
+}
+
+/**
+ * @brief Util function to get the config file path.
+ */
+gchar *
+get_config_path (const gchar * config_name)
+{
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
+  gchar *config_file;
+
+  /* Supposed to run test in build directory. */
+  if (root_path == NULL)
+    root_path = "..";
+
+  config_file = g_build_filename (root_path, "tests", "test_models", "config",
+      config_name, NULL);
+
+  return config_file;
+}
+
+/**
+ * @brief Prepare conf file for unittest, update available port number.
+ */
+gchar *
+prepare_test_config (const gchar * config_name, const guint port)
+{
+  const gchar *tmp_dir = g_get_tmp_dir ();
+  gchar *conf_base = get_config_path (config_name);
+  gchar *tmp_conf = NULL, *res_conf = NULL;
+  gchar *contents = NULL;
+  gchar *cmd = NULL;
+  gint status;
+
+  if (tmp_dir == NULL) {
+    goto error;
+  }
+
+  tmp_conf = g_build_filename (tmp_dir, "ml_conf_tmp_XXXXXX.conf", NULL);
+  status = g_mkstemp (tmp_conf);
+  if (status < 0) {
+    goto error;
+  }
+
+  g_close (status, NULL);
+
+  if (!g_file_get_contents (conf_base, &contents, NULL, NULL) ||
+      !g_file_set_contents (tmp_conf, contents, -1, NULL)) {
+    goto error;
+  }
+
+  cmd = g_strdup_printf ("sed -i 's/@AVAIL_PORT@/%u/g' %s", port, tmp_conf);
+  status = system (cmd);
+  if (status != 0) {
+    goto error;
+  }
+
+  res_conf = tmp_conf;
+  tmp_conf = NULL;
+
+error:
+  g_free (conf_base);
+  g_free (contents);
+  g_free (tmp_conf);
+  g_free (cmd);
+
+  return res_conf;
 }
 
 /**

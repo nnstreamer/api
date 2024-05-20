@@ -13,6 +13,7 @@
 #include <ml-api-service-private.h>
 #include <ml-api-service.h>
 #include "ml-api-service-extension.h"
+#include "unittest_util.h"
 
 #if defined(ENABLE_TENSORFLOW_LITE) || defined(ENABLE_TENSORFLOW2_LITE)
 #define TEST_REQUIRE_TFLITE(Case, Name) TEST (Case, Name)
@@ -99,24 +100,6 @@ static void
 _free_test_data (extension_test_data_s *tdata)
 {
   g_free (tdata);
-}
-
-/**
- * @brief Internal function to get the config file path.
- */
-static gchar *
-_get_config_path (const gchar *config_name)
-{
-  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
-
-  /* Supposed to run test in build directory. */
-  if (root_path == NULL)
-    root_path = "..";
-
-  gchar *config_file = g_build_filename (
-      root_path, "tests", "test_models", "config", config_name, NULL);
-
-  return config_file;
 }
 
 /**
@@ -409,7 +392,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, scenarioConfigAdd)
   ml_service_h handle;
   int status;
 
-  g_autofree gchar *config = _get_config_path ("config_single_add.conf");
+  g_autofree gchar *config = get_config_path ("config_single_add.conf");
 
   status = ml_service_new (config, &handle);
   ASSERT_EQ (status, ML_ERROR_NONE);
@@ -428,7 +411,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, scenarioConfig1ImgClf)
   ml_service_h handle;
   int status;
 
-  g_autofree gchar *config = _get_config_path ("config_single_imgclf.conf");
+  g_autofree gchar *config = get_config_path ("config_single_imgclf.conf");
 
   status = ml_service_new (config, &handle);
   ASSERT_EQ (status, ML_ERROR_NONE);
@@ -448,7 +431,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, scenarioConfig2ImgClf)
   int status;
 
   /* The configuration file includes model path only. */
-  g_autofree gchar *config = _get_config_path ("config_single_imgclf_file.conf");
+  g_autofree gchar *config = get_config_path ("config_single_imgclf_file.conf");
 
   status = ml_service_new (config, &handle);
   ASSERT_EQ (status, ML_ERROR_NONE);
@@ -468,7 +451,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, scenarioConfig3ImgClf)
   int status;
 
   /* The configuration file includes model path only. */
-  g_autofree gchar *config = _get_config_path ("config_pipeline_imgclf.conf");
+  g_autofree gchar *config = get_config_path ("config_pipeline_imgclf.conf");
 
   status = ml_service_new (config, &handle);
   ASSERT_EQ (status, ML_ERROR_NONE);
@@ -489,7 +472,7 @@ TEST_F_REQUIRE_TFLITE (MLServiceExtensionTest, scenarioConfig4ImgClf)
 
   const char test_name[] = "test-single-imgclf";
   unsigned int version = 0U;
-  g_autofree gchar *config = _get_config_path ("config_single_imgclf_key.conf");
+  g_autofree gchar *config = get_config_path ("config_single_imgclf_key.conf");
   g_autofree gchar *model = _get_model_path ("mobilenet_v1_1.0_224_quant.tflite");
 
   /* Register test model. */
@@ -517,7 +500,7 @@ TEST_F_REQUIRE_TFLITE (MLServiceExtensionTest, scenarioConfig5ImgClf)
   int status;
 
   const char test_name[] = "test-pipeline-imgclf";
-  g_autofree gchar *config = _get_config_path ("config_pipeline_imgclf_key.conf");
+  g_autofree gchar *config = get_config_path ("config_pipeline_imgclf_key.conf");
   g_autofree gchar *model = _get_model_path ("mobilenet_v1_1.0_224_quant.tflite");
   g_autofree gchar *pipeline = g_strdup_printf (
       "appsrc name=input_img "
@@ -572,7 +555,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, createConfigInvalidParam03_n)
 {
   int status;
 
-  g_autofree gchar *config = _get_config_path ("config_single_add.conf");
+  g_autofree gchar *config = get_config_path ("config_single_add.conf");
 
   status = ml_service_new (config, NULL);
   EXPECT_NE (status, ML_ERROR_NONE);
@@ -587,7 +570,7 @@ TEST (MLServiceExtension, createConfigInvalidParam04_n)
   int status;
 
   /* The configuration file does not exist. */
-  g_autofree gchar *config = _get_config_path ("invalid_path.conf");
+  g_autofree gchar *config = get_config_path ("invalid_path.conf");
 
   status = ml_service_new (config, &handle);
   EXPECT_NE (status, ML_ERROR_NONE);
@@ -602,7 +585,7 @@ TEST (MLServiceExtension, createConfigInvalidParam05_n)
   int status;
 
   /* The configuration file has invalid tensor information. */
-  g_autofree gchar *config = _get_config_path ("config_single_imgclf_invalid_info.conf");
+  g_autofree gchar *config = get_config_path ("config_single_imgclf_invalid_info.conf");
 
   status = ml_service_new (config, &handle);
   EXPECT_NE (status, ML_ERROR_NONE);
@@ -617,7 +600,7 @@ TEST (MLServiceExtension, createConfigInvalidParam06_n)
   int status;
 
   /* The configuration file has invalid type. */
-  g_autofree gchar *config = _get_config_path ("config_unknown_type.conf");
+  g_autofree gchar *config = get_config_path ("config_unknown_type.conf");
 
   status = ml_service_new (config, &handle);
   EXPECT_NE (status, ML_ERROR_NONE);
@@ -632,7 +615,7 @@ TEST (MLServiceExtension, createConfigInvalidParam07_n)
   int status;
 
   /* The configuration file does not have model file. */
-  g_autofree gchar *config = _get_config_path ("config_single_no_model.conf");
+  g_autofree gchar *config = get_config_path ("config_single_no_model.conf");
 
   status = ml_service_new (config, &handle);
   EXPECT_NE (status, ML_ERROR_NONE);
@@ -647,7 +630,7 @@ TEST (MLServiceExtension, createConfigInvalidParam08_n)
   int status;
 
   /* The configuration file has invalid information. */
-  g_autofree gchar *config = _get_config_path ("config_pipeline_invalid_info.conf");
+  g_autofree gchar *config = get_config_path ("config_pipeline_invalid_info.conf");
 
   status = ml_service_new (config, &handle);
   EXPECT_NE (status, ML_ERROR_NONE);
@@ -662,7 +645,7 @@ TEST (MLServiceExtension, createConfigInvalidParam09_n)
   int status;
 
   /* The configuration file does not have node information. */
-  g_autofree gchar *config = _get_config_path ("config_pipeline_no_info.conf");
+  g_autofree gchar *config = get_config_path ("config_pipeline_no_info.conf");
 
   status = ml_service_new (config, &handle);
   EXPECT_NE (status, ML_ERROR_NONE);
@@ -677,7 +660,7 @@ TEST (MLServiceExtension, createConfigInvalidParam10_n)
   int status;
 
   /* The configuration file has duplicated node name. */
-  g_autofree gchar *config = _get_config_path ("config_pipeline_duplicated_name.conf");
+  g_autofree gchar *config = get_config_path ("config_pipeline_duplicated_name.conf");
 
   status = ml_service_new (config, &handle);
   EXPECT_NE (status, ML_ERROR_NONE);
@@ -692,7 +675,7 @@ TEST (MLServiceExtension, createConfigInvalidParam11_n)
   int status;
 
   /* The configuration file does not have node name. */
-  g_autofree gchar *config = _get_config_path ("config_pipeline_no_name.conf");
+  g_autofree gchar *config = get_config_path ("config_pipeline_no_name.conf");
 
   status = ml_service_new (config, &handle);
   EXPECT_NE (status, ML_ERROR_NONE);
@@ -717,7 +700,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, destroyInvalidParam02_n)
   ml_service_h handle;
   int status;
 
-  g_autofree gchar *config = _get_config_path ("config_single_add.conf");
+  g_autofree gchar *config = get_config_path ("config_single_add.conf");
 
   status = ml_service_new (config, &handle);
   ASSERT_EQ (status, ML_ERROR_NONE);
@@ -751,7 +734,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, setCallbackInvalidParam02_n)
   ml_service_h handle;
   int status;
 
-  g_autofree gchar *config = _get_config_path ("config_single_add.conf");
+  g_autofree gchar *config = get_config_path ("config_single_add.conf");
 
   status = ml_service_new (config, &handle);
   ASSERT_EQ (status, ML_ERROR_NONE);
@@ -788,7 +771,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, startInvalidParam02_n)
   ml_service_h handle;
   int status;
 
-  g_autofree gchar *config = _get_config_path ("config_pipeline_imgclf.conf");
+  g_autofree gchar *config = get_config_path ("config_pipeline_imgclf.conf");
 
   status = ml_service_new (config, &handle);
   ASSERT_EQ (status, ML_ERROR_NONE);
@@ -825,7 +808,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, stopInvalidParam02_n)
   ml_service_h handle;
   int status;
 
-  g_autofree gchar *config = _get_config_path ("config_pipeline_imgclf.conf");
+  g_autofree gchar *config = get_config_path ("config_pipeline_imgclf.conf");
 
   status = ml_service_new (config, &handle);
   ASSERT_EQ (status, ML_ERROR_NONE);
@@ -863,7 +846,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, getInputInfoInvalidParam02_n)
   ml_service_h handle;
   int status;
 
-  g_autofree gchar *config = _get_config_path ("config_single_add.conf");
+  g_autofree gchar *config = get_config_path ("config_single_add.conf");
 
   status = ml_service_new (config, &handle);
   ASSERT_EQ (status, ML_ERROR_NONE);
@@ -884,7 +867,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, getInputInfoInvalidParam03_n)
   ml_tensors_info_h info;
   int status;
 
-  g_autofree gchar *config = _get_config_path ("config_single_add.conf");
+  g_autofree gchar *config = get_config_path ("config_single_add.conf");
 
   status = ml_service_new (config, &handle);
   ASSERT_EQ (status, ML_ERROR_NONE);
@@ -929,7 +912,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, getInputInfoInvalidParam04_n)
   ml_tensors_info_h info;
   int status;
 
-  g_autofree gchar *config = _get_config_path ("config_pipeline_imgclf.conf");
+  g_autofree gchar *config = get_config_path ("config_pipeline_imgclf.conf");
 
   status = ml_service_new (config, &handle);
   ASSERT_EQ (status, ML_ERROR_NONE);
@@ -967,7 +950,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, getOutputInfoInvalidParam02_n)
   ml_service_h handle;
   int status;
 
-  g_autofree gchar *config = _get_config_path ("config_single_add.conf");
+  g_autofree gchar *config = get_config_path ("config_single_add.conf");
 
   status = ml_service_new (config, &handle);
   ASSERT_EQ (status, ML_ERROR_NONE);
@@ -988,7 +971,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, getOutputInfoInvalidParam03_n)
   ml_tensors_info_h info;
   int status;
 
-  g_autofree gchar *config = _get_config_path ("config_single_add.conf");
+  g_autofree gchar *config = get_config_path ("config_single_add.conf");
 
   status = ml_service_new (config, &handle);
   ASSERT_EQ (status, ML_ERROR_NONE);
@@ -1033,7 +1016,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, getOutputInfoInvalidParam04_n)
   ml_tensors_info_h info;
   int status;
 
-  g_autofree gchar *config = _get_config_path ("config_pipeline_imgclf.conf");
+  g_autofree gchar *config = get_config_path ("config_pipeline_imgclf.conf");
 
   status = ml_service_new (config, &handle);
   ASSERT_EQ (status, ML_ERROR_NONE);
@@ -1071,7 +1054,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, setInfoInvalidParam02_n)
   char *value;
   int status;
 
-  g_autofree gchar *config = _get_config_path ("config_single_imgclf.conf");
+  g_autofree gchar *config = get_config_path ("config_single_imgclf.conf");
 
   status = ml_service_new (config, &handle);
   ASSERT_EQ (status, ML_ERROR_NONE);
@@ -1101,7 +1084,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, setInfoInvalidParam03_n)
   ml_service_h handle;
   int status;
 
-  g_autofree gchar *config = _get_config_path ("config_single_imgclf.conf");
+  g_autofree gchar *config = get_config_path ("config_single_imgclf.conf");
 
   status = ml_service_new (config, &handle);
   ASSERT_EQ (status, ML_ERROR_NONE);
@@ -1140,7 +1123,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, getInfoInvalidParam02_n)
   char *value;
   int status;
 
-  g_autofree gchar *config = _get_config_path ("config_single_imgclf.conf");
+  g_autofree gchar *config = get_config_path ("config_single_imgclf.conf");
 
   status = ml_service_new (config, &handle);
   ASSERT_EQ (status, ML_ERROR_NONE);
@@ -1169,7 +1152,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, getInfoInvalidParam03_n)
   char *value;
   int status;
 
-  g_autofree gchar *config = _get_config_path ("config_single_imgclf.conf");
+  g_autofree gchar *config = get_config_path ("config_single_imgclf.conf");
 
   status = ml_service_new (config, &handle);
   ASSERT_EQ (status, ML_ERROR_NONE);
@@ -1193,7 +1176,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, getInfoInvalidParam04_n)
   ml_service_h handle;
   int status;
 
-  g_autofree gchar *config = _get_config_path ("config_single_imgclf.conf");
+  g_autofree gchar *config = get_config_path ("config_single_imgclf.conf");
 
   status = ml_service_new (config, &handle);
   ASSERT_EQ (status, ML_ERROR_NONE);
@@ -1239,7 +1222,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, requestInvalidParam02_n)
   ml_tensors_data_h input;
   int status;
 
-  g_autofree gchar *config = _get_config_path ("config_single_add.conf");
+  g_autofree gchar *config = get_config_path ("config_single_add.conf");
 
   status = ml_service_new (config, &handle);
   ASSERT_EQ (status, ML_ERROR_NONE);
@@ -1270,7 +1253,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, requestInvalidParam03_n)
   ml_service_h handle;
   int status;
 
-  g_autofree gchar *config = _get_config_path ("config_single_add.conf");
+  g_autofree gchar *config = get_config_path ("config_single_add.conf");
 
   status = ml_service_new (config, &handle);
   ASSERT_EQ (status, ML_ERROR_NONE);
@@ -1292,7 +1275,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, requestInvalidParam04_n)
   ml_tensors_data_h input;
   int status;
 
-  g_autofree gchar *config = _get_config_path ("config_pipeline_imgclf.conf");
+  g_autofree gchar *config = get_config_path ("config_pipeline_imgclf.conf");
 
   status = ml_service_new (config, &handle);
   ASSERT_EQ (status, ML_ERROR_NONE);
@@ -1329,7 +1312,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, requestMaxBuffer_n)
   char *value;
   int i, status;
 
-  g_autofree gchar *config = _get_config_path ("config_single_imgclf_max_input.conf");
+  g_autofree gchar *config = get_config_path ("config_single_imgclf_max_input.conf");
 
   status = ml_service_new (config, &handle);
   ASSERT_EQ (status, ML_ERROR_NONE);

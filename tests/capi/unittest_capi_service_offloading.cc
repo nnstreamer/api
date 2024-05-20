@@ -31,24 +31,6 @@ typedef struct {
 } _ml_service_test_data_s;
 
 /**
- * @brief Internal function to get the config file path.
- */
-static gchar *
-_get_config_path (const gchar *config_name)
-{
-  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
-
-  /* Supposed to run test in build directory. */
-  if (root_path == NULL)
-    root_path = "..";
-
-  gchar *config_file = g_build_filename (
-      root_path, "tests", "test_models", "config", config_name, NULL);
-
-  return config_file;
-}
-
-/**
  * @brief Test base class for Database of ML Service API.
  */
 class MLOffloadingService : public ::testing::Test
@@ -89,15 +71,21 @@ class MLOffloadingService : public ::testing::Test
    */
   void SetUp () override
   {
+    guint avail_port = get_available_port ();
     g_autofree gchar *receiver_config
-        = _get_config_path ("service_offloading_receiver.conf");
+        = prepare_test_config ("service_offloading_receiver.conf", avail_port);
+    g_autofree gchar *sender_config
+        = prepare_test_config ("service_offloading_sender.conf", avail_port);
+
     int status = ml_service_new (receiver_config, &server_h);
     ASSERT_EQ (status, ML_ERROR_NONE);
     test_data.handle = server_h;
 
-    g_autofree gchar *sender_config = _get_config_path ("service_offloading_sender.conf");
     status = ml_service_new (sender_config, &client_h);
     ASSERT_EQ (status, ML_ERROR_NONE);
+
+    ASSERT_EQ (g_remove (receiver_config), 0);
+    ASSERT_EQ (g_remove (sender_config), 0);
   }
 
   /**
