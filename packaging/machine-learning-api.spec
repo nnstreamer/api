@@ -51,6 +51,13 @@
 %define		nntrainer_support 0
 %endif
 
+# Disable a few features for movable device
+%if 0%{?mv_prj}
+%define		nntrainer_support 0
+%define		nnfw_support 0
+%define		onnxruntime_support 0
+%endif
+
 # If it is tizen, we can export Tizen API packages.
 %bcond_with tizen
 
