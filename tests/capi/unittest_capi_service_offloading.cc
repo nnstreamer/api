@@ -269,7 +269,7 @@ TEST_F (MLOffloadingService, createInvalidParam_n)
 /**
  * @brief Test ml_service_offloading_request with invalid param.
  */
-TEST_F (MLOffloadingService, registerInvalidParam_n)
+TEST_F (MLOffloadingService, registerInvalidParam01_n)
 {
   int status;
   ml_tensors_data_h input = NULL;
@@ -290,6 +290,29 @@ TEST_F (MLOffloadingService, registerInvalidParam_n)
 
   status = ml_tensors_data_destroy (input);
   EXPECT_EQ (ML_ERROR_NONE, status);
+}
+
+/**
+ * @brief Test ml_service_offloading_request_raw with invalid param.
+ */
+TEST_F (MLOffloadingService, registerInvalidParam02_n)
+{
+  int status;
+
+  g_autofree gchar *data = g_strdup ("fakesrc ! fakesink");
+  gsize len = strlen (data);
+
+  status = ml_service_offloading_request_raw (NULL, "req_raw", data, len);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_service_offloading_request_raw (client_h, NULL, data, len);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_service_offloading_request_raw (client_h, "req_raw", NULL, len);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_service_offloading_request_raw (client_h, "req_raw", data, 0);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 }
 
 /**

@@ -91,13 +91,26 @@ int ml_service_offloading_stop (ml_service_h handle);
  * @brief Request service to ml-service offloading.
  * @param[in] handle The handle of ml-service.
  * @param[in] key The key of machine learning service.
- * @param[in] input The Data to be registered on the offloading server.
+ * @param[in] input The data to be registered on the offloading server.
  * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
  */
 int ml_service_offloading_request (ml_service_h handle, const char *key, const ml_tensors_data_h input);
+
+/**
+ * @brief Request service to ml-service offloading.
+ * @param[in] handle The handle of ml-service.
+ * @param[in] key The key of machine learning service.
+ * @param[in] data The raw data to be registered on the offloading server.
+ * @param[in] len The size of raw data.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
+ */
+int ml_service_offloading_request_raw (ml_service_h handle, const char *key, void *data, size_t len);
 
 /**
  * @brief Set a required value in ml-service offloading handle.
@@ -144,6 +157,7 @@ int ml_service_offloading_release_internal (ml_service_s *mls);
 #define ml_service_offloading_start(...) ML_ERROR_NOT_SUPPORTED
 #define ml_service_offloading_stop(...) ML_ERROR_NOT_SUPPORTED
 #define ml_service_offloading_request(...) ML_ERROR_NOT_SUPPORTED
+#define ml_service_offloading_request_raw(...) ML_ERROR_NOT_SUPPORTED
 #define ml_service_offloading_set_information(...) ML_ERROR_NOT_SUPPORTED
 #define ml_service_offloading_release_internal(...) ML_ERROR_NOT_SUPPORTED
 #define ml_service_offloading_set_mode(...) ML_ERROR_NOT_SUPPORTED
