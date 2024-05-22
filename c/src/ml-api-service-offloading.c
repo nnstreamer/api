@@ -1055,7 +1055,8 @@ ml_service_offloading_stop (ml_service_h handle)
 }
 
 /**
- * @brief Register new information, such as neural network models or pipeline descriptions, on a offloading server.
+ * @brief Internal function to request service to ml-service offloading.
+ * Register new information, such as neural network models or pipeline descriptions, on a offloading server.
  */
 int
 ml_service_offloading_request (ml_service_h handle, const char *key,
@@ -1183,4 +1184,22 @@ done:
   if (data_h)
     nns_edge_data_destroy (data_h);
   return ret;
+}
+
+/**
+ * @brief Internal function to request service to ml-service offloading.
+ * Register new information, such as neural network models or pipeline descriptions, on a offloading server.
+ */
+int
+ml_service_offloading_request_raw (ml_service_h handle, const char *key,
+    void *data, size_t len)
+{
+  ml_tensors_data_s input;
+
+  /* Set internal data structure to send edge data. */
+  input.num_tensors = 1;
+  input.tensors[0].data = data;
+  input.tensors[0].size = len;
+
+  return ml_service_offloading_request (handle, key, &input);
 }

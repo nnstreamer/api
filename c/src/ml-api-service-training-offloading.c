@@ -504,62 +504,19 @@ ml_service_training_offloading_create (ml_service_s * mls,
  */
 static int
 _training_offloading_request (ml_service_s * mls,
-    const gchar * service_name, const gchar * data, gsize len)
+    const gchar * service_name, void *data, size_t len)
 {
   int ret = ML_ERROR_NONE;
-  ml_tensors_data_h input = NULL;
-  ml_tensors_info_h in_info = NULL;
-  ml_tensor_dimension in_dim = { 0 };
 
   g_return_val_if_fail (mls != NULL, ML_ERROR_INVALID_PARAMETER);
   g_return_val_if_fail (service_name != NULL, ML_ERROR_INVALID_PARAMETER);
   g_return_val_if_fail (data != NULL, ML_ERROR_INVALID_PARAMETER);
   g_return_val_if_fail (len > 0, ML_ERROR_INVALID_PARAMETER);
 
-  ret = ml_tensors_info_create (&in_info);
-  if (ret != ML_ERROR_NONE) {
-    _ml_error_report_return (ret, "Failed to create tensors info");
-  }
-
-  ret = ml_tensors_info_set_count (in_info, 1);
-  if (ret != ML_ERROR_NONE) {
-    _ml_error_report ("Failed to set count to tensors info");
-    goto done;
-  }
-
-  ret = ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_UINT8);
-  if (ret != ML_ERROR_NONE) {
-    _ml_error_report ("Failed to set tensor type to tensors info");
-    goto done;
-  }
-
-  in_dim[0] = len;
-  ret = ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
-  if (ret != ML_ERROR_NONE) {
-    _ml_error_report ("Failed to set tensor dimension to tensors info");
-    goto done;
-  }
-
-  ret = ml_tensors_data_create (in_info, &input);
-  if (ret != ML_ERROR_NONE) {
-    _ml_error_report ("Failed to create tensors data");
-    goto done;
-  }
-
-  ret = ml_tensors_data_set_tensor_data (input, 0, data, len);
-  if (ret != ML_ERROR_NONE) {
-    _ml_error_report ("Failed to set tensor data to tensors data");
-    goto done;
-  }
-
-  ret = ml_service_offloading_request (mls, service_name, input);
+  ret = ml_service_offloading_request_raw (mls, service_name, data, len);
   if (ret != ML_ERROR_NONE) {
     _ml_error_report ("Failed to request service '%s'.)", service_name);
   }
-
-done:
-  ml_tensors_info_destroy (in_info);
-  ml_tensors_data_destroy (input);
 
   return ret;
 }
@@ -1018,7 +975,7 @@ _training_offloading_send_trained_model (ml_service_s * mls)
   }
   _ml_logd ("Send trained model");
   for (iter = list; iter != NULL; iter = g_list_next (iter)) {
-    _training_offloading_request (mls, (gchar *) iter->data, contents, len);
+    _training_offloading_request (mls, iter->data, contents, len);
   }
 
   g_list_free (list);
