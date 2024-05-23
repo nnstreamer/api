@@ -10,7 +10,7 @@
 # Below features are used for unittest.
 # Do not add neural network dependency in API source.
 %define		tensorflow_support 0
-%define		tensorflow_lite_support	1
+%define		tensorflow_lite_support	0
 %define		tensorflow2_lite_support 1
 %define		tensorflow2_gpu_delegate_support 1
 %define		nnfw_support 1
