@@ -42,8 +42,8 @@ typedef void *ml_single_h;
  * @since_tizen 5.5
  * @remarks %http://tizen.org/privilege/mediastorage is needed if @a model is relevant to media storage.
  * @remarks %http://tizen.org/privilege/externalstorage is needed if @a model is relevant to external storage.
- * @param[out] single This is the model handle opened. Users are required to close
- *                   the given instance with ml_single_close().
+ * @remarks The @a single should be released using ml_single_close().
+ * @param[out] single This is the model handle opened.
  * @param[in] model This is the path to the neural network model file.
  * @param[in] input_info This is required if the given model has flexible input
  *                      dimension, where the input dimension MUST be given
@@ -62,6 +62,12 @@ typedef void *ml_single_h;
  * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
  * @retval #ML_ERROR_STREAMS_PIPE Failed to start the pipeline.
  * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
+ * @code
+ * ml_single_h single = NULL;
+ * ml_single_open (&single, test_model, NULL, NULL, ML_NNFW_TYPE_ANY, ML_NNFW_HW_ANY);
+ * ... do something ....
+ * ml_single_close (single);
+ * @endcode
  */
 int ml_single_open (ml_single_h *single, const char *model, const ml_tensors_info_h input_info, const ml_tensors_info_h output_info, ml_nnfw_type_e nnfw, ml_nnfw_hw_e hw);
 
@@ -72,8 +78,8 @@ int ml_single_open (ml_single_h *single, const char *model, const ml_tensors_inf
  * @since_tizen 6.5
  * @remarks %http://tizen.org/privilege/mediastorage is needed if @a model is relevant to media storage.
  * @remarks %http://tizen.org/privilege/externalstorage is needed if @a model is relevant to external storage.
- * @param[out] single This is the model handle opened. Users are required to close
- *                   the given instance with ml_single_close().
+ * @remarks The @a single should be released using ml_single_close().
+ * @param[out] single This is the model handle opened.
  * @param[in] model This is the path to the neural network model file.
  * @param[in] input_info This is required if the given model has flexible input
  *                      dimension, where the input dimension MUST be given
@@ -96,6 +102,12 @@ int ml_single_open (ml_single_h *single, const char *model, const ml_tensors_inf
  * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
  * @retval #ML_ERROR_STREAMS_PIPE Failed to start the pipeline.
  * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
+ * @code
+ * ml_single_h single = NULL;
+ * ml_single_open_full (&single, test_model, NULL, NULL, ML_NNFW_TYPE_ANY, ML_NNFW_HW_ANY, "custom_option");
+ * ... do something ....
+ * ml_single_close (single);
+ * @endcode
  */
 int ml_single_open_full (ml_single_h *single, const char *model, const ml_tensors_info_h input_info, const ml_tensors_info_h output_info, ml_nnfw_type_e nnfw, ml_nnfw_hw_e hw, const char *custom_option);
 
@@ -119,9 +131,10 @@ int ml_single_close (ml_single_h single);
  *          input data frames of an instance of a model should share the same dimension.
  *          Note that this will wait for the result until the invoke process is done. If an application wants to change the time to wait for an output, set the timeout using ml_single_set_timeout().
  * @since_tizen 5.5
+ * @remarks The @a output should be released using ml_tensors_data_destroy().
  * @param[in] single The model handle to be inferred.
  * @param[in] input The input data to be inferred.
- * @param[out] output The allocated output buffer. The caller is responsible for freeing the output buffer with ml_tensors_data_destroy().
+ * @param[out] output The allocated output buffer.
  * @return @c 0 on success. Otherwise a negative error value.
  * @note If the data for the output buffer is allocated by the neural network framework (ML_NNFW_TYPE_CUSTOM_FILTER supports this),
  *       then this buffer will be freed when closing the @a single automatically by the neural network framework, and will not available for use later.
@@ -132,6 +145,12 @@ int ml_single_close (ml_single_h single);
  * @retval #ML_ERROR_STREAMS_PIPE Failed to push a buffer into source element.
  * @retval #ML_ERROR_TIMED_OUT Failed to get the result from sink element.
  * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
+ * @code
+ * ml_tensors_data_h output = NULL;
+ * ml_single_invoke (single,input, &output);
+ * ... do something ....
+ * ml_tensors_data_destroy (output);
+ * @endcode
  */
 int ml_single_invoke (ml_single_h single, const ml_tensors_data_h input, ml_tensors_data_h *output);
 
@@ -159,11 +178,13 @@ int ml_single_invoke_fast (ml_single_h single, const ml_tensors_data_h input, ml
  *          A model/framework may not support changing the information.
  *          Note that this will wait for the result until the invoke process is done. If an application wants to change the time to wait for an output, set the timeout using ml_single_set_timeout().
  * @since_tizen 6.0
+ * @remarks The @a output should be released using ml_tensors_data_destroy().
+ * @remarks The @a out_info should be released using ml_tensors_info_destroy().
  * @param[in] single The model handle to be inferred.
  * @param[in] input The input data to be inferred.
  * @param[in] in_info The handle of input tensors information.
- * @param[out] output The allocated output buffer. The caller is responsible for freeing the output buffer with ml_tensors_data_destroy().
- * @param[out] out_info The handle of output tensors information. The caller is responsible for freeing the information with ml_tensors_info_destroy().
+ * @param[out] output The allocated output buffer.
+ * @param[out] out_info The handle of output tensors information.
  * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
@@ -171,6 +192,14 @@ int ml_single_invoke_fast (ml_single_h single, const ml_tensors_data_h input, ml
  * @retval #ML_ERROR_STREAMS_PIPE Failed to push a buffer into source element.
  * @retval #ML_ERROR_TIMED_OUT Failed to get the result from sink element.
  * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
+ * @code
+ * ml_tensors_data_h output = NULL;
+ * ml_tensors_info_h out_info = NULL;
+ * ml_single_invoke_dynamic (single, input, in_info, &output, &out_info);
+ * ... do something ....
+ * ml_tensors_data_destroy (output);
+ * ml_tensors_info_destroy (out_info);
+ * @endcode
  */
 int ml_single_invoke_dynamic (ml_single_h single, const ml_tensors_data_h input, const ml_tensors_info_h in_info, ml_tensors_data_h *output, ml_tensors_info_h *out_info);
 
@@ -183,12 +212,19 @@ int ml_single_invoke_dynamic (ml_single_h single, const ml_tensors_data_h input,
  * @details Note that a model may not have such information if its input type is flexible.
  *          The names of tensors are sometimes unavailable (optional), while its dimensions and types are always available.
  * @since_tizen 5.5
+ * @remarks The @a info should be released using ml_tensors_info_destroy().
  * @param[in] single The model handle.
- * @param[out] info The handle of input tensors information. The caller is responsible for freeing the information with ml_tensors_info_destroy().
+ * @param[out] info The handle of input tensors information.
  * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
+ * @code
+ * ml_tensors_info_h info = NULL;
+ * ml_single_get_input_info (single, &info);
+ * ... do something ....
+ * ml_tensors_info_destroy (info);
+ * @endcode
  */
 int ml_single_get_input_info (ml_single_h single, ml_tensors_info_h *info);
 
@@ -197,12 +233,19 @@ int ml_single_get_input_info (ml_single_h single, ml_tensors_info_h *info);
  * @details Note that a model may not have such information if its output type is flexible and output type is not determined statically.
  *          The names of tensors are sometimes unavailable (optional), while its dimensions and types are always available.
  * @since_tizen 5.5
+ * @remarks The @a info should be released using ml_tensors_info_destroy().
  * @param[in] single The model handle.
- * @param[out] info The handle of output tensors information. The caller is responsible for freeing the information with ml_tensors_info_destroy().
+ * @param[out] info The handle of output tensors information.
  * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
+ * @code
+ * ml_tensors_info_h info = NULL;
+ * ml_single_get_output_info (single, &info);
+ * ... do something ....
+ * ml_tensors_info_destroy (info);
+ * @endcode
  */
 int ml_single_get_output_info (ml_single_h single, ml_tensors_info_h *info);
 
@@ -249,13 +292,20 @@ int ml_single_set_property (ml_single_h single, const char *name, const char *va
 /**
  * @brief Gets the property value for the given model.
  * @since_tizen 6.0
+ * @remarks The @a value should be released using g_free().
  * @param[in] single The model handle.
  * @param[in] name The property name.
- * @param[out] value The property value. The caller is responsible for freeing the value using g_free().
+ * @param[out] value The property value.
  * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
+ * @code
+ * char *value;
+ * ml_single_get_property (single, "prop_name", &value);
+ * ... do something ....
+ * g_free (value);
+ * @endcode
  */
 int ml_single_get_property (ml_single_h single, const char *name, char **value);
 
@@ -264,8 +314,8 @@ int ml_single_get_property (ml_single_h single, const char *name, char **value);
  * @since_tizen 7.0
  * @remarks %http://tizen.org/privilege/mediastorage is needed if @a option is relevant to media storage.
  * @remarks %http://tizen.org/privilege/externalstorage is needed if @a option is relevant to external storage.
- * @param[out] single This is the model handle opened. Users are required to close
- *                   the given instance with ml_single_close().
+ * @remarks The @a single should be released using ml_single_close().
+ * @param[out] single This is the model handle opened.
  * @param[in] option The handle of ml-option.
  * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
@@ -274,6 +324,12 @@ int ml_single_get_property (ml_single_h single, const char *name, char **value);
  * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
  * @retval #ML_ERROR_STREAMS_PIPE Failed to start the pipeline.
  * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
+ * @code
+ * ml_single_h single = NULL;
+ * ml_single_open_with_option (single, option);
+ * ... do something ....
+ * ml_single_close (single);
+ * @endcode
  */
 int ml_single_open_with_option (ml_single_h *single, const ml_option_h option);
 /**

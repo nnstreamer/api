@@ -198,6 +198,12 @@ typedef int (*ml_pipeline_if_custom_cb) (const ml_tensors_data_h data, const ml_
  *
  * @pre The pipeline state should be #ML_PIPELINE_STATE_UNKNOWN or #ML_PIPELINE_STATE_NULL.
  * @post The pipeline state will be #ML_PIPELINE_STATE_PAUSED in the same thread.
+ * @code
+ * ml_pipeline_h pipe = NULL;
+ * ml_pipeline_construct (pipe_desc, NULL, NULL, &pipe);
+ * ... do something ....
+ * ml_pipeline_destroy (pipe);
+ * @endcode
  */
 int ml_pipeline_construct (const char *pipeline_description, ml_pipeline_state_cb cb, void *user_data, ml_pipeline_h *pipe);
 
@@ -304,6 +310,17 @@ int ml_pipeline_flush (ml_pipeline_h pipe, bool start);
  * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
  *
  * @pre The pipeline state should be #ML_PIPELINE_STATE_PAUSED.
+ * @code
+ * static void _sink_callback (const ml_tensors_data_h data, const ml_tensors_info_h info, void *user_data)
+ * {
+ *   ... do something ...
+ * }
+ *
+ * ml_pipeline_sink_h sink_handle = NULL;
+ * ml_pipeline_sink_register (pipe, "sinkx", _sink_callback, NULL, &sink_handle);
+ * ... do something ....
+ * ml_pipeline_sink_unregister (sink_handle);
+ * @endcode
  */
 int ml_pipeline_sink_register (ml_pipeline_h pipe, const char *sink_name, ml_pipeline_sink_cb cb, void *user_data, ml_pipeline_sink_h *sink_handle);
 
@@ -334,6 +351,12 @@ int ml_pipeline_sink_unregister (ml_pipeline_sink_h sink_handle);
  * @retval #ML_ERROR_STREAMS_PIPE Failed to get src element.
  * @retval #ML_ERROR_TRY_AGAIN The pipeline is not ready yet.
  * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
+ * @code
+ * ml_pipeline_src_h src_handle = NULL;
+ * ml_pipeline_src_get_handle (pipe, "srcx", &src_handle);
+ * ... do something ....
+ * ml_pipeline_src_release_handle (src_handle);
+ * @endcode
  */
 int ml_pipeline_src_get_handle (ml_pipeline_h pipe, const char *src_name, ml_pipeline_src_h *src_handle);
 
@@ -403,6 +426,12 @@ int ml_pipeline_src_set_event_cb (ml_pipeline_src_h src_handle, ml_pipeline_src_
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
  * @retval #ML_ERROR_STREAMS_PIPE The pipeline has inconsistent pad caps. (Pipeline is not negotiated yet.)
  * @retval #ML_ERROR_TRY_AGAIN The pipeline is not ready yet.
+ * @code
+ * ml_tensors_info_h info = NULL;
+ * ml_pipeline_src_get_tensors_info (src_handle &info);
+ * ... do something ....
+ * ml_tensors_info_destroy (info);
+ * @endcode
  */
 int ml_pipeline_src_get_tensors_info (ml_pipeline_src_h src_handle, ml_tensors_info_h *info);
 
@@ -425,6 +454,12 @@ int ml_pipeline_src_get_tensors_info (ml_pipeline_src_h src_handle, ml_tensors_i
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
  * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
+ * @code
+ * ml_pipeline_switch_h switch_handle = NULL;
+ * ml_pipeline_switch_get_handle (pipe, "switchx", &type, &switch_handle);
+ * ... do something ....
+ * ml_pipeline_switch_release_handle (switch_handle);
+ * @endcode
  */
 int ml_pipeline_switch_get_handle (ml_pipeline_h pipe, const char *switch_name, ml_pipeline_switch_e *switch_type, ml_pipeline_switch_h *switch_handle);
 
@@ -759,6 +794,7 @@ int ml_pipeline_element_get_property_bool (ml_pipeline_element_h elem_h, const c
 /**
  * @brief Gets the string value of element's property in NNStreamer pipelines.
  * @since_tizen 6.0
+ * @remarks The @a value should be released using g_free().
  * @param[in] elem_h The target element handle.
  * @param[in] property_name The name of the property.
  * @param[out] value The string value of given property. The caller is responsible for freeing the value using g_free().
@@ -766,6 +802,12 @@ int ml_pipeline_element_get_property_bool (ml_pipeline_element_h elem_h, const c
  * @retval #ML_ERROR_NONE Successful.
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given property name does not exist or the third parameter is NULL.
+ * @code
+ * char *value = NULL;
+ * ml_pipeline_element_get_property_string (elem_h, "prop_name", &value);
+ * ... do something ....
+ * g_free (value);
+ * @endcode
  */
 int ml_pipeline_element_get_property_string (ml_pipeline_element_h elem_h, const char *property_name, char **value);
 
