@@ -596,8 +596,10 @@ TEST_F (MLOffloadingService, launchPipeline)
   status = waitPipelineStateChange (handle, ML_PIPELINE_STATE_PLAYING, 200);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  /* Give enough time for frames to flow. */
-  g_usleep (1000000);
+  guint tried = 0;
+  do {
+    g_usleep (500000U);
+  } while (sink_received < 1 && tried++ < 10);
 
   EXPECT_GT (received, 0);
   EXPECT_GT (sink_received, 0);
