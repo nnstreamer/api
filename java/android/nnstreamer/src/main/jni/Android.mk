@@ -42,7 +42,7 @@ ENABLE_TENSOR_QUERY := true
 
 # tensorflow-lite (nnstreamer tf-lite subplugin)
 ifdef TFLITE_ROOT_ANDROID
-ifneq ($(filter $(TARGET_ARCH_ABI), armeabi-v7a arm64-v8a),)
+ifneq ($(filter $(TARGET_ARCH_ABI), armeabi-v7a arm64-v8a x86_64),)
 TFLITE_ROOT        := $(TFLITE_ROOT_ANDROID)
 endif
 endif
