@@ -200,10 +200,18 @@ TEST_F (MLServiceTrainingOffloading, trainingOffloading_p)
       "sender_start_thread", (GThreadFunc) sender_start_thread, sender_h);
   receive_thread = g_thread_new (
       "receiver_start_thread", (GThreadFunc) receiver_start_thread, receiver_h);
+
+  /**
+   * The pipeline is designed to perform training and validation.
+   * When nntrainer finishes training, the model is created.
+   * Therefore, validation time is given for TC.
+   */
   int loop = 120;
   while (loop--) {
-    if (g_file_test (trained_model_path, G_FILE_TEST_EXISTS))
+    if (g_file_test (trained_model_path, G_FILE_TEST_EXISTS)) {
+      g_usleep (1000000);
       break;
+    }
     g_usleep (100000);
   }
 
