@@ -554,12 +554,14 @@ if [[ $enable_snpe == "yes" ]]; then
 
     mkdir -p nnstreamer/src/main/jni/snpe/lib/ext/arm64-v8a
     cp -r $SNPE_DIRECTORY/include nnstreamer/src/main/jni/snpe
-    cp $SNPE_DIRECTORY/lib/aarch64-android-clang6.0/libSNPE.so nnstreamer/src/main/jni/snpe/lib
 
     # Copy external so files for SNPE
-    cp $SNPE_DIRECTORY/lib/aarch64-android-clang6.0/lib*dsp*.so nnstreamer/src/main/jni/snpe/lib/ext/arm64-v8a
-    cp $SNPE_DIRECTORY/lib/aarch64-android-clang6.0/libhta.so nnstreamer/src/main/jni/snpe/lib/ext/arm64-v8a
-    cp $SNPE_DIRECTORY/lib/dsp/libsnpe*.so nnstreamer/src/main/jni/snpe/lib/ext/arm64-v8a
+    cp $SNPE_DIRECTORY/lib/aarch64-android*/*.so nnstreamer/src/main/jni/snpe/lib/ext/arm64-v8a
+    cp $SNPE_DIRECTORY/lib/dsp/*.so nnstreamer/src/main/jni/snpe/lib/ext/arm64-v8a
+    cp $SNPE_DIRECTORY/lib/hexagon-v*/unsigned/*.* nnstreamer/src/main/jni/snpe/lib/ext/arm64-v8a
+
+    rm nnstreamer/src/main/jni/snpe/lib/ext/arm64-v8a/libc++_shared.so
+    mv nnstreamer/src/main/jni/snpe/lib/ext/arm64-v8a/libSNPE.so nnstreamer/src/main/jni/snpe/lib
 fi
 
 # Update PyTorch option
