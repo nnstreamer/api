@@ -19,9 +19,6 @@ import static org.junit.Assert.*;
  */
 @RunWith(AndroidJUnit4.class)
 public class APITestSingleShot {
-    @Rule
-    public GrantPermissionRule mPermissionRule = APITestCommon.grantPermissions();
-
     @Before
     public void setUp() {
         APITestCommon.initNNStreamer();

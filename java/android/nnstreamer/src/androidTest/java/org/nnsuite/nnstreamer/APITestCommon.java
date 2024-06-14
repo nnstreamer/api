@@ -2,6 +2,7 @@ package org.nnsuite.nnstreamer;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.res.AssetManager;
 import android.os.Environment;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.rule.GrantPermissionRule;
@@ -12,6 +13,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
@@ -29,6 +34,63 @@ import static org.junit.Assert.*;
 @RunWith(AndroidJUnit4.class)
 public class APITestCommon {
     private static boolean mInitialized = false;
+    private static String mRootDirectory = null;
+
+    private static String getRootDirectory() {
+        return mInitialized ? mRootDirectory : null;
+    }
+
+    /**
+     * Copy to the directory in assets to the path dstName
+     */
+    private static boolean copyAssetFolder(Context context, String srcName, String dstName) {
+        try {
+            boolean result = true;
+            String fileList[] = context.getAssets().list(srcName);
+            if (fileList == null) return false;
+
+            if (fileList.length == 0) {
+                result = copyAssetFile(context, srcName, dstName);
+            } else {
+                File file = new File(dstName);
+                result = file.mkdirs();
+                for (String filename : fileList) {
+                    result &= copyAssetFolder(context, srcName + File.separator + filename, dstName + File.separator + filename);
+                }
+            }
+            return result;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Helper function of copyAssetFolder. Execute file copy process.
+     */
+    private static boolean copyAssetFile(Context context, String srcName, String dstName) {
+        try {
+            InputStream in = context.getAssets().open(srcName);
+            File outFile = new File(dstName);
+            if (outFile.exists()) {
+                /* already exists */
+                return true;
+            }
+
+            OutputStream out = new FileOutputStream(outFile);
+            byte[] buffer = new byte[1024];
+            int read;
+            while ((read = in.read(buffer)) != -1) {
+                out.write(buffer, 0, read);
+            }
+            in.close();
+            out.close();
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 
     /**
      * Initializes NNStreamer API library.
@@ -38,6 +100,10 @@ public class APITestCommon {
             try {
                 Context context = InstrumentationRegistry.getTargetContext();
                 mInitialized = NNStreamer.initialize(context);
+
+                /* Copy nnstreamer folder in assets to the app's files directory */
+                mRootDirectory = context.getFilesDir().getAbsolutePath();
+                copyAssetFolder(context, "nnstreamer", mRootDirectory + "/nnstreamer/");
             } catch (Exception e) {
                 fail();
             }
@@ -52,18 +118,11 @@ public class APITestCommon {
     }
 
     /**
-     * Grants required runtime permissions.
-     */
-    public static GrantPermissionRule grantPermissions() {
-        return GrantPermissionRule.grant(Manifest.permission.READ_EXTERNAL_STORAGE);
-    }
-
-    /**
      * Gets the File object of tensorflow-lite model.
      * Note that, to invoke model in the storage, the permission READ_EXTERNAL_STORAGE is required.
      */
     public static File getTFLiteImgModel() {
-        String root = Environment.getExternalStorageDirectory().getAbsolutePath();
+        String root = getRootDirectory();
         File model = new File(root + "/nnstreamer/test/imgclf/mobilenet_v1_1.0_224_quant.tflite");
         File meta = new File(root + "/nnstreamer/test/imgclf/metadata/MANIFEST");
 
@@ -78,7 +137,7 @@ public class APITestCommon {
      * Reads raw image file (orange) and returns TensorsData instance.
      */
     public static TensorsData readRawImageData() {
-        String root = Environment.getExternalStorageDirectory().getAbsolutePath();
+        String root = getRootDirectory();
         File raw = new File(root + "/nnstreamer/test/orange.raw");
 
         if (!raw.exists()) {
@@ -134,7 +193,7 @@ public class APITestCommon {
      * Reads raw float image file (orange) and returns TensorsData instance.
      */
     public static TensorsData readRawImageDataPytorch() {
-        String root = Environment.getExternalStorageDirectory().getAbsolutePath();
+        String root = getRootDirectory();
         File raw = new File(root + "/nnstreamer/pytorch_data/orange_float.raw");
 
         if (!raw.exists()) {
@@ -168,7 +227,7 @@ public class APITestCommon {
      * Reads raw float image file (orange) and returns TensorsData instance.
      */
     public static TensorsData readRawImageDataSNAP() {
-        String root = Environment.getExternalStorageDirectory().getAbsolutePath();
+        String root = getRootDirectory();
         File raw = new File(root + "/nnstreamer/imgclf/orange_float_tflite.raw");
 
         if (!raw.exists()) {
@@ -224,7 +283,7 @@ public class APITestCommon {
      * Reads raw float image file (plastic_cup) and returns TensorsData instance.
      */
     public static TensorsData readRawImageDataSNPE() {
-        String root = Environment.getExternalStorageDirectory().getAbsolutePath();
+        String root = getRootDirectory();
         File raw = new File(root + "/nnstreamer/snpe_data/plastic_cup.raw");
 
         if (!raw.exists()) {
@@ -258,7 +317,7 @@ public class APITestCommon {
      * Gets the path string of tensorflow-lite add.tflite model.
      */
     public static String getTFLiteAddModelPath() {
-        String root = Environment.getExternalStorageDirectory().getAbsolutePath();
+        String root = getRootDirectory();
         return root + "/nnstreamer/test/add";
     }
 
@@ -300,7 +359,7 @@ public class APITestCommon {
      * Note that, to invoke model in the storage, the permission READ_EXTERNAL_STORAGE is required.
      */
     public static File[] getSNAPCaffeModel() {
-        String root = Environment.getExternalStorageDirectory().getAbsolutePath();
+        String root = getRootDirectory();
 
         File model = new File(root + "/nnstreamer/snap_data/prototxt/squeezenet.prototxt");
         File weight = new File(root + "/nnstreamer/snap_data/model/squeezenet.caffemodel");
@@ -344,7 +403,7 @@ public class APITestCommon {
      * Note that, to invoke model in the storage, the permission READ_EXTERNAL_STORAGE is required.
      */
     public static File[] getSNAPTensorflowModel(SNAPComputingUnit CUnit) {
-        String root = Environment.getExternalStorageDirectory().getAbsolutePath();
+        String root = getRootDirectory();
         String model_path = "/nnstreamer/snap_data/model/";
 
         switch (CUnit) {
@@ -389,7 +448,7 @@ public class APITestCommon {
      * Note that, to invoke model in the storage, the permission READ_EXTERNAL_STORAGE is required.
      */
     public static File[] getSNAPTensorflowLiteModel() {
-        String root = Environment.getExternalStorageDirectory().getAbsolutePath();
+        String root = getRootDirectory();
         String model_path = "/nnstreamer/test/imgclf/mobilenet_v1_1.0_224.tflite";
 
         File model = new File(root + model_path);
@@ -404,7 +463,7 @@ public class APITestCommon {
      * Gets the File objects of SNPE model.
      */
     public static File getSNPEModel() {
-        String root = Environment.getExternalStorageDirectory().getAbsolutePath();
+        String root = getRootDirectory();
 
         File model = new File(root + "/nnstreamer/snpe_data/inception_v3_quantized.dlc");
 
@@ -421,7 +480,7 @@ public class APITestCommon {
      * https://github.com/nnsuite/testcases/tree/master/DeepLearningModels/tensorflow/ssdlite_mobilenet_v2
      */
     public static File getMultiOutputSNPEModel() {
-        String root = Environment.getExternalStorageDirectory().getAbsolutePath();
+        String root = getRootDirectory();
 
         File model = new File(root + "/nnstreamer/snpe_data/ssdlite_mobilenet_v2.dlc");
 
@@ -436,7 +495,7 @@ public class APITestCommon {
      * Gets the File objects of Pytorch model.
      */
     public static File getPytorchModel() {
-        String root = Environment.getExternalStorageDirectory().getAbsolutePath();
+        String root = getRootDirectory();
 
         File model = new File(root + "/nnstreamer/pytorch_data/mobilenetv2-quant_core-nnapi.pt");
 

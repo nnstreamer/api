@@ -54,9 +54,6 @@ public class APITestPipeline {
         }
     };
 
-    @Rule
-    public GrantPermissionRule mPermissionRule = APITestCommon.grantPermissions();
-
     @Before
     public void setUp() {
         APITestCommon.initNNStreamer();
