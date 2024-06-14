@@ -483,11 +483,11 @@ if [[ $enable_mxnet == "yes" ]]; then
 fi
 
 if [[ $enable_flatbuf == "yes" ]]; then
-    cp $nnstreamer_android_resource_dir/external/mxnet/flatbuffers-${flatbuf_ver}.tar.xz ./$build_dir/external
+    cp $nnstreamer_android_resource_dir/external/flatbuffers-${flatbuf_ver}.tar.xz ./$build_dir/external
 fi
 
 if [[ $enable_mqtt == "yes" ]]; then
-    cp $nnstreamer_android_resource_dir/external/mxnet/paho-mqtt-c-${paho_mqtt_c_ver}.tar.xz ./$build_dir/external
+    cp $nnstreamer_android_resource_dir/external/paho-mqtt-c-${paho_mqtt_c_ver}.tar.xz ./$build_dir/external
 fi
 
 pushd ./$build_dir
