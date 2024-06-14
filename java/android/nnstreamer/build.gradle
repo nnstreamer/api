@@ -113,8 +113,11 @@ android {
         }
     }
     packagingOptions {
-        // To do not show build warning messages
-        doNotStrip "*/arm64-v8a/*_skel.so"
+        jniLibs {
+            useLegacyPackaging = true
+            keepDebugSymbols += "**/*Skel.so"
+            keepDebugSymbols += "**/*skel.so"
+        }
     }
 }
 
