@@ -139,9 +139,9 @@ paho_mqtt_c_ver="1.3.7"
 # Enable option for tensor_query
 enable_tensor_query="yes"
 
-# Set tensorflow-lite version (available: 1.9.0 / 1.13.1 / 1.15.2 / 2.3.0 / 2.7.0 / 2.8.1)
-tf_lite_ver="2.8.1"
-tf_lite_vers_support="1.9.0 1.13.1 1.15.2 2.3.0 2.7.0 2.8.1"
+# Set tensorflow-lite version (available: 2.8.1 / 2.16.1)
+tf_lite_ver="2.16.1"
+tf_lite_vers_support="2.8.1 2.16.1"
 
 # Set NNFW version (https://github.com/Samsung/ONE/releases)
 nnfw_ver="1.17.0"
@@ -580,7 +580,7 @@ fi
 
 # Update tf-lite option
 if [[ $enable_tflite == "yes" ]]; then
-    sed -i "s|TFLITE_VERSION := 2.8.1|TFLITE_VERSION := $tf_lite_ver|" nnstreamer/src/main/jni/Android-tensorflow-lite.mk
+    sed -i "s|TFLITE_VERSION := 2.16.1|TFLITE_VERSION := $tf_lite_ver|" nnstreamer/src/main/jni/Android-tensorflow-lite.mk
     tar -xJf ./external/tensorflow-lite-$tf_lite_ver.tar.xz -C ./nnstreamer/src/main/jni
     export TFLITE_ROOT_ANDROID=$ml_api_dir/$build_dir/nnstreamer/src/main/jni/tensorflow-lite
 fi
