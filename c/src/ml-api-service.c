@@ -339,8 +339,8 @@ ml_service_new (const char *config, ml_service_h * handle)
   }
 
   if (!json_parser_load_from_data (parser, json_string, -1, &err)) {
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "Failed to parse configuration file. Parse error: %s",
+    _ml_error_report_return (ML_ERROR_IO_ERROR,
+        "Failed to parse configuration file, cannot load json string (%s).",
         err ? err->message : "Unknown error");
   }
 
