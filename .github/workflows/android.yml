@@ -59,7 +59,7 @@ jobs:
         export ML_API_ROOT=${{ github.workspace }}/api
         if [ ${{ matrix.abi }} == 'arm64-v8a' ]; then
           bash ${{ github.workspace }}/api/java/build-nnstreamer-android.sh --target_abi=${{ matrix.abi }}
-        elif [ ${{ matrix.abi }} == 'armeabi-v7a' ]; then
+        elif [ ${{ matrix.abi }} == 'x86_64' ]; then
           bash ${{ github.workspace }}/api/java/build-nnstreamer-android.sh --target_abi=${{ matrix.abi }} --enable_nnfw=no
         else
           bash ${{ github.workspace }}/api/java/build-nnstreamer-android.sh --target_abi=${{ matrix.abi }} --enable_nnfw=no --enable_tflite=no
