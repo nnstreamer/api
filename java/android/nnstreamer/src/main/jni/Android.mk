@@ -40,18 +40,23 @@ NNSTREAMER_API_OPTION := all
 # tensor-query support
 ENABLE_TENSOR_QUERY := true
 
-# tensorflow-lite (nnstreamer tf-lite subplugin)
-ifdef TFLITE_ROOT_ANDROID
-ifneq ($(filter $(TARGET_ARCH_ABI), armeabi-v7a arm64-v8a x86_64),)
-TFLITE_ROOT        := $(TFLITE_ROOT_ANDROID)
-endif
-endif
+ENABLE_TF_LITE ?= false
+# TensorFlow Lite  (nnstreamer tf-lite sub-plugin)
+ifeq ($(ENABLE_TF_LITE),true)
 
-ifdef TFLITE_ROOT
-ENABLE_TF_LITE := true
-else
-ENABLE_TF_LITE := false
-endif
+ifndef TFLITE_ROOT_ANDROID
+$(error To enable the NNStreamer TensorFlow Lite sub-plugin, TFLITE_ROOT_ANDROID must be specified.)
+endif #endif TFLITE_ROOT_ANDROID
+
+ifneq ($(filter $(TARGET_ARCH_ABI), arm64-v8a x86_64),)
+TFLITE_ROOT := $(TFLITE_ROOT_ANDROID)
+_ENABLE_TF_LITE := true
+else #ifeq ($(filter $(TARGET_ARCH_ABI), armeabi-v7a x86),)
+$(warning Warning: TensorFlow Lite is available only for the following ABIs: x86_64 and armv6-v8a.)
+$(warning For the other ABIs, ENABLE_TF_LITE is overridden to false.)
+_ENABLE_TF_LITE := false
+endif #endif ($(filter $(TARGET_ARCH_ABI), arm64-v8a x86_64),)
+endif #endif ($(ENABLE_TF_LITE),true)
 
 # SNAP (Samsung Neural Acceleration Platform)
 ENABLE_SNAP := false
@@ -95,7 +100,7 @@ include $(LOCAL_PATH)/Android-nnstreamer.mk
 #------------------------------------------------------
 # external libs and sub-plugins
 #------------------------------------------------------
-ifeq ($(ENABLE_TF_LITE),true)
+ifeq ($(_ENABLE_TF_LITE),true)
 NNS_API_FLAGS += -DENABLE_TENSORFLOW_LITE=1
 NNS_SUBPLUGINS += tensorflow-lite-subplugin
 
