@@ -825,50 +825,6 @@ ml_service_training_offloading_start (ml_service_s * mls)
   return ret;
 }
 
-/**
- * @brief ready to complete current epoch for model training
- */
-static int
-_training_offloading_ready_to_complete (ml_service_s * mls)
-{
-  int ret = ML_ERROR_NONE;
-  int loop = 120;
-  GList *list, *iter;
-  ml_training_services_s *training_s = NULL;
-  ml_training_offloading_node_info_s *node_info = NULL;
-
-  ret = _training_offloading_get_priv (mls, &training_s);
-  g_return_val_if_fail (ret == ML_ERROR_NONE, ret);
-
-  list = g_hash_table_get_keys (training_s->node_table);
-  if (!list) {
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "Failed to get transfer data table");
-  }
-
-  /* For now, let's set values for all tensor_trainers */
-  for (iter = list; iter != NULL; iter = g_list_next (iter)) {
-    const gchar *name = iter->data;
-
-    node_info = g_hash_table_lookup (training_s->node_table, name);
-    if (node_info &&
-        node_info->type == ML_TRAINING_OFFLOADING_NODE_TYPE_TRAINING) {
-      _ml_logd ("Set `ready to complete` to tensor_trainer node name:%s", name);
-
-      ml_pipeline_element_set_property_bool (node_info->handle,
-          "ready-to-complete", TRUE);
-    }
-  }
-
-  /** @todo FIXME : Let's make up for it later. */
-  while (loop--) {
-    if (g_file_test (training_s->trained_model_path, G_FILE_TEST_EXISTS))
-      break;
-    g_usleep (300000);
-  }
-
-  return ret;
-}
 
 /**
  * @brief Stop ml training offloading service.
@@ -881,12 +837,6 @@ ml_service_training_offloading_stop (ml_service_s * mls)
 
   ret = _training_offloading_get_priv (mls, &training_s);
   g_return_val_if_fail (ret == ML_ERROR_NONE, ret);
-
-  if (training_s->type == ML_TRAINING_OFFLOADING_TYPE_RECEIVER) {
-    if (!g_file_test (training_s->trained_model_path, G_FILE_TEST_EXISTS)) {
-      _training_offloading_ready_to_complete (mls);
-    }
-  }
 
   if (!training_s->pipeline_h) {
     _ml_error_report_return (ML_ERROR_STREAMS_PIPE,
