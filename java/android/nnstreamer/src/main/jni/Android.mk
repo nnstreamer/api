@@ -64,8 +64,17 @@ ENABLE_SNAP := false
 # NNFW (On-device neural network inference framework, Samsung Research)
 ENABLE_NNFW := false
 
+ENABLE_SNPE ?= false
 # SNPE (Snapdragon Neural Processing Engine)
-ENABLE_SNPE := false
+ifeq ($(ENABLE_SNPE),true)
+ifneq ($(filter $(TARGET_ARCH_ABI), arm64-v8a),)
+_ENABLE_SNPE := true
+else #ifeq ($(filter $(TARGET_ARCH_ABI), armeabi-v7a x86 x86_64),)
+$(warning Warning: SNPEv2 is available only for the ABI: armv6-v8a.)
+$(warning For the other ABIs (i.e., $(TARGET_ARCH_ABI)), ENABLE_SNPE is overridden to false.)
+_ENABLE_SNPE := false
+endif #endif ($(filter $(TARGET_ARCH_ABI), arm64-v8a,)
+endif #endif ($(ENABLE_SNPE),true)
 
 # PyTorch
 ENABLE_PYTORCH := false
@@ -121,7 +130,7 @@ NNS_SUBPLUGINS += nnfw-subplugin
 include $(LOCAL_PATH)/Android-nnfw.mk
 endif
 
-ifeq ($(ENABLE_SNPE),true)
+ifeq ($(_ENABLE_SNPE),true)
 NNS_API_FLAGS += -DENABLE_SNPE=1
 NNS_SUBPLUGINS += snpe-subplugin
 
