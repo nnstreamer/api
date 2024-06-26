@@ -72,7 +72,8 @@ android {
                     tfliteRoot = System.env.TFLITE_ROOT_ANDROID
 
                 if (tfliteRoot != null)
-                    arguments "TFLITE_ROOT_ANDROID=$tfliteRoot"
+                    arguments "TFLITE_ROOT_ANDROID=$tfliteRoot",
+                              "ENABLE_TF_LITE=true"
             }
         }
     }
