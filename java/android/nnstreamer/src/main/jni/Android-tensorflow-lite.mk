@@ -51,6 +51,20 @@ endif
 TF_LITE_DIR := $(TFLITE_ROOT)
 TF_LITE_INCLUDES := $(TF_LITE_DIR)/include
 
+# TFLite QNN Delegate
+TFLITE_ENABLE_QNN_DELEGATE := false
+ifneq ($(TARGET_ARCH_ABI),arm64-v8a)
+$(warning Warning: TensorFlow Lite QNN Delegate is available only for ABI arm64-v8a)
+TFLITE_ENABLE_QNN_DELEGATE := false
+endif
+
+ifeq ($(TFLITE_ENABLE_QNN_DELEGATE),true)
+TFLITE_FLAGS += -DTFLITE_QNN_DELEGATE_SUPPORTED=1
+QNN_DELEGATE_DIR := $(LOCAL_PATH)/tensorflow-lite-QNN-delegate
+QNN_DELEGATE_INCLUDE := $(QNN_DELEGATE_DIR)/include
+QNN_DELEGATE_LIB_PATH := $(QNN_DELEGATE_DIR)/lib/arm64-v8a
+endif
+
 # Check Target ABI. Only supports arm64 and x86_64.
 ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
 TF_LITE_LIB_PATH := $(TF_LITE_DIR)/lib/arm64
@@ -85,6 +99,17 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := libtensorflowlite-gpu-delegate
 LOCAL_SRC_FILES := $(TF_LITE_LIB_PATH)/libtensorflowlite_gpu_delegate.so
 include $(PREBUILT_SHARED_LIBRARY)
+
+## set include and deps for QNN delegate
+ifeq ($(TFLITE_ENABLE_QNN_DELEGATE),true)
+TF_LITE_INCLUDES += $(QNN_DELEGATE_INCLUDE)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := libtensorflowlite-qnn-delegate
+LOCAL_SRC_FILES := $(QNN_DELEGATE_LIB_PATH)/libQnnTFLiteDelegate.so
+include $(PREBUILT_SHARED_LIBRARY)
+endif ## QNN delegate
+
 endif # tflite version check v2.8.1 or other
 
 #------------------------------------------------------
@@ -101,6 +126,11 @@ ifeq ($(TFLITE_VERSION_MINOR),8) # v2.8.1
 LOCAL_WHOLE_STATIC_LIBRARIES := tensorflow-lite-lib cpufeatures
 else
 LOCAL_SHARED_LIBRARIES := libtensorflowlite libtensorflowlite-gpu-delegate
+
+ifeq ($(TFLITE_ENABLE_QNN_DELEGATE),true)
+LOCAL_SHARED_LIBRARIES += libtensorflowlite-qnn-delegate
+endif
+
 endif # check v2.8.1
 
 include $(BUILD_STATIC_LIBRARY)

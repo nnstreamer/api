@@ -64,6 +64,9 @@
 ##@@       'yes'      : [default] you can optionally specify the version of tensorflow-lite to use
 ##@@                    by appending ':version' [2.8.1 is the default].
 ##@@       'no'       : build without the sub-plugin for tensorflow-lite
+##@@   --enable_tflite_qnn_delegate=(yes|no)
+##@@       'yes'      : build tflite with QNN delegate. you must set env variable 'QNN_DELEGATE_DIRECTORY' to the right path
+##@@       'no'       : [default] build without the QNN delegate.
 ##@@   --enable_mxnet=(yes|no)
 ##@@       'yes'      : build with sub-plugin for MXNet. Currently, mxnet 1.9.1 version supported.
 ##@@       'no'       : [default] build without the sub-plugin for MXNet
@@ -123,6 +126,9 @@ pytorch_vers_support="1.8.0 1.10.1"
 
 # Enable tensorflow-lite
 enable_tflite="yes"
+
+# Enable tensorflow-lite-QNN-delegate
+enable_tflite_qnn_delegate="no"
 
 # Enable MXNet
 enable_mxnet="no"
@@ -248,6 +254,9 @@ for arg in "$@"; do
                 fi
             fi
             ;;
+        --enable_tflite_qnn_delegate=*)
+            enable_tflite_qnn_delegate=${arg#*=}
+            ;;
         --enable_mxnet=*)
             enable_mxnet=${arg#*=}
             ;;
@@ -332,7 +341,14 @@ fi
 
 if [[ $enable_tflite == "yes" ]]; then
     echo "Build with tensorflow-lite $tf_lite_ver"
+    if [[ $enable_tflite_qnn_delegate == "yes" ]]; then
+        [ -z "$QNN_DELEGATE_DIRECTORY" ] && echo "Need to set QNN_DELEGATE_DIRECTORY, to build tflite qnn delegate." && exit 1
+        [ $target_abi != "arm64-v8a" ] && echo "Set target ABI arm64-v8a to build tflite qnn delegate." && exit 1
+
+        echo "Build with TFLITE QNN Delegate: $QNN_DELEGATE_DIRECTORY"
+    fi
 fi
+
 
 if [[ $enable_mxnet == "yes" ]]; then
     echo "Build with MXNet $mxnet_ver"
@@ -583,6 +599,41 @@ if [[ $enable_tflite == "yes" ]]; then
     sed -i "s|TFLITE_VERSION := 2.16.1|TFLITE_VERSION := $tf_lite_ver|" nnstreamer/src/main/jni/Android-tensorflow-lite.mk
     tar -xJf ./external/tensorflow-lite-$tf_lite_ver.tar.xz -C ./nnstreamer/src/main/jni
     export TFLITE_ROOT_ANDROID=$ml_api_dir/$build_dir/nnstreamer/src/main/jni/tensorflow-lite
+
+    # Update tf-lite qnn delegate option
+    if [[ $enable_tflite_qnn_delegate == "yes" ]]; then
+        tflite_qnn_delegate_path="nnstreamer/src/main/jni/tensorflow-lite-QNN-delegate"
+        sed -i "s|TFLITE_ENABLE_QNN_DELEGATE := false|TFLITE_ENABLE_QNN_DELEGATE := true|" nnstreamer/src/main/jni/Android-tensorflow-lite.mk
+        sed -i "$ a TFLITE_QNN_DELEGATE_EXT_LIBRARY_PATH=src/main/jni/tensorflow-lite-QNN-delegate/ext" gradle.properties
+
+        mkdir -p $tflite_qnn_delegate_path/include # header files
+        mkdir -p $tflite_qnn_delegate_path/lib/arm64-v8a # libQnnTFLiteDelegate.so
+        mkdir -p $tflite_qnn_delegate_path/ext/arm64-v8a # external libraries for HTP / DSP / GPU
+
+        # Copy header files
+        cp -r $QNN_DELEGATE_DIRECTORY/include/QNN $tflite_qnn_delegate_path/include
+
+        # Copy libQnnTFLiteDelegate.so
+        cp $QNN_DELEGATE_DIRECTORY/lib/aarch64-android/libQnnTFLiteDelegate.so $tflite_qnn_delegate_path/lib/arm64-v8a
+
+        # Copy external so files for QNN Delegate
+        cp $QNN_DELEGATE_DIRECTORY/lib/aarch64-android/libQnnGpu.so $tflite_qnn_delegate_path/ext/arm64-v8a
+        cp $QNN_DELEGATE_DIRECTORY/lib/aarch64-android/libQnnDsp.so $tflite_qnn_delegate_path/ext/arm64-v8a
+        cp $QNN_DELEGATE_DIRECTORY/lib/aarch64-android/libQnnHtp.so $tflite_qnn_delegate_path/ext/arm64-v8a
+        cp $QNN_DELEGATE_DIRECTORY/lib/aarch64-android/libQnnSystem.so $tflite_qnn_delegate_path/ext/arm64-v8a
+
+        cp $QNN_DELEGATE_DIRECTORY/lib/aarch64-android/libQnnDspV66Stub.so $tflite_qnn_delegate_path/ext/arm64-v8a
+        cp $QNN_DELEGATE_DIRECTORY/lib/aarch64-android/libQnnHtpV68Stub.so $tflite_qnn_delegate_path/ext/arm64-v8a
+        cp $QNN_DELEGATE_DIRECTORY/lib/aarch64-android/libQnnHtpV69Stub.so $tflite_qnn_delegate_path/ext/arm64-v8a
+        cp $QNN_DELEGATE_DIRECTORY/lib/aarch64-android/libQnnHtpV73Stub.so $tflite_qnn_delegate_path/ext/arm64-v8a
+        cp $QNN_DELEGATE_DIRECTORY/lib/aarch64-android/libQnnHtpV75Stub.so $tflite_qnn_delegate_path/ext/arm64-v8a
+
+        cp $QNN_DELEGATE_DIRECTORY/lib/hexagon-v66/unsigned/libQnnDspV66Skel.so $tflite_qnn_delegate_path/ext/arm64-v8a
+        cp $QNN_DELEGATE_DIRECTORY/lib/hexagon-v68/unsigned/libQnnHtpV68Skel.so $tflite_qnn_delegate_path/ext/arm64-v8a
+        cp $QNN_DELEGATE_DIRECTORY/lib/hexagon-v69/unsigned/libQnnHtpV69Skel.so $tflite_qnn_delegate_path/ext/arm64-v8a
+        cp $QNN_DELEGATE_DIRECTORY/lib/hexagon-v73/unsigned/libQnnHtpV73Skel.so $tflite_qnn_delegate_path/ext/arm64-v8a
+        cp $QNN_DELEGATE_DIRECTORY/lib/hexagon-v75/unsigned/libQnnHtpV75Skel.so $tflite_qnn_delegate_path/ext/arm64-v8a
+    fi
 fi
 
 if [[ $enable_flatbuf == "yes" ]]; then
