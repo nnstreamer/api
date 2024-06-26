@@ -111,6 +111,11 @@ android {
                 jniLibs.srcDirs += project.properties['NNFW_EXT_LIBRARY_PATH']
                 println 'Set jniLibs.srcDirs includes libraries for NNFW'
             }
+
+            if (project.hasProperty('TFLITE_QNN_DELEGATE_EXT_LIBRARY_PATH')) {
+                jniLibs.srcDirs += project.properties['TFLITE_QNN_DELEGATE_EXT_LIBRARY_PATH']
+                println 'Set jniLibs.srcDirs includes libraries for TFLite QNN Delegate'
+            }
         }
     }
     packagingOptions {
