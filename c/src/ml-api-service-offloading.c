@@ -217,7 +217,7 @@ _mlrs_parse_activate (const gchar * activate)
 }
 
 /**
- * @brief Callback function for receving data using curl.
+ * @brief Callback function for receiving data using curl.
  */
 static size_t
 curl_mem_write_cb (void *data, size_t size, size_t nmemb, void *clientp)
@@ -839,7 +839,7 @@ _cleanup_pipeline_service (gpointer data)
 
   ret = ml_service_destroy (service_h);
   if (ML_ERROR_NONE != ret) {
-    _ml_error_report ("Failed to destry the pipeline service.");
+    _ml_error_report ("Failed to destroy the pipeline service.");
   }
 }
 

@@ -6,7 +6,7 @@
 # See Qualcomm Neural Processing SDK for AI (https://developer.qualcomm.com/software/qualcomm-neural-processing-sdk) for the details.
 #
 # You should check your `gradle.properties` to set the variable `SNPE_EXT_LIBRARY_PATH` properly.
-# The variable should be assigend with path for external shared libs.
+# The variable should be assigned with path for external shared libs.
 # An example: "SNPE_EXT_LIBRARY_PATH=src/main/jni/snpe/lib/ext"
 #------------------------------------------------------
 LOCAL_PATH := $(call my-dir)

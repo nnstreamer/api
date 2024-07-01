@@ -1914,7 +1914,7 @@ TEST (nnstreamer_capi_switch, failure_06_n)
   status = ml_pipeline_construct (pipeline, NULL, NULL, &handle);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  /* succesfully get switch handle if the param type is null */
+  /* successfully get switch handle if the param type is null */
   status = ml_pipeline_switch_get_handle (handle, "ins", NULL, &switchhandle);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
@@ -1949,7 +1949,7 @@ TEST (nnstreamer_capi_switch, failure_07_n)
   status = ml_pipeline_construct (pipeline, NULL, NULL, &handle);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  /* succesfully get switch handle if the param type is null */
+  /* successfully get switch handle if the param type is null */
   status = ml_pipeline_switch_get_handle (handle, "ins", NULL, &switchhandle);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
@@ -1984,7 +1984,7 @@ TEST (nnstreamer_capi_switch, failure_08_n)
   status = ml_pipeline_construct (pipeline, NULL, NULL, &handle);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  /* succesfully get switch handle if the param type is null */
+  /* successfully get switch handle if the param type is null */
   status = ml_pipeline_switch_get_handle (handle, "ins", NULL, &switchhandle);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
@@ -7623,7 +7623,7 @@ TEST (nnstreamer_capi_custom, register_filter_11_n)
   status = ml_pipeline_destroy (pipe2);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  /* succesfully done if all pipelines with custom-easy filter are destroyed */
+  /* successfully done if all pipelines with custom-easy filter are destroyed */
   status = ml_pipeline_custom_easy_filter_unregister (custom);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
@@ -7900,7 +7900,7 @@ TEST (nnstreamer_capi_if, unregister_02_n)
   status = ml_pipeline_destroy (pipe2);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  /* succesfully done if all pipelines with custom condition are destroyed */
+  /* successfully done if all pipelines with custom condition are destroyed */
   status = ml_pipeline_tensor_if_custom_unregister (custom);
   EXPECT_EQ (status, ML_ERROR_NONE);
 

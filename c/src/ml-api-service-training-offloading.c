@@ -238,7 +238,7 @@ _training_offloading_conf_parse_json (ml_service_s * mls, JsonObject * object)
 {
   ml_training_services_s *training_s = NULL;
   JsonObject *training_obj, *data_obj;
-  JsonNode *training_node, *data_node, *pipline_node;
+  JsonNode *training_node, *data_node, *pipeline_node;
   const gchar *key, *val;
   gchar *transfer_data = NULL;
   GList *list, *iter;
@@ -301,8 +301,8 @@ _training_offloading_conf_parse_json (ml_service_s * mls, JsonObject * object)
       transfer_data = g_strdup (val);
     } else {
       /* pipeline is a JSON string */
-      pipline_node = json_object_get_member (data_obj, key);
-      transfer_data = json_to_string (pipline_node, TRUE);
+      pipeline_node = json_object_get_member (data_obj, key);
+      transfer_data = json_to_string (pipeline_node, TRUE);
 
       if (!g_strstr_len (transfer_data, -1, "pipeline")) {
         g_free (transfer_data);
