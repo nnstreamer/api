@@ -1361,7 +1361,7 @@ _ml_single_invoke_internal (ml_single_h single,
 
   if (G_UNLIKELY (!output))
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "(internal functino) The parameter, output (ml_tensors_data_h *), is NULL. It should be a valid pointer to an instance of ml_tensors_data_h to store the inference results.");
+        "(internal function) The parameter, output (ml_tensors_data_h *), is NULL. It should be a valid pointer to an instance of ml_tensors_data_h to store the inference results.");
 
   ML_SINGLE_GET_VALID_HANDLE_LOCKED (single_h, single, 0);
 

@@ -35,7 +35,7 @@ class MLAPIInferenceNNFW : public ::testing::Test
    * @brief Get the valid model file for NNFW test
    * @return gchar* the path of the model file
    */
-  gchar *GetVaildModelFile ()
+  gchar *GetValidModelFile ()
   {
     gchar *model_file;
 
@@ -85,7 +85,7 @@ class MLAPIInferenceNNFW : public ::testing::Test
     if (root_path == NULL) {
       root_path = "..";
     }
-    valid_model = GetVaildModelFile ();
+    valid_model = GetValidModelFile ();
   }
 
   /**

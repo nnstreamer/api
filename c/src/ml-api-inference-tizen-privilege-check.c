@@ -758,7 +758,7 @@ ml_tizen_mm_replace_element (gboolean has_video, gboolean has_audio,
     }
   }
 
-  /* succesfully done */
+  /* successfully done */
   err = ML_ERROR_NONE;
 
 error:

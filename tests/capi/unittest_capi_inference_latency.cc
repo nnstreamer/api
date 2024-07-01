@@ -98,7 +98,7 @@ class nnstreamer_capi_singleshot_latency : public ::testing::Test
     const GstTensorFilterFramework *sp = nnstreamer_filter_find (filter);
     EXPECT_NE (sp, (void *) NULL);
 
-    /** Extract the statictics from the framework */
+    /** Extract the statistics from the framework */
     EXPECT_TRUE (sp->statistics != NULL);
     if (sp->statistics) {
       direct_invoke_duration_f = (sp->statistics->total_invoke_latency * 1.0f)

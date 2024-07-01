@@ -445,7 +445,7 @@ cp -r ./java/android/* ./$build_dir
 # Get the prebuilt libraries and build-script
 mkdir -p $build_dir/external
 
-# @todo We need another mechanism for downloading third-party/external softwares
+# @todo We need another mechanism for downloading third-party/external software
 cp -r $nnstreamer_android_resource_dir/android_api/* ./$build_dir
 echo "file list for build dir $build_dir"
 ls -l ./$build_dir

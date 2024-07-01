@@ -313,7 +313,7 @@ ml_tensors_info_get_count (ml_tensors_info_h info, unsigned int *count)
 
   if (!info)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The paramter, info, is NULL. It should be a valid ml_tensors_info_h handle, which is usually created by ml_tensors_info_create().");
+        "The parameter, info, is NULL. It should be a valid ml_tensors_info_h handle, which is usually created by ml_tensors_info_create().");
   if (!count)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, count, is NULL. It should be a valid unsigned int * pointer, allocated by the caller.");
