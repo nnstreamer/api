@@ -58,6 +58,13 @@ _ENABLE_TF_LITE := false
 endif #endif ($(filter $(TARGET_ARCH_ABI), arm64-v8a x86_64),)
 endif #endif ($(ENABLE_TF_LITE),true)
 
+# TFLite QNN Delegate
+ENABLE_TF_LITE_QNN_DELEGATE := false
+ifneq ($(TARGET_ARCH_ABI),arm64-v8a)
+$(warning Warning: TensorFlow Lite QNN Delegate is available only for ABI arm64-v8a)
+TFLITE_ENABLE_QNN_DELEGATE := false
+endif
+
 # SNAP (Samsung Neural Acceleration Platform)
 ENABLE_SNAP := false
 
