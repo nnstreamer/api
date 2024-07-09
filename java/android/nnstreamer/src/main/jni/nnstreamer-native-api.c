@@ -39,7 +39,7 @@ extern void init_filter_custom (void);
 extern void init_filter_custom_easy (void);
 
 #if defined (ENABLE_TENSORFLOW_LITE)
-extern void init_filter_tflite (void);
+extern void init_filter_tflite (JNIEnv * env, jobject context);
 #endif
 #if defined (ENABLE_SNAP)
 extern void init_filter_snap (void);
@@ -819,7 +819,7 @@ nnstreamer_native_initialize (JNIEnv * env, jobject context)
     init_filter_custom_easy ();
 
 #if defined (ENABLE_TENSORFLOW_LITE)
-    init_filter_tflite ();
+    init_filter_tflite (env, context);
 #endif
 #if defined (ENABLE_SNAP)
     init_filter_snap ();
