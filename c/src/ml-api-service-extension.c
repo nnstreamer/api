@@ -551,8 +551,8 @@ _ml_extension_conf_parse_pipeline (ml_service_s * mls, JsonObject * pipe)
           "Failed to parse configuration file, cannot get the input node.");
     }
   } else {
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "Failed to parse configuration file, cannot find the input node.");
+    _ml_logw
+        ("No input node is defined in the pipeline. Might Non-appsrc be used?");
   }
 
   if (json_object_has_member (pipe, "output_node")) {
@@ -565,8 +565,7 @@ _ml_extension_conf_parse_pipeline (ml_service_s * mls, JsonObject * pipe)
           "Failed to parse configuration file, cannot get the output node.");
     }
   } else {
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "Failed to parse configuration file, cannot find the output node.");
+    _ml_logw ("No output node is defined in the pipeline.");
   }
 
   /* Start pipeline when creating ml-service handle to check pipeline description. */
