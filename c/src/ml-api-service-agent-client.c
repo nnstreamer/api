@@ -22,75 +22,6 @@
 
 #if defined(__TIZEN__)
 #include <app_common.h>
-#include <app_common_internal.h>
-
-/**
- * @brief Parse app_info and update path (for model from rpk). Only for Tizen Applications.
- */
-static int
-_parse_app_info_and_update_path (ml_information_h ml_info)
-{
-  int ret = ML_ERROR_NONE;
-
-  gchar *app_info = NULL;
-  g_autoptr (JsonParser) parser = NULL;
-  g_autoptr (GError) err = NULL;
-
-  JsonObject *jobj;
-
-  /* parsing app_info and fill path (for rpk) */
-  ret = ml_information_get (ml_info, "app_info", (void **) &app_info);
-  if (ret != ML_ERROR_NONE) {
-    /* ml-info may not contain app_info, ignore this case. */
-    _ml_error_report_return (ML_ERROR_NONE,
-        "Failed to get app_info from the model info.");
-  }
-
-  _ml_logi ("Parsing app_info: %s", app_info);
-
-  /* parsing the app_info json string. If the model is from rpk, path should be updated. */
-  parser = json_parser_new ();
-  if (!json_parser_load_from_data (parser, app_info, -1, &err)) {
-    _ml_logi ("Failed to parse app_info (%s). Skip it.",
-        err ? err->message : "Unknown error");
-    return ML_ERROR_NONE;
-  }
-
-  jobj = json_node_get_object (json_parser_get_root (parser));
-  if (!jobj) {
-    _ml_error_report_return (ML_ERROR_NONE,
-        "Failed to get json object from the app_info. Skip it.");
-  }
-
-  if (g_strcmp0 (_ml_service_get_json_string_member (jobj, "is_rpk"), "T") == 0) {
-    gchar *ori_path, *new_path;
-    g_autofree gchar *global_resource_path;
-    const gchar *res_type =
-        _ml_service_get_json_string_member (jobj, "res_type");
-
-    ret = ml_information_get (ml_info, "path", (void **) &ori_path);
-    if (ret != ML_ERROR_NONE) {
-      _ml_error_report_return (ret, "Failed to get path from the model info.");
-    }
-
-    ret = app_get_res_control_global_resource_path (res_type,
-        &global_resource_path);
-    if (ret != APP_ERROR_NONE) {
-      _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-          "Failed to get global resource path.");
-    }
-
-    new_path = g_strdup_printf ("%s/%s", global_resource_path, ori_path);
-    ret = _ml_information_set (ml_info, "path", new_path, g_free);
-    if (ret != ML_ERROR_NONE) {
-      _ml_error_report_return (ret, "Failed to set path to the model info.");
-    }
-  } else {
-    _ml_logi ("The model is not from rpk. Skip it.");
-  }
-
-  return ML_ERROR_NONE;
-}
 
 /**
  * @brief Get Tizen application info. It should be a json string.
@@ -145,7 +76,6 @@ _get_app_info (void)
   return json_generator_to_data (gen, NULL);
 }
 #else
-#define _parse_app_info_and_update_path(...) ((int) ML_ERROR_NONE)
 #define _get_app_info(...) (NULL)
 #endif
 
@@ -237,12 +167,6 @@ _build_ml_info_from_json_cstr (const gchar * jcstring, void **handle)
           goto done;
         }
       }
-    }
-
-    ret = _parse_app_info_and_update_path (_info);
-    if (ret != ML_ERROR_NONE) {
-      _ml_error_report ("Failed to parse app_info and update path.");
-      goto done;
     }
   }
 
