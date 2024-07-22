@@ -522,8 +522,8 @@ _training_offloading_request (ml_service_s * mls,
 }
 
 /**
-* @brief Request all services to ml-service offloading.
-*/
+ * @brief Request all services to ml-service offloading.
+ */
 static int
 _training_offloading_services_request (ml_service_s * mls)
 {
@@ -607,7 +607,7 @@ error:
 
 /**
  * @brief Thread for checking receive data.
-*/
+ */
 static gpointer
 _check_received_data_thread (gpointer data)
 {
@@ -646,7 +646,7 @@ _check_received_data_thread (gpointer data)
 
 /**
  * @brief Check if all necessary data is received.
-*/
+ */
 static gboolean
 _training_offloading_check_received_data (ml_training_services_s * training_s)
 {
@@ -824,7 +824,6 @@ ml_service_training_offloading_start (ml_service_s * mls)
 
   return ret;
 }
-
 
 /**
  * @brief Stop ml training offloading service.
