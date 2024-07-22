@@ -739,7 +739,7 @@ int
 ml_service_training_offloading_start (ml_service_s * mls)
 {
   int ret = ML_ERROR_NONE;
-  JsonNode *pipeline_node;
+  g_autoptr (JsonNode) pipeline_node = NULL;
   JsonObject *pipeline_obj;
   JsonObject *pipe;
   ml_training_services_s *training_s = NULL;
