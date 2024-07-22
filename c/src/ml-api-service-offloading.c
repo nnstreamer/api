@@ -1072,7 +1072,7 @@ ml_service_offloading_request (ml_service_h handle, const char *key,
   const gchar *name = NULL;
   const gchar *activate = NULL;
   ml_tensors_data_s *_in = NULL;
-  JsonNode *service_node;
+  g_autoptr (JsonNode) service_node = NULL;
   JsonObject *service_obj;
   guint i;
 
