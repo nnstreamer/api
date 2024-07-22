@@ -349,7 +349,6 @@ if [[ $enable_tflite == "yes" ]]; then
     fi
 fi
 
-
 if [[ $enable_mxnet == "yes" ]]; then
     echo "Build with MXNet $mxnet_ver"
 fi
