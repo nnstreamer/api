@@ -73,6 +73,7 @@ typedef enum {
   ML_NNFW_TYPE_TVM = 16,              /**< Apache TVM (Since 7.0) */
   ML_NNFW_TYPE_ONNX_RUNTIME = 17,     /**< Open Neural Network Exchange (ONNX) Runtime (Since 9.0) */
   ML_NNFW_TYPE_NCNN = 18,             /**< Tencent ncnn (Since 9.0) */
+  ML_NNFW_TYPE_TENSORRT = 19,         /**< NVidia Tensor-RT (Since 9.0) */
   ML_NNFW_TYPE_SNAP = 0x2001,         /**< SNAP (Samsung Neural Acceleration Platform), only for Android. (Since 6.0) */
 } ml_nnfw_type_e;
 
