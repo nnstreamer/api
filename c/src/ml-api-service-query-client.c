@@ -58,7 +58,7 @@ _sink_callback_for_query_client (const ml_tensors_data_h data,
  * @brief Internal function to release ml-service query data.
  */
 int
-ml_service_query_release_internal (ml_service_s * mls)
+_ml_service_query_release_internal (ml_service_s * mls)
 {
   _ml_service_query_s *query = (_ml_service_query_s *) mls->priv;
   ml_tensors_data_h data_h;

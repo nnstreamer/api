@@ -96,7 +96,7 @@ _training_offloading_get_priv (ml_service_s * mls,
   ml_service_offloading_mode_e mode = ML_SERVICE_OFFLOADING_MODE_NONE;
   int ret;
 
-  ret = ml_service_offloading_get_mode (mls, &mode, (void **) training_s);
+  ret = _ml_service_offloading_get_mode (mls, &mode, (void **) training_s);
   if (ret != ML_ERROR_NONE) {
     _ml_error_report_return (ret,
         "Failed to get offloading mode and private data.");
@@ -448,13 +448,13 @@ _training_offloading_create (ml_service_s * mls)
   training_s->type = ML_TRAINING_OFFLOADING_TYPE_UNKNOWN;
   training_s->time_limit = DEFAULT_TIME_LIMIT;
 
-  ml_service_offloading_set_mode (mls,
+  _ml_service_offloading_set_mode (mls,
       ML_SERVICE_OFFLOADING_MODE_TRAINING, training_s);
 
   training_s->transfer_data_table =
       g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
   if (!training_s->transfer_data_table) {
-    ml_service_training_offloading_destroy (mls);
+    _ml_service_training_offloading_destroy (mls);
     _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
         "Failed to allocate memory for the data table. Out of memory?");
   }
@@ -463,7 +463,7 @@ _training_offloading_create (ml_service_s * mls)
       g_hash_table_new_full (g_str_hash, g_str_equal, g_free,
       _training_offloading_node_info_free);
   if (!training_s->node_table) {
-    ml_service_training_offloading_destroy (mls);
+    _ml_service_training_offloading_destroy (mls);
     _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
         "Failed to allocate memory for the node table. Out of memory?");
   }
@@ -475,7 +475,7 @@ _training_offloading_create (ml_service_s * mls)
  * @brief Internal function to create ml-service training offloading handle.
  */
 int
-ml_service_training_offloading_create (ml_service_s * mls,
+_ml_service_training_offloading_create (ml_service_s * mls,
     JsonObject * offloading)
 {
   int ret = ML_ERROR_NONE;
@@ -491,7 +491,7 @@ ml_service_training_offloading_create (ml_service_s * mls,
 
   ret = _training_offloading_conf_parse_json (mls, offloading);
   if (ret != ML_ERROR_NONE) {
-    ml_service_training_offloading_destroy (mls);
+    _ml_service_training_offloading_destroy (mls);
     _ml_error_report_return (ret,
         "Failed to parse the configuration file for training offloading.");
   }
@@ -513,7 +513,7 @@ _training_offloading_request (ml_service_s * mls,
   g_return_val_if_fail (data != NULL, ML_ERROR_INVALID_PARAMETER);
   g_return_val_if_fail (len > 0, ML_ERROR_INVALID_PARAMETER);
 
-  ret = ml_service_offloading_request_raw (mls, service_name, data, len);
+  ret = _ml_service_offloading_request_raw (mls, service_name, data, len);
   if (ret != ML_ERROR_NONE) {
     _ml_error_report ("Failed to request service '%s'.)", service_name);
   }
@@ -716,7 +716,8 @@ _training_offloading_replce_pipeline_data_path (ml_service_s * mls)
  * @brief Set path in ml-service training offloading handle.
  */
 int
-ml_service_training_offloading_set_path (ml_service_s * mls, const gchar * path)
+_ml_service_training_offloading_set_path (ml_service_s * mls,
+    const gchar * path)
 {
   int ret = ML_ERROR_NONE;
   ml_training_services_s *training_s = NULL;
@@ -736,7 +737,7 @@ ml_service_training_offloading_set_path (ml_service_s * mls, const gchar * path)
  * @brief Start ml training offloading service.
  */
 int
-ml_service_training_offloading_start (ml_service_s * mls)
+_ml_service_training_offloading_start (ml_service_s * mls)
 {
   int ret = ML_ERROR_NONE;
   g_autoptr (JsonNode) pipeline_node = NULL;
@@ -829,7 +830,7 @@ ml_service_training_offloading_start (ml_service_s * mls)
  * @brief Stop ml training offloading service.
  */
 int
-ml_service_training_offloading_stop (ml_service_s * mls)
+_ml_service_training_offloading_stop (ml_service_s * mls)
 {
   int ret = ML_ERROR_NONE;
   ml_training_services_s *training_s = NULL;
@@ -854,7 +855,7 @@ ml_service_training_offloading_stop (ml_service_s * mls)
  * @brief Save receiver pipeline description.
  */
 int
-ml_service_training_offloading_process_received_data (ml_service_s * mls,
+_ml_service_training_offloading_process_received_data (ml_service_s * mls,
     void *data_h, const gchar * dir_path, const gchar * data, int service_type)
 {
   g_autofree gchar *name = NULL;
@@ -936,7 +937,7 @@ _training_offloading_send_trained_model (ml_service_s * mls)
  * @brief Internal function to destroy ml-service training offloading data.
  */
 int
-ml_service_training_offloading_destroy (ml_service_s * mls)
+_ml_service_training_offloading_destroy (ml_service_s * mls)
 {
   int ret = ML_ERROR_NONE;
   ml_training_services_s *training_s = NULL;
@@ -993,6 +994,6 @@ ml_service_training_offloading_destroy (ml_service_s * mls)
 
   g_free (training_s);
 
-  ml_service_offloading_set_mode (mls, ML_SERVICE_OFFLOADING_MODE_NONE, NULL);
+  _ml_service_offloading_set_mode (mls, ML_SERVICE_OFFLOADING_MODE_NONE, NULL);
   return ret;
 }

@@ -254,20 +254,20 @@ TEST_F (MLOffloadingService, registerPipelineURI)
 }
 
 /**
- * @brief Test ml_service_offloading_create with invalid param.
+ * @brief Test _ml_service_offloading_create with invalid param.
  */
 TEST_F (MLOffloadingService, createInvalidParam_n)
 {
   int status;
-  status = ml_service_offloading_create (NULL, NULL);
+  status = _ml_service_offloading_create (NULL, NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = ml_service_offloading_create (server_h, NULL);
+  status = _ml_service_offloading_create (server_h, NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 }
 
 /**
- * @brief Test ml_service_offloading_request with invalid param.
+ * @brief Test _ml_service_offloading_request with invalid param.
  */
 TEST_F (MLOffloadingService, registerInvalidParam01_n)
 {
@@ -279,13 +279,13 @@ TEST_F (MLOffloadingService, registerInvalidParam01_n)
   status = _create_tensor_data_from_str (pipeline_desc, strlen (pipeline_desc) + 1, &input);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_service_offloading_request (NULL, "pipeline_registration_raw", input);
+  status = _ml_service_offloading_request (NULL, "pipeline_registration_raw", input);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = ml_service_offloading_request (client_h, NULL, input);
+  status = _ml_service_offloading_request (client_h, NULL, input);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = ml_service_offloading_request (client_h, "pipeline_registration_raw", NULL);
+  status = _ml_service_offloading_request (client_h, "pipeline_registration_raw", NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
   status = ml_tensors_data_destroy (input);
@@ -293,7 +293,7 @@ TEST_F (MLOffloadingService, registerInvalidParam01_n)
 }
 
 /**
- * @brief Test ml_service_offloading_request_raw with invalid param.
+ * @brief Test _ml_service_offloading_request_raw with invalid param.
  */
 TEST_F (MLOffloadingService, registerInvalidParam02_n)
 {
@@ -302,16 +302,16 @@ TEST_F (MLOffloadingService, registerInvalidParam02_n)
   g_autofree gchar *data = g_strdup ("fakesrc ! fakesink");
   gsize len = strlen (data);
 
-  status = ml_service_offloading_request_raw (NULL, "req_raw", data, len);
+  status = _ml_service_offloading_request_raw (NULL, "req_raw", data, len);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = ml_service_offloading_request_raw (client_h, NULL, data, len);
+  status = _ml_service_offloading_request_raw (client_h, NULL, data, len);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = ml_service_offloading_request_raw (client_h, "req_raw", NULL, len);
+  status = _ml_service_offloading_request_raw (client_h, "req_raw", NULL, len);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = ml_service_offloading_request_raw (client_h, "req_raw", data, 0);
+  status = _ml_service_offloading_request_raw (client_h, "req_raw", data, 0);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 }
 
@@ -324,7 +324,7 @@ TEST_F (MLOffloadingService, registerModel)
   ml_tensors_data_h input = NULL;
 
   const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
-  /* ml_service_offloading_request () requires absolute path to model, ignore this case. */
+  /* _ml_service_offloading_request () requires absolute path to model, ignore this case. */
   if (root_path == NULL)
     return;
 
@@ -341,7 +341,7 @@ TEST_F (MLOffloadingService, registerModel)
   status = ml_service_set_event_cb (server_h, _ml_service_event_cb, &test_data);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  status = ml_service_offloading_set_information (server_h, "path", model_dir);
+  status = _ml_service_offloading_set_information (server_h, "path", model_dir);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   status = _create_tensor_data_from_str (contents, len, &input);
@@ -368,7 +368,7 @@ TEST_F (MLOffloadingService, registerModelURI)
   int status;
   ml_tensors_data_h input = NULL;
   const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
-  /* ml_service_offloading_request () requires absolute path to model, ignore this case. */
+  /* _ml_service_offloading_request () requires absolute path to model, ignore this case. */
   if (root_path == NULL)
     return;
 
@@ -410,7 +410,7 @@ TEST_F (MLOffloadingService, registerModelPath)
   int status;
   ml_tensors_data_h input = NULL;
   const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
-  /* ml_service_offloading_request () requires absolute path to model, ignore this case. */
+  /* _ml_service_offloading_request () requires absolute path to model, ignore this case. */
   if (root_path == NULL)
     return;
 

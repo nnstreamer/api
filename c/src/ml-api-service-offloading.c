@@ -385,7 +385,7 @@ _mlrs_process_service_offloading (nns_edge_data_h data_h, void *user_data)
   dir_path = _mlrs_get_model_dir_path (offloading_s, service_key);
 
   if (offloading_s->offloading_mode == ML_SERVICE_OFFLOADING_MODE_TRAINING) {
-    ret = ml_service_training_offloading_process_received_data (mls, data_h,
+    ret = _ml_service_training_offloading_process_received_data (mls, data_h,
         dir_path, data, service_type);
     if (NNS_EDGE_ERROR_NONE != ret) {
       _ml_error_report_return (ret,
@@ -642,7 +642,7 @@ error:
  * @brief Set offloading mode and private data.
  */
 int
-ml_service_offloading_set_mode (ml_service_h handle,
+_ml_service_offloading_set_mode (ml_service_h handle,
     ml_service_offloading_mode_e mode, void *priv)
 {
   ml_service_s *mls = (ml_service_s *) handle;
@@ -665,7 +665,7 @@ ml_service_offloading_set_mode (ml_service_h handle,
  * @brief Get offloading mode and private data.
  */
 int
-ml_service_offloading_get_mode (ml_service_h handle,
+_ml_service_offloading_get_mode (ml_service_h handle,
     ml_service_offloading_mode_e * mode, void **priv)
 {
   ml_service_s *mls = (ml_service_s *) handle;
@@ -693,7 +693,7 @@ ml_service_offloading_get_mode (ml_service_h handle,
  * @brief Internal function to release ml-service offloading data.
  */
 int
-ml_service_offloading_release_internal (ml_service_s * mls)
+_ml_service_offloading_release_internal (ml_service_s * mls)
 {
   _ml_service_offloading_s *offloading_s;
 
@@ -705,10 +705,10 @@ ml_service_offloading_release_internal (ml_service_s * mls)
 
   if (offloading_s->offloading_mode == ML_SERVICE_OFFLOADING_MODE_TRAINING) {
     /**
-     * 'ml_service_training_offloading_destroy' transfers internally trained models.
+     * '_ml_service_training_offloading_destroy' transfers internally trained models.
      * So keep offloading handle.
      */
-    if (ML_ERROR_NONE != ml_service_training_offloading_destroy (mls)) {
+    if (ML_ERROR_NONE != _ml_service_training_offloading_destroy (mls)) {
       _ml_error_report
           ("Failed to release ml-service training offloading handle");
     }
@@ -740,7 +740,7 @@ ml_service_offloading_release_internal (ml_service_s * mls)
  * @brief Set value in ml-service offloading handle.
  */
 int
-ml_service_offloading_set_information (ml_service_h handle, const gchar * name,
+_ml_service_offloading_set_information (ml_service_h handle, const gchar * name,
     const gchar * value)
 {
   ml_service_s *mls = (ml_service_s *) handle;
@@ -770,7 +770,7 @@ ml_service_offloading_set_information (ml_service_h handle, const gchar * name,
     offloading_s->path = g_strdup (value);
 
     if (offloading_s->offloading_mode == ML_SERVICE_OFFLOADING_MODE_TRAINING) {
-      ret = ml_service_training_offloading_set_path (mls, offloading_s->path);
+      ret = _ml_service_training_offloading_set_path (mls, offloading_s->path);
     }
   }
 
@@ -877,7 +877,7 @@ _ml_service_offloading_create_from_option (ml_service_s * mls,
   }
 
   if (ML_ERROR_NONE == ml_option_get (option, "path", (void **) (&_path))) {
-    ret = ml_service_offloading_set_information (mls, "path", _path);
+    ret = _ml_service_offloading_set_information (mls, "path", _path);
     if (ML_ERROR_NONE != ret) {
       _ml_error_report_return (ret,
           "Failed to set path in ml-service offloading handle.");
@@ -946,7 +946,7 @@ _ml_service_offloading_convert_to_option (JsonObject * object,
  * @brief Internal function to parse configuration file to create offloading service.
  */
 int
-ml_service_offloading_create (ml_service_h handle, JsonObject * object)
+_ml_service_offloading_create (ml_service_h handle, JsonObject * object)
 {
   ml_service_s *mls = (ml_service_s *) handle;
   int status;
@@ -987,7 +987,7 @@ ml_service_offloading_create (ml_service_h handle, JsonObject * object)
   }
 
   if (json_object_has_member (offloading, "training")) {
-    status = ml_service_training_offloading_create (mls, offloading);
+    status = _ml_service_training_offloading_create (mls, offloading);
     if (status != ML_ERROR_NONE) {
       _ml_logw ("Failed to parse training from configuration file.");
     }
@@ -1004,7 +1004,7 @@ done:
  * @brief Internal function to start ml-service offloading.
  */
 int
-ml_service_offloading_start (ml_service_h handle)
+_ml_service_offloading_start (ml_service_h handle)
 {
   ml_service_s *mls = (ml_service_s *) handle;
   _ml_service_offloading_s *offloading_s;
@@ -1018,7 +1018,7 @@ ml_service_offloading_start (ml_service_h handle)
   offloading_s = (_ml_service_offloading_s *) mls->priv;
 
   if (offloading_s->offloading_mode == ML_SERVICE_OFFLOADING_MODE_TRAINING) {
-    ret = ml_service_training_offloading_start (mls);
+    ret = _ml_service_training_offloading_start (mls);
     if (ret != ML_ERROR_NONE) {
       _ml_error_report ("Failed to start training offloading.");
     }
@@ -1031,7 +1031,7 @@ ml_service_offloading_start (ml_service_h handle)
  * @brief Internal function to stop ml-service offloading.
  */
 int
-ml_service_offloading_stop (ml_service_h handle)
+_ml_service_offloading_stop (ml_service_h handle)
 {
   ml_service_s *mls = (ml_service_s *) handle;
   _ml_service_offloading_s *offloading_s;
@@ -1045,7 +1045,7 @@ ml_service_offloading_stop (ml_service_h handle)
   offloading_s = (_ml_service_offloading_s *) mls->priv;
 
   if (offloading_s->offloading_mode == ML_SERVICE_OFFLOADING_MODE_TRAINING) {
-    ret = ml_service_training_offloading_stop (mls);
+    ret = _ml_service_training_offloading_stop (mls);
     if (ret != ML_ERROR_NONE) {
       _ml_error_report ("Failed to stop training offloading.");
     }
@@ -1059,7 +1059,7 @@ ml_service_offloading_stop (ml_service_h handle)
  * Register new information, such as neural network models or pipeline descriptions, on a offloading server.
  */
 int
-ml_service_offloading_request (ml_service_h handle, const char *key,
+_ml_service_offloading_request (ml_service_h handle, const char *key,
     const ml_tensors_data_h input)
 {
   ml_service_s *mls = (ml_service_s *) handle;
@@ -1191,7 +1191,7 @@ done:
  * Register new information, such as neural network models or pipeline descriptions, on a offloading server.
  */
 int
-ml_service_offloading_request_raw (ml_service_h handle, const char *key,
+_ml_service_offloading_request_raw (ml_service_h handle, const char *key,
     void *data, size_t len)
 {
   ml_tensors_data_s input;
@@ -1201,5 +1201,5 @@ ml_service_offloading_request_raw (ml_service_h handle, const char *key,
   input.tensors[0].data = data;
   input.tensors[0].size = len;
 
-  return ml_service_offloading_request (handle, key, &input);
+  return _ml_service_offloading_request (handle, key, &input);
 }
