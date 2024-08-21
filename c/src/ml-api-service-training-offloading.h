@@ -24,7 +24,7 @@ extern "C" {
 
 #if defined(ENABLE_TRAINING_OFFLOADING)
 /**
- * @brief Creates a training offloading handle for ml-service training offloading service.
+ * @brief Internal function to creates a training offloading handle for ml-service training offloading service.
  * @param[in] mls ml-service handle created by ml_service_new().
  * @param[in] offloading The Json object containing the service option.
  * @return @c 0 on success. Otherwise a negative error value.
@@ -36,10 +36,10 @@ extern "C" {
  * @retval #ML_ERROR_STREAMS_PIPE Failed to open the model.
  * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
  */
-int ml_service_training_offloading_create (ml_service_s *mls, JsonObject *offloading);
+int _ml_service_training_offloading_create (ml_service_s *mls, JsonObject *offloading);
 
 /**
- * @brief Set path in ml-service training offloading handle.
+ * @brief Internal function to set path in ml-service training offloading handle.
  * @param[in] mls ml-service handle created by ml_service_new().
  * @param[in] path Readable and writable path set by the app.
  * @return @c 0 on success. Otherwise a negative error value.
@@ -47,10 +47,10 @@ int ml_service_training_offloading_create (ml_service_s *mls, JsonObject *offloa
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
  */
-int ml_service_training_offloading_set_path (ml_service_s *mls, const gchar *path);
+int _ml_service_training_offloading_set_path (ml_service_s *mls, const gchar *path);
 
 /**
- * @brief Start ml training offloading service.
+ * @brief Internal function to start ml training offloading service.
  * @param[in] mls ml-service handle created by ml_service_new().
  * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
@@ -61,10 +61,10 @@ int ml_service_training_offloading_set_path (ml_service_s *mls, const gchar *pat
  * @retval #ML_ERROR_TRY_AGAIN The pipeline is not ready yet.
  * @retval #ML_ERROR_PERMISSION_DENIED The application does not have the privilege to access to the storage.
  */
-int ml_service_training_offloading_start (ml_service_s *mls);
+int _ml_service_training_offloading_start (ml_service_s *mls);
 
 /**
- * @brief Stop ml training offloading service.
+ * @brief Internal function to stop ml training offloading service.
  * @param[in] mls ml-service handle created by ml_service_new().
  * @return @c 0 on success. Otherwise a negative error value.
  * @retval #ML_ERROR_NONE Successful.
@@ -75,10 +75,10 @@ int ml_service_training_offloading_start (ml_service_s *mls);
  * @retval #ML_ERROR_TRY_AGAIN The pipeline is not ready yet.
  * @retval #ML_ERROR_PERMISSION_DENIED The application does not have the privilege to access to the storage.
  */
-int ml_service_training_offloading_stop (ml_service_s *mls);
+int _ml_service_training_offloading_stop (ml_service_s *mls);
 
 /**
- * @brief Process received data
+ * @brief Internal function to process received data
  * @param[in] mls ml-service handle created by ml_service_new().
  * @param[in] data_h handle nns_edge_data_h
  * @param[in] data data of received file
@@ -89,7 +89,7 @@ int ml_service_training_offloading_stop (ml_service_s *mls);
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
  */
-int ml_service_training_offloading_process_received_data (ml_service_s *mls, void *data_h, const gchar *dir_path, const gchar *data, int service_type);
+int _ml_service_training_offloading_process_received_data (ml_service_s *mls, void *data_h, const gchar *dir_path, const gchar *data, int service_type);
 
 /**
  * @brief Internal function to destroy ml-service training offloading data.
@@ -99,14 +99,14 @@ int ml_service_training_offloading_process_received_data (ml_service_s *mls, voi
  * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
  * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
  */
-int ml_service_training_offloading_destroy (ml_service_s *mls);
+int _ml_service_training_offloading_destroy (ml_service_s *mls);
 #else
-#define ml_service_training_offloading_create(...) ML_ERROR_NOT_SUPPORTED
-#define ml_service_training_offloading_set_path(...) ML_ERROR_NOT_SUPPORTED
-#define ml_service_training_offloading_start(...) ML_ERROR_NOT_SUPPORTED
-#define ml_service_training_offloading_stop(...) ML_ERROR_NOT_SUPPORTED
-#define ml_service_training_offloading_process_received_data(...) ML_ERROR_NOT_SUPPORTED
-#define ml_service_training_offloading_destroy(...) ML_ERROR_NOT_SUPPORTED
+#define _ml_service_training_offloading_create(...) ML_ERROR_NOT_SUPPORTED
+#define _ml_service_training_offloading_set_path(...) ML_ERROR_NOT_SUPPORTED
+#define _ml_service_training_offloading_start(...) ML_ERROR_NOT_SUPPORTED
+#define _ml_service_training_offloading_stop(...) ML_ERROR_NOT_SUPPORTED
+#define _ml_service_training_offloading_process_received_data(...) ML_ERROR_NOT_SUPPORTED
+#define _ml_service_training_offloading_destroy(...) ML_ERROR_NOT_SUPPORTED
 #endif /* ENABLE_TRAINING_OFFLOADING */
 #ifdef __cplusplus
 }

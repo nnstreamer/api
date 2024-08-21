@@ -389,7 +389,7 @@ ml_service_pipeline_get_state (ml_service_h handle, ml_pipeline_state_e * state)
  * @brief Internal function to release ml-service pipeline data.
  */
 int
-ml_service_pipeline_release_internal (ml_service_s * mls)
+_ml_service_pipeline_release_internal (ml_service_s * mls)
 {
   _ml_service_server_s *server = (_ml_service_server_s *) mls->priv;
   int ret;

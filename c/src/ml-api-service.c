@@ -66,10 +66,10 @@ _ml_service_set_information_internal (ml_service_s * mls, const char *name,
 
   switch (mls->type) {
     case ML_SERVICE_TYPE_EXTENSION:
-      status = ml_service_extension_set_information (mls, name, value);
+      status = _ml_service_extension_set_information (mls, name, value);
       break;
     case ML_SERVICE_TYPE_OFFLOADING:
-      status = ml_service_offloading_set_information (mls, name, value);
+      status = _ml_service_offloading_set_information (mls, name, value);
       break;
     default:
       break;
@@ -127,16 +127,16 @@ _ml_service_destroy_internal (ml_service_s * mls)
 
   switch (mls->type) {
     case ML_SERVICE_TYPE_SERVER_PIPELINE:
-      status = ml_service_pipeline_release_internal (mls);
+      status = _ml_service_pipeline_release_internal (mls);
       break;
     case ML_SERVICE_TYPE_CLIENT_QUERY:
-      status = ml_service_query_release_internal (mls);
+      status = _ml_service_query_release_internal (mls);
       break;
     case ML_SERVICE_TYPE_OFFLOADING:
-      status = ml_service_offloading_release_internal (mls);
+      status = _ml_service_offloading_release_internal (mls);
       break;
     case ML_SERVICE_TYPE_EXTENSION:
-      status = ml_service_extension_destroy (mls);
+      status = _ml_service_extension_destroy (mls);
       break;
     default:
       _ml_error_report ("Invalid type of ml_service_h.");
@@ -367,10 +367,10 @@ ml_service_new (const char *config, ml_service_h * handle)
 
   switch (service_type) {
     case ML_SERVICE_TYPE_EXTENSION:
-      status = ml_service_extension_create (mls, object);
+      status = _ml_service_extension_create (mls, object);
       break;
     case ML_SERVICE_TYPE_OFFLOADING:
-      status = ml_service_offloading_create (mls, object);
+      status = _ml_service_offloading_create (mls, object);
       break;
     default:
       /* Invalid handle type. */
@@ -462,10 +462,10 @@ ml_service_start (ml_service_h handle)
       break;
     }
     case ML_SERVICE_TYPE_EXTENSION:
-      status = ml_service_extension_start (mls);
+      status = _ml_service_extension_start (mls);
       break;
     case ML_SERVICE_TYPE_OFFLOADING:
-      status = ml_service_offloading_start (mls);
+      status = _ml_service_offloading_start (mls);
       break;
     default:
       /* Invalid handle type. */
@@ -504,10 +504,10 @@ ml_service_stop (ml_service_h handle)
       break;
     }
     case ML_SERVICE_TYPE_EXTENSION:
-      status = ml_service_extension_stop (mls);
+      status = _ml_service_extension_stop (mls);
       break;
     case ML_SERVICE_TYPE_OFFLOADING:
-      status = ml_service_offloading_stop (mls);
+      status = _ml_service_offloading_stop (mls);
       break;
     default:
       /* Invalid handle type. */
@@ -545,7 +545,7 @@ ml_service_get_input_information (ml_service_h handle, const char *name,
 
   switch (mls->type) {
     case ML_SERVICE_TYPE_EXTENSION:
-      status = ml_service_extension_get_input_information (mls, name, info);
+      status = _ml_service_extension_get_input_information (mls, name, info);
       break;
     default:
       /* Invalid handle type. */
@@ -590,7 +590,7 @@ ml_service_get_output_information (ml_service_h handle, const char *name,
 
   switch (mls->type) {
     case ML_SERVICE_TYPE_EXTENSION:
-      status = ml_service_extension_get_output_information (mls, name, info);
+      status = _ml_service_extension_get_output_information (mls, name, info);
       break;
     default:
       /* Invalid handle type. */
@@ -711,10 +711,10 @@ ml_service_request (ml_service_h handle, const char *name,
 
   switch (mls->type) {
     case ML_SERVICE_TYPE_EXTENSION:
-      status = ml_service_extension_request (mls, name, data);
+      status = _ml_service_extension_request (mls, name, data);
       break;
     case ML_SERVICE_TYPE_OFFLOADING:
-      status = ml_service_offloading_request (mls, name, data);
+      status = _ml_service_offloading_request (mls, name, data);
       break;
     default:
       /* Invalid handle type. */

@@ -238,7 +238,7 @@ TEST_F (MLServiceTrainingOffloading, trainingOffloading_p)
 }
 
 /**
- * @brief Test ml_service_training_offloading_create with invalid param.
+ * @brief Test _ml_service_training_offloading_create with invalid param.
  */
 TEST_F (MLServiceTrainingOffloading, createInvalidParam1_n)
 {
@@ -248,15 +248,15 @@ TEST_F (MLServiceTrainingOffloading, createInvalidParam1_n)
   mls = _ml_service_create_internal (ML_SERVICE_TYPE_OFFLOADING);
   ASSERT_NE (nullptr, mls);
 
-  status = ml_service_training_offloading_create (mls, NULL);
+  status = _ml_service_training_offloading_create (mls, NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = ml_service_offloading_release_internal (mls);
+  status = _ml_service_offloading_release_internal (mls);
   EXPECT_EQ (ML_ERROR_NONE, status);
 }
 
 /**
- * @brief Test ml_service_training_offloading_create with invalid param.
+ * @brief Test _ml_service_training_offloading_create with invalid param.
  */
 TEST_F (MLServiceTrainingOffloading, createInvalidParam2_n)
 {
@@ -280,14 +280,14 @@ TEST_F (MLServiceTrainingOffloading, createInvalidParam2_n)
   ASSERT_NE (nullptr, object);
 
   JsonObject *offloading = json_object_get_object_member (object, "offloading");
-  status = ml_service_training_offloading_create (NULL, offloading);
+  status = _ml_service_training_offloading_create (NULL, offloading);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
   EXPECT_EQ (g_remove (receiver_config), 0);
 }
 
 /**
- * @brief Test ml_service_training_offloading_create.
+ * @brief Test _ml_service_training_offloading_create.
  */
 TEST_F (MLServiceTrainingOffloading, create_p)
 {
@@ -314,37 +314,37 @@ TEST_F (MLServiceTrainingOffloading, create_p)
   mls = _ml_service_create_internal (ML_SERVICE_TYPE_OFFLOADING);
   ASSERT_NE (nullptr, mls);
 
-  status = ml_service_offloading_create (mls, object);
+  status = _ml_service_offloading_create (mls, object);
   /* nns-edge error occurs because there is no remote to connect to. */
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   /* An offloading instance must be created first. */
   JsonObject *offloading = json_object_get_object_member (object, "offloading");
-  status = ml_service_training_offloading_create (mls, offloading);
+  status = _ml_service_training_offloading_create (mls, offloading);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_service_training_offloading_destroy (mls);
+  status = _ml_service_training_offloading_destroy (mls);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_service_offloading_release_internal (mls);
+  status = _ml_service_offloading_release_internal (mls);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   EXPECT_EQ (g_remove (receiver_config), 0);
 }
 
 /**
- * @brief Test ml_service_training_offloading_destroy.
+ * @brief Test _ml_service_training_offloading_destroy.
  */
 TEST_F (MLServiceTrainingOffloading, destroyInvalidParam1_n)
 {
   int status;
 
-  status = ml_service_training_offloading_destroy (NULL);
+  status = _ml_service_training_offloading_destroy (NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 }
 
 /**
- * @brief Test ml_service_training_offloading_set_path.
+ * @brief Test _ml_service_training_offloading_set_path.
  */
 TEST_F (MLServiceTrainingOffloading, setPathInvalidParam1_n)
 {
@@ -366,10 +366,10 @@ TEST_F (MLServiceTrainingOffloading, setPathInvalidParam1_n)
   mls = (ml_service_s *) service_h;
   ASSERT_NE (nullptr, mls);
 
-  status = ml_service_training_offloading_set_path (mls, NULL);
+  status = _ml_service_training_offloading_set_path (mls, NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = ml_service_training_offloading_set_path (mls, file_path);
+  status = _ml_service_training_offloading_set_path (mls, file_path);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   status = ml_service_destroy (service_h);
@@ -379,7 +379,7 @@ TEST_F (MLServiceTrainingOffloading, setPathInvalidParam1_n)
 }
 
 /**
- * @brief Test ml_service_training_offloading_start.
+ * @brief Test _ml_service_training_offloading_start.
  */
 TEST_F (MLServiceTrainingOffloading, startInvalidParam1_n)
 {
@@ -401,14 +401,14 @@ TEST_F (MLServiceTrainingOffloading, startInvalidParam1_n)
   mls = (ml_service_s *) receiver_h;
   ASSERT_NE (nullptr, mls);
 
-  status = ml_service_training_offloading_set_path (mls, file_path);
+  status = _ml_service_training_offloading_set_path (mls, file_path);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
-  status = ml_service_training_offloading_start (mls);
+  status = _ml_service_training_offloading_start (mls);
   /* Not receiving data needed for training. */
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = ml_service_training_offloading_start (NULL);
+  status = _ml_service_training_offloading_start (NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
   status = ml_service_destroy (receiver_h);
@@ -418,7 +418,7 @@ TEST_F (MLServiceTrainingOffloading, startInvalidParam1_n)
 }
 
 /**
- * @brief Test ml_service_training_offloading_start.
+ * @brief Test _ml_service_training_offloading_start.
  */
 TEST_F (MLServiceTrainingOffloading, stopInvalidParam1_n)
 {
@@ -440,11 +440,11 @@ TEST_F (MLServiceTrainingOffloading, stopInvalidParam1_n)
   mls = (ml_service_s *) receiver_h;
   ASSERT_NE (nullptr, mls);
 
-  status = ml_service_training_offloading_set_path (mls, file_path);
+  status = _ml_service_training_offloading_set_path (mls, file_path);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
   /* not start */
-  status = ml_service_training_offloading_stop (mls);
+  status = _ml_service_training_offloading_stop (mls);
   EXPECT_EQ (ML_ERROR_STREAMS_PIPE, status);
 
   status = ml_service_destroy (receiver_h);
