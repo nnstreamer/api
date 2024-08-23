@@ -1,0 +1,38 @@
+name: Android daily build and publish docs
+
+on:
+  schedule:
+    # 05:00 AM (KST) Mon-Fri
+    - cron: "00 20 * * 0-4"
+  # Allow manually triggering the workflow
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_S3_SECRET_ACCESS_KEY }}
+      AWS_EC2_METADATA_DISABLED: true
+    steps:
+    - uses: actions/checkout@v4
+    - name: Prepare Android build
+      uses: ./.github/actions/android-build
+    - name: get date
+      id: get-date
+      run: |
+        echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+    - name: Release daily build result
+      run: |
+        aws s3 cp --recursive --region ap-northeast-2 ${{ github.workspace }}/android_lib/ s3://nnstreamer-release/nnstreamer/${{ steps.get-date.outputs.date }}/android/
+        aws s3 rm s3://nnstreamer-release/nnstreamer/latest/android/
+        aws s3 cp --recursive --region ap-northeast-2 ${{ github.workspace }}/android_lib/ s3://nnstreamer-release/nnstreamer/latest/android/
+    - name: Publish javadoc
+      run: |
+        echo "Publish javadoc, ${{ github.workspace }}"
+        mkdir ~/javadoc_dir
+        sed -i "s|@BUILD_ANDROID@|//|" ${{ github.workspace }}/java/android/nnstreamer/src/main/java/org/nnsuite/nnstreamer/*.java
+        javadoc -d ~/javadoc_dir -public -splitindex -Xdoclint:none --ignore-source-errors java/android/nnstreamer/src/main/java/org/nnsuite/nnstreamer/*
+        aws s3 cp --recursive --region ap-northeast-2 ~/javadoc_dir/ s3://nnstreamer-release/nnstreamer/${{ steps.get-date.outputs.date }}/java_html/
+        aws s3 rm s3://nnstreamer-release/nnstreamer/latest/java_html/
+        aws s3 cp --recursive --region ap-northeast-2 ~/javadoc_dir/ s3://nnstreamer-release/nnstreamer/latest/java_html/
