@@ -111,6 +111,7 @@ static const char *ml_nnfw_subplugin_name[] = {
   [ML_NNFW_TYPE_ONNX_RUNTIME] = "onnxruntime",
   [ML_NNFW_TYPE_NCNN] = "ncnn",
   [ML_NNFW_TYPE_TENSORRT] = "tensorrt",
+  [ML_NNFW_TYPE_QNN] = "qnn",
   NULL
 };
 
@@ -1956,6 +1957,7 @@ _ml_validate_model_file (const char *const *model,
     case ML_NNFW_TYPE_ONNX_RUNTIME:
     case ML_NNFW_TYPE_NCNN:
     case ML_NNFW_TYPE_TENSORRT:
+    case ML_NNFW_TYPE_QNN:
       /**
        * We cannot check the file ext with NNFW.
        * NNFW itself will validate metadata and model file.
