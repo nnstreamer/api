@@ -38,8 +38,113 @@ extern void init_filter_cpp (void);
 extern void init_filter_custom (void);
 extern void init_filter_custom_easy (void);
 
+/**
+ * @brief Set additional environment (ADSP_LIBRARY_PATH) for Qualcomm Android.
+ */
+static gboolean
+_qc_android_set_env (JNIEnv *env, jobject context)
+{
+  gboolean failed = TRUE;
+  jclass context_class = NULL;
+  jmethodID get_application_info_method_id = NULL;
+  jobject application_info_object = NULL;
+  jclass application_info_object_class = NULL;
+  jfieldID native_library_dir_field_id = NULL;
+  jstring native_library_dir_path = NULL;
+
+  const gchar *native_library_dir_path_str;
+  gchar *new_path;
+
+  g_return_val_if_fail (env != NULL, FALSE);
+  g_return_val_if_fail (context != NULL, FALSE);
+
+  context_class = (*env)->GetObjectClass (env, context);
+  if (!context_class) {
+    _ml_loge ("Failed to get context class.");
+    goto done;
+  }
+
+  get_application_info_method_id = (*env)->GetMethodID (env, context_class,
+      "getApplicationInfo", "()Landroid/content/pm/ApplicationInfo;");
+  if (!get_application_info_method_id) {
+    _ml_loge ("Failed to get method ID for `ApplicationInfo()`.");
+    goto done;
+  }
+
+  application_info_object = (*env)->CallObjectMethod (env, context, get_application_info_method_id);
+  if ((*env)->ExceptionCheck (env)) {
+    (*env)->ExceptionDescribe (env);
+    (*env)->ExceptionClear (env);
+    _ml_loge ("Failed to call method `ApplicationInfo()`.");
+    goto done;
+  }
+
+  application_info_object_class = (*env)->GetObjectClass (env, application_info_object);
+  if (!application_info_object_class) {
+    _ml_loge ("Failed to get `ApplicationInfo` object class");
+    goto done;
+  }
+
+  native_library_dir_field_id = (*env)->GetFieldID (env,
+      application_info_object_class, "nativeLibraryDir", "Ljava/lang/String;");
+  if (!native_library_dir_field_id) {
+    _ml_loge ("Failed to get field ID for `nativeLibraryDir`.");
+    goto done;
+  }
+
+  native_library_dir_path = (jstring) (
+      (*env)->GetObjectField (env, application_info_object, native_library_dir_field_id));
+  if (!native_library_dir_path) {
+    _ml_loge ("Failed to get field `nativeLibraryDir`.");
+    goto done;
+  }
+
+  native_library_dir_path_str = (*env)->GetStringUTFChars (env, native_library_dir_path, NULL);
+  if ((*env)->ExceptionCheck (env)) {
+    (*env)->ExceptionDescribe (env);
+    (*env)->ExceptionClear (env);
+    _ml_loge ("Failed to get string `nativeLibraryDir`");
+    goto done;
+  }
+
+  new_path = g_strconcat (native_library_dir_path_str,
+      ";/vendor/dsp/cdsp;/vendor/lib/rfsa/adsp;/system/lib/rfsa/adsp;/system/vendor/lib/rfsa/adsp;/dsp", NULL);
+
+  /**
+   * See https://docs.qualcomm.com/bundle/publicresource/topics/80-63442-2/dsp_runtime.html for details
+   */
+  _ml_logi ("Set env ADSP_LIBRARY_PATH for Qualcomm SoC: %s", new_path);
+  g_setenv ("ADSP_LIBRARY_PATH", new_path, TRUE);
+
+  g_free (new_path);
+
+  (*env)->ReleaseStringUTFChars (env, native_library_dir_path, native_library_dir_path_str);
+
+  failed = FALSE;
+
+done:
+
+  if (native_library_dir_path) {
+    (*env)->DeleteLocalRef (env, native_library_dir_path);
+  }
+
+  if (application_info_object_class) {
+    (*env)->DeleteLocalRef (env, application_info_object_class);
+  }
+
+  if (application_info_object) {
+    (*env)->DeleteLocalRef (env, application_info_object);
+  }
+
+  if (context_class) {
+    (*env)->DeleteLocalRef (env, context_class);
+  }
+
+  return !(failed);
+}
+
 #if defined (ENABLE_TENSORFLOW_LITE)
-extern void init_filter_tflite (JNIEnv * env, jobject context);
+extern void init_filter_tflite (void);
 #endif
 #if defined (ENABLE_SNAP)
 extern void init_filter_snap (void);
@@ -48,7 +153,7 @@ extern void init_filter_snap (void);
 extern void init_filter_nnfw (void);
 #endif
 #if defined (ENABLE_SNPE)
-extern void init_filter_snpe (JNIEnv * env, jobject context);
+extern void init_filter_snpe (void);
 #endif
 #if defined (ENABLE_PYTORCH)
 extern void init_filter_torch (void);
@@ -813,13 +918,20 @@ nnstreamer_native_initialize (JNIEnv * env, jobject context)
 #endif /* ENABLE_FLATBUF */
 #endif
 
+#if defined (ENABLE_SNPE) || defined (ENABLE_TFLITE_QNN_DELEGATE)
+    /* some filters require additional tasks */
+    if (!_qc_android_set_env (env, context)) {
+      _ml_logw ("Failed to set environment variables for QC Android. Some features may not work properly.");
+    }
+#endif
+
     /* tensor-filter sub-plugins */
     init_filter_cpp ();
     init_filter_custom ();
     init_filter_custom_easy ();
 
 #if defined (ENABLE_TENSORFLOW_LITE)
-    init_filter_tflite (env, context);
+    init_filter_tflite ();
 #endif
 #if defined (ENABLE_SNAP)
     init_filter_snap ();
@@ -828,7 +940,7 @@ nnstreamer_native_initialize (JNIEnv * env, jobject context)
     init_filter_nnfw ();
 #endif
 #if defined (ENABLE_SNPE)
-    init_filter_snpe (env, context);
+    init_filter_snpe ();
 #endif
 #if defined (ENABLE_PYTORCH)
     init_filter_torch ();
