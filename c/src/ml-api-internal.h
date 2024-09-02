@@ -372,7 +372,7 @@ void _ml_error_report_ (const char *fmt, ...);
 void _ml_error_report_continue_ (const char *fmt, ...);
 
 /**
- * @brief Private macro for error repoting infra. Don't use.
+ * @brief Private macro for error reporting infra. Don't use.
  */
 #define _ml_error_report_return_(errno, ...)  do { \
   _ml_error_report_ (__VA_ARGS__); \
@@ -380,7 +380,7 @@ void _ml_error_report_continue_ (const char *fmt, ...);
 } while(0)
 
 /**
- * @brief Private macro for error repoting infra. Don't use.
+ * @brief Private macro for error reporting infra. Don't use.
  */
 #define _ml_error_report_return_continue_(errno, ...)  do { \
   _ml_error_report_continue_ (__VA_ARGS__); \
