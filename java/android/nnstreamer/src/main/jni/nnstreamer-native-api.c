@@ -155,6 +155,9 @@ extern void init_filter_nnfw (void);
 #if defined (ENABLE_SNPE)
 extern void init_filter_snpe (void);
 #endif
+#if defined (ENABLE_QNN)
+extern void init_filter_qnn (void);
+#endif
 #if defined (ENABLE_PYTORCH)
 extern void init_filter_torch (void);
 #endif
@@ -844,6 +847,9 @@ nns_get_nnfw_type (jint fw_type, ml_nnfw_type_e * nnfw)
     case 5: /* NNFWType.MXNET */
       *nnfw = ML_NNFW_TYPE_MXNET;
       break;
+    case 6: /* NNFWType.QNN */
+      *nnfw = ML_NNFW_TYPE_QNN;
+      break;
     default: /* Unknown */
       _ml_logw ("Unknown NNFW type (%d).", fw_type);
       return FALSE;
@@ -918,7 +924,7 @@ nnstreamer_native_initialize (JNIEnv * env, jobject context)
 #endif /* ENABLE_FLATBUF */
 #endif
 
-#if defined (ENABLE_SNPE) || defined (ENABLE_TFLITE_QNN_DELEGATE)
+#if defined (ENABLE_QNN) || defined (ENABLE_SNPE) || defined (ENABLE_TFLITE_QNN_DELEGATE)
     /* some filters require additional tasks */
     if (!_qc_android_set_env (env, context)) {
       _ml_logw ("Failed to set environment variables for QC Android. Some features may not work properly.");
@@ -941,6 +947,9 @@ nnstreamer_native_initialize (JNIEnv * env, jobject context)
 #endif
 #if defined (ENABLE_SNPE)
     init_filter_snpe ();
+#endif
+#if defined (ENABLE_QNN)
+    init_filter_qnn ();
 #endif
 #if defined (ENABLE_PYTORCH)
     init_filter_torch ();

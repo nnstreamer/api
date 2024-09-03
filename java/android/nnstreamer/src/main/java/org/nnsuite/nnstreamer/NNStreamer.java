@@ -86,6 +86,11 @@ public final class NNStreamer {
          */
         MXNET,
         /**
+         * <a href="https://www.qualcomm.com/developer/software/qualcomm-ai-engine-direct-sdk">QNN</a>
+         * provides lower-level, unified APIs for Qualcomm AI development.
+         */
+        QNN,
+        /**
          * Unknown framework (usually error)
          */
         UNKNOWN

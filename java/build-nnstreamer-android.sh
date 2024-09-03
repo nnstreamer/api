@@ -56,6 +56,9 @@
 ##@@   --enable_snpe=(yes|no)
 ##@@       'yes'      : build with sub-plugin for SNPE
 ##@@       'no'       : [default]
+##@@   --enable_qnn=(yes|no)
+##@@       'yes'      : build with sub-plugin for QNN
+##@@       'no'       : [default]
 ##@@   --enable_pytorch=(yes(:(1.10.1))?|no)
 ##@@       'yes'      : build with sub-plugin for PyTorch. You can optionally specify the version of
 ##@@                    PyTorch to use by appending ':version' [1.10.1 is the default].
@@ -116,6 +119,9 @@ enable_nnfw="yes"
 
 # Enable SNPE
 enable_snpe="no"
+
+# Enable QNN
+enable_qnn="no"
 
 # Enable PyTorch
 enable_pytorch="no"
@@ -212,6 +218,9 @@ for arg in "$@"; do
         --enable_snpe=*)
             enable_snpe=${arg#*=}
             ;;
+        --enable_qnn=*)
+            enable_qnn=${arg#*=}
+            ;;
         --enable_pytorch=*)
             IFS=':' read -ra enable_pytorch_args <<< "${arg#*=}"
             is_valid_pytorch_version=0
@@ -284,6 +293,7 @@ elif [[ $build_type == "internal" ]]; then
     enable_nnfw="yes"
     enable_nnfw_ext="yes"
     enable_snpe="no"
+    enable_qnn="no"
     enable_pytorch="no"
     enable_tflite="no"
     enable_mxnet="no"
@@ -333,6 +343,13 @@ if [[ $enable_snpe == "yes" ]]; then
     [ $target_abi != "arm64-v8a" ] && echo "Set target ABI arm64-v8a to build sub-plugin for SNPE." && exit 1
 
     echo "Build with SNPE: $SNPE_DIRECTORY"
+fi
+
+if [[ $enable_qnn == "yes" ]]; then
+    [ -z "$QNN_DIRECTORY" ] && echo "Need to set QNN_DIRECTORY, to build sub-plugin for QNN." && exit 1
+    [ $target_abi != "arm64-v8a" ] && echo "Set target ABI arm64-v8a to build sub-plugin for QNN." && exit 1
+
+    echo "Build with QNN: $QNN_DIRECTORY"
 fi
 
 if [[ $enable_pytorch == "yes" ]]; then
@@ -577,6 +594,24 @@ if [[ $enable_snpe == "yes" ]]; then
 
     rm nnstreamer/src/main/jni/snpe/lib/ext/arm64-v8a/libc++_shared.so
     mv nnstreamer/src/main/jni/snpe/lib/ext/arm64-v8a/libSNPE.so nnstreamer/src/main/jni/snpe/lib
+fi
+
+# Update QNN option
+if [[ $enable_qnn == "yes" ]]; then
+    sed -i "s|ENABLE_QNN := false|ENABLE_QNN := true|" nnstreamer/src/main/jni/Android.mk
+    sed -i "$ a QNN_EXT_LIBRARY_PATH=src/main/jni/qnn/lib/ext" gradle.properties
+
+    mkdir -p nnstreamer/src/main/jni/qnn/lib/ext/arm64-v8a
+    cp -r $QNN_DIRECTORY/include nnstreamer/src/main/jni/qnn
+
+    # Copy libs to build QNN
+    cp $QNN_DIRECTORY/lib/aarch64-android/libQnnCpu.so nnstreamer/src/main/jni/qnn/lib/
+    cp $QNN_DIRECTORY/lib/aarch64-android/libQnnGpu.so nnstreamer/src/main/jni/qnn/lib/
+    cp $QNN_DIRECTORY/lib/aarch64-android/libQnnDsp.so nnstreamer/src/main/jni/qnn/lib/
+    cp $QNN_DIRECTORY/lib/aarch64-android/libQnnHtp.so nnstreamer/src/main/jni/qnn/lib/
+
+    # Copy external so files for QNN
+    cp $QNN_DIRECTORY/lib/hexagon-v*/unsigned/libQnn*Skel.so nnstreamer/src/main/jni/qnn/lib/ext/arm64-v8a
 fi
 
 # Update PyTorch option

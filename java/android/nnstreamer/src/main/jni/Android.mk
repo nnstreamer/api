@@ -76,6 +76,9 @@ _ENABLE_SNPE := false
 endif #endif ($(filter $(TARGET_ARCH_ABI), arm64-v8a,)
 endif #endif ($(ENABLE_SNPE),true)
 
+# QNN
+ENABLE_QNN := false
+
 # PyTorch
 ENABLE_PYTORCH := false
 
@@ -135,6 +138,13 @@ NNS_API_FLAGS += -DENABLE_SNPE=1
 NNS_SUBPLUGINS += snpe-subplugin
 
 include $(LOCAL_PATH)/Android-snpe.mk
+endif
+
+ifeq ($(ENABLE_QNN),true)
+NNS_API_FLAGS += -DENABLE_QNN=1
+NNS_SUBPLUGINS += qnn-subplugin
+
+include $(LOCAL_PATH)/Android-qnn.mk
 endif
 
 ifeq ($(ENABLE_PYTORCH),true)
