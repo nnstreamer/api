@@ -367,7 +367,7 @@ public class APITestSingleShot {
 
     @Test
     public void testInvalidFile_n() {
-        String root = Environment.getExternalStorageDirectory().getAbsolutePath();
+        String root = APITestCommon.getRootDirectory();
         File model = new File(root + "/invalid_path/invalid.tflite");
 
         try {

@@ -1407,7 +1407,7 @@ public class APITestPipeline {
 
     @Test
     public void testAMCsrc() {
-        String root = Environment.getExternalStorageDirectory().getAbsolutePath();
+        String root = APITestCommon.getRootDirectory();
         String media = root + "/nnstreamer/test/test_video.mp4";
 
         String desc = "amcsrc location=" + media + " ! " +
@@ -2318,7 +2318,7 @@ public class APITestPipeline {
             return;
         }
 
-        String root = Environment.getExternalStorageDirectory().getAbsolutePath();
+        String root = APITestCommon.getRootDirectory();
         String png_path = root + "/nnstreamer/test/orange.png";
 
         String pipeline_desc = "appsrc name=srcx caps=image/png ! pngdec ! videoconvert ! videoscale ! video/x-raw,format=RGB,width=224,height=224,framerate=0/1 ! " +
