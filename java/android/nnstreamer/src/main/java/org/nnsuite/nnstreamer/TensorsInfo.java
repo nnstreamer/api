@@ -7,6 +7,7 @@
 package org.nnsuite.nnstreamer;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * Provides interfaces to handle tensors information.
@@ -286,7 +287,15 @@ public final class TensorsInfo implements AutoCloseable, Cloneable {
         }
 
         public int[] getDimension() {
-            return this.dimension;
+            int rank = 0;
+            for (int i = 0; i < NNStreamer.TENSOR_RANK_LIMIT; i++) {
+                if (this.dimension[i] <= 0) {
+                    break;
+                }
+                rank++;
+            }
+
+            return Arrays.copyOf(this.dimension, rank);
         }
 
         public int getSize() {
