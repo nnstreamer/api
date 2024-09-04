@@ -193,7 +193,11 @@ public class APITestTensorsInfo {
     @Test
     public void testAddInvalidRank_n() {
         try {
-            mInfo.addTensorInfo(NNStreamer.TensorType.INT32, new int[]{2,2,2,2,2});
+            int[] invalid_rank_dim = new int[NNStreamer.TENSOR_RANK_LIMIT + 1];
+            for (int i = 0; i < invalid_rank_dim.length; i++) {
+                invalid_rank_dim[i] = i + 1;
+            }
+            mInfo.addTensorInfo(NNStreamer.TensorType.INT32, invalid_rank_dim);
             fail();
         } catch (Exception e) {
             /* expected */
