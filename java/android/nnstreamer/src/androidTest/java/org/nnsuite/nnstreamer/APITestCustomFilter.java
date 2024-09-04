@@ -159,7 +159,7 @@ public class APITestCustomFilter {
     @Test
     public void testCustomFilters() {
         String desc = "appsrc name=srcx ! " +
-                "other/tensor,dimension=(string)10:1:1:1,type=(string)int32,framerate=(fraction)0/1 ! " +
+                "other/tensor,dimension=(string)10,type=(string)int32,framerate=(fraction)0/1 ! " +
                 "tensor_filter framework=custom-easy model=" + mCustomPassthrough.getName() + " ! " +
                 "tensor_filter framework=custom-easy model=" + mCustomConvert.getName() + " ! " +
                 "tensor_filter framework=custom-easy model=" + mCustomAdd.getName() + " ! " +

@@ -91,7 +91,7 @@ public class APITestSingleShot {
             /* output: uint8 1001:1 */
             assertEquals(1, info.getTensorsCount());
             assertEquals(NNStreamer.TensorType.UINT8, info.getTensorType(0));
-            assertArrayEquals(new int[]{1001,1,1,1}, info.getTensorDimension(0));
+            assertArrayEquals(new int[]{1001,1}, info.getTensorDimension(0));
 
             single.close();
         } catch (Exception e) {
@@ -149,7 +149,7 @@ public class APITestSingleShot {
             /* input: float32 with dimension 1 */
             assertEquals(1, info.getTensorsCount());
             assertEquals(NNStreamer.TensorType.FLOAT32, info.getTensorType(0));
-            assertArrayEquals(new int[]{1,1,1,1}, info.getTensorDimension(0));
+            assertArrayEquals(new int[]{1}, info.getTensorDimension(0));
 
             TensorsInfo newInfo = new TensorsInfo();
             newInfo.addTensorInfo(NNStreamer.TensorType.FLOAT32, new int[]{10});
@@ -160,13 +160,13 @@ public class APITestSingleShot {
             /* input: float32 with dimension 10 */
             assertEquals(1, info.getTensorsCount());
             assertEquals(NNStreamer.TensorType.FLOAT32, info.getTensorType(0));
-            assertArrayEquals(new int[]{10,1,1,1}, info.getTensorDimension(0));
+            assertArrayEquals(new int[]{10}, info.getTensorDimension(0));
 
             info = single.getOutputInfo();
             /* output: float32 with dimension 10 */
             assertEquals(1, info.getTensorsCount());
             assertEquals(NNStreamer.TensorType.FLOAT32, info.getTensorType(0));
-            assertArrayEquals(new int[]{10,1,1,1}, info.getTensorDimension(0));
+            assertArrayEquals(new int[]{10}, info.getTensorDimension(0));
 
             single.close();
         } catch (Exception e) {
@@ -658,7 +658,7 @@ public class APITestSingleShot {
             SingleShot single = new SingleShot(APITestCommon.getTFLiteImgModel());
 
             assertEquals("3:224:224:1", single.getValue("input"));
-            assertEquals("1001:1:1:1", single.getValue("output"));
+            assertEquals("1001:1", single.getValue("output"));
 
             single.close();
         } catch (Exception e) {

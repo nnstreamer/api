@@ -853,8 +853,7 @@ public class APITestPipeline {
                         mInvalidState = true;
                     }
 
-                    if (dimension[0] != 1 || dimension[1] != 500 ||
-                        dimension[2] != 1 || dimension[3] != 1) {
+                    if (dimension[0] != 1 || dimension[1] != 500) {
                         mInvalidState = true;
                     }
 
