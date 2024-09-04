@@ -1,7 +1,5 @@
 package org.nnsuite.nnstreamer;
 
-import android.os.Environment;
-import android.support.test.rule.GrantPermissionRule;
 import android.support.test.runner.AndroidJUnit4;
 
 import org.junit.Before;

@@ -3,9 +3,7 @@ package org.nnsuite.nnstreamer;
 import android.Manifest;
 import android.content.Context;
 import android.content.res.AssetManager;
-import android.os.Environment;
 import android.support.test.InstrumentationRegistry;
-import android.support.test.rule.GrantPermissionRule;
 import android.support.test.runner.AndroidJUnit4;
 
 import org.junit.Before;
