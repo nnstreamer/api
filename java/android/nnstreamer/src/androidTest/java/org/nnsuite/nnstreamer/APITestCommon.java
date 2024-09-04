@@ -34,7 +34,7 @@ public class APITestCommon {
     private static boolean mInitialized = false;
     private static String mRootDirectory = null;
 
-    private static String getRootDirectory() {
+    public static String getRootDirectory() {
         return mInitialized ? mRootDirectory : null;
     }
 
