@@ -99,8 +99,6 @@ _mlrs_get_conn_type (const gchar * value)
     conn_type = NNS_EDGE_CONNECT_TYPE_HYBRID;
   else if (0 == g_ascii_strcasecmp (value, "MQTT"))
     conn_type = NNS_EDGE_CONNECT_TYPE_MQTT;
-  else if (0 == g_ascii_strcasecmp (value, "AITT"))
-    conn_type = NNS_EDGE_CONNECT_TYPE_AITT;
   else
     conn_type = NNS_EDGE_CONNECT_TYPE_UNKNOWN;
 
