@@ -56,8 +56,7 @@ typedef struct
 typedef struct
 {
   ml_info_type_e type; /**< The type of ml_info. */
-  unsigned int length; /**< The length of data. */
-  ml_info_s **info; /**< array of ml_info. */
+  GSList *info; /**< The list of ml_info. */
 } ml_info_list_s;
 
 /**
@@ -1319,14 +1318,7 @@ _ml_info_is_valid (gpointer handle, ml_info_type_e expected)
       break;
     }
     case ML_INFO_TYPE_INFORMATION_LIST:
-    {
-      ml_info_list_s *_list = (ml_info_list_s *) handle;
-
-      if (_list->length == 0 || !_list->info)
-        return false;
-
       break;
-    }
     default:
       /* Unknown type */
       return false;
@@ -1384,8 +1376,10 @@ _ml_info_create (ml_info_type_e type)
  * @brief Internal function for destroy ml_info
  */
 static void
-_ml_info_destroy (ml_info_s * info)
+_ml_info_destroy (gpointer data)
 {
+  ml_info_s *info = (ml_info_s *) data;
+
   if (!info)
     return;
 
@@ -1491,7 +1485,7 @@ ml_option_destroy (ml_option_h option)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'option' is not a ml-option handle.");
 
-  _ml_info_destroy ((ml_info_s *) option);
+  _ml_info_destroy (option);
 
   return ML_ERROR_NONE;
 }
@@ -1637,7 +1631,7 @@ ml_information_destroy (ml_information_h information)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'information' is not a ml-information handle.");
 
-  _ml_info_destroy ((ml_info_s *) information);
+  _ml_info_destroy (information);
 
   return ML_ERROR_NONE;
 }
@@ -1673,91 +1667,56 @@ ml_information_get (ml_information_h information, const char *key, void **value)
 }
 
 /**
- * @brief Internal function for destroy ml_info_list_s instance.
- */
-static void
-_ml_info_list_destroy (ml_info_list_s * list)
-{
-  guint i;
-
-  if (!list)
-    return;
-
-  list->type = ML_INFO_TYPE_UNKNOWN;
-
-  for (i = 0; i < list->length; ++i) {
-    _ml_info_destroy (list->info[i]);
-  }
-
-  g_free (list->info);
-  g_free (list);
-}
-
-/**
- * @brief Internal function for getting length of ml_info_list_s instance.
- */
-static unsigned int
-_ml_info_list_length (ml_info_list_s * list)
-{
-  return list ? list->length : 0;
-}
-
-/**
- * @brief Internal function for getting index-th ml_information_h instance in ml_info_list_s instance.
- */
-static ml_info_s *
-_ml_info_list_get (ml_info_list_s * list, unsigned int index)
-{
-  if (!list || index >= list->length)
-    return NULL;
-
-  return list->info[index];
-}
-
-/**
  * @brief Creates an ml-information-list instance and returns the handle.
  */
 int
-_ml_information_list_create (const unsigned int length,
-    ml_information_list_h * list)
+_ml_information_list_create (ml_information_list_h * list)
 {
   ml_info_list_s *_info_list;
-  guint i;
 
   check_feature_state (ML_FEATURE);
-
-  if (length == 0U)
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The length of information list should be a positive value.");
 
   if (!list)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'list' is NULL. It should be a valid ml_information_list_h.");
 
   _info_list = g_try_new0 (ml_info_list_s, 1);
-  if (!_info_list)
-    goto error;
-
-  _info_list->info = g_try_new0 (ml_info_s *, length);
-  if (!_info_list->info)
-    goto error;
+  if (!_info_list) {
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Failed to allocate memory for ml_information_list_h. Out of memory?");
+  }
 
   _info_list->type = ML_INFO_TYPE_INFORMATION_LIST;
-  _info_list->length = length;
-
-  for (i = 0; i < length; i++) {
-    _info_list->info[i] = _ml_info_create (ML_INFO_TYPE_INFORMATION);
-    if (_info_list->info[i] == NULL)
-      goto error;
-  }
 
   *list = _info_list;
   return ML_ERROR_NONE;
+}
 
-error:
-  _ml_info_list_destroy (_info_list);
-  _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
-      "Failed to allocate memory for ml_information_list_h. Out of memory?");
+/**
+ * @brief Adds an ml-information into ml-information-list.
+ */
+int
+_ml_information_list_add (ml_information_list_h list, ml_information_h info)
+{
+  ml_info_list_s *_info_list;
+
+  check_feature_state (ML_FEATURE);
+
+  if (!_ml_info_is_valid (list, ML_INFO_TYPE_INFORMATION_LIST)) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'list' is invalid. It should be a valid ml_information_list_h, which should be created by ml_information_list_create().");
+  }
+
+  if (!_ml_info_is_valid (info, ML_INFO_TYPE_OPTION) &&
+      !_ml_info_is_valid (info, ML_INFO_TYPE_INFORMATION)) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'info' is invalid. It should be a valid ml_information_h, which should be created by ml_information_create().");
+  }
+
+  _info_list = (ml_info_list_s *) list;
+  _info_list->info = g_slist_append (_info_list->info, info);
+
+  return ML_ERROR_NONE;
 }
 
 /**
@@ -1766,18 +1725,18 @@ error:
 int
 ml_information_list_destroy (ml_information_list_h list)
 {
+  ml_info_list_s *_info_list;
+
   check_feature_state (ML_FEATURE);
 
-  if (!list) {
+  if (!_ml_info_is_valid (list, ML_INFO_TYPE_INFORMATION_LIST)) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'list' is NULL. It should be a valid ml_information_list_h, which should be created by ml_information_list_create().");
+        "The parameter, 'list' is invalid. It should be a valid ml_information_list_h, which should be created by ml_information_list_create().");
   }
 
-  if (!_ml_info_is_valid (list, ML_INFO_TYPE_INFORMATION_LIST))
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'list' is not a ml-information-list handle.");
-
-  _ml_info_list_destroy ((ml_info_list_s *) list);
+  _info_list = (ml_info_list_s *) list;
+  g_slist_free_full (_info_list->info, _ml_info_destroy);
+  g_free (_info_list);
 
   return ML_ERROR_NONE;
 }
@@ -1788,11 +1747,13 @@ ml_information_list_destroy (ml_information_list_h list)
 int
 ml_information_list_length (ml_information_list_h list, unsigned int *length)
 {
+  ml_info_list_s *_info_list;
+
   check_feature_state (ML_FEATURE);
 
-  if (!list) {
+  if (!_ml_info_is_valid (list, ML_INFO_TYPE_INFORMATION_LIST)) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'list' is NULL. It should be a valid ml_information_list_h, which should be created by ml_information_list_create().");
+        "The parameter, 'list' is invalid. It should be a valid ml_information_list_h, which should be created by ml_information_list_create().");
   }
 
   if (!length) {
@@ -1800,11 +1761,8 @@ ml_information_list_length (ml_information_list_h list, unsigned int *length)
         "The parameter, 'length' is NULL. It should be a valid unsigned int*");
   }
 
-  if (!_ml_info_is_valid (list, ML_INFO_TYPE_INFORMATION_LIST))
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'list' is not a ml-information-list handle.");
-
-  *length = _ml_info_list_length ((ml_info_list_s *) list);
+  _info_list = (ml_info_list_s *) list;
+  *length = g_slist_length (_info_list->info);
 
   return ML_ERROR_NONE;
 }
@@ -1816,10 +1774,11 @@ int
 ml_information_list_get (ml_information_list_h list, unsigned int index,
     ml_information_h * information)
 {
-  ml_info_s *info_s;
+  ml_info_list_s *_info_list;
+
   check_feature_state (ML_FEATURE);
 
-  if (!list) {
+  if (!_ml_info_is_valid (list, ML_INFO_TYPE_INFORMATION_LIST)) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'list' is NULL. It should be a valid ml_information_list_h, which should be created by ml_information_list_create().");
   }
@@ -1829,17 +1788,13 @@ ml_information_list_get (ml_information_list_h list, unsigned int index,
         "The parameter, 'information' is NULL. It should be a valid ml_information_h*");
   }
 
-  if (!_ml_info_is_valid (list, ML_INFO_TYPE_INFORMATION_LIST))
-    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'list' is not a ml-information-list handle.");
+  _info_list = (ml_info_list_s *) list;
+  *information = g_slist_nth_data (_info_list->info, index);
 
-  info_s = _ml_info_list_get ((ml_info_list_s *) list, index);
-  if (info_s == NULL) {
+  if (*information == NULL) {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parameter, 'index' is invalid. It should be less than the length of ml_information_list_h");
+        "The parameter, 'index' is invalid. It should be less than the length of ml_information_list_h.");
   }
-
-  *information = (ml_information_h) info_s;
 
   return ML_ERROR_NONE;
 }

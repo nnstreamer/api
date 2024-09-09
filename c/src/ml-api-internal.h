@@ -331,7 +331,12 @@ int _ml_information_set (ml_information_h ml_info, const char *key, void *value,
 /**
  * @brief Creates an ml-information-list instance and returns the handle.
  */
-int _ml_information_list_create (const unsigned int length, ml_information_list_h *list);
+int _ml_information_list_create (ml_information_list_h *list);
+
+/**
+ * @brief Adds an ml-information into ml-information-list.
+ */
+int _ml_information_list_add (ml_information_list_h list, ml_information_h info);
 
 #if defined (__TIZEN__)
 /****** TIZEN CHECK FEATURE BEGINS *****/

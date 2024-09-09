@@ -1016,13 +1016,45 @@ TEST_F (MLServiceAgentTest, ml_option_get_00_n)
 TEST_F (MLServiceAgentTest, ml_information_list_create_00_n)
 {
   int status;
-  ml_information_list_h info_list;
 
-  status = _ml_information_list_create (0U, &info_list);
+  status = _ml_information_list_create (NULL);
+  EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+}
+
+/**
+ * @brief Test _ml_information_list_add with invalid param.
+ */
+TEST_F (MLServiceAgentTest, ml_information_list_add_00_n)
+{
+  ml_information_h info_h = NULL;
+  int status;
+
+  status = _ml_information_create (&info_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = _ml_information_list_add (NULL, info_h);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
 
-  status = _ml_information_list_create (4U, NULL);
+  status = ml_information_destroy (info_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+}
+
+/**
+ * @brief Test _ml_information_list_add with invalid param.
+ */
+TEST_F (MLServiceAgentTest, ml_information_list_add_01_n)
+{
+  ml_information_list_h info_list_h = NULL;
+  int status;
+
+  status = _ml_information_list_create (&info_list_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  status = _ml_information_list_add (info_list_h, NULL);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);
+
+  status = ml_information_list_destroy (info_list_h);
+  EXPECT_EQ (ML_ERROR_NONE, status);
 }
 
 /**
