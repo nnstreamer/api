@@ -138,7 +138,7 @@ _build_ml_info_from_json_cstr (const gchar * jcstring, void **handle)
   }
 
   if (array)
-    ret = _ml_information_list_create (n, &_info_list);
+    ret = _ml_information_list_create (&_info_list);
   else
     ret = _ml_information_create (&_info);
   if (ML_ERROR_NONE != ret) {
@@ -149,7 +149,14 @@ _build_ml_info_from_json_cstr (const gchar * jcstring, void **handle)
   for (i = 0; i < n; i++) {
     if (array) {
       jobj = json_array_get_object_element (array, i);
-      ml_information_list_get (_info_list, i, &_info);
+      ret = _ml_information_create (&_info);
+      if (ML_ERROR_NONE != ret) {
+        _ml_error_report
+            ("Failed to parse app_info, cannot create info handle.");
+        goto done;
+      }
+
+      _ml_information_list_add (_info_list, _info);
     } else {
       jobj = json_node_get_object (rnode);
     }
@@ -176,7 +183,7 @@ done:
   } else {
     if (_info_list)
       ml_information_list_destroy (_info_list);
-    if (_info)
+    else if (_info)
       ml_information_destroy (_info);
   }
 
