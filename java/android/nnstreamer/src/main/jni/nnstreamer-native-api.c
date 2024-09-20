@@ -164,6 +164,9 @@ extern void init_filter_torch (void);
 #if defined (ENABLE_MXNET)
 extern void init_filter_mxnet (void);
 #endif
+#if defined (ENABLE_LLAMA2C)
+extern void init_filter_llama2c (void);
+#endif
 
 
 #if defined GST_VERSION_MINOR && GST_VERSION_MINOR >= 24
@@ -956,6 +959,9 @@ nnstreamer_native_initialize (JNIEnv * env, jobject context)
 #endif
 #if defined (ENABLE_MXNET)
     init_filter_mxnet ();
+#endif
+#if defined (ENABLE_LLAMA2C)
+    init_filter_llama2c ();
 #endif
 #endif /* __ANDROID__ */
     nns_is_initilaized = TRUE;
