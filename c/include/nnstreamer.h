@@ -428,7 +428,7 @@ int ml_pipeline_src_set_event_cb (ml_pipeline_src_h src_handle, ml_pipeline_src_
  * @retval #ML_ERROR_TRY_AGAIN The pipeline is not ready yet.
  * @code
  * ml_tensors_info_h info = NULL;
- * ml_pipeline_src_get_tensors_info (src_handle &info);
+ * ml_pipeline_src_get_tensors_info (src_handle, &info);
  * ... do something ....
  * ml_tensors_info_destroy (info);
  * @endcode
