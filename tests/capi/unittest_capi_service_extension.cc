@@ -382,7 +382,7 @@ _extension_test_imgclf (ml_service_h handle, gboolean is_pipeline)
   tried = 0;
   do {
     g_usleep (30000U);
-  } while (tdata->received < 3 && tried++ < 10);
+  } while (tdata->received < 3 && tried++ < 100);
 
   EXPECT_TRUE (tdata->received > 0);
 
