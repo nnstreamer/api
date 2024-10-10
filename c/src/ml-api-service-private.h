@@ -21,6 +21,11 @@
 #include <ml-api-inference-internal.h>
 #include <mlops-agent-interface.h>
 
+/* Use staging header for Tizen 7.0 to 8.0. It will be replaced in Tizen 9.0. */
+#if (7 <= TIZENVERSION) && (TIZENVERSION < 9)
+#include <ml-api-staging.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */

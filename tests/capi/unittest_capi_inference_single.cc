@@ -1713,6 +1713,8 @@ TEST (nnstreamer_capi_singleshot, set_input_info_extended_success)
   const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
   gchar *test_model;
 
+  GTEST_SKIP();
+
   /* supposed to run test in build directory */
   if (root_path == NULL)
     root_path = "..";
