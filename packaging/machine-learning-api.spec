@@ -297,6 +297,13 @@ Requires:	capi-machine-learning-service = %{version}-%{release}
 Static library of Tizen Machine Learning Service API.
 %endif
 
+%package -n capi-machine-learning-staging
+Summary:	Tizen staging headers for Tizen Machine Learning API
+Group:		Machine Learning/ML Framework
+Requires:	capi-machine-learning-service-devel = %{version}-%{release}
+%description -n capi-machine-learning-staging
+Tizen staging headers for Tizen Machine Learning API.
+
 %if 0%{?unit_test}
 %if 0%{?release_test}
 %package -n capi-machine-learning-unittests
@@ -538,6 +545,9 @@ install -m 0755 packaging/run-unittest.sh %{buildroot}%{_bindir}/tizen-unittests
 
 %files -n capi-machine-learning-service-devel-static
 %{_libdir}/libcapi-ml-service.a
+
+%files -n capi-machine-learning-staging
+%{_includedir}/nnstreamer/ml-api-staging.h
 %endif
 
 %if 0%{?unit_test}
