@@ -38,8 +38,6 @@ extern "C" {
 #elif (TIZENVERSION < 5)
 #define get_tizen_resource(...) (0)
 #define release_tizen_resource(...) do { } while (0)
-typedef void * mm_resource_manager_h;
-typedef enum { MM_RESOURCE_MANAGER_RES_TYPE_MAX } mm_resource_manager_res_type_e;
 
 #else /* TIZENVERSION */
 #error Tizen version is not defined.
@@ -109,14 +107,6 @@ typedef struct {
 } pipeline_state_cb_s;
 
 /**
- * @brief Internal data structure for the resource.
- */
-typedef struct {
-  gchar *type; /**< resource type */
-  gpointer handle; /**< pointer to resource handle */
-} pipeline_resource_s;
-
-/**
  * @brief Internal private representation of pipeline handle.
  * @details This should not be exposed to applications
  */
@@ -128,7 +118,7 @@ typedef struct _ml_pipeline {
   gboolean isEOS;                 /**< The pipeline is EOS state */
   ml_pipeline_state_e pipe_state; /**< The state of pipeline */
   GHashTable *namednodes;         /**< hash table of "element"s. */
-  GHashTable *resources;          /**< hash table of resources to construct the pipeline */
+  gpointer resources;          /**< The resources pointer to construct the pipeline */
   GHashTable *pipe_elm_type;      /**< hash table for type of pipeline element */
   pipeline_state_cb_s state_cb;   /**< Callback to notify the change of pipeline state */
 } ml_pipeline;

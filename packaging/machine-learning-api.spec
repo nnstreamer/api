@@ -76,7 +76,7 @@ Summary:	Tizen native API for NNStreamer
 # 2. Tizen   : ./packaging/machine-learning-api.spec
 # 3. Meson   : ./meson.build
 # 4. Android : ./java/android/nnstreamer/src/main/jni/Android.mk
-Version:	1.8.6
+Version:	1.1.0
 Release:	0
 Group:		Machine Learning/ML Framework
 Packager:	MyungJoo Ham <myungjoo.ham@samsung.com>
@@ -110,7 +110,8 @@ BuildRequires:	pkgconfig(capi-privacy-privilege-manager)
 %endif
 BuildRequires:	pkgconfig(mm-camcorder)
 %if 0%{tizen_version_major} >= 5
-BuildRequires:	pkgconfig(mm-resource-manager)
+BuildRequires:  pkgconfig(resource-manager)
+BuildRequires:  pkgconfig(resource-center-api)
 %endif
 %endif # enable_tizen_privilege
 
