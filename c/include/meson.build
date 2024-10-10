@@ -7,3 +7,9 @@ else
 endif
 
 nns_capi_service_headers = files('ml-api-service.h')
+# Use staging header for Tizen 7.0 to 8.0. It will be replaced in Tizen 9.0.
+if get_option('enable-tizen')
+  if ((7 <= tizenVmajor) and (tizenVmajor < 9))
+    nns_capi_service_headers += files('ml-api-staging.h')
+  endif
+endif
