@@ -7,3 +7,6 @@ else
 endif
 
 nns_capi_service_headers = files('ml-api-service.h')
+if get_option('enable-tizen')
+  nns_capi_service_headers += files('ml-api-staging.h')
+endif
