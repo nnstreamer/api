@@ -23,7 +23,7 @@ if (get_option('enable-tizen'))
 
     nns_capi_deps += dependency('mm-camcorder')
     if (tizenVmajor >= 5)
-      nns_capi_deps += dependency('mm-resource-manager')
+      nns_capi_deps += dependency('resource-manager resource-center-api')
     endif
   endif
 

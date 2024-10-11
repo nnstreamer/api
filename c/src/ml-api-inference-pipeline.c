@@ -594,23 +594,6 @@ cleanup_node (gpointer data)
 }
 
 /**
- * @brief Private function to release the pipeline resources
- */
-static void
-cleanup_resource (gpointer data)
-{
-  pipeline_resource_s *res = data;
-
-  /* check resource type and free data */
-  if (g_str_has_prefix (res->type, "tizen")) {
-    release_tizen_resource (res->handle, res->type);
-  }
-
-  g_free (res->type);
-  g_free (res);
-}
-
-/**
  * @brief Converts predefined element in pipeline description.
  */
 static int
@@ -951,8 +934,6 @@ create_internal_hash (ml_pipeline * pipe_h)
 {
   pipe_h->namednodes =
       g_hash_table_new_full (g_str_hash, g_str_equal, g_free, cleanup_node);
-  pipe_h->resources =
-      g_hash_table_new_full (g_str_hash, g_str_equal, g_free, cleanup_resource);
 
   pipe_h->pipe_elm_type =
       g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
@@ -1147,9 +1128,8 @@ ml_pipeline_destroy (ml_pipeline_h pipe)
 
   /* Destroy registered callback handles and resources */
   g_hash_table_destroy (p->namednodes);
-  g_hash_table_destroy (p->resources);
   g_hash_table_destroy (p->pipe_elm_type);
-  p->namednodes = p->resources = p->pipe_elm_type = NULL;
+  p->namednodes = p->pipe_elm_type = NULL;
 
   if (p->element) {
     /* Pause the pipeline if it's playing */
@@ -1254,26 +1234,6 @@ ml_pipeline_start (ml_pipeline_h pipe)
 
   g_mutex_lock (&p->lock);
 
-  /* check the resources when starting the pipeline */
-  if (g_hash_table_size (p->resources)) {
-    GHashTableIter iter;
-    gpointer key, value;
-
-    /* iterate all handle and acquire res if released */
-    g_hash_table_iter_init (&iter, p->resources);
-    while (g_hash_table_iter_next (&iter, &key, &value)) {
-      if (g_str_has_prefix (key, "tizen")) {
-        status = get_tizen_resource (pipe, key);
-        if (status != ML_ERROR_NONE) {
-          _ml_error_report_continue
-              ("Internal API _ml_tizen_get_resource () has failed: Tizen mm resource manager has failed to acquire the resource of '%s'",
-              (gchar *) key);
-          goto done;
-        }
-      }
-    }
-  }
-
   scret = gst_element_set_state (p->element, GST_STATE_PLAYING);
   if (scret == GST_STATE_CHANGE_FAILURE) {
     _ml_error_report
@@ -1281,7 +1241,6 @@ ml_pipeline_start (ml_pipeline_h pipe)
     status = ML_ERROR_STREAMS_PIPE;
   }
 
-done:
   g_mutex_unlock (&p->lock);
   return status;
 }
