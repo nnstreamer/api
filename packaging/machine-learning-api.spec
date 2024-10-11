@@ -109,7 +109,10 @@ BuildRequires:	pkgconfig(dpm)
 BuildRequires:	pkgconfig(capi-privacy-privilege-manager)
 %endif
 BuildRequires:	pkgconfig(mm-camcorder)
-%if 0%{tizen_version_major} >= 5
+%if 0%{tizen_version_major} >= 9
+BuildRequires: pkgconfig(resource-manager)
+BuildRequires: pkgconfig(resource-center-api)
+%else if 0%{tizen_version_major} >= 5
 BuildRequires:	pkgconfig(mm-resource-manager)
 %endif
 %endif # enable_tizen_privilege
