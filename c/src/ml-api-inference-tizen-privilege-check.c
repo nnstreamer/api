@@ -29,6 +29,22 @@
 #endif
 #include <mm_camcorder.h>
 
+/**
+ * @brief Internal enumeration for tizen-mm resource type.
+ * @todo we should check the changes of tizen resource manager.
+ */
+typedef enum
+{
+  TIZEN_MM_RES_TYPE_VIDEO_DECODER = 0, /**< ID of video decoder resource type */
+  TIZEN_MM_RES_TYPE_VIDEO_OVERLAY,     /**< ID of video overlay resource type */
+  TIZEN_MM_RES_TYPE_CAMERA,            /**< ID of camera resource type */
+  TIZEN_MM_RES_TYPE_VIDEO_ENCODER,     /**< ID of video encoder resource type */
+  TIZEN_MM_RES_TYPE_RADIO,             /**< ID of radio resource type */
+  TIZEN_MM_RES_TYPE_AUDIO_OFFLOAD,     /**< ID of audio offload resource type */
+
+  TIZEN_MM_RES_TYPE_MAX                /**< Used to iterate on resource types only */
+} tizen_mm_res_type_e;
+
 #if TIZENMMCONF
 /* We can use "MMCAM_VIDEOSRC_ELEMENT_NAME and MMCAM_AUDIOSRC_ELEMENT_NAME */
 #else /* TIZENMMCONF */
@@ -110,12 +126,13 @@ _mmcamcorder_conf_get_value_element_name (type_element * element,
 typedef struct
 {
   gboolean invalid; /**< flag to indicate rm handle is valid */
-  mm_resource_manager_h rm_h; /**< rm handle */
+  gpointer rm_h; /**< rm handle */
   device_policy_manager_h dpm_h; /**< dpm handle */
   int dpm_cb_id; /**< dpm callback id */
   gboolean has_video_src; /**< pipeline includes video src */
   gboolean has_audio_src; /**< pipeline includes audio src */
   GHashTable *res_handles; /**< hash table of resource handles */
+  gpointer priv; /**< private data for rm */
 } tizen_mm_handle_s;
 
 /**
@@ -166,7 +183,7 @@ ml_tizen_check_privilege (const gchar * privilege)
  * @brief Function to check device policy.
  */
 static int
-ml_tizen_check_dpm_restriction (device_policy_manager_h dpm_handle, int type)
+ml_tizen_dpm_check_restriction (device_policy_manager_h dpm_handle, int type)
 {
   int err = DPM_ERROR_NOT_PERMITTED;
   int dpm_is_allowed = 0;
@@ -221,25 +238,28 @@ ml_tizen_dpm_policy_changed_cb (const char *name, const char *state,
  * @brief Function to get key string of resource type to handle hash table.
  */
 static gchar *
-ml_tizen_mm_res_get_key_string (mm_resource_manager_res_type_e type)
+ml_tizen_mm_res_get_key_string (tizen_mm_res_type_e type)
 {
   gchar *res_key = NULL;
 
   switch (type) {
-    case MM_RESOURCE_MANAGER_RES_TYPE_VIDEO_DECODER:
+    case TIZEN_MM_RES_TYPE_VIDEO_DECODER:
       res_key = g_strdup ("tizen_mm_res_video_decoder");
       break;
-    case MM_RESOURCE_MANAGER_RES_TYPE_VIDEO_OVERLAY:
+    case TIZEN_MM_RES_TYPE_VIDEO_OVERLAY:
       res_key = g_strdup ("tizen_mm_res_video_overlay");
       break;
-    case MM_RESOURCE_MANAGER_RES_TYPE_CAMERA:
+    case TIZEN_MM_RES_TYPE_CAMERA:
       res_key = g_strdup ("tizen_mm_res_camera");
       break;
-    case MM_RESOURCE_MANAGER_RES_TYPE_VIDEO_ENCODER:
+    case TIZEN_MM_RES_TYPE_VIDEO_ENCODER:
       res_key = g_strdup ("tizen_mm_res_video_encoder");
       break;
-    case MM_RESOURCE_MANAGER_RES_TYPE_RADIO:
+    case TIZEN_MM_RES_TYPE_RADIO:
       res_key = g_strdup ("tizen_mm_res_radio");
+      break;
+    case TIZEN_MM_RES_TYPE_AUDIO_OFFLOAD:
+      res_key = g_strdup ("tizen_mm_res_audio_offload");
       break;
     default:
       _ml_logw ("The resource type %d is invalid.", type);
@@ -252,26 +272,63 @@ ml_tizen_mm_res_get_key_string (mm_resource_manager_res_type_e type)
 /**
  * @brief Function to get resource type from key string to handle hash table.
  */
-static mm_resource_manager_res_type_e
+static tizen_mm_res_type_e
 ml_tizen_mm_res_get_type (const gchar * res_key)
 {
-  mm_resource_manager_res_type_e type = MM_RESOURCE_MANAGER_RES_TYPE_MAX;
+  tizen_mm_res_type_e type = TIZEN_MM_RES_TYPE_MAX;
 
   g_return_val_if_fail (res_key, type);
 
   if (g_str_equal (res_key, "tizen_mm_res_video_decoder")) {
-    type = MM_RESOURCE_MANAGER_RES_TYPE_VIDEO_DECODER;
+    type = TIZEN_MM_RES_TYPE_VIDEO_DECODER;
   } else if (g_str_equal (res_key, "tizen_mm_res_video_overlay")) {
-    type = MM_RESOURCE_MANAGER_RES_TYPE_VIDEO_OVERLAY;
+    type = TIZEN_MM_RES_TYPE_VIDEO_OVERLAY;
   } else if (g_str_equal (res_key, "tizen_mm_res_camera")) {
-    type = MM_RESOURCE_MANAGER_RES_TYPE_CAMERA;
+    type = TIZEN_MM_RES_TYPE_CAMERA;
   } else if (g_str_equal (res_key, "tizen_mm_res_video_encoder")) {
-    type = MM_RESOURCE_MANAGER_RES_TYPE_VIDEO_ENCODER;
+    type = TIZEN_MM_RES_TYPE_VIDEO_ENCODER;
   } else if (g_str_equal (res_key, "tizen_mm_res_radio")) {
-    type = MM_RESOURCE_MANAGER_RES_TYPE_RADIO;
+    type = TIZEN_MM_RES_TYPE_RADIO;
+  } else if (g_str_equal (res_key, "tizen_mm_res_audio_offload")) {
+    type = TIZEN_MM_RES_TYPE_AUDIO_OFFLOAD;
   }
 
   return type;
+}
+
+/**
+ * @brief Internal function to release resource manager.
+ */
+static void
+ml_tizen_mm_res_release_rm (tizen_mm_handle_s * mm_handle)
+{
+  mm_resource_manager_h rm_h = (mm_resource_manager_h) mm_handle->rm_h;
+
+  if (g_hash_table_size (mm_handle->res_handles)) {
+    GHashTableIter iter;
+    gpointer key, value;
+    gboolean marked = FALSE;
+
+    g_hash_table_iter_init (&iter, mm_handle->res_handles);
+    while (g_hash_table_iter_next (&iter, &key, &value)) {
+      pipeline_resource_s *mm_res = value;
+
+      if (mm_res->handle) {
+        mm_resource_manager_mark_for_release (rm_h, mm_res->handle);
+        mm_res->handle = NULL;
+        marked = TRUE;
+      }
+    }
+
+    if (marked)
+      mm_resource_manager_commit (rm_h);
+  }
+
+  mm_resource_manager_set_status_cb (rm_h, NULL, NULL);
+  mm_resource_manager_destroy (rm_h);
+
+  mm_handle->rm_h = NULL;
+  mm_handle->invalid = FALSE;
 }
 
 /**
@@ -355,24 +412,84 @@ done:
 }
 
 /**
- * @brief Function to get the handle of resource type.
+ * @brief Internal function to create resource manager.
  */
 static int
-ml_tizen_mm_res_get_handle (mm_resource_manager_h rm,
-    mm_resource_manager_res_type_e res_type, gpointer * handle)
+ml_tizen_mm_res_create_rm (ml_pipeline_h pipe, tizen_mm_handle_s * mm_handle)
 {
-  mm_resource_manager_res_h rm_res_h;
+  mm_resource_manager_h rm_h = (mm_resource_manager_h) mm_handle->rm_h;
   int err;
 
+  /* Already created */
+  if (rm_h)
+    return ML_ERROR_NONE;
+
+  err = mm_resource_manager_create (MM_RESOURCE_MANAGER_APP_CLASS_MEDIA,
+      ml_tizen_mm_res_release_cb, pipe, &rm_h);
+  if (err != MM_RESOURCE_MANAGER_ERROR_NONE)
+    _ml_error_report_return (ML_ERROR_STREAMS_PIPE,
+        "Cannot create multimedia resource manager handle with mm_resource_manager_create (), it has returned %d. Please check if your Tizen installation is valid; do you have all multimedia packages properly installed?",
+        err);
+
+  /* add state change callback */
+  err = mm_resource_manager_set_status_cb (rm_h, ml_tizen_mm_res_status_cb,
+      pipe);
+  if (err != MM_RESOURCE_MANAGER_ERROR_NONE) {
+    mm_resource_manager_destroy (rm_h);
+    _ml_error_report_return (ML_ERROR_STREAMS_PIPE,
+        "Cannot configure status callback with multimedia resource manager, mm_resource_manager_set_status_cb (), it has returned %d. Please check if your Tizen installation is valid; do you have all multmedia packages properly installed?",
+        err);
+  }
+
+  mm_handle->rm_h = rm_h;
+  return ML_ERROR_NONE;
+}
+
+/**
+ * @brief Internal function to get the handle of resource type.
+ */
+static int
+ml_tizen_mm_res_get_handle (tizen_mm_handle_s * mm_handle,
+    tizen_mm_res_type_e res_type, gpointer * handle)
+{
+  mm_resource_manager_h rm_h = (mm_resource_manager_h) mm_handle->rm_h;
+  mm_resource_manager_res_h rm_res_h;
+  mm_resource_manager_res_type_e rm_res_type;
+  int err;
+
+  switch (res_type) {
+    case TIZEN_MM_RES_TYPE_VIDEO_DECODER:
+      rm_res_type = MM_RESOURCE_MANAGER_RES_TYPE_VIDEO_DECODER;
+      break;
+    case TIZEN_MM_RES_TYPE_VIDEO_OVERLAY:
+      rm_res_type = MM_RESOURCE_MANAGER_RES_TYPE_VIDEO_OVERLAY;
+      break;
+    case TIZEN_MM_RES_TYPE_CAMERA:
+      rm_res_type = MM_RESOURCE_MANAGER_RES_TYPE_CAMERA;
+      break;
+    case TIZEN_MM_RES_TYPE_VIDEO_ENCODER:
+      rm_res_type = MM_RESOURCE_MANAGER_RES_TYPE_VIDEO_ENCODER;
+      break;
+    case TIZEN_MM_RES_TYPE_RADIO:
+      rm_res_type = MM_RESOURCE_MANAGER_RES_TYPE_RADIO;
+      break;
+    case TIZEN_MM_RES_TYPE_AUDIO_OFFLOAD:
+      rm_res_type = MM_RESOURCE_MANAGER_RES_TYPE_AUDIO_OFFLOAD;
+      break;
+    default:
+      _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+          "Unknown resource type.");
+  }
+
   /* add resource handle */
-  err = mm_resource_manager_mark_for_acquire (rm, res_type,
+  err = mm_resource_manager_mark_for_acquire (rm_h, rm_res_type,
       MM_RESOURCE_MANAGER_RES_VOLUME_FULL, &rm_res_h);
   if (err != MM_RESOURCE_MANAGER_ERROR_NONE)
     _ml_error_report_return (ML_ERROR_STREAMS_PIPE,
         "Internal error of Tizen multimedia resource manager: mm_resource_manager_mark_for_acquire () cannot acquire resources. It has returned %d.",
         err);
 
-  err = mm_resource_manager_commit (rm);
+  err = mm_resource_manager_commit (rm_h);
   if (err != MM_RESOURCE_MANAGER_ERROR_NONE)
     _ml_error_report_return (ML_ERROR_STREAMS_PIPE,
         "Internal error of Tizen multimedia resource manager: mm_resource_manager_commit has failed with error code: %d",
@@ -395,34 +512,7 @@ ml_tizen_mm_res_release (gpointer handle, gboolean destroy)
   mm_handle = (tizen_mm_handle_s *) handle;
 
   /* release res handles */
-  if (g_hash_table_size (mm_handle->res_handles)) {
-    GHashTableIter iter;
-    gpointer key, value;
-    gboolean marked = FALSE;
-
-    g_hash_table_iter_init (&iter, mm_handle->res_handles);
-    while (g_hash_table_iter_next (&iter, &key, &value)) {
-      pipeline_resource_s *mm_res = value;
-
-      if (mm_res->handle) {
-        mm_resource_manager_mark_for_release (mm_handle->rm_h, mm_res->handle);
-        mm_res->handle = NULL;
-        marked = TRUE;
-      }
-
-      if (destroy)
-        g_free (mm_res->type);
-    }
-
-    if (marked)
-      mm_resource_manager_commit (mm_handle->rm_h);
-  }
-
-  mm_resource_manager_set_status_cb (mm_handle->rm_h, NULL, NULL);
-  mm_resource_manager_destroy (mm_handle->rm_h);
-  mm_handle->rm_h = NULL;
-
-  mm_handle->invalid = FALSE;
+  ml_tizen_mm_res_release_rm (mm_handle);
 
   if (destroy) {
     if (mm_handle->dpm_h) {
@@ -451,6 +541,7 @@ ml_tizen_mm_res_initialize (ml_pipeline_h pipe, gboolean has_video_src,
   pipeline_resource_s *res;
   tizen_mm_handle_s *mm_handle = NULL;
   int status = ML_ERROR_STREAMS_PIPE;
+  int err;
 
   p = (ml_pipeline *) pipe;
 
@@ -484,9 +575,9 @@ ml_tizen_mm_res_initialize (ml_pipeline_h pipe, gboolean has_video_src,
 
     /* device policy manager */
     mm_handle->dpm_h = dpm_manager_create ();
-    if (dpm_add_policy_changed_cb (mm_handle->dpm_h, "camera",
-            ml_tizen_dpm_policy_changed_cb, pipe,
-            &mm_handle->dpm_cb_id) != DPM_ERROR_NONE) {
+    err = dpm_add_policy_changed_cb (mm_handle->dpm_h, "camera",
+        ml_tizen_dpm_policy_changed_cb, pipe, &mm_handle->dpm_cb_id);
+    if (err != DPM_ERROR_NONE) {
       _ml_loge ("Failed to add device policy callback.");
       status = ML_ERROR_PERMISSION_DENIED;
       goto rm_error;
@@ -511,80 +602,15 @@ rm_error:
 }
 
 /**
- * @brief Function to acquire the resource from mm resource manager.
+ * @brief Internal function to acquire the handle from resource manager.
  */
 static int
-ml_tizen_mm_res_acquire (ml_pipeline_h pipe,
-    mm_resource_manager_res_type_e res_type)
+ml_tizen_mm_res_acquire_handle (tizen_mm_handle_s * mm_handle,
+    tizen_mm_res_type_e res_type)
 {
-  ml_pipeline *p;
-  pipeline_resource_s *res;
-  tizen_mm_handle_s *mm_handle;
-  gchar *res_key;
-  int status = ML_ERROR_STREAMS_PIPE;
-  int err;
+  int ret;
 
-  p = (ml_pipeline *) pipe;
-
-  res =
-      (pipeline_resource_s *) g_hash_table_lookup (p->resources, TIZEN_RES_MM);
-  if (!res)
-    _ml_error_report_return (ML_ERROR_STREAMS_PIPE,
-        "Internal function error: cannot find the resource, '%s', from the resource table",
-        TIZEN_RES_MM);
-
-  mm_handle = (tizen_mm_handle_s *) res->handle;
-  if (!mm_handle)
-    _ml_error_report_return (ML_ERROR_STREAMS_PIPE,
-        "Internal function error: the resource '%s' does not have a valid mm handle (NULL).",
-        TIZEN_RES_MM);
-
-  /* check dpm state */
-  if (mm_handle->has_video_src &&
-      (status =
-          ml_tizen_check_dpm_restriction (mm_handle->dpm_h,
-              1)) != ML_ERROR_NONE)
-    _ml_error_report_return (ML_ERROR_PERMISSION_DENIED,
-        "Video camera source requires permission to access the camera; you do not have the permission. Your Tizen application is required to acquire video permission (DPM) from Tizen. Refer: https://docs.tizen.org/application/native/guides/security/dpm/");
-
-  if (mm_handle->has_audio_src &&
-      (status =
-          ml_tizen_check_dpm_restriction (mm_handle->dpm_h,
-              2)) != ML_ERROR_NONE)
-    _ml_error_report_return (ML_ERROR_PERMISSION_DENIED,
-        "Audio mic source requires permission to access the mic; you do not have the permission. Your Tizen application is required to acquire audio/mic permission (DPM) from Tizen. Refer: https://docs.tizen.org/application/native/guides/security/dpm/");
-
-  /* check invalid handle */
-  if (mm_handle->invalid)
-    ml_tizen_mm_res_release (mm_handle, FALSE);
-
-  /* create rm handle */
-  if (!mm_handle->rm_h) {
-    mm_resource_manager_h rm_h;
-
-    err = mm_resource_manager_create (MM_RESOURCE_MANAGER_APP_CLASS_MEDIA,
-        ml_tizen_mm_res_release_cb, pipe, &rm_h);
-    if (err != MM_RESOURCE_MANAGER_ERROR_NONE)
-      _ml_error_report_return (ML_ERROR_STREAMS_PIPE,
-          "Cannot create multimedia resource manager handle with mm_resource_manager_create (), it has returned %d. Please check if your Tizen installation is valid; do you have all multimedia packages properly installed?",
-          err);
-
-    /* add state change callback */
-    err =
-        mm_resource_manager_set_status_cb (rm_h, ml_tizen_mm_res_status_cb,
-        pipe);
-    if (err != MM_RESOURCE_MANAGER_ERROR_NONE) {
-      mm_resource_manager_destroy (rm_h);
-      _ml_error_report_return (ML_ERROR_STREAMS_PIPE,
-          "Cannot configure status callback with multimedia resource manager, mm_resource_manager_set_status_cb (), it has returned %d. Please check if your Tizen installation is valid; do you have all multmedia packages properly installed?",
-          err);
-    }
-
-    mm_handle->rm_h = rm_h;
-  }
-
-  /* acquire resource */
-  if (res_type == MM_RESOURCE_MANAGER_RES_TYPE_MAX) {
+  if (res_type == TIZEN_MM_RES_TYPE_MAX) {
     GHashTableIter iter;
     gpointer key, value;
 
@@ -594,21 +620,19 @@ ml_tizen_mm_res_acquire (ml_pipeline_h pipe,
       pipeline_resource_s *mm_res = value;
 
       if (!mm_res->handle) {
-        mm_resource_manager_res_type_e type;
+        tizen_mm_res_type_e type;
 
         type = ml_tizen_mm_res_get_type (mm_res->type);
-        if (type != MM_RESOURCE_MANAGER_RES_TYPE_MAX) {
-          status =
-              ml_tizen_mm_res_get_handle (mm_handle->rm_h, type,
-              &mm_res->handle);
-          if (status != ML_ERROR_NONE)
-            _ml_error_report_return_continue (status,
+        if (type != TIZEN_MM_RES_TYPE_MAX) {
+          ret = ml_tizen_mm_res_get_handle (mm_handle, type, &mm_res->handle);
+          if (ret != ML_ERROR_NONE)
+            _ml_error_report_return_continue (ret,
                 "Internal error: cannot get resource handle from Tizen multimedia resource manager.");
         }
       }
     }
   } else {
-    res_key = ml_tizen_mm_res_get_key_string (res_type);
+    gchar *res_key = ml_tizen_mm_res_get_key_string (res_type);
     if (res_key) {
       pipeline_resource_s *mm_res;
 
@@ -632,15 +656,71 @@ ml_tizen_mm_res_acquire (ml_pipeline_h pipe,
       g_free (res_key);
 
       if (!mm_res->handle) {
-        status =
-            ml_tizen_mm_res_get_handle (mm_handle->rm_h, res_type,
-            &mm_res->handle);
-        if (status != ML_ERROR_NONE)
+        ret = ml_tizen_mm_res_get_handle (mm_handle, res_type, &mm_res->handle);
+        if (ret != ML_ERROR_NONE)
           _ml_error_report_return (ML_ERROR_STREAMS_PIPE,
               "Cannot get handle from Tizen multimedia resource manager.");
       }
     }
   }
+
+  return ML_ERROR_NONE;
+}
+
+/**
+ * @brief Function to acquire the resource from mm resource manager.
+ */
+static int
+ml_tizen_mm_res_acquire (ml_pipeline_h pipe, tizen_mm_res_type_e res_type)
+{
+  ml_pipeline *p;
+  pipeline_resource_s *res;
+  tizen_mm_handle_s *mm_handle;
+  int status = ML_ERROR_STREAMS_PIPE;
+
+  p = (ml_pipeline *) pipe;
+
+  res =
+      (pipeline_resource_s *) g_hash_table_lookup (p->resources, TIZEN_RES_MM);
+  if (!res)
+    _ml_error_report_return (ML_ERROR_STREAMS_PIPE,
+        "Internal function error: cannot find the resource, '%s', from the resource table",
+        TIZEN_RES_MM);
+
+  mm_handle = (tizen_mm_handle_s *) res->handle;
+  if (!mm_handle)
+    _ml_error_report_return (ML_ERROR_STREAMS_PIPE,
+        "Internal function error: the resource '%s' does not have a valid mm handle (NULL).",
+        TIZEN_RES_MM);
+
+  /* check dpm state */
+  if (mm_handle->has_video_src) {
+    status = ml_tizen_dpm_check_restriction (mm_handle->dpm_h, 1);
+    if (status != ML_ERROR_NONE)
+      _ml_error_report_return (ML_ERROR_PERMISSION_DENIED,
+          "Video camera source requires permission to access the camera; you do not have the permission. Your Tizen application is required to acquire video permission (DPM) from Tizen. Refer: https://docs.tizen.org/application/native/guides/security/dpm/");
+  }
+
+  if (mm_handle->has_audio_src) {
+    status = ml_tizen_dpm_check_restriction (mm_handle->dpm_h, 2);
+    if (status != ML_ERROR_NONE)
+      _ml_error_report_return (ML_ERROR_PERMISSION_DENIED,
+          "Audio mic source requires permission to access the mic; you do not have the permission. Your Tizen application is required to acquire audio/mic permission (DPM) from Tizen. Refer: https://docs.tizen.org/application/native/guides/security/dpm/");
+  }
+
+  /* check invalid handle */
+  if (mm_handle->invalid)
+    ml_tizen_mm_res_release (mm_handle, FALSE);
+
+  /* create rm handle */
+  status = ml_tizen_mm_res_create_rm (pipe, mm_handle);
+  if (status != ML_ERROR_NONE)
+    return status;
+
+  /* acquire resource */
+  status = ml_tizen_mm_res_acquire_handle (mm_handle, res_type);
+  if (status != ML_ERROR_NONE)
+    return status;
 
   return ML_ERROR_NONE;
 }
@@ -788,40 +868,39 @@ ml_tizen_mm_convert_element (ml_pipeline_h pipe, gchar ** result,
 
   /* replace src element */
   if (video_src || audio_src) {
+    gboolean has_video = (video_src != NULL);
+    gboolean has_audio = (audio_src != NULL);
+
     /* copy pipeline description so that original description string is not changed if failed to replace element. */
     desc = g_strdup (*result);
 
     /* check privilege first */
     if (!is_internal) {
       /* ignore permission when runs as internal mode */
-      if (video_src &&
-          (status = ml_tizen_check_privilege (TIZEN_PRIVILEGE_CAMERA)) !=
-          ML_ERROR_NONE) {
-        goto mm_error;
+      if (has_video) {
+        status = ml_tizen_check_privilege (TIZEN_PRIVILEGE_CAMERA);
+        if (status != ML_ERROR_NONE)
+          goto mm_error;
       }
 
-      if (audio_src &&
-          (status = ml_tizen_check_privilege (TIZEN_PRIVILEGE_RECODER)) !=
-          ML_ERROR_NONE) {
-        goto mm_error;
+      if (has_audio) {
+        status = ml_tizen_check_privilege (TIZEN_PRIVILEGE_RECODER);
+        if (status != ML_ERROR_NONE)
+          goto mm_error;
       }
     }
 
-    status = ml_tizen_mm_replace_element (video_src != NULL, audio_src != NULL,
-        &desc);
+    status = ml_tizen_mm_replace_element (has_video, has_audio, &desc);
     if (status != ML_ERROR_NONE)
       goto mm_error;
 
     /* initialize rm handle */
-    status =
-        ml_tizen_mm_res_initialize (pipe, (video_src != NULL),
-        (audio_src != NULL));
+    status = ml_tizen_mm_res_initialize (pipe, has_video, has_audio);
     if (status != ML_ERROR_NONE)
       goto mm_error;
 
     /* get the camera resource using mm resource manager */
-    status =
-        ml_tizen_mm_res_acquire (pipe, MM_RESOURCE_MANAGER_RES_TYPE_CAMERA);
+    status = ml_tizen_mm_res_acquire (pipe, TIZEN_MM_RES_TYPE_CAMERA);
     if (status != ML_ERROR_NONE)
       goto mm_error;
 
@@ -851,8 +930,7 @@ ml_tizen_mm_res_release (gpointer handle, gboolean destroy)
  * @brief A dummy function for Tizen 4.0
  */
 static int
-ml_tizen_mm_res_acquire (ml_pipeline_h pipe,
-    mm_resource_manager_res_type_e res_type)
+ml_tizen_mm_res_acquire (ml_pipeline_h pipe, tizen_mm_res_type_e res_type)
 {
   return ML_ERROR_NOT_SUPPORTED;
 }
@@ -889,7 +967,7 @@ _ml_tizen_get_resource (ml_pipeline_h pipe, const gchar * res_type)
 
   if (g_str_equal (res_type, TIZEN_RES_MM)) {
     /* iterate all handle and acquire res if released */
-    status = ml_tizen_mm_res_acquire (pipe, MM_RESOURCE_MANAGER_RES_TYPE_MAX);
+    status = ml_tizen_mm_res_acquire (pipe, TIZEN_MM_RES_TYPE_MAX);
   }
 
   return status;

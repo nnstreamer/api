@@ -36,10 +36,8 @@ extern "C" {
 #define release_tizen_resource(...) _ml_tizen_release_resource(__VA_ARGS__)
 
 #elif (TIZENVERSION < 5)
-#define get_tizen_resource(...) (0)
-#define release_tizen_resource(...) do { } while (0)
-typedef void * mm_resource_manager_h;
-typedef enum { MM_RESOURCE_MANAGER_RES_TYPE_MAX } mm_resource_manager_res_type_e;
+#define get_tizen_resource(...) ML_ERROR_NONE
+#define release_tizen_resource(...)
 
 #else /* TIZENVERSION */
 #error Tizen version is not defined.
