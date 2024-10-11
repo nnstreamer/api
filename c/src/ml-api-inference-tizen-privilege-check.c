@@ -24,7 +24,11 @@
 #if TIZENPPM
 #include <privacy_privilege_manager.h>
 #endif
-#if TIZEN5PLUS
+#if TIZEN9PLUS
+#include <unistd.h>
+#include <rm_api.h>
+#include <resource_center.h>
+#elif TIZEN5PLUS
 #include <mm_resource_manager.h>
 #endif
 #include <mm_camcorder.h>
@@ -296,6 +300,242 @@ ml_tizen_mm_res_get_type (const gchar * res_key)
   return type;
 }
 
+#if TIZEN9PLUS
+/**
+ * @brief Function to get resource manager appid using pid
+ */
+static int
+ml_tizen_mm_rm_get_appid (rm_consumer_info ** rci)
+{
+  g_autofree gchar *cmdline = NULL;
+  g_autofree gchar *contents = NULL;
+  g_autofree gchar *base = NULL;
+  size_t size;
+
+  *rci = g_new0 (rm_consumer_info, 1);
+  if (!*rci) {
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Failed to allocate new memory for resource info.");
+  }
+
+  (*rci)->app_pid = (int) getpid ();
+  size = sizeof ((*rci)->app_id);
+  cmdline = g_strdup_printf ("/proc/%d/cmdline", (*rci)->app_pid);
+  if (!g_file_get_contents (cmdline, &contents, NULL, NULL)) {
+    g_free (*rci);
+    _ml_error_report_return (ML_ERROR_UNKNOWN,
+        "Failed to get appid, cannot read proc.");
+  }
+
+  base = g_path_get_basename (contents);
+  if (g_strlcpy ((*rci)->app_id, base, size) >= size) {
+    g_free (*rci);
+    _ml_error_report_return (ML_ERROR_UNKNOWN,
+        "Failed to get appid, string truncated.");
+  }
+
+  return ML_ERROR_NONE;
+}
+
+/**
+ * @brief Internal function to release resource manager.
+ */
+static void
+ml_tizen_mm_res_release_rm (tizen_mm_handle_s * mm_handle)
+{
+  rm_device_return_s *device;
+  int rm_h;
+  int i, ret;
+
+  rm_h = GPOINTER_TO_INT (mm_handle->rm_h);
+
+  if (g_hash_table_size (mm_handle->res_handles)) {
+    GHashTableIter iter;
+    gpointer key, value;
+
+    g_hash_table_iter_init (&iter, mm_handle->res_handles);
+    while (g_hash_table_iter_next (&iter, &key, &value)) {
+      pipeline_resource_s *mm_res = value;
+
+      device = (rm_device_return_s *) mm_res->handle;
+      mm_res->handle = NULL;
+      if (device) {
+        if (device->allocated_num > 0) {
+          rm_device_request_s requested = { 0 };
+
+          requested.request_num = device->allocated_num;
+          for (i = 0; i < requested.request_num; i++) {
+            requested.device_id[i] = device->device_id[i];
+          }
+
+          ret = rm_deallocate_resources (rm_h, &requested);
+          if (ret != RM_OK) {
+            _ml_loge
+                ("Failed to deallocate resource (%d), allocated num is %d.",
+                ret, requested.request_num);
+          }
+
+          for (i = 0; i < device->allocated_num; i++) {
+            g_free (device->device_node[i]);
+            g_free (device->omx_comp_name[i]);
+          }
+        }
+
+        g_free (device);
+      }
+    }
+  }
+
+  ret = rm_unregister (rm_h);
+  if (ret != RM_OK) {
+    _ml_loge ("Failed to unregister resource manager (%d).", ret);
+  }
+
+  g_free (mm_handle->priv);
+
+  mm_handle->rm_h = NULL;
+  mm_handle->invalid = FALSE;
+  mm_handle->priv = NULL;
+}
+
+/**
+ * @brief Callback function for tizen-mm resource manager.
+ */
+static rm_cb_result
+ml_tizen_mm_rm_resource_cb (int handle, rm_callback_type event,
+    rm_device_request_s * info, void *data)
+{
+  ml_pipeline_h pipe = (ml_pipeline_h) data;
+  ml_pipeline *p = (ml_pipeline *) pipe;
+  pipeline_resource_s *res;
+  tizen_mm_handle_s *mm_handle;
+
+  res =
+      (pipeline_resource_s *) g_hash_table_lookup (p->resources, TIZEN_RES_MM);
+  if (!res) {
+    _ml_error_report
+        ("Internal function error: cannot find the resource, '%s', from the resource table.",
+        TIZEN_RES_MM);
+    return RM_CB_RESULT_ERROR;
+  }
+
+  mm_handle = (tizen_mm_handle_s *) res->handle;
+  if (!mm_handle) {
+    _ml_error_report
+        ("Internal function error: the resource '%s' does not have a valid mm handle (NULL).",
+        TIZEN_RES_MM);
+    return RM_CB_RESULT_ERROR;
+  }
+
+  switch (event) {
+    case RM_CALLBACK_TYPE_RESOURCE_CONFLICT:
+    case RM_CALLBACK_TYPE_RESOURCE_CONFLICT_UD:
+      /* release resource and pause pipeline */
+      mm_handle->invalid = TRUE;
+      ml_tizen_mm_res_release_rm (mm_handle);
+      gst_element_set_state (p->element, GST_STATE_PAUSED);
+      break;
+    default:
+      break;
+  }
+
+  return RM_CB_RESULT_OK;
+}
+
+/**
+ * @brief Internal function to create resource manager.
+ */
+static int
+ml_tizen_mm_res_create_rm (ml_pipeline_h pipe, tizen_mm_handle_s * mm_handle)
+{
+  rm_consumer_info *rci;
+  int rm_h;
+  int ret;
+
+  /* Get app id */
+  if (!ml_tizen_mm_rm_get_appid (&rci)) {
+    _ml_error_report_return (ML_ERROR_UNKNOWN,
+        "Failed to get appid using pid.");
+  }
+
+  ret = rm_register (ml_tizen_mm_rm_resource_cb, pipe, &rm_h, rci);
+  if (ret != RM_OK) {
+    g_free (rci);
+    _ml_error_report_return (ML_ERROR_UNKNOWN,
+        "Failed to register resource manager (%d).", ret);
+  }
+
+  mm_handle->rm_h = GINT_TO_POINTER (rm_h);
+  mm_handle->priv = rci;
+  return ML_ERROR_NONE;
+}
+
+/**
+ * @brief Internal function to get the handle of resource type.
+ */
+static int
+ml_tizen_mm_res_get_handle (tizen_mm_handle_s * mm_handle,
+    tizen_mm_res_type_e res_type, gpointer * handle)
+{
+  rm_category_request_s request = { 0 };
+  rm_device_return_s *device;
+  rm_consumer_info *rci;
+  rm_rsc_category_e category_id = RM_CATEGORY_NONE;
+  int rm_h;
+  int category_option;
+  int ret;
+
+  switch (res_type) {
+    case TIZEN_MM_RES_TYPE_VIDEO_DECODER:
+      category_id = RM_CATEGORY_VIDEO_DECODER;
+      break;
+    case TIZEN_MM_RES_TYPE_VIDEO_OVERLAY:
+      category_id = RM_CATEGORY_SCALER;
+      break;
+    case TIZEN_MM_RES_TYPE_CAMERA:
+      category_id = RM_CATEGORY_CAMERA;
+      break;
+    case TIZEN_MM_RES_TYPE_VIDEO_ENCODER:
+      category_id = RM_CATEGORY_VIDEO_ENCODER;
+      break;
+    case TIZEN_MM_RES_TYPE_RADIO:
+      category_id = RM_CATEGORY_RADIO;
+      break;
+    case TIZEN_MM_RES_TYPE_AUDIO_OFFLOAD:
+      category_id = RM_CATEGORY_AUDIO_OFFLOAD;
+      break;
+    default:
+      _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+          "Unknown resource type.");
+  }
+
+  rm_h = GPOINTER_TO_INT (mm_handle->rm_h);
+  rci = (rm_consumer_info *) mm_handle->priv;
+
+  device = (rm_device_return_s *) g_new0 (rm_device_return_s, 1);
+  if (device == NULL) {
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Failed to allocate new memory for resource device.");
+  }
+
+  category_option = rc_get_capable_category_id (rm_h, rci->app_id, category_id);
+
+  request.request_num = 1;
+  request.state[0] = RM_STATE_EXCLUSIVE;
+  request.category_id[0] = category_id;
+  request.category_option[0] = category_option;
+
+  ret = rm_allocate_resources (rm_h, &request, device);
+  if (ret != RM_OK) {
+    _ml_loge ("Failed to allocate resource for type %d (%d).", res_type, ret);
+    g_free (device);
+    return ML_ERROR_UNKNOWN;
+  }
+
+  *handle = device;
+  return ML_ERROR_NONE;
+}
+#else
 /**
  * @brief Internal function to release resource manager.
  */
@@ -498,6 +738,7 @@ ml_tizen_mm_res_get_handle (tizen_mm_handle_s * mm_handle,
   *handle = rm_res_h;
   return ML_ERROR_NONE;
 }
+#endif /* TIZEN9PLUS */
 
 /**
  * @brief Function to release the resource handle of tizen mm resource manager.
