@@ -310,30 +310,32 @@ ml_tizen_mm_rm_get_appid (rm_consumer_info ** rci)
   g_autofree gchar *cmdline = NULL;
   g_autofree gchar *contents = NULL;
   g_autofree gchar *base = NULL;
+  rm_consumer_info *consumer_info = NULL;
   size_t size;
 
-  *rci = g_new0 (rm_consumer_info, 1);
-  if (!*rci) {
+  consumer_info = g_new0 (rm_consumer_info, 1);
+  if (!consumer_info) {
     _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
         "Failed to allocate new memory for resource info.");
   }
 
-  (*rci)->app_pid = (int) getpid ();
-  size = sizeof ((*rci)->app_id);
-  cmdline = g_strdup_printf ("/proc/%d/cmdline", (*rci)->app_pid);
+  consumer_info->app_pid = (int) getpid ();
+  size = sizeof (consumer_info->app_id);
+  cmdline = g_strdup_printf ("/proc/%d/cmdline", consumer_info->app_pid);
   if (!g_file_get_contents (cmdline, &contents, NULL, NULL)) {
-    g_free (*rci);
+    g_free (consumer_info);
     _ml_error_report_return (ML_ERROR_UNKNOWN,
         "Failed to get appid, cannot read proc.");
   }
 
   base = g_path_get_basename (contents);
-  if (g_strlcpy ((*rci)->app_id, base, size) >= size) {
-    g_free (*rci);
+  if (g_strlcpy (consumer_info->app_id, base, size) >= size) {
+    g_free (consumer_info);
     _ml_error_report_return (ML_ERROR_UNKNOWN,
         "Failed to get appid, string truncated.");
   }
 
+  *rci = consumer_info;
   return ML_ERROR_NONE;
 }
 
@@ -410,13 +412,15 @@ ml_tizen_mm_rm_resource_cb (int handle, rm_callback_type event,
   pipeline_resource_s *res;
   tizen_mm_handle_s *mm_handle;
 
+  g_mutex_lock (&p->lock);
+
   res =
       (pipeline_resource_s *) g_hash_table_lookup (p->resources, TIZEN_RES_MM);
   if (!res) {
     _ml_error_report
         ("Internal function error: cannot find the resource, '%s', from the resource table.",
         TIZEN_RES_MM);
-    return RM_CB_RESULT_ERROR;
+    goto done;
   }
 
   mm_handle = (tizen_mm_handle_s *) res->handle;
@@ -424,7 +428,7 @@ ml_tizen_mm_rm_resource_cb (int handle, rm_callback_type event,
     _ml_error_report
         ("Internal function error: the resource '%s' does not have a valid mm handle (NULL).",
         TIZEN_RES_MM);
-    return RM_CB_RESULT_ERROR;
+    goto done;
   }
 
   switch (event) {
@@ -439,6 +443,8 @@ ml_tizen_mm_rm_resource_cb (int handle, rm_callback_type event,
       break;
   }
 
+done:
+  g_mutex_unlock (&p->lock);
   return RM_CB_RESULT_OK;
 }
 
@@ -448,14 +454,14 @@ ml_tizen_mm_rm_resource_cb (int handle, rm_callback_type event,
 static int
 ml_tizen_mm_res_create_rm (ml_pipeline_h pipe, tizen_mm_handle_s * mm_handle)
 {
-  rm_consumer_info *rci;
+  rm_consumer_info *rci = NULL;
   int rm_h;
   int ret;
 
   /* Get app id */
-  if (!ml_tizen_mm_rm_get_appid (&rci)) {
-    _ml_error_report_return (ML_ERROR_UNKNOWN,
-        "Failed to get appid using pid.");
+  ret = ml_tizen_mm_rm_get_appid (&rci);
+  if (ret != ML_ERROR_NONE) {
+    _ml_error_report_return (ret, "Failed to get appid using pid.");
   }
 
   ret = rm_register (ml_tizen_mm_rm_resource_cb, pipe, &rm_h, rci);
