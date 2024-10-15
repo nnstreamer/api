@@ -980,7 +980,7 @@ ml_tizen_mm_replace_element (gboolean has_video, gboolean has_audio,
     gchar ** description)
 {
   MMHandleType hcam = NULL;
-  MMCamPreset cam_info;
+  MMCamPreset cam_info = { 0 };
   gchar *_video = NULL;         /* Do not free this! */
   gchar *_audio = NULL;         /* Do not free this! */
   guint changed = 0;
@@ -993,6 +993,10 @@ ml_tizen_mm_replace_element (gboolean has_video, gboolean has_audio,
   /* create camcoder handle (primary camera) */
   if (has_video) {
     cam_info.videodev_type = MM_VIDEO_DEVICE_CAMERA0;
+    /**
+     * @note Now network camera is disabled. (cam_info.reserved[0] = 0)
+     * If we need to set net-camera later, discuss with MM team.
+     */
   } else {
     /* no camera */
     cam_info.videodev_type = MM_VIDEO_DEVICE_NONE;
