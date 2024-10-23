@@ -119,7 +119,7 @@ _invoke_event_new_data (ml_service_s * mls, const char *name,
 {
   int status = ML_ERROR_NONE;
   ml_service_event_cb_info_s cb_info = { 0 };
-  ml_information_h info = NULL;
+  ml_information_h ml_information = NULL;
 
   g_return_val_if_fail (mls != NULL, ML_ERROR_INVALID_PARAMETER);
   g_return_val_if_fail (data != NULL, ML_ERROR_INVALID_PARAMETER);
@@ -129,24 +129,24 @@ _invoke_event_new_data (ml_service_s * mls, const char *name,
 
   if (cb_info.cb) {
     /* Create information handle for ml-service event. */
-    status = _ml_information_create (&info);
+    status = _ml_information_create (&ml_information);
     if (status != ML_ERROR_NONE)
       goto done;
 
-    status = _ml_information_set (info, "name", (void *) name, NULL);
+    status = _ml_information_set (ml_information, "name", (void *) name, NULL);
     if (status != ML_ERROR_NONE)
       goto done;
 
-    status = _ml_information_set (info, "data", (void *) data, NULL);
+    status = _ml_information_set (ml_information, "data", (void *) data, NULL);
     if (status != ML_ERROR_NONE)
       goto done;
 
-    cb_info.cb (ML_SERVICE_EVENT_NEW_DATA, info, cb_info.pdata);
+    cb_info.cb (ML_SERVICE_EVENT_NEW_DATA, ml_information, cb_info.pdata);
   }
 
 done:
-  if (info) {
-    ml_information_destroy (info);
+  if (ml_information) {
+    ml_information_destroy (ml_information);
   }
 
   if (status != ML_ERROR_NONE) {
@@ -161,13 +161,12 @@ done:
  */
 static void
 _pipeline_sink_cb (const ml_tensors_data_h data,
-    const ml_tensors_info_h info, void *user_data)
+    const ml_tensors_info_h tensors_info, void *user_data)
 {
   ml_service_s *mls = NULL;
   ml_training_offloading_node_info_s *node_info = NULL;
 
   g_return_if_fail (data != NULL);
-  g_return_if_fail (info != NULL);
 
   node_info = (ml_training_offloading_node_info_s *) user_data;
   g_return_if_fail (node_info != NULL);
@@ -734,94 +733,114 @@ _ml_service_training_offloading_set_path (ml_service_s * mls,
 }
 
 /**
+ * @brief Prepare ml training offloading service as sender.
+ */
+static int
+_ml_service_training_offloading_prepare_sender(ml_service_s * mls, ml_training_services_s *training_s)
+{
+  int ret = ML_ERROR_NONE;
+
+  ret = _training_offloading_services_request (mls);
+  if (ret != ML_ERROR_NONE) {
+    _ml_error_report_return (ret, "Failed to request service.");
+  }
+  _training_offloading_replce_pipeline_data_path (mls);
+
+  ret = ml_pipeline_construct (training_s->sender_pipe, NULL, NULL,
+        &training_s->pipeline_h);
+  if (ML_ERROR_NONE != ret) {
+    _ml_error_report_return (ret, "Failed to construct pipeline.");
+  }
+
+  return ret;
+}
+
+/**
+ * @brief Prepare ml training offloading service as receiver.
+ */
+static int
+_ml_service_training_offloading_prepare_receiver(ml_service_s * mls, ml_training_services_s *training_s)
+{
+  int ret = ML_ERROR_NONE;
+  g_autoptr (JsonNode) pipeline_node = NULL;
+  JsonObject *pipeline_obj;
+  JsonObject *pipe;
+
+  /* checking if all required files are received */
+  if (!_training_offloading_check_received_data (training_s)) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "Failed to receive the required data");
+  }
+  _training_offloading_replce_pipeline_data_path (mls);
+
+  pipeline_node = json_from_string (training_s->receiver_pipe_json_str, NULL);
+  if (!pipeline_node) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "Failed to parse the json string, %s.",
+        training_s->receiver_pipe_json_str);
+  }
+
+  pipeline_obj = json_node_get_object (pipeline_node);
+  if (!pipeline_obj) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "Failed to get the json object from the json node.");
+  }
+  if (!json_object_has_member (pipeline_obj, "pipeline")) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "Failed to parse configuration file, cannot get the pipeline JSON object.");
+  }
+
+  pipe = json_object_get_object_member (pipeline_obj, "pipeline");
+  if (json_object_has_member (pipe, "description")) {
+    training_s->receiver_pipe =
+        g_strdup (_ml_service_get_json_string_member (pipe, "description"));
+  } else {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "Failed to parse configuration file, cannot get the pipeline description.");
+  }
+
+  ret = ml_pipeline_construct (training_s->receiver_pipe, NULL, NULL,
+      &training_s->pipeline_h);
+  if (ML_ERROR_NONE != ret) {
+    _ml_error_report_return (ret, "Failed to construct pipeline.");
+  }
+
+  ret = _training_offloading_conf_parse_pipeline (mls, pipe);
+  if (ret != ML_ERROR_NONE) {
+    return ret;
+  }
+
+  return ret;
+}
+
+/**
  * @brief Start ml training offloading service.
  */
 int
 _ml_service_training_offloading_start (ml_service_s * mls)
 {
   int ret = ML_ERROR_NONE;
-  g_autoptr (JsonNode) pipeline_node = NULL;
-  JsonObject *pipeline_obj;
-  JsonObject *pipe;
   ml_training_services_s *training_s = NULL;
 
   ret = _training_offloading_get_priv (mls, &training_s);
   g_return_val_if_fail (ret == ML_ERROR_NONE, ret);
 
   if (training_s->type == ML_TRAINING_OFFLOADING_TYPE_SENDER) {
-    ret = _training_offloading_services_request (mls);
-    if (ret != ML_ERROR_NONE) {
-      _ml_error_report_return (ret, "Failed to request service.");
-    }
-
-    _training_offloading_replce_pipeline_data_path (mls);
-
-    ret = ml_pipeline_construct (training_s->sender_pipe, NULL, NULL,
-        &training_s->pipeline_h);
-    if (ML_ERROR_NONE != ret) {
-      _ml_error_report_return (ret, "Failed to construct pipeline.");
-    }
-
-    ret = ml_pipeline_start (training_s->pipeline_h);
-    if (ret != ML_ERROR_NONE) {
-      _ml_error_report_return (ret, "Failed to start ml pipeline.");
-    }
+    ret = _ml_service_training_offloading_prepare_sender (mls, training_s);
   } else if (training_s->type == ML_TRAINING_OFFLOADING_TYPE_RECEIVER) {
-    /* checking if all required files are received */
-    if (!_training_offloading_check_received_data (training_s)) {
-      _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-          "Failed to receive the required data");
-    }
-
-    _training_offloading_replce_pipeline_data_path (mls);
-
-    pipeline_node = json_from_string (training_s->receiver_pipe_json_str, NULL);
-    if (!pipeline_node) {
-      _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-          "Failed to parse the json string, %s.",
-          training_s->receiver_pipe_json_str);
-    }
-
-    pipeline_obj = json_node_get_object (pipeline_node);
-    if (!pipeline_obj) {
-      _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-          "Failed to get the json object from the json node.");
-    }
-
-    if (!json_object_has_member (pipeline_obj, "pipeline")) {
-      _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-          "Failed to parse configuration file, cannot get the pipeline JSON object.");
-    }
-
-    pipe = json_object_get_object_member (pipeline_obj, "pipeline");
-
-    if (json_object_has_member (pipe, "description")) {
-      training_s->receiver_pipe =
-          g_strdup (_ml_service_get_json_string_member (pipe, "description"));
-    } else {
-      _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-          "Failed to parse configuration file, cannot get the pipeline description.");
-    }
-
-    ret = ml_pipeline_construct (training_s->receiver_pipe, NULL, NULL,
-        &training_s->pipeline_h);
-    if (ML_ERROR_NONE != ret) {
-      _ml_error_report_return (ret, "Failed to construct pipeline.");
-    }
-
-    ret = _training_offloading_conf_parse_pipeline (mls, pipe);
-    if (ret != ML_ERROR_NONE) {
-      return ret;
-    }
-
-    ret = ml_pipeline_start (training_s->pipeline_h);
-    if (ret != ML_ERROR_NONE) {
-      _ml_error_report_return (ret, "Failed to start ml pipeline.");
-    }
+    ret = _ml_service_training_offloading_prepare_receiver (mls, training_s);
   } else {
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The node type information in JSON is incorrect.");
   }
+  if (ret != ML_ERROR_NONE)
+    return ret;
+
+  ret = ml_pipeline_start (training_s->pipeline_h);
+  if (ret != ML_ERROR_NONE) {
+    _ml_error_report_return (ret, "Failed to start ml pipeline.");
+  }
+
 
   return ret;
 }
