@@ -1093,14 +1093,9 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
   }
 
   /* handle flexible single */
-  /**
-   * Set invoke_dynamic as TRUE if the given nnfw do invoke_dynamic
-   *
-   * if (info->nnfw == ML_NNFW_TYPE_EXECUTORCH_LLAMA || info->nnfw == ML_NNFW_TYPE_LLAMACPP) {
-   *   invoke_dynamic = TRUE;
-   * }
-   *
-   */
+  if (info->nnfw == ML_NNFW_TYPE_EXECUTORCH_LLAMA) {
+    invoke_dynamic = TRUE;
+  }
 
   if (invoke_dynamic) {
     single_h->is_flexible = TRUE;
