@@ -40,29 +40,6 @@ typedef enum
 } ml_training_offloaing_type_e;
 
 /**
- * @brief Internal enumeration for the node type in pipeline.
- */
-typedef enum
-{
-  ML_TRAINING_OFFLOADING_NODE_TYPE_UNKNOWN = 0,
-  ML_TRAINING_OFFLOADING_NODE_TYPE_OUTPUT,
-  ML_TRAINING_OFFLOADING_NODE_TYPE_TRAINING,
-
-  ML_TRAINING_OFFLOADING_NODE_TYPE_MAX
-} ml_training_offloading_node_type_e;
-
-/**
- * @brief Internal structure of the node info in pipeline.
- */
-typedef struct
-{
-  gchar *name;
-  ml_training_offloading_node_type_e type;
-  void *handle;
-  void *mls;
-} ml_training_offloading_node_info_s;
-
-/**
  * @brief Internal structure for ml-service training offloading handle.
  */
 typedef struct
@@ -111,80 +88,12 @@ _training_offloading_get_priv (ml_service_s * mls,
 }
 
 /**
- * @brief Internal function to invoke ml-service event for new data.
- */
-static int
-_invoke_event_new_data (ml_service_s * mls, const char *name,
-    const ml_tensors_data_h data)
-{
-  int status = ML_ERROR_NONE;
-  ml_service_event_cb_info_s cb_info = { 0 };
-  ml_information_h ml_information = NULL;
-
-  g_return_val_if_fail (mls != NULL, ML_ERROR_INVALID_PARAMETER);
-  g_return_val_if_fail (data != NULL, ML_ERROR_INVALID_PARAMETER);
-  g_return_val_if_fail (name != NULL, ML_ERROR_INVALID_PARAMETER);
-
-  _ml_service_get_event_cb_info (mls, &cb_info);
-
-  if (cb_info.cb) {
-    /* Create information handle for ml-service event. */
-    status = _ml_information_create (&ml_information);
-    if (status != ML_ERROR_NONE)
-      goto done;
-
-    status = _ml_information_set (ml_information, "name", (void *) name, NULL);
-    if (status != ML_ERROR_NONE)
-      goto done;
-
-    status = _ml_information_set (ml_information, "data", (void *) data, NULL);
-    if (status != ML_ERROR_NONE)
-      goto done;
-
-    cb_info.cb (ML_SERVICE_EVENT_NEW_DATA, ml_information, cb_info.pdata);
-  }
-
-done:
-  if (ml_information) {
-    ml_information_destroy (ml_information);
-  }
-
-  if (status != ML_ERROR_NONE) {
-    _ml_error_report ("Failed to invoke 'new data' event.");
-  }
-
-  return status;
-}
-
-/**
- * @brief Internal callback for sink node in pipeline description.
- */
-static void
-_pipeline_sink_cb (const ml_tensors_data_h data,
-    const ml_tensors_info_h tensors_info, void *user_data)
-{
-  ml_service_s *mls = NULL;
-  ml_training_offloading_node_info_s *node_info = NULL;
-
-  g_return_if_fail (data != NULL);
-
-  node_info = (ml_training_offloading_node_info_s *) user_data;
-  g_return_if_fail (node_info != NULL);
-
-  mls = (ml_service_s *) node_info->mls;
-  g_return_if_fail (mls != NULL);
-
-  _invoke_event_new_data (mls, node_info->name, data);
-}
-
-/**
  * @brief Internal function to release pipeline node info.
  */
 static void
 _training_offloading_node_info_free (gpointer data)
 {
-  ml_training_offloading_node_info_s *node_info =
-      (ml_training_offloading_node_info_s *) data;
+  ml_service_node_info_s *node_info = (ml_service_node_info_s *) data;
 
   if (!node_info)
     return;
@@ -196,11 +105,11 @@ _training_offloading_node_info_free (gpointer data)
 /**
  * @brief Internal function to create node info in pipeline.
  */
-static ml_training_offloading_node_info_s *
+static ml_service_node_info_s *
 _training_offloading_node_info_new (ml_service_s * mls,
-    const gchar * name, ml_training_offloading_node_type_e type)
+    const gchar * name, ml_service_node_type_e type)
 {
-  ml_training_offloading_node_info_s *node_info;
+  ml_service_node_info_s *node_info;
   ml_training_services_s *training_s = NULL;
   int ret;
 
@@ -214,7 +123,7 @@ _training_offloading_node_info_new (ml_service_s * mls,
         "Cannot add duplicated node '%s' in ml-service pipeline.", name);
   }
 
-  node_info = g_try_new0 (ml_training_offloading_node_info_s, 1);
+  node_info = g_try_new0 (ml_service_node_info_s, 1);
   if (!node_info) {
     _ml_error_report_return (NULL,
         "Failed to allocate new memory for node info in ml-service pipeline. Out of memory?");
@@ -327,14 +236,14 @@ _training_offloading_conf_parse_json (ml_service_s * mls, JsonObject * object)
  */
 static int
 _training_offloading_conf_parse_pipeline_node (ml_service_s * mls,
-    JsonNode * node, ml_training_offloading_node_type_e type)
+    JsonNode * node, ml_service_node_type_e type)
 {
   int ret = ML_ERROR_NONE;
-  guint i, n;
+  guint i, array_len = 1;
   const gchar *name;
   JsonArray *array = NULL;
   JsonObject *node_object;
-  ml_training_offloading_node_info_s *node_info = NULL;
+  ml_service_node_info_s *node_info = NULL;
   ml_training_services_s *training_s = NULL;
 
   g_return_val_if_fail (node != NULL, ML_ERROR_INVALID_PARAMETER);
@@ -342,13 +251,12 @@ _training_offloading_conf_parse_pipeline_node (ml_service_s * mls,
   ret = _training_offloading_get_priv (mls, &training_s);
   g_return_val_if_fail (ret == ML_ERROR_NONE, ret);
 
-  n = 1;
   if (JSON_NODE_HOLDS_ARRAY (node)) {
     array = json_node_get_array (node);
-    n = json_array_get_length (array);
+    array_len = json_array_get_length (array);
   }
 
-  for (i = 0; i < n; i++) {
+  for (i = 0; i < array_len; i++) {
     if (array)
       node_object = json_array_get_object_element (array, i);
     else
@@ -368,13 +276,13 @@ _training_offloading_conf_parse_pipeline_node (ml_service_s * mls,
     }
 
     switch (type) {
-      case ML_TRAINING_OFFLOADING_NODE_TYPE_TRAINING:
+      case ML_SERVICE_NODE_TYPE_TRAINING:
         ret = ml_pipeline_element_get_handle (training_s->pipeline_h, name,
             &node_info->handle);
         break;
-      case ML_TRAINING_OFFLOADING_NODE_TYPE_OUTPUT:
+      case ML_SERVICE_NODE_TYPE_OUTPUT:
         ret = ml_pipeline_sink_register (training_s->pipeline_h, name,
-            _pipeline_sink_cb, node_info, &node_info->handle);
+            _ml_service_pipeline_sink_cb, node_info, &node_info->handle);
         break;
       default:
         ret = ML_ERROR_INVALID_PARAMETER;
@@ -391,7 +299,7 @@ _training_offloading_conf_parse_pipeline_node (ml_service_s * mls,
 }
 
 /**
- * @brief register sink callback
+ * @brief Internal function to parse the pipeline in the configuration file.
  */
 static int
 _training_offloading_conf_parse_pipeline (ml_service_s * mls, JsonObject * pipe)
@@ -405,7 +313,7 @@ _training_offloading_conf_parse_pipeline (ml_service_s * mls, JsonObject * pipe)
   if (json_object_has_member (pipe, "output_node")) {
     node = json_object_get_member (pipe, "output_node");
     ret = _training_offloading_conf_parse_pipeline_node (mls, node,
-        ML_TRAINING_OFFLOADING_NODE_TYPE_OUTPUT);
+        ML_SERVICE_NODE_TYPE_OUTPUT);
     if (ret != ML_ERROR_NONE) {
       _ml_error_report_return (ret,
           "Failed to parse configuration file, cannot get the input node.");
@@ -415,7 +323,7 @@ _training_offloading_conf_parse_pipeline (ml_service_s * mls, JsonObject * pipe)
   if (json_object_has_member (pipe, "training_node")) {
     node = json_object_get_member (pipe, "training_node");
     ret = _training_offloading_conf_parse_pipeline_node (mls, node,
-        ML_TRAINING_OFFLOADING_NODE_TYPE_TRAINING);
+        ML_SERVICE_NODE_TYPE_TRAINING);
     if (ret != ML_ERROR_NONE) {
       _ml_error_report_return (ret,
           "Failed to parse configuration file, cannot get the training node.");
@@ -499,10 +407,10 @@ _ml_service_training_offloading_create (ml_service_s * mls,
 }
 
 /**
- * @brief Request training offloading
+ * @brief Request service to ml-service-offloading.
  */
 static int
-_training_offloading_request (ml_service_s * mls,
+_request_offloading_service (ml_service_s * mls,
     const gchar * service_name, void *data, size_t len)
 {
   int ret = ML_ERROR_NONE;
@@ -562,7 +470,7 @@ _training_offloading_services_request (ml_service_s * mls)
         goto error;
       }
 
-      ret = _training_offloading_request (mls, name, contents, len);
+      ret = _request_offloading_service (mls, name, contents, len);
       if (ret != ML_ERROR_NONE) {
         _ml_error_report ("Failed to request service '%s'.", name);
         goto error;
@@ -588,7 +496,7 @@ _training_offloading_services_request (ml_service_s * mls)
     _ml_logd
         ("In case of pipeline, @REMOTE_APP_RW_PATH@ will be replaced at the remote receiver.\n transfer_data:pipeline(%s),",
         pipeline);
-    ret = _training_offloading_request (mls, service_name, pipeline,
+    ret = _request_offloading_service (mls, service_name, pipeline,
         strlen (pipeline) + 1);
     if (ret != ML_ERROR_NONE) {
       _ml_error_report ("Failed to request service(%s)", service_name);
@@ -736,7 +644,8 @@ _ml_service_training_offloading_set_path (ml_service_s * mls,
  * @brief Prepare ml training offloading service as sender.
  */
 static int
-_ml_service_training_offloading_prepare_sender(ml_service_s * mls, ml_training_services_s *training_s)
+_ml_service_training_offloading_prepare_sender (ml_service_s * mls,
+    ml_training_services_s * training_s)
 {
   int ret = ML_ERROR_NONE;
 
@@ -747,7 +656,7 @@ _ml_service_training_offloading_prepare_sender(ml_service_s * mls, ml_training_s
   _training_offloading_replce_pipeline_data_path (mls);
 
   ret = ml_pipeline_construct (training_s->sender_pipe, NULL, NULL,
-        &training_s->pipeline_h);
+      &training_s->pipeline_h);
   if (ML_ERROR_NONE != ret) {
     _ml_error_report_return (ret, "Failed to construct pipeline.");
   }
@@ -759,7 +668,8 @@ _ml_service_training_offloading_prepare_sender(ml_service_s * mls, ml_training_s
  * @brief Prepare ml training offloading service as receiver.
  */
 static int
-_ml_service_training_offloading_prepare_receiver(ml_service_s * mls, ml_training_services_s *training_s)
+_ml_service_training_offloading_prepare_receiver (ml_service_s * mls,
+    ml_training_services_s * training_s)
 {
   int ret = ML_ERROR_NONE;
   g_autoptr (JsonNode) pipeline_node = NULL;
@@ -944,7 +854,7 @@ _training_offloading_send_trained_model (ml_service_s * mls)
   }
   _ml_logd ("Send trained model");
   for (iter = list; iter != NULL; iter = g_list_next (iter)) {
-    _training_offloading_request (mls, iter->data, contents, len);
+    _request_offloading_service (mls, iter->data, contents, len);
   }
 
   g_list_free (list);

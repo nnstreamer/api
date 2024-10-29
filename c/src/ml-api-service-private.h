@@ -49,6 +49,31 @@ typedef enum
 } ml_service_type_e;
 
 /**
+ * @brief Enumeration for the node type in pipeline.
+ */
+typedef enum
+{
+  ML_SERVICE_NODE_TYPE_UNKNOWN = 0,
+  ML_SERVICE_NODE_TYPE_INPUT = 1,
+  ML_SERVICE_NODE_TYPE_OUTPUT = 2,
+  ML_SERVICE_NODE_TYPE_TRAINING = 3,
+
+  ML_EXTENSION_NODE_TYPE_MAX
+} ml_service_node_type_e;
+
+/**
+ * @brief Structure of the node info in pipeline.
+ */
+typedef struct
+{
+  gchar *name;
+  ml_service_node_type_e type;
+  ml_tensors_info_h info;
+  void *handle;
+  void *mls;
+} ml_service_node_info_s;
+
+/**
  * @brief Structure for ml-service event callback.
  */
 typedef struct
@@ -124,6 +149,17 @@ int _ml_service_query_release_internal (ml_service_s *mls);
  * @brief Internal function to get json string member.
  */
 const gchar * _ml_service_get_json_string_member (JsonObject *object, const gchar *member_name);
+
+/**
+ * @brief Generating an ML service event and passing received data and event to a registered callback function.
+ */
+int _ml_service_invoke_event_new_data (ml_service_s * mls, const char *name, const ml_tensors_data_h data);
+
+/**
+ * @brief Callback for sink node in pipeline description.
+ * Processes incoming data from pipeline sink element and forwards it to _ml_service_invoke_event_new_data().
+ */
+void _ml_service_pipeline_sink_cb (const ml_tensors_data_h data, const ml_tensors_info_h info, void *user_data);
 
 #ifdef __cplusplus
 }

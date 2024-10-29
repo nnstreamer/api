@@ -768,3 +768,71 @@ _ml_service_get_json_string_member (JsonObject * object,
 
   return ret;
 }
+
+/**
+ * @brief Generating an ML service event and passing received data and event to
+ * a registered callback function.
+ */
+int
+_ml_service_invoke_event_new_data (ml_service_s * mls, const char *name,
+    const ml_tensors_data_h data)
+{
+  ml_service_event_cb_info_s cb_info = { 0 };
+  ml_information_h ml_information = NULL;
+  int status = ML_ERROR_NONE;
+
+  if (!mls || !data) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "Failed to create ml-service event data, invalid parameter.");
+  }
+
+  _ml_service_get_event_cb_info (mls, &cb_info);
+
+  if (cb_info.cb) {
+    /* Create information handle for ml-service event. */
+    status = _ml_information_create (&ml_information);
+    if (status != ML_ERROR_NONE)
+      goto done;
+
+    if (name) {
+      status =
+          _ml_information_set (ml_information, "name", (void *) name, NULL);
+      if (status != ML_ERROR_NONE)
+        goto done;
+    }
+
+    status = _ml_information_set (ml_information, "data", (void *) data, NULL);
+    if (status == ML_ERROR_NONE)
+      cb_info.cb (ML_SERVICE_EVENT_NEW_DATA, ml_information, cb_info.pdata);
+  }
+
+done:
+  if (ml_information)
+    ml_information_destroy (ml_information);
+
+  if (status != ML_ERROR_NONE) {
+    _ml_error_report ("Failed to invoke 'new data' event.");
+  }
+
+  return status;
+}
+
+/**
+ * @brief Callback for sink node in pipeline description.
+ * Processes incoming data from pipeline sink element and forwards it to
+ * _ml_service_invoke_event_new_data().
+ */
+void
+_ml_service_pipeline_sink_cb (const ml_tensors_data_h data,
+    const ml_tensors_info_h info, void *user_data)
+{
+  ml_service_s *mls = NULL;
+  ml_service_node_info_s *node_info = NULL;
+
+  node_info = (ml_service_node_info_s *) user_data;
+  g_return_if_fail (node_info != NULL);
+  mls = (ml_service_s *) node_info->mls;
+  g_return_if_fail (mls != NULL);
+
+  _ml_service_invoke_event_new_data (mls, node_info->name, data);
+}
