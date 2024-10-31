@@ -26,6 +26,7 @@ extern void init_bb (void);
 extern void init_il (void);
 extern void init_pose (void);
 extern void init_is (void);
+extern void init_os (void);
 #if defined (ENABLE_FLATBUF)
 extern void init_fbd (void);
 extern void init_fbc (void);
@@ -919,6 +920,7 @@ nnstreamer_native_initialize (JNIEnv * env, jobject context)
     init_il ();
     init_pose ();
     init_is ();
+    init_os ();
 #if defined (ENABLE_FLATBUF)
     init_fbd ();
     init_fbc ();
