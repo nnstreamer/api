@@ -60,6 +60,22 @@ add_project_arguments('-DVERSION_MICRO=' + api_version_split[2], language: ['c',
 
 # Define warning flags for c and cpp
 warning_flags = [
+  '-Werror=address',
+  '-Werror=array-bounds',
+  '-Werror=empty-body',
+  '-Werror=format=2',
+  '-Werror=init-self',
+  '-Werror=int-to-pointer-cast',
+  '-Werror=main',
+  '-Werror=missing-braces',
+  '-Werror=nonnull',
+  '-Werror=return-type',
+  '-Werror=sequence-point',
+  '-Werror=trigraphs',
+  '-Werror=write-strings',
+  '-Wredundant-decls',
+  '-Wmissing-braces',
+  '-Wmaybe-uninitialized',
   '-Wwrite-strings',
   '-Wformat',
   '-Wformat-nonliteral',
@@ -72,6 +88,9 @@ warning_flags = [
 ]
 
 warning_c_flags = [
+  '-Werror=implicit',
+  '-Werror=pointer-to-int-cast',
+  '-Werror=undef',
   '-Wmissing-declarations',
   '-Wmissing-include-dirs',
   '-Wmissing-prototypes',
@@ -82,20 +101,9 @@ warning_c_flags = [
 ]
 
 # Setup warning flags for c and cpp
-foreach extra_arg : warning_flags
-  if cc.has_argument (extra_arg)
-    add_project_arguments([extra_arg], language: 'c')
-  endif
-  if cxx.has_argument (extra_arg)
-    add_project_arguments([extra_arg], language: 'cpp')
-  endif
-endforeach
-
-foreach extra_arg : warning_c_flags
-  if cc.has_argument (extra_arg)
-    add_project_arguments([extra_arg], language: 'c')
-  endif
-endforeach
+add_project_arguments(cc.get_supported_arguments(warning_c_flags), language: 'c')
+add_project_arguments(cc.get_supported_arguments(warning_flags), language: 'c')
+add_project_arguments(cxx.get_supported_arguments(warning_flags), language: 'cpp')
 
 # Set project args
 if get_option('enable-tizen')

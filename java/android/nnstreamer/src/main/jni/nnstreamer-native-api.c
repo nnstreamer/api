@@ -168,22 +168,17 @@ extern void init_filter_mxnet (void);
 extern void init_filter_llama2c (void);
 #endif
 
-
-#if defined GST_VERSION_MINOR && GST_VERSION_MINOR >= 24
+#if GST_CHECK_VERSION(1, 24, 0)
 /**
  * @brief External function from GStreamer Android. (Dummy function)
  */
-static void gst_android_init (JNIEnv * env, jobject context) {
-    do {
-
-    } while(0);
-}
+#define gst_android_init(...)
 #else
 /**
  * @brief External function from GStreamer Android.
  */
 extern void gst_android_init (JNIEnv * env, jobject context);
-#endif /* GST_VERSION_MINOR >= 24 */
+#endif
 #endif /* __ANDROID__ */
 
 /**
