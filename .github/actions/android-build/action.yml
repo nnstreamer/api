@@ -6,6 +6,9 @@ inputs:
     description: target ABI
     required: false
     default: arm64-v8a
+outputs:
+  result:
+    value: ${{ steps.ndk-build.outputs.result }}
 
 runs:
   using: composite
@@ -45,6 +48,7 @@ runs:
         repository: nnstreamer/nnstreamer-android-resource
         path: nnstreamer-android-resource
     - name: NDK build
+      id: ndk-build
       run: |
         echo "NDK build, ${{ github.workspace }}"
         export GSTREAMER_ROOT_ANDROID=~/android/gst_root_android/
@@ -63,7 +67,10 @@ runs:
         result=$?
         if [[ ${result} -ne 0 ]]; then
           echo "NDK build failed"
-          exit 1
+          echo "result=failure" >> $GITHUB_OUTPUT
+        else
+          echo "NDK build success"
+          echo "result=success" >> $GITHUB_OUTPUT
         fi
       shell: bash
       env:
