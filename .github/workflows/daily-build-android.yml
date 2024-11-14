@@ -16,9 +16,9 @@ jobs:
     - name: build
       id: android-build
       uses: ./.github/actions/android-build
-      continue-on-error: true
 
     - name: get date
+      if: always()
       id: get-date
       run: |
         echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT

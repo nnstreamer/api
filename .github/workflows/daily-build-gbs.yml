@@ -1,0 +1,81 @@
+name: gbs daily build and test
+
+on:
+  schedule:
+    # 05:00 AM (KST) Mon-Fri
+    - cron: "00 20 * * 0-4"
+
+  # Allow manually triggering the workflow
+  workflow_dispatch:
+
+jobs:
+  build:
+    outputs:
+      x86_64: ${{ steps.gbs-result.outputs.x86_64 }}
+      i586: ${{ steps.gbs-result.outputs.i586 }}
+      armv7l: ${{ steps.gbs-result.outputs.armv7l }}
+      aarch64: ${{ steps.gbs-result.outputs.aarch64 }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - gbs_build_arch: "x86_64"
+            gbs_build_option: "--define \"unit_test 1\" --define \"testcoverage 1\""
+          - gbs_build_arch: "i586"
+            gbs_build_option: "--define \"unit_test 1\""
+          - gbs_build_arch: "armv7l"
+            gbs_build_option: "--define \"unit_test 1\""
+          - gbs_build_arch: "aarch64"
+            gbs_build_option: "--define \"unit_test 1\""
+
+    runs-on: ubuntu-22.04
+
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v1
+
+    - name: prepare deb sources for GBS
+      run: echo "deb [trusted=yes] http://download.tizen.org/tools/latest-release/Ubuntu_22.04/ /" | sudo tee /etc/apt/sources.list.d/tizen.list
+
+    - name: install GBS
+      run: sudo apt-get update && sudo apt-get install -y gbs
+
+    - name: configure GBS
+      run: cp .github/workflows/tizen.gbs.conf ~/.gbs.conf
+
+    - name: get date
+      id: get-date
+      run: |
+        echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+    - name: run GBS
+      id: gbs-build
+      run: gbs build ${{ matrix.gbs_build_option }} --define "_skip_debug_rpm 1" -A ${{ matrix.gbs_build_arch }}
+
+    - name: save gbs cache
+      uses: actions/cache/save@v4
+      if: ${{ always() && github.ref == 'refs/heads/main' }}
+      with:
+        path: ~/GBS-ROOT/local/cache
+        key: gbs-cache-${{ matrix.gbs_build_arch }}-${{ steps.get-date.outputs.date }}
+
+    - if: matrix.gbs_build_arch == 'x86_64' && steps.gbs-build.outcome == 'success'
+      name: extract test coverage result
+      run: |
+        pip install pybadges beautifulsoup4 setuptools
+        mkdir -p ~/testresult/
+        pushd ~/testresult/
+        cp ~/GBS-ROOT/local/repos/tizen/x86_64/RPMS/*-coverage*.rpm .
+        rpm2cpio *-coverage*.rpm | cpio -idv
+        popd
+        python3 .github/workflows/gen_coverage_badge.py ~/testresult/usr/share/ml-api/unittest/result/index.html ~/testresult/usr/share/ml-api/unittest/result/coverage_badge.svg
+
+    - if: matrix.gbs_build_arch == 'x86_64' && steps.gbs-build.outcome == 'success'
+      name: update test coverage result to github.io
+      uses: ./.github/actions/gitpush
+      with:
+        source: ~/testresult/usr/share/ml-api/unittest/result/*
+        dest: testresult/ml-api
+        message: "${{ steps.get-date.outputs.date }} : Update test coverage result."
+        taos_account: ${{ secrets.TAOS_ACCOUNT }}
+        taos_account_token: ${{ secrets.TAOS_ACCOUNT_TOKEN }}
