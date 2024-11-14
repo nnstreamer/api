@@ -96,13 +96,12 @@ jobs:
       - name: run pdebuild
         if: steps.rebuild.outputs.rebuild == '1'
         id: pdebuild
-        continue-on-error: true
         run: |
           mkdir -p ~/daily_build/ubuntu
           pdebuild --logfile ~/daily_build/pdebuild_log.txt --buildresult ~/daily_build/ubuntu --architecture ${{ matrix.arch }} -- --distribution ${{ matrix.distroname }}
 
       - name: save pbuilder cache
-        if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' }}
+        if: always() && ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' }}
         uses: actions/cache/save@v4
         with:
           path: |
