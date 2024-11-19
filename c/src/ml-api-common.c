@@ -115,7 +115,7 @@ convert_ml_tensor_type_from (tensor_type type)
 char *
 ml_api_get_version_string (void)
 {
-  return g_strdup_printf ("PR TEST Machine Learning API %s", VERSION);
+  return g_strdup_printf ("Machine Learning API %s", VERSION);
 }
 
 /**
