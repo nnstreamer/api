@@ -291,8 +291,10 @@ _training_offloading_conf_parse_json (ml_service_s * mls, JsonObject * object)
     key = iter->data;
 
     if (!STR_IS_VALID (key)) {
-      _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-          "The parameter, 'key' is invalid. It should be a valid string.");
+      _ml_error_report
+          ("The parameter, 'key' is invalid. It should be a valid string.");
+      ret = ML_ERROR_INVALID_PARAMETER;
+      goto error;
     }
 
     val = _ml_service_get_json_string_member (data_obj, key);
@@ -306,21 +308,28 @@ _training_offloading_conf_parse_json (ml_service_s * mls, JsonObject * object)
 
       if (!g_strstr_len (transfer_data, -1, "pipeline")) {
         g_free (transfer_data);
-        _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-            "The parameter, 'val' is invalid. It should be a valid string.");
+
+        _ml_error_report
+            ("The parameter, 'val' is invalid. It should be a valid string.");
+        ret = ML_ERROR_INVALID_PARAMETER;
+        goto error;
       }
     }
 
     g_hash_table_insert (training_s->transfer_data_table, g_strdup (key),
         transfer_data);
   }
+
+error:
   g_list_free (list);
 
-  /* Since we are only sending the trained model now, there is only 1 item in the list. */
-  if (training_s->type == ML_TRAINING_OFFLOADING_TYPE_RECEIVER)
-    training_s->trained_model_path = g_strdup (transfer_data);
+  if (ret == ML_ERROR_NONE) {
+    /* Since we are only sending the trained model now, there is only 1 item in the list. */
+    if (training_s->type == ML_TRAINING_OFFLOADING_TYPE_RECEIVER)
+      training_s->trained_model_path = g_strdup (transfer_data);
+  }
 
-  return ML_ERROR_NONE;
+  return ret;
 }
 
 /**
