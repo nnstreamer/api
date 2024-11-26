@@ -296,6 +296,8 @@ _extension_test_imgclf (ml_service_h handle, gboolean is_pipeline)
   int i, status, tried;
   void *_raw = NULL;
   size_t _size = 0;
+  guint64 start_time, end_time;
+  gdouble elapsed_time;
 
   g_autofree gchar *data_file = _get_data_path ("orange.raw");
 
@@ -363,10 +365,14 @@ _extension_test_imgclf (ml_service_h handle, gboolean is_pipeline)
 
   /* Let the data frames are passed into ml-service extension handle. */
   tried = 0;
+  start_time = g_get_monotonic_time ();
   do {
-    g_usleep (30000U);
+    g_usleep (300000U);
   } while (tdata->received < 3 && tried++ < 10);
-
+  end_time = g_get_monotonic_time ();
+  elapsed_time = (end_time - start_time) / (double) G_USEC_PER_SEC;
+  _ml_logd ("[DEBUG] Data received cnt: %u, Elapsed time: %.6f second\n",
+      tdata->received, elapsed_time);
   EXPECT_TRUE (tdata->received > 0);
 
   /* Clear callback before releasing tdata. */
