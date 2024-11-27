@@ -225,7 +225,7 @@ GST_BLOCKED_PLUGINS      := \
         rsaudiofx rsvideofx
 
 GSTREAMER_PLUGINS        := $(filter-out $(GST_BLOCKED_PLUGINS), $(GST_REQUIRED_PLUGINS))
-GSTREAMER_EXTRA_DEPS     := $(GST_REQUIRED_DEPS) glib-2.0 gio-2.0 gmodule-2.0
+GSTREAMER_EXTRA_DEPS     := $(GST_REQUIRED_DEPS) glib-2.0 gio-2.0 gmodule-2.0 orc-0.4
 GSTREAMER_EXTRA_LIBS     := $(GST_REQUIRED_LIBS) -liconv
 
 ifeq ($(NNSTREAMER_API_OPTION),all)

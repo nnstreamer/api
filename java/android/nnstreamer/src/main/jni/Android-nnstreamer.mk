@@ -39,6 +39,21 @@ NNSTREAMER_SRC_FILES += \
     $(NNSTREAMER_DECODER_IS_SRCS) \
     $(NNSTREAMER_JOIN_SRCS)
 
+ifeq ($(shell which orcc),)
+$(info No 'orcc' in your PATH, install it to enable orc.)
+else
+$(info Compile ORC code)
+$(shell mkdir -p $(LOCAL_PATH)/orc)
+$(shell orcc --header -o $(LOCAL_PATH)/orc/nnstreamer-orc.h $(NNSTREAMER_ORC_SRC))
+$(shell orcc --implementation -o $(LOCAL_PATH)/orc/nnstreamer-orc.c $(NNSTREAMER_ORC_SRC))
+
+NNSTREAMER_SRC_FILES     += $(LOCAL_PATH)/orc/nnstreamer-orc.c
+NNSTREAMER_CAPI_INCLUDES += $(LOCAL_PATH)/orc
+NNSTREAMER_CAPI_INCLUDES += $(GSTREAMER_ROOT)/include/orc-0.4
+
+NNS_API_FLAGS += -DHAVE_ORC=1
+endif
+
 ifeq ($(ENABLE_TENSOR_QUERY), true)
 ifndef NNSTREAMER_EDGE_ROOT
 $(error NNSTREAMER_EDGE_ROOT is not defined!)
