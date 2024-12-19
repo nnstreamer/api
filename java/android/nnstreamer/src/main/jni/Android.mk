@@ -98,6 +98,7 @@ endif
 endif
 
 ENABLE_LLAMA2C := false
+ENABLE_LLAMACPP := false
 
 NNS_API_FLAGS := -DVERSION=\"$(ML_API_VERSION)\" -DVERSION_MAJOR=$(ML_API_VERSION_MAJOR) -DVERSION_MINOR=$(ML_API_VERSION_MINOR) -DVERSION_MICRO=$(ML_API_VERSION_MICRO)
 NNS_SUBPLUGINS :=
@@ -168,6 +169,13 @@ NNS_API_FLAGS += -DENABLE_LLAMA2C=1
 NNS_SUBPLUGINS += llama2c-subplugin
 
 include $(LOCAL_PATH)/Android-llama2c.mk
+endif
+
+ifeq ($(ENABLE_LLAMACPP), true)
+NNS_API_FLAGS += -DENABLE_LLAMACPP=1
+NNS_SUBPLUGINS += llamacpp-subplugin
+
+include $(LOCAL_PATH)/Android-llamacpp.mk
 endif
 
 ifneq ($(NNSTREAMER_API_OPTION),single)

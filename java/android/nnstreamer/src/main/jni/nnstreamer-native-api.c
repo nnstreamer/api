@@ -167,6 +167,9 @@ extern void init_filter_mxnet (void);
 #if defined (ENABLE_LLAMA2C)
 extern void init_filter_llama2c (void);
 #endif
+#if defined (ENABLE_LLAMACPP)
+extern void init_filter_llamacpp (void);
+#endif
 
 #if GST_CHECK_VERSION(1, 24, 0)
 /**
@@ -957,6 +960,9 @@ nnstreamer_native_initialize (JNIEnv * env, jobject context)
 #endif
 #if defined (ENABLE_LLAMA2C)
     init_filter_llama2c ();
+#endif
+#if defined (ENABLE_LLAMACPP)
+    init_filter_llamacpp ();
 #endif
 #endif /* __ANDROID__ */
     nns_is_initilaized = TRUE;
