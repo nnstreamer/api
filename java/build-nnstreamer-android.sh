@@ -745,8 +745,8 @@ if [[ $android_lib_build_res -eq 0 ]]; then
     mkdir -p ndk_static/debug
     mkdir -p ndk_static/release
 
-    cp nnstreamer/build/intermediates/ndkBuild/debug/obj/local/$target_abi/*.a ndk_static/debug
-    cp nnstreamer/build/intermediates/ndkBuild/release/obj/local/$target_abi/*.a ndk_static/release
+    cp nnstreamer/build/intermediates/cxx/Debug/*/obj/local/$target_abi/*.a ndk_static/debug
+    cp nnstreamer/build/intermediates/cxx/Release/*/obj/local/$target_abi/*.a ndk_static/release
 
     nnstreamer_static_libs="$nnstreamer_lib_name-static-libs-$today.zip"
     zip -r $nnstreamer_static_libs ndk_static
