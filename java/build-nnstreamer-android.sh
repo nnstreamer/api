@@ -156,7 +156,7 @@ tf_lite_ver="2.16.1"
 tf_lite_vers_support="2.8.1 2.16.1"
 
 # Set NNFW version (https://github.com/Samsung/ONE/releases)
-nnfw_ver="1.17.0"
+nnfw_ver="1.28.0"
 enable_nnfw_ext="no"
 
 # Find '--help' in the given arguments
@@ -575,7 +575,7 @@ if [[ $enable_nnfw == "yes" ]]; then
     mkdir -p nnstreamer/src/main/jni/nnfw/ext/arm64-v8a
     mv external/nnfw/include/* nnstreamer/src/main/jni/nnfw/include
     mv external/nnfw/lib/libnnfw-dev.so nnstreamer/src/main/jni/nnfw/lib
-    mv external/nnfw/lib/* nnstreamer/src/main/jni/nnfw/ext/arm64-v8a
+    find external/nnfw/lib -type f -exec mv -t nnstreamer/src/main/jni/nnfw/ext/arm64-v8a {} +
 fi
 
 # Update SNPE option
