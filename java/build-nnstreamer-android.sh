@@ -115,7 +115,7 @@ enable_tracing="no"
 enable_snap="no"
 
 # Enable NNFW
-enable_nnfw="yes"
+enable_nnfw="no"
 
 # Enable SNPE
 enable_snpe="no"
