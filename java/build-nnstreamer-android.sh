@@ -22,7 +22,7 @@
 ##@@ basic options:
 ##@@   --help
 ##@@       display this help and exit
-##@@   --build-type=(all|lite|single|internal)
+##@@   --build_type=(all|lite|single|internal)
 ##@@       'all'      : default
 ##@@       'lite'     : build with GStreamer core plugins
 ##@@       'single'   : no plugins, single-shot only
