@@ -75,31 +75,10 @@ else
 $(error Target arch ABI not supported: $(TARGET_ARCH_ABI))
 endif
 
-ifeq ($(TFLITE_VERSION_MINOR),8) # v2.8.1
-#------------------------------------------------------
-# tensorflow-lite (prebuilt static library)
-#------------------------------------------------------
-include $(CLEAR_VARS)
-
-LOCAL_MODULE := tensorflow-lite-lib
-LOCAL_SRC_FILES := $(TF_LITE_LIB_PATH)/libtensorflow-lite.a
-LOCAL_EXPORT_LDFLAGS := -Wl,--exclude-libs,libtensorflow-lite.a
-
-include $(PREBUILT_STATIC_LIBRARY)
-
-else # NOT v2.8.1
 #------------------------------------------------------
 # tensorflow-lite (prebuilt shared libraries)
 #------------------------------------------------------
-include $(CLEAR_VARS)
-LOCAL_MODULE := libtensorflowlite
-LOCAL_SRC_FILES := $(TF_LITE_LIB_PATH)/libtensorflowlite.so
-include $(PREBUILT_SHARED_LIBRARY)
-
-include $(CLEAR_VARS)
-LOCAL_MODULE := libtensorflowlite-gpu-delegate
-LOCAL_SRC_FILES := $(TF_LITE_LIB_PATH)/libtensorflowlite_gpu_delegate.so
-include $(PREBUILT_SHARED_LIBRARY)
+include $(LOCAL_PATH)/Android-tensorflow-lite-prebuilt.mk
 
 ## set include and deps for QNN delegate
 ifeq ($(TFLITE_ENABLE_QNN_DELEGATE),true)
@@ -111,8 +90,6 @@ LOCAL_SRC_FILES := $(QNN_DELEGATE_LIB_PATH)/libQnnTFLiteDelegate.so
 include $(PREBUILT_SHARED_LIBRARY)
 endif ## QNN delegate
 
-endif # tflite version check v2.8.1 or other
-
 #------------------------------------------------------
 # tensor-filter sub-plugin for tensorflow-lite
 #------------------------------------------------------
@@ -123,15 +100,9 @@ LOCAL_SRC_FILES := $(NNSTREAMER_FILTER_TFLITE_SRCS)
 LOCAL_CXXFLAGS := -O3 -fPIC -frtti -fexceptions $(NNS_API_FLAGS) $(TFLITE_FLAGS)
 LOCAL_C_INCLUDES := $(TF_LITE_INCLUDES) $(NNSTREAMER_INCLUDES) $(GST_HEADERS_COMMON)
 LOCAL_EXPORT_LDLIBS := $(TFLITE_EXPORT_LDLIBS)
-ifeq ($(TFLITE_VERSION_MINOR),8) # v2.8.1
-LOCAL_WHOLE_STATIC_LIBRARIES := tensorflow-lite-lib cpufeatures
-else
-LOCAL_SHARED_LIBRARIES := libtensorflowlite libtensorflowlite-gpu-delegate
-
+LOCAL_SHARED_LIBRARIES := $(TF_LITE_PREBUILT_LIBS)
 ifeq ($(TFLITE_ENABLE_QNN_DELEGATE),true)
 LOCAL_SHARED_LIBRARIES += libtensorflowlite-qnn-delegate
 endif
-
-endif # check v2.8.1
 
 include $(BUILD_STATIC_LIBRARY)

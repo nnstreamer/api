@@ -33,12 +33,10 @@ ML_API_VERSION_MICRO := $(word 3,$(subst ., ,${ML_API_VERSION}))
 #------------------------------------------------------
 # API build option
 #------------------------------------------------------
-include $(NNSTREAMER_ROOT)/jni/nnstreamer.mk
-
 NNSTREAMER_API_OPTION := all
 
-# tensor-query support
-ENABLE_TENSOR_QUERY := true
+# support tensor-query and offloading
+ENABLE_ML_OFFLOADING := false
 
 ENABLE_TF_LITE ?= false
 # TensorFlow Lite  (nnstreamer tf-lite sub-plugin)
@@ -100,11 +98,70 @@ endif
 ENABLE_LLAMA2C := false
 ENABLE_LLAMACPP := false
 
-NNS_API_FLAGS := -DVERSION=\"$(ML_API_VERSION)\" -DVERSION_MAJOR=$(ML_API_VERSION_MAJOR) -DVERSION_MINOR=$(ML_API_VERSION_MINOR) -DVERSION_MICRO=$(ML_API_VERSION_MICRO)
+NNS_API_FLAGS := -DVERSION=\"$(ML_API_VERSION)\" -DVERSION_MAJOR=$(ML_API_VERSION_MAJOR) -DVERSION_MINOR=$(ML_API_VERSION_MINOR) -DVERSION_MICRO=$(ML_API_VERSION_MICRO) -Wno-c99-designator
 NNS_SUBPLUGINS :=
 
 ifeq ($(NNSTREAMER_API_OPTION),single)
 NNS_API_FLAGS += -DNNS_SINGLE_ONLY=1
+endif
+
+#------------------------------------------------------
+# features and source files for build option
+#------------------------------------------------------
+include $(NNSTREAMER_ROOT)/jni/nnstreamer.mk
+
+ifeq ($(ENABLE_ML_OFFLOADING), true)
+ifndef NNSTREAMER_EDGE_ROOT
+$(error NNSTREAMER_EDGE_ROOT is not defined!)
+endif
+
+NNS_API_FLAGS += -DENABLE_NNSTREAMER_EDGE=1
+include $(NNSTREAMER_EDGE_ROOT)/jni/nnstreamer-edge.mk
+endif
+
+ifeq ($(ENABLE_MQTT), true)
+NNS_API_FLAGS += -DENABLE_MQTT=1
+include $(LOCAL_PATH)/Android-paho-mqtt-c.mk
+endif
+
+ifeq ($(_ENABLE_TF_LITE), true)
+NNS_API_FLAGS += -DENABLE_TENSORFLOW_LITE=1
+endif
+
+ifeq ($(ENABLE_SNAP), true)
+NNS_API_FLAGS += -DENABLE_SNAP=1
+endif
+
+ifeq ($(ENABLE_NNFW), true)
+NNS_API_FLAGS += -DENABLE_NNFW_RUNTIME=1
+endif
+
+ifeq ($(_ENABLE_SNPE), true)
+NNS_API_FLAGS += -DENABLE_SNPE=1
+endif
+
+ifeq ($(ENABLE_QNN), true)
+NNS_API_FLAGS += -DENABLE_QNN=1
+endif
+
+ifeq ($(ENABLE_PYTORCH), true)
+NNS_API_FLAGS += -DENABLE_PYTORCH=1
+endif
+
+ifeq ($(ENABLE_MXNET), true)
+NNS_API_FLAGS += -DENABLE_MXNET=1
+endif
+
+ifeq ($(ENABLE_LLAMA2C), true)
+NNS_API_FLAGS += -DENABLE_LLAMA2C=1
+endif
+
+ifeq ($(ENABLE_LLAMACPP), true)
+NNS_API_FLAGS += -DENABLE_LLAMACPP=1
+endif
+
+ifeq ($(ENABLE_FLATBUF), true)
+NNS_API_FLAGS += -DENABLE_FLATBUF=1
 endif
 
 #------------------------------------------------------
@@ -116,78 +173,77 @@ include $(LOCAL_PATH)/Android-nnstreamer.mk
 # external libs and sub-plugins
 #------------------------------------------------------
 ifeq ($(_ENABLE_TF_LITE),true)
-NNS_API_FLAGS += -DENABLE_TENSORFLOW_LITE=1
-NNS_SUBPLUGINS += tensorflow-lite-subplugin
-
 include $(LOCAL_PATH)/Android-tensorflow-lite.mk
+NNS_SUBPLUGINS += tensorflow-lite-subplugin
 endif
 
 ifeq ($(ENABLE_SNAP),true)
-NNS_API_FLAGS += -DENABLE_SNAP=1
-NNS_SUBPLUGINS += snap-subplugin
-
 include $(LOCAL_PATH)/Android-snap.mk
+NNS_SUBPLUGINS += snap-subplugin
 endif
 
 ifeq ($(ENABLE_NNFW),true)
-NNS_API_FLAGS += -DENABLE_NNFW_RUNTIME=1
-NNS_SUBPLUGINS += nnfw-subplugin
-
 include $(LOCAL_PATH)/Android-nnfw.mk
+NNS_SUBPLUGINS += nnfw-subplugin
 endif
 
 ifeq ($(_ENABLE_SNPE),true)
-NNS_API_FLAGS += -DENABLE_SNPE=1
-NNS_SUBPLUGINS += snpe-subplugin
-
 include $(LOCAL_PATH)/Android-snpe.mk
+NNS_SUBPLUGINS += snpe-subplugin
 endif
 
 ifeq ($(ENABLE_QNN),true)
-NNS_API_FLAGS += -DENABLE_QNN=1
-NNS_SUBPLUGINS += qnn-subplugin
-
 include $(LOCAL_PATH)/Android-qnn.mk
+NNS_SUBPLUGINS += qnn-subplugin
 endif
 
 ifeq ($(ENABLE_PYTORCH),true)
-NNS_API_FLAGS += -DENABLE_PYTORCH=1
-NNS_SUBPLUGINS += pytorch-subplugin
-
 include $(LOCAL_PATH)/Android-pytorch.mk
+NNS_SUBPLUGINS += pytorch-subplugin
 endif
 
 ifeq ($(ENABLE_MXNET), true)
-NNS_API_FLAGS += -DENABLE_MXNET=1
-NNS_SUBPLUGINS += mxnet-subplugin
-
 include $(LOCAL_PATH)/Android-mxnet.mk
+NNS_SUBPLUGINS += mxnet-subplugin
 endif
 
 ifeq ($(ENABLE_LLAMA2C), true)
-NNS_API_FLAGS += -DENABLE_LLAMA2C=1
-NNS_SUBPLUGINS += llama2c-subplugin
-
 include $(LOCAL_PATH)/Android-llama2c.mk
+NNS_SUBPLUGINS += llama2c-subplugin
 endif
 
 ifeq ($(ENABLE_LLAMACPP), true)
-NNS_API_FLAGS += -DENABLE_LLAMACPP=1
-NNS_SUBPLUGINS += llamacpp-subplugin
-
 include $(LOCAL_PATH)/Android-llamacpp.mk
+NNS_SUBPLUGINS += llamacpp-subplugin
 endif
 
-ifneq ($(NNSTREAMER_API_OPTION),single)
 ifeq ($(ENABLE_FLATBUF),true)
 include $(LOCAL_PATH)/Android-flatbuf.mk
-NNS_API_FLAGS += -DENABLE_FLATBUF=1
 NNS_SUBPLUGINS += flatbuffers-subplugin
-endif
 endif
 
 # Remove any duplicates.
 NNS_SUBPLUGINS := $(sort $(NNS_SUBPLUGINS))
+
+#------------------------------------------------------
+# library for nnstreamer and ML API
+#------------------------------------------------------
+include $(CLEAR_VARS)
+
+LOCAL_MODULE := nnstreamer_android
+
+LOCAL_SRC_FILES := nnstreamer-native-common.c
+LOCAL_C_INCLUDES := $(NNSTREAMER_INCLUDES) $(NNSTREAMER_CAPI_INCLUDES) $(GST_HEADERS_COMMON)
+LOCAL_CFLAGS := -O3 -fPIC $(NNS_API_FLAGS)
+LOCAL_WHOLE_STATIC_LIBRARIES := nnstreamer $(NNS_SUBPLUGINS)
+LOCAL_SHARED_LIBRARIES := gstreamer_android
+LOCAL_LDLIBS := -llog -landroid
+ifneq ($(NNSTREAMER_API_OPTION),single)
+# For amcsrc element
+LOCAL_LDLIBS += -lmediandk
+endif
+
+include $(BUILD_SHARED_LIBRARY)
 
 #------------------------------------------------------
 # native code for api
@@ -206,16 +262,10 @@ LOCAL_SRC_FILES += \
     nnstreamer-native-pipeline.c
 endif
 
-LOCAL_C_INCLUDES := $(NNSTREAMER_INCLUDES) $(GST_HEADERS_COMMON)
+LOCAL_C_INCLUDES := $(NNSTREAMER_INCLUDES) $(NNSTREAMER_CAPI_INCLUDES) $(GST_HEADERS_COMMON)
 LOCAL_CFLAGS := -O3 -fPIC $(NNS_API_FLAGS)
-LOCAL_STATIC_LIBRARIES := nnstreamer $(NNS_SUBPLUGINS)
-LOCAL_SHARED_LIBRARIES := gstreamer_android
+LOCAL_SHARED_LIBRARIES := gstreamer_android nnstreamer_android
 LOCAL_LDLIBS := -llog -landroid
-
-ifneq ($(NNSTREAMER_API_OPTION),single)
-# For amcsrc element
-LOCAL_LDLIBS += -lmediandk
-endif
 
 include $(BUILD_SHARED_LIBRARY)
 
@@ -233,7 +283,7 @@ GST_BLOCKED_PLUGINS      := \
         rsaudiofx rsvideofx
 
 GSTREAMER_PLUGINS        := $(filter-out $(GST_BLOCKED_PLUGINS), $(GST_REQUIRED_PLUGINS))
-GSTREAMER_EXTRA_DEPS     := $(GST_REQUIRED_DEPS) glib-2.0 gio-2.0 gmodule-2.0 orc-0.4
+GSTREAMER_EXTRA_DEPS     := $(GST_REQUIRED_DEPS) glib-2.0 gio-2.0 gmodule-2.0 orc-0.4 json-glib-1.0
 GSTREAMER_EXTRA_LIBS     := $(GST_REQUIRED_LIBS) -liconv
 
 ifeq ($(NNSTREAMER_API_OPTION),all)
@@ -244,8 +294,3 @@ GSTREAMER_INCLUDE_FONTS := no
 GSTREAMER_INCLUDE_CA_CERTIFICATES := no
 
 include $(GSTREAMER_NDK_BUILD_PATH)/gstreamer-1.0.mk
-
-#------------------------------------------------------
-# NDK cpu-features
-#------------------------------------------------------
-$(call import-module, android/cpufeatures)

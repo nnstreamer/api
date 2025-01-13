@@ -12,6 +12,7 @@ android {
         externalNativeBuild {
             ndkBuild {
                 ndkVersion "25.2.9519653"
+
                 def gstRoot
 
                 if (project.hasProperty('gstAndroidRoot'))
@@ -52,7 +53,8 @@ android {
                 if (mlApiRoot == null)
                     throw new GradleException('ML_API_ROOT must be set, or "mlApiRoot" must be defined in your gradle.properties')
 
-                arguments "NDK_APPLICATION_MK=src/main/jni/Application.mk",
+                arguments "NDK_PROJECT_PATH=./",
+                          "NDK_APPLICATION_MK=src/main/jni/Application.mk",
                           "GSTREAMER_JAVA_SRC_DIR=src/main/java",
                           "GSTREAMER_ROOT_ANDROID=$gstRoot",
                           "GSTREAMER_ASSETS_DIR=src/main/assets",

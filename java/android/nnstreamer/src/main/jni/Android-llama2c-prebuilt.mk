@@ -5,8 +5,6 @@
 #
 # This mk file defines a prebuilt shared library for the llama2.c module.
 #------------------------------------------------------
-LOCAL_PATH := $(call my-dir)
-
 ifndef LLAMA2C_DIR
 $(error LLAMA2C_DIR is not defined!)
 endif
@@ -16,8 +14,6 @@ LLAMA2C_LIB_PATH := $(LLAMA2C_DIR)/lib
 #------------------------------------------------------
 # The prebuilt shared library for llama2.c
 #------------------------------------------------------
-LLAMA2C_PREBUILT_LIBS :=
-
 include $(CLEAR_VARS)
 LOCAL_MODULE := llama2c
 LOCAL_SRC_FILES := \
@@ -27,4 +23,5 @@ LOCAL_SRC_FILES := \
     $(LLAMA2C_DIR)/transformer.c \
     $(LLAMA2C_DIR)/util.c
 include $(BUILD_SHARED_LIBRARY)
-LLAMA2C_PREBUILT_LIBS += llama2c
+
+LLAMA2C_PREBUILT_LIBS := llama2c

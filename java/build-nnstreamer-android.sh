@@ -34,6 +34,10 @@
 ##@@       'no'       : [default]
 ##@@   --nnstreamer_dir=(the_source_root_of_nnstreamer)
 ##@@       This option overrides the NNSTREAMER_ROOT variable
+##@@   --nnstreamer_edge_dir=(the_source_root_of_nnstreamer_edge)
+##@@       This option overrides the NNSTREAMER_EDGE_ROOT variable
+##@@   --nnstreamer_android_resource_dir=(the_source_root_of_nnstreamer_android_resource)
+##@@       This option overrides the NNSTREAMER_ANDROID_RESOURCE variable
 ##@@   --ml_api_dir=(the_source_root_of_ml_api)
 ##@@       This option overrides the ML_API_ROOT variable
 ##@@   --result_dir=(path_to_build_result)
@@ -63,9 +67,9 @@
 ##@@       'yes'      : build with sub-plugin for PyTorch. You can optionally specify the version of
 ##@@                    PyTorch to use by appending ':version' [1.10.1 is the default].
 ##@@       'no'       : [default] build without the sub-plugin for PyTorch
-##@@   --enable_tflite=(yes(:(1.9|1.13.1|1.15.2|2.3.0|2.7.0|2.8.1))?|no)
+##@@   --enable_tflite=(yes(:(2.16.1))?|no)
 ##@@       'yes'      : [default] you can optionally specify the version of tensorflow-lite to use
-##@@                    by appending ':version' [2.8.1 is the default].
+##@@                    by appending ':version' [2.16.1 is the default].
 ##@@       'no'       : build without the sub-plugin for tensorflow-lite
 ##@@   --enable_tflite_qnn_delegate=(yes|no)
 ##@@       'yes'      : build tflite with QNN delegate. you must set env variable 'QNN_DELEGATE_DIRECTORY' to the right path
@@ -76,19 +80,19 @@
 ##@@ 
 ##@@ options for tensor converter/decoder sub-plugins:
 ##@@   --enable_flatbuf=(yes|no)
-##@@       'yes'      : [default]
-##@@       'no'       : build without the sub-plugin for FlatBuffers and FlexBuffers
+##@@       'yes'      : build with the sub-plugin for FlatBuffers and FlexBuffers
+##@@       'no'       : [default]
 ##@@ 
-##@@ options for tensor_query:
-##@@   --enable_tensor_query=(yes|no)
-##@@       'yes'      : [default] build with tensor_query elements.
-##@@       'no'       : build without the tensor_query elements.
-##@@
+##@@ options for tensor_query and offloading:
+##@@   --enable_ml_offloading=(yes|no)
+##@@       'yes'      : build with tensor_query elements.
+##@@       'no'       : [default] build without the tensor_query elements.
+##@@ 
 ##@@ options for mqtt:
 ##@@   --enable_mqtt=(yes|no)
 ##@@       'yes'      : [default] build with paho.mqtt.c prebuilt libs. This option supports the mqtt plugin
 ##@@       'no'       : build without the mqtt support
-##@@
+##@@ 
 ##@@ For example, to build library with core plugins for arm64-v8a
 ##@@  ./build-nnstreamer-android.sh --api_option=lite --target_abi=arm64-v8a
 
@@ -148,8 +152,8 @@ flatbuf_ver="1.12.0"
 enable_mqtt="no"
 paho_mqtt_c_ver="1.3.7"
 
-# Enable option for tensor_query
-enable_tensor_query="yes"
+# Enable option for tensor_query and offloading
+enable_ml_offloading="no"
 
 # Set tensorflow-lite version (available: 2.8.1 / 2.16.1)
 tf_lite_ver="2.16.1"
@@ -272,8 +276,8 @@ for arg in "$@"; do
         --enable_flatbuf=*)
             enable_flatbuf=${arg#*=}
             ;;
-        --enable_tensor_query=*)
-            enable_tensor_query=${arg#*=}
+        --enable_ml_offloading=*)
+            enable_ml_offloading=${arg#*=}
             ;;
         --enable_mqtt=*)
             enable_mqtt=${arg#*=}
@@ -301,6 +305,12 @@ elif [[ $build_type == "internal" ]]; then
     target_abi="arm64-v8a"
 elif [[ $build_type != "all" ]]; then
     echo "Failed, unknown build type $build_type." && exit 1
+fi
+
+if [[ $nnstreamer_api_option == "single" ]]; then
+    enable_flatbuf="no"
+    enable_mqtt="no"
+    enable_ml_offloading="no"
 fi
 
 # Check target abi and set dir name prefix for each abi
@@ -425,7 +435,7 @@ echo "NNStreamer root directory: $nnstreamer_dir"
 
 # nnstreamer-edge root directory
 
-if [[ $enable_tensor_query == "yes" ]]; then
+if [[ $enable_ml_offloading == "yes" ]]; then
     if [[ -z "$nnstreamer_edge_dir" ]]; then
         [ -z "$NNSTREAMER_EDGE_ROOT" ] && echo "Need to set NNSTREAMER_EDGE_ROOT." && exit 1
         nnstreamer_edge_dir=$NNSTREAMER_EDGE_ROOT
@@ -630,6 +640,7 @@ fi
 
 # Update tf-lite option
 if [[ $enable_tflite == "yes" ]]; then
+    sed -i "s|ENABLE_TF_LITE := false|ENABLE_TF_LITE := true|" nnstreamer/src/main/jni/Android-nnstreamer-prebuilt.mk
     sed -i "s|TFLITE_VERSION := 2.16.1|TFLITE_VERSION := $tf_lite_ver|" nnstreamer/src/main/jni/Android-tensorflow-lite.mk
     tar -xJf ./external/tensorflow-lite-$tf_lite_ver.tar.xz -C ./nnstreamer/src/main/jni
     export TFLITE_ROOT_ANDROID=$ml_api_dir/$build_dir/nnstreamer/src/main/jni/tensorflow-lite
@@ -676,10 +687,8 @@ if [[ $enable_flatbuf == "yes" ]]; then
     tar -xJf ./external/flatbuffers-${flatbuf_ver}.tar.xz -C ./nnstreamer/src/main/jni
 fi
 
-if [[ $enable_tensor_query == "yes" ]]; then
-    sed -i "s|ENABLE_TENSOR_QUERY := false|ENABLE_TENSOR_QUERY := true|" nnstreamer/src/main/jni/Android.mk
-else
-    sed -i "s|ENABLE_TENSOR_QUERY := true|ENABLE_TENSOR_QUERY := false|" nnstreamer/src/main/jni/Android.mk
+if [[ $enable_ml_offloading == "yes" ]]; then
+    sed -i "s|ENABLE_ML_OFFLOADING := false|ENABLE_ML_OFFLOADING := true|" nnstreamer/src/main/jni/Android.mk
 fi
 
 if [[ $enable_mqtt == "yes" ]]; then
@@ -725,18 +734,21 @@ if [[ $android_lib_build_res -eq 0 ]]; then
     cp -r aar_extracted/jni/* main/jni/nnstreamer/lib
     cp nnstreamer/src/main/jni/*-prebuilt.mk main/jni
 
+    # header for native
+    cp nnstreamer/src/main/jni/nnstreamer-android.h main/jni/nnstreamer/include
+
     # header for C-API
     cp $ml_api_dir/c/include/nnstreamer.h main/jni/nnstreamer/include
     cp $ml_api_dir/c/include/nnstreamer-single.h main/jni/nnstreamer/include
     cp $ml_api_dir/c/include/ml-api-common.h main/jni/nnstreamer/include
     cp $ml_api_dir/c/include/platform/tizen_error.h main/jni/nnstreamer/include
 
-    # header for plugin
-    if [[ $nnstreamer_api_option != "single" ]]; then
-        cp $nnstreamer_dir/gst/nnstreamer/include/*.h main/jni/nnstreamer/include
-        cp $nnstreamer_dir/gst/nnstreamer/include/*.hh main/jni/nnstreamer/include
-        cp $nnstreamer_dir/ext/nnstreamer/tensor_filter/tensor_filter_cpp.hh main/jni/nnstreamer/include
-    fi
+    # header for plugin (copy if necessary)
+    ##if [[ $nnstreamer_api_option != "single" ]]; then
+    ##    cp $nnstreamer_dir/gst/nnstreamer/include/*.h main/jni/nnstreamer/include
+    ##    cp $nnstreamer_dir/gst/nnstreamer/include/*.hh main/jni/nnstreamer/include
+    ##    cp $nnstreamer_dir/ext/nnstreamer/tensor_filter/tensor_filter_cpp.hh main/jni/nnstreamer/include
+    ##fi
 
     nnstreamer_native_files="$nnstreamer_lib_name-native-$today.zip"
     zip -r $nnstreamer_native_files main
