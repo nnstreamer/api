@@ -55,45 +55,21 @@ NNS_API_FLAGS += -DHAVE_ORC=1
 endif
 
 ifeq ($(ENABLE_TENSOR_QUERY), true)
-ifndef NNSTREAMER_EDGE_ROOT
-$(error NNSTREAMER_EDGE_ROOT is not defined!)
+NNSTREAMER_SRC_FILES += \
+    $(NNSTREAMER_QUERY_SRCS) \
+    $(NNSTREAMER_EDGE_SRCS)
+
+ifeq ($(ENABLE_MQTT), true)
+NNSTREAMER_SRC_FILES += $(NNSTREAMER_EDGE_MQTT_SRCS)
 endif
 
-NNSTREAMER_SRC_FILES += \
-    $(NNSTREAMER_QUERY_SRCS)
+NNSTREAMER_CAPI_INCLUDES += $(NNSTREAMER_EDGE_INCLUDES)
+endif
 
-NNS_API_FLAGS += -DENABLE_NNSTREAMER_EDGE=1
-
-include $(NNSTREAMER_EDGE_ROOT)/jni/nnstreamer-edge.mk
-endif # ifeq ($(ENABLE_TENSOR_QUERY), true)
-
-# TODO: Add nnsquery prebuilt-lib and enable mqtt-hybrid
 ifeq ($(ENABLE_MQTT), true)
 NNSTREAMER_SRC_FILES += \
     $(NNSTREAMER_MQTT_SRCS)
-
-NNS_API_FLAGS += -DENABLE_MQTT=1
-
-PAHO_MQTT_C_DIR := $(LOCAL_PATH)/paho-mqtt-c
-PAHO_MQTT_C_INCLUDES := $(PAHO_MQTT_C_DIR)/include
-
-ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
-PAHO_MQTT_C_LIB_PATH := $(PAHO_MQTT_C_DIR)/lib
-else
-$(error For MQTT, target arch ABI not supported: $(TARGET_ARCH_ABI))
 endif
-
-include $(CLEAR_VARS)
-LOCAL_MODULE := paho-mqtt3a
-LOCAL_SRC_FILES := $(PAHO_MQTT_C_LIB_PATH)/libpaho-mqtt3a.a
-include $(PREBUILT_STATIC_LIBRARY)
-
-include $(CLEAR_VARS)
-LOCAL_MODULE := paho-mqtt3c
-LOCAL_SRC_FILES := $(PAHO_MQTT_C_LIB_PATH)/libpaho-mqtt3c.a
-include $(PREBUILT_STATIC_LIBRARY)
-endif # ifeq ($(ENABLE_MQTT), true)
-
 endif # ifneq ($(NNSTREAMER_API_OPTION),single)
 
 include $(CLEAR_VARS)
@@ -101,22 +77,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := nnstreamer
 LOCAL_SRC_FILES := $(sort $(NNSTREAMER_SRC_FILES))
 LOCAL_C_INCLUDES := $(NNSTREAMER_INCLUDES) $(GST_HEADERS_COMMON) $(NNSTREAMER_CAPI_INCLUDES)
-
-ifeq ($(ENABLE_TENSOR_QUERY), true)
-LOCAL_SRC_FILES += $(NNSTREAMER_EDGE_SRCS)
-LOCAL_C_INCLUDES += $(NNSTREAMER_EDGE_INCLUDES)
-endif
-
-ifeq ($(ENABLE_MQTT), true)
-LOCAL_C_INCLUDES += $(PAHO_MQTT_C_INCLUDES)
-endif
-
-LOCAL_EXPORT_C_INCLUDES := $(NNSTREAMER_CAPI_INCLUDES)
 LOCAL_CFLAGS := -O3 -fPIC $(NNS_API_FLAGS) -Wno-deprecated-declarations
-LOCAL_CXXFLAGS := -O3 -fPIC -frtti -fexceptions $(NNS_API_FLAGS) -Wno-c99-designator
-
-ifeq ($(ENABLE_MQTT), true)
-LOCAL_STATIC_LIBRARIES := paho-mqtt3a paho-mqtt3c
-endif
+LOCAL_CXXFLAGS := -O3 -fPIC -frtti -fexceptions $(NNS_API_FLAGS)
 
 include $(BUILD_STATIC_LIBRARY)
