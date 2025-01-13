@@ -34,6 +34,10 @@
 ##@@       'no'       : [default]
 ##@@   --nnstreamer_dir=(the_source_root_of_nnstreamer)
 ##@@       This option overrides the NNSTREAMER_ROOT variable
+##@@   --nnstreamer_edge_dir=(the_source_root_of_nnstreamer_edge)
+##@@       This option overrides the NNSTREAMER_EDGE_ROOT variable
+##@@   --nnstreamer_android_resource_dir=(the_source_root_of_nnstreamer_android_resource)
+##@@       This option overrides the NNSTREAMER_ANDROID_RESOURCE variable
 ##@@   --ml_api_dir=(the_source_root_of_ml_api)
 ##@@       This option overrides the ML_API_ROOT variable
 ##@@   --result_dir=(path_to_build_result)
