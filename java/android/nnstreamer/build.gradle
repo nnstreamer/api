@@ -43,6 +43,16 @@ android {
                 if (nnsEdgeRoot == null)
                     throw new GradleException('NNSTREAMER_EDGE_ROOT must be set, or "nnstreamerEdgeRoot" must be defined in your gradle.properties')
 
+                def mlopsAgentRoot
+
+                if (project.hasProperty('mlopsAgentRoot'))
+                    mlopsAgentRoot = project.mlopsAgentRoot
+                else
+                    mlopsAgentRoot = System.env.MLOPS_AGENT_ROOT
+
+                if (mlopsAgentRoot == null)
+                    throw new GradleException('MLOPS_AGENT_ROOT must be set, or "mlopsAgentRoot" must be defined in your gradle.properties')
+
                 def mlApiRoot
 
                 if (project.hasProperty('mlApiRoot'))
@@ -60,6 +70,7 @@ android {
                           "GSTREAMER_ASSETS_DIR=src/main/assets",
                           "NNSTREAMER_ROOT=$nnsRoot",
                           "NNSTREAMER_EDGE_ROOT=$nnsEdgeRoot",
+                          "MLOPS_AGENT_ROOT=$mlopsAgentRoot",
                           "ML_API_ROOT=$mlApiRoot"
 
                 targets "nnstreamer-native"

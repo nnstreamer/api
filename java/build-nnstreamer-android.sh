@@ -15,6 +15,7 @@
 ##@@  - NNSTREAMER_ROOT: The source root directory of NNStreamer
 ##@@  - NNSTREAMER_EDGE_ROOT: The source root directory of nnstreamer-edge
 ##@@  - NNSTREAMER_ANDROID_RESOURCE: The android resource directory of nnstreamer
+##@@  - MLOPS_AGENT_ROOT: The source root directory of mlops-agent
 ##@@  - ML_API_ROOT: The source root directory of ML API
 ##@@ 
 ##@@ usage: build-nnstreamer-android.sh [OPTIONS]
@@ -38,6 +39,8 @@
 ##@@       This option overrides the NNSTREAMER_EDGE_ROOT variable
 ##@@   --nnstreamer_android_resource_dir=(the_source_root_of_nnstreamer_android_resource)
 ##@@       This option overrides the NNSTREAMER_ANDROID_RESOURCE variable
+##@@   --mlops_agent_dir=(the_source_root_of_mlops_agent)
+##@@       This option overrides the MLOPS_AGENT_ROOT variable
 ##@@   --ml_api_dir=(the_source_root_of_ml_api)
 ##@@       This option overrides the ML_API_ROOT variable
 ##@@   --result_dir=(path_to_build_result)
@@ -87,6 +90,11 @@
 ##@@   --enable_ml_offloading=(yes|no)
 ##@@       'yes'      : build with tensor_query elements.
 ##@@       'no'       : [default] build without the tensor_query elements.
+##@@ 
+##@@ options for ml-service
+##@@   --enable_ml_service=(yes|no)
+##@@       'yes'      : build with ml-service api.
+##@@       'no'       : [default]
 ##@@ 
 ##@@ options for mqtt:
 ##@@   --enable_mqtt=(yes|no)
@@ -155,6 +163,12 @@ paho_mqtt_c_ver="1.3.7"
 # Enable option for tensor_query and offloading
 enable_ml_offloading="no"
 
+# Enable option for service api and ml-agent
+enable_ml_service="no"
+
+# curl for ml-service offloading
+curl_ver="7.60.0"
+
 # Set tensorflow-lite version (available: 2.8.1 / 2.16.1)
 tf_lite_ver="2.16.1"
 tf_lite_vers_support="2.8.1 2.16.1"
@@ -191,6 +205,9 @@ for arg in "$@"; do
             ;;
         --nnstreamer_android_resource_dir=*)
             nnstreamer_android_resource_dir=${arg#*=}
+            ;;
+        --mlops_agent_dir=*)
+            mlops_agent_dir=${arg#*=}
             ;;
         --ml_api_dir=*)
             ml_api_dir=${arg#*=}
@@ -279,6 +296,9 @@ for arg in "$@"; do
         --enable_ml_offloading=*)
             enable_ml_offloading=${arg#*=}
             ;;
+        --enable_ml_service=*)
+            enable_ml_service=${arg#*=}
+            ;;
         --enable_mqtt=*)
             enable_mqtt=${arg#*=}
             ;;
@@ -311,6 +331,7 @@ if [[ $nnstreamer_api_option == "single" ]]; then
     enable_flatbuf="no"
     enable_mqtt="no"
     enable_ml_offloading="no"
+    enable_ml_service="no"
 fi
 
 # Check target abi and set dir name prefix for each abi
@@ -443,6 +464,15 @@ if [[ $enable_ml_offloading == "yes" ]]; then
     echo "nnstreamer-edge root directory: $nnstreamer_edge_dir"
 fi
 
+# MLOps Agent root directory
+if [[ $enable_ml_service == "yes" ]]; then
+    if [[ -z "$mlops_agent_dir" ]]; then
+        [ -z "$MLOPS_AGENT_ROOT" ] && echo "Need to set MLOPS_AGENT_ROOT." && exit 1
+        mlops_agent_dir=$MLOPS_AGENT_ROOT
+    fi
+    echo "MLOps Agent root directory: $mlops_agent_dir"
+fi
+
 # ML API root directory
 if [[ -z "$ml_api_dir" ]]; then
     [ -z "$ML_API_ROOT" ] && echo "Need to set ML_API_ROOT." && exit 1
@@ -532,6 +562,10 @@ if [[ $enable_mqtt == "yes" ]]; then
     cp $nnstreamer_android_resource_dir/external/paho-mqtt-c-${paho_mqtt_c_ver}.tar.xz ./$build_dir/external
 fi
 
+if [[ $enable_ml_service == "yes" ]]; then
+    cp $nnstreamer_android_resource_dir/external/curl-${curl_ver}.tar.xz ./$build_dir/external
+fi
+
 pushd ./$build_dir
 
 # Update target ABI
@@ -547,6 +581,7 @@ fi
 
 # Update ML_API, nnstreamer-edge, NNStreamer, GStreamer and Android SDK
 sed -i "s|mlApiRoot=ml-api-path|mlApiRoot=$ml_api_dir|" gradle.properties
+sed -i "s|mlopsAgentRoot=mlops-agent-path|mlopsAgentRoot=$mlops_agent_dir|" gradle.properties
 sed -i "s|nnstreamerEdgeRoot=nnstreamer-edge-path|nnstreamerEdgeRoot=$nnstreamer_edge_dir|" gradle.properties
 sed -i "s|nnstreamerRoot=nnstreamer-path|nnstreamerRoot=$nnstreamer_dir|" gradle.properties
 sed -i "s|gstAndroidRoot=gstreamer-path|gstAndroidRoot=$gstreamer_dir|" gradle.properties
@@ -691,6 +726,11 @@ if [[ $enable_ml_offloading == "yes" ]]; then
     sed -i "s|ENABLE_ML_OFFLOADING := false|ENABLE_ML_OFFLOADING := true|" nnstreamer/src/main/jni/Android.mk
 fi
 
+if [[ $enable_ml_service == "yes" ]]; then
+    sed -i "s|ENABLE_ML_SERVICE := false|ENABLE_ML_SERVICE := true|" nnstreamer/src/main/jni/Android.mk
+    tar -xJf ./external/curl-${curl_ver}.tar.xz -C ./nnstreamer/src/main/jni
+fi
+
 if [[ $enable_mqtt == "yes" ]]; then
     sed -i "s|ENABLE_MQTT := false|ENABLE_MQTT := true|" nnstreamer/src/main/jni/Android.mk
     tar -xJf ./external/paho-mqtt-c-${paho_mqtt_c_ver}.tar.xz -C ./nnstreamer/src/main/jni
@@ -742,6 +782,9 @@ if [[ $android_lib_build_res -eq 0 ]]; then
     cp $ml_api_dir/c/include/nnstreamer-single.h main/jni/nnstreamer/include
     cp $ml_api_dir/c/include/ml-api-common.h main/jni/nnstreamer/include
     cp $ml_api_dir/c/include/platform/tizen_error.h main/jni/nnstreamer/include
+    if [[ $enable_ml_service == "yes" ]]; then
+        cp $ml_api_dir/c/include/ml-api-service.h main/jni/nnstreamer/include
+    fi
 
     # header for plugin (copy if necessary)
     ##if [[ $nnstreamer_api_option != "single" ]]; then
