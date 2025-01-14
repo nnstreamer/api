@@ -51,6 +51,11 @@ runs:
       with:
         repository: nnstreamer/nnstreamer-android-resource
         path: nnstreamer-android-resource
+    - name: Get deviceMLOps.MLAgent
+      uses: actions/checkout@v4
+      with:
+        repository: nnstreamer/deviceMLOps.MLAgent
+        path: deviceMLOps.MLAgent
     - name: NDK build
       id: ndk-build
       run: |
@@ -59,9 +64,10 @@ runs:
         export NNSTREAMER_ROOT=${{ github.workspace }}/nnstreamer
         export NNSTREAMER_EDGE_ROOT=${{ github.workspace }}/nnstreamer-edge
         export NNSTREAMER_ANDROID_RESOURCE=${{ github.workspace }}/nnstreamer-android-resource
+        export MLOPS_AGENT_ROOT=${{ github.workspace }}/deviceMLOps.MLAgent
         export ML_API_ROOT=${{ github.workspace }}
         if [ $TARGET_ABI == 'arm64-v8a' ]; then
-          bash ${{ github.workspace }}/java/build-nnstreamer-android.sh --target_abi=$TARGET_ABI --enable_nnfw=yes --build_type=$BUILD_TYPE
+          bash ${{ github.workspace }}/java/build-nnstreamer-android.sh --target_abi=$TARGET_ABI --enable_nnfw=yes --build_type=$BUILD_TYPE --enable_mqtt=yes --enable_ml_offloading=yes --enable_ml_service=yes
         elif [ $TARGET_ABI == 'x86_64' ]; then
           bash ${{ github.workspace }}/java/build-nnstreamer-android.sh --target_abi=$TARGET_ABI --enable_nnfw=no --build_type=$BUILD_TYPE
         else
