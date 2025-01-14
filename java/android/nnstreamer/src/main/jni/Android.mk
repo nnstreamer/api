@@ -38,6 +38,9 @@ NNSTREAMER_API_OPTION := all
 # support tensor-query and offloading
 ENABLE_ML_OFFLOADING := false
 
+# enable service api and mlops-agent
+ENABLE_ML_SERVICE := false
+
 ENABLE_TF_LITE ?= false
 # TensorFlow Lite  (nnstreamer tf-lite sub-plugin)
 ifeq ($(ENABLE_TF_LITE),true)
@@ -117,6 +120,20 @@ endif
 
 NNS_API_FLAGS += -DENABLE_NNSTREAMER_EDGE=1
 include $(NNSTREAMER_EDGE_ROOT)/jni/nnstreamer-edge.mk
+endif
+
+ifeq ($(ENABLE_ML_SERVICE), true)
+ifndef MLOPS_AGENT_ROOT
+$(error MLOPS_AGENT_ROOT is not defined!)
+endif
+
+NNS_API_FLAGS += -DENABLE_ML_AGENT=1
+include $(MLOPS_AGENT_ROOT)/jni/mlops-agent.mk
+
+ifeq ($(ENABLE_ML_OFFLOADING), true)
+NNS_API_FLAGS += -DENABLE_SERVICE_OFFLOADING=1
+include $(LOCAL_PATH)/Android-curl.mk
+endif
 endif
 
 ifeq ($(ENABLE_MQTT), true)

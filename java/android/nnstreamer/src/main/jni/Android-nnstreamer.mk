@@ -74,6 +74,24 @@ endif
 NNSTREAMER_CAPI_INCLUDES += $(NNSTREAMER_EDGE_INCLUDES)
 endif
 
+ifeq ($(ENABLE_ML_SERVICE), true)
+NNSTREAMER_SRC_FILES += \
+    $(ML_API_ROOT)/c/src/ml-api-service.c \
+    $(ML_API_ROOT)/c/src/ml-api-service-agent-client.c \
+    $(ML_API_ROOT)/c/src/ml-api-service-extension.c \
+    $(NNSTREAMER_AGENT_SRCS) \
+    $(MLOPS_AGENT_SRCS)
+
+ifeq ($(ENABLE_ML_OFFLOADING), true)
+NNSTREAMER_SRC_FILES += \
+    $(ML_API_ROOT)/c/src/ml-api-service-query-client.c \
+    $(ML_API_ROOT)/c/src/ml-api-service-offloading.c
+
+NNSTREAMER_EXTERNAL_LIBS += libcurl
+endif
+
+NNSTREAMER_CAPI_INCLUDES += $(MLOPS_AGENT_INCLUDE)
+endif
 endif # ifneq ($(NNSTREAMER_API_OPTION),single)
 
 include $(CLEAR_VARS)
