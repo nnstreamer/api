@@ -4,6 +4,7 @@ jni_include = [join_paths(java_home, 'include'), join_paths(java_home, 'include/
 nns_native_path = join_paths(meson.current_source_dir(), 'android/nnstreamer/src/main/jni')
 
 nns_native_srcs = []
+nns_native_srcs += join_paths(nns_native_path, 'nnstreamer-native-common.c')
 nns_native_srcs += join_paths(nns_native_path, 'nnstreamer-native-api.c')
 nns_native_srcs += join_paths(nns_native_path, 'nnstreamer-native-customfilter.c')
 nns_native_srcs += join_paths(nns_native_path, 'nnstreamer-native-pipeline.c')

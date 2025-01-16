@@ -21,14 +21,14 @@ ENABLE_MXNET := false
 #------------------------------------------------------
 # define required libraries for nnstreamer
 #------------------------------------------------------
-NNSTREAMER_LIBS := nnstreamer-native gst-android cpp-shared
+NNSTREAMER_LIBS := nnstreamer-android gst-android
 
 #------------------------------------------------------
-# nnstreamer-native
+# nnstreamer android
 #------------------------------------------------------
 include $(CLEAR_VARS)
-LOCAL_MODULE := nnstreamer-native
-LOCAL_SRC_FILES := $(NNSTREAMER_LIB_PATH)/libnnstreamer-native.so
+LOCAL_MODULE := nnstreamer-android
+LOCAL_SRC_FILES := $(NNSTREAMER_LIB_PATH)/libnnstreamer_android.so
 include $(PREBUILT_SHARED_LIBRARY)
 
 #------------------------------------------------------
@@ -40,12 +40,14 @@ LOCAL_SRC_FILES := $(NNSTREAMER_LIB_PATH)/libgstreamer_android.so
 include $(PREBUILT_SHARED_LIBRARY)
 
 #------------------------------------------------------
-# c++ shared
+# Tensorflow-Lite
 #------------------------------------------------------
-include $(CLEAR_VARS)
-LOCAL_MODULE := cpp-shared
-LOCAL_SRC_FILES := $(NNSTREAMER_LIB_PATH)/libc++_shared.so
-include $(PREBUILT_SHARED_LIBRARY)
+ifeq ($(ENABLE_TF_LITE),true)
+TF_LITE_LIB_PATH := $(NNSTREAMER_LIB_PATH)
+include $(LOCAL_PATH)/Android-tensorflow-lite-prebuilt.mk
+
+NNSTREAMER_LIBS += $(TF_LITE_PREBUILT_LIBS)
+endif
 
 #------------------------------------------------------
 # SNAP (arm64-v8a only)

@@ -2219,6 +2219,7 @@ public class APITestPipeline {
         }
     }
 
+    @Ignore("Build library with flatbuf.")
     @Test
     public void testFlatbuf() {
         /* This test assume that the NNStreamer library is built with Flatbuf (default option) */
@@ -2270,7 +2271,7 @@ public class APITestPipeline {
         }
     }
 
-    @Ignore("Checking available mqtt broker is not ready, please ignore")
+    @Ignore("Build library with mqtt and check available mqtt broker is ready.")
     @Test
     public void testMQTTElement() {
         String sub_desc = "mqttsrc sub-topic=test/videotestsrc ! " +

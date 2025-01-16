@@ -4,9 +4,6 @@
 #
 # This mk file defines a prebuilt shared library for the llamacpp module.
 #------------------------------------------------------
-
-LOCAL_PATH := $(call my-dir)
-
 ifndef LLAMACPP_LIB_PATH
 $(error LLAMACPP_LIB_PATH is not defined!)
 endif
@@ -19,8 +16,6 @@ LLAMACPP_LIB_PATH := $(LLAMACPP_LIB_PATH)/x86_64
 else
 $(error Target arch ABI not supported: $(TARGET_ARCH_ABI))
 endif
-
-LLAMACPP_PREBUILT_LIBS :=
 
 #------------------------------------------------------
 # llamacpp prebuilt shared libraries
@@ -44,5 +39,5 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := ggml-base
 LOCAL_SRC_FILES := $(LLAMACPP_LIB_PATH)/libggml-base.so
 include $(PREBUILT_SHARED_LIBRARY)
-LLAMACPP_PREBUILT_LIBS += llama ggml ggml-cpu ggml-base
 
+LLAMACPP_PREBUILT_LIBS := llama ggml ggml-cpu ggml-base

@@ -19,6 +19,7 @@
 #include <gst/gst.h>
 #include <gst/video/video.h>
 
+#include "nnstreamer-android.h"
 #include "nnstreamer.h"
 #include "nnstreamer-single.h"
 #include "nnstreamer-tizen-internal.h"
@@ -253,11 +254,5 @@ nns_native_pipe_register_natives (JNIEnv * env);
 extern gboolean
 nns_native_custom_register_natives (JNIEnv * env);
 #endif
-
-/**
- * @brief Initialize NNStreamer, register required plugins.
- */
-extern jboolean
-nnstreamer_native_initialize (JNIEnv * env, jobject context);
 
 #endif /* __NNSTREAMER_ANDROID_NATIVE_H__ */
