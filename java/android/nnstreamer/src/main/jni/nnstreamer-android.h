@@ -15,10 +15,17 @@
 
 #include <jni.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 /**
  * @brief Initialize NNStreamer, register required plugins.
  */
 extern jboolean
 nnstreamer_native_initialize (JNIEnv *env, jobject context);
 
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 #endif /* __NNSTREAMER_ANDROID_H__ */
