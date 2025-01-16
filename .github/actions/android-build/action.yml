@@ -6,6 +6,10 @@ inputs:
     description: target ABI
     required: false
     default: arm64-v8a
+  build_type:
+    description: build type
+    required: false
+    default: all
 outputs:
   result:
     value: ${{ steps.ndk-build.outputs.result }}
@@ -57,11 +61,11 @@ runs:
         export NNSTREAMER_ANDROID_RESOURCE=${{ github.workspace }}/nnstreamer-android-resource
         export ML_API_ROOT=${{ github.workspace }}
         if [ $TARGET_ABI == 'arm64-v8a' ]; then
-          bash ${{ github.workspace }}/java/build-nnstreamer-android.sh --target_abi=$TARGET_ABI --enable_nnfw=yes
+          bash ${{ github.workspace }}/java/build-nnstreamer-android.sh --target_abi=$TARGET_ABI --enable_nnfw=yes --build_type=$BUILD_TYPE
         elif [ $TARGET_ABI == 'x86_64' ]; then
-          bash ${{ github.workspace }}/java/build-nnstreamer-android.sh --target_abi=$TARGET_ABI --enable_nnfw=no
+          bash ${{ github.workspace }}/java/build-nnstreamer-android.sh --target_abi=$TARGET_ABI --enable_nnfw=no --build_type=$BUILD_TYPE
         else
-          bash ${{ github.workspace }}/java/build-nnstreamer-android.sh --target_abi=$TARGET_ABI --enable_nnfw=no --enable_tflite=no
+          bash ${{ github.workspace }}/java/build-nnstreamer-android.sh --target_abi=$TARGET_ABI --enable_nnfw=no --enable_tflite=no --build_type=$BUILD_TYPE
         fi
 
         result=$?
@@ -75,3 +79,4 @@ runs:
       shell: bash
       env:
         TARGET_ABI: ${{ inputs.abi }}
+        BUILD_TYPE: ${{ inputs.build_type }}
