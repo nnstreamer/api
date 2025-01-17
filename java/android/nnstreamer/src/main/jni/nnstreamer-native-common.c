@@ -18,6 +18,9 @@
 GST_PLUGIN_STATIC_DECLARE (nnstreamer);
 GST_PLUGIN_STATIC_DECLARE (amcsrc);
 GST_PLUGIN_STATIC_DECLARE (join);
+#if defined(ENABLE_NNSTREAMER_EDGE)
+GST_PLUGIN_STATIC_DECLARE (edge);
+#endif
 #if defined(ENABLE_MQTT)
 GST_PLUGIN_STATIC_DECLARE (mqtt);
 #endif
@@ -233,11 +236,16 @@ nnstreamer_native_initialize (JNIEnv * env, jobject context)
     /* Android MediaCodec */
     GST_PLUGIN_STATIC_REGISTER (amcsrc);
 
-    /* GStreamer join element */
+    /* join element of nnstreamer */
     GST_PLUGIN_STATIC_REGISTER (join);
 
+#if defined(ENABLE_NNSTREAMER_EDGE)
+    /* edge element of nnstreamer */
+    GST_PLUGIN_STATIC_REGISTER (edge);
+#endif
+
 #if defined(ENABLE_MQTT)
-    /* GStreamer MQTT element */
+    /* MQTT element of nnstreamer */
     GST_PLUGIN_STATIC_REGISTER (mqtt);
 #endif
 
