@@ -12,6 +12,21 @@
 
 #include "nnstreamer-native.h"
 
+/**
+ * @brief Global lock for native functions.
+ */
+G_LOCK_DEFINE_STATIC (nns_native_lock);
+
+/**
+ * @brief The flag to check initialization of native library.
+ */
+static gboolean g_nns_is_initialized = FALSE;
+
+/**
+ * @brief The data path of an application.
+ */
+static gchar *g_files_dir = NULL;
+
 #if defined(__ANDROID__)
 /* nnstreamer plugins and sub-plugins declaration */
 #if !defined(NNS_SINGLE_ONLY)
@@ -79,19 +94,27 @@ extern void gst_android_init (JNIEnv * env, jobject context);
 #if defined(ENABLE_QNN) || defined(ENABLE_SNPE) || defined(ENABLE_TFLITE_QNN_DELEGATE)
 #define ANDROID_QC_ENV 1
 #endif
-#endif /* __ANDROID__ */
 
 /**
- * @brief Global lock for native functions.
+ * @brief Internal function to check exception.
  */
-G_LOCK_DEFINE_STATIC (nns_native_lock);
+static gboolean
+_env_check_exception (JNIEnv * env) {
+  if ((*env)->ExceptionCheck (env)) {
+    (*env)->ExceptionDescribe (env);
+    (*env)->ExceptionClear (env);
+    return TRUE;
+  }
+
+  return FALSE;
+}
 
 #if defined(ANDROID_QC_ENV)
 /**
  * @brief Set additional environment (ADSP_LIBRARY_PATH) for Qualcomm Android.
  */
 static gboolean
-_qc_android_set_env (JNIEnv *env, jobject context)
+_qc_android_set_env (JNIEnv * env, jobject context)
 {
   gboolean is_done = FALSE;
   jclass context_class = NULL;
@@ -121,9 +144,7 @@ _qc_android_set_env (JNIEnv *env, jobject context)
   }
 
   application_info_object = (*env)->CallObjectMethod (env, context, get_application_info_method_id);
-  if ((*env)->ExceptionCheck (env)) {
-    (*env)->ExceptionDescribe (env);
-    (*env)->ExceptionClear (env);
+  if (_env_check_exception (env)) {
     _ml_loge ("Failed to call method `ApplicationInfo()`.");
     goto done;
   }
@@ -149,9 +170,7 @@ _qc_android_set_env (JNIEnv *env, jobject context)
   }
 
   native_library_dir_path_str = (*env)->GetStringUTFChars (env, native_library_dir_path, NULL);
-  if ((*env)->ExceptionCheck (env)) {
-    (*env)->ExceptionDescribe (env);
-    (*env)->ExceptionClear (env);
+  if (_env_check_exception (env)) {
     _ml_loge ("Failed to get string `nativeLibraryDir`");
     goto done;
   }
@@ -194,13 +213,94 @@ done:
 #endif /* ANDROID_QC_ENV */
 
 /**
+ * @brief Get additional data from application context.
+ */
+static gboolean
+_load_app_context (JNIEnv * env, jobject context)
+{
+  jclass cls_context = NULL;
+  jclass cls_file = NULL;
+  jmethodID mid_get_files_dir = NULL;
+  jmethodID mid_get_absolute_path = NULL;
+  jobject dir;
+
+  g_return_val_if_fail (env, FALSE);
+  g_return_val_if_fail (context, FALSE);
+
+  /* Clear old value. */
+  g_free (g_files_dir);
+  g_files_dir = NULL;
+
+  cls_context = (*env)->GetObjectClass (env, context);
+  if (!cls_context) {
+    goto error;
+  }
+
+  mid_get_files_dir = (*env)->GetMethodID (env, cls_context, "getFilesDir", "()Ljava/io/File;");
+  if (!mid_get_files_dir) {
+    goto error;
+  }
+
+  cls_file = (*env)->FindClass (env, "java/io/File");
+  if (!cls_file) {
+    goto error;
+  }
+
+  mid_get_absolute_path = (*env)->GetMethodID (env, cls_file, "getAbsolutePath", "()Ljava/lang/String;");
+  if (!mid_get_absolute_path) {
+    goto error;
+  }
+
+  /* Get files directory. */
+  dir = (*env)->CallObjectMethod (env, context, mid_get_files_dir);
+  if (_env_check_exception (env)) {
+    goto error;
+  }
+
+  if (dir) {
+    jstring abs_path;
+    const gchar *abs_path_str;
+
+    abs_path = (*env)->CallObjectMethod (env, dir, mid_get_absolute_path);
+    if (_env_check_exception (env)) {
+      (*env)->DeleteLocalRef (env, dir);
+      goto error;
+    }
+
+    abs_path_str = (*env)->GetStringUTFChars (env, abs_path, NULL);
+    if (_env_check_exception (env)) {
+      (*env)->DeleteLocalRef (env, abs_path);
+      (*env)->DeleteLocalRef (env, dir);
+      goto error;
+    }
+
+    g_files_dir = g_strdup (abs_path_str);
+
+    (*env)->ReleaseStringUTFChars (env, abs_path, abs_path_str);
+    (*env)->DeleteLocalRef (env, abs_path);
+    (*env)->DeleteLocalRef (env, dir);
+  }
+
+error:
+  if (cls_context) {
+    (*env)->DeleteLocalRef (env, cls_context);
+  }
+
+  if (cls_file) {
+    (*env)->DeleteLocalRef (env, cls_file);
+  }
+
+  return (g_files_dir != NULL);
+}
+#endif /* __ANDROID__ */
+
+/**
  * @brief Initialize NNStreamer, register required plugins.
  */
 jboolean
 nnstreamer_native_initialize (JNIEnv * env, jobject context)
 {
   gchar *gst_ver, *nns_ver;
-  static gboolean nns_is_initilaized = FALSE;
 
   _ml_logi ("Called native initialize.");
 
@@ -227,7 +327,7 @@ nnstreamer_native_initialize (JNIEnv * env, jobject context)
   }
 #endif
 
-  if (nns_is_initilaized == FALSE) {
+  if (g_nns_is_initialized == FALSE) {
 #if defined(__ANDROID__)
     /* register nnstreamer plugins */
 #if !defined(NNS_SINGLE_ONLY)
@@ -302,8 +402,14 @@ nnstreamer_native_initialize (JNIEnv * env, jobject context)
 #if defined(ENABLE_LLAMACPP)
     init_filter_llamacpp ();
 #endif
+
+    if (!_load_app_context (env, context)) {
+      _ml_loge ("Cannot load application context.");
+        goto done;
+    }
 #endif /* __ANDROID__ */
-    nns_is_initilaized = TRUE;
+
+    g_nns_is_initialized = TRUE;
   }
 
   /* print version info */
@@ -318,5 +424,21 @@ nnstreamer_native_initialize (JNIEnv * env, jobject context)
 
 done:
   G_UNLOCK (nns_native_lock);
-  return (nns_is_initilaized == TRUE);
+  return (g_nns_is_initialized == TRUE);
+}
+
+/**
+ * @brief Get the data path of an application, extracted using getFilesDir() for Android.
+ */
+const char *
+nnstreamer_native_get_data_path (void)
+{
+  char *data_path = NULL;
+
+  G_LOCK (nns_native_lock);
+  g_assert (g_nns_is_initialized);
+  data_path = g_files_dir;
+  G_UNLOCK (nns_native_lock);
+
+  return data_path;
 }
