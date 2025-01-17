@@ -21,9 +21,17 @@ extern "C" {
 
 /**
  * @brief Initialize NNStreamer, register required plugins.
+ * @note You should call initialize with application context.
  */
 extern jboolean
 nnstreamer_native_initialize (JNIEnv *env, jobject context);
+
+/**
+ * @brief Get the data path of an application, extracted using getFilesDir() for Android.
+ * @note DO NOT release returned string, it is constant.
+ */
+extern const char *
+nnstreamer_native_get_data_path (void);
 
 #ifdef __cplusplus
 }
