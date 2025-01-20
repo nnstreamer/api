@@ -27,6 +27,12 @@ extern jboolean
 nnstreamer_native_initialize (JNIEnv *env, jobject context);
 
 /**
+ * @brief Release NNStreamer, close internal resources.
+ */
+extern void
+nnstreamer_native_finalize (void);
+
+/**
  * @brief Get the data path of an application, extracted using getFilesDir() for Android.
  * @note DO NOT release returned string, it is constant.
  */

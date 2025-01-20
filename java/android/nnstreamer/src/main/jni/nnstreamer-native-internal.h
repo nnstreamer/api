@@ -16,6 +16,7 @@
 #include <jni.h>
 #include <string.h>
 
+#include <glib/gstdio.h>
 #include <gst/gst.h>
 #include <gst/video/video.h>
 

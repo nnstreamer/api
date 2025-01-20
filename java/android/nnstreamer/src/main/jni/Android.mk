@@ -127,7 +127,8 @@ ifndef MLOPS_AGENT_ROOT
 $(error MLOPS_AGENT_ROOT is not defined!)
 endif
 
-NNS_API_FLAGS += -DENABLE_ML_AGENT=1
+NNS_API_FLAGS += -DENABLE_ML_AGENT=1 -DDB_KEY_PREFIX=\"mlops-android\"
+include $(LOCAL_PATH)/Android-sqlite.mk
 include $(MLOPS_AGENT_ROOT)/jni/mlops-agent.mk
 
 ifeq ($(ENABLE_ML_OFFLOADING), true)
