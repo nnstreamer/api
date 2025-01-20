@@ -28,6 +28,10 @@ static gboolean g_nns_is_initialized = FALSE;
 static gchar *g_files_dir = NULL;
 
 #if defined(__ANDROID__)
+#if defined(ENABLE_ML_AGENT)
+extern void ml_agent_initialize (const char *db_path);
+extern void ml_agent_finalize (void);
+#endif
 /* nnstreamer plugins and sub-plugins declaration */
 #if !defined(NNS_SINGLE_ONLY)
 GST_PLUGIN_STATIC_DECLARE (nnstreamer);
@@ -407,6 +411,16 @@ nnstreamer_native_initialize (JNIEnv * env, jobject context)
       _ml_loge ("Cannot load application context.");
         goto done;
     }
+
+#if defined(ENABLE_ML_AGENT)
+    {
+      gchar *mlops_db_path = g_build_filename (g_files_dir, "mlops-db", NULL);
+
+      g_mkdir (mlops_db_path, 0777);
+      ml_agent_initialize (mlops_db_path);
+      g_free (mlops_db_path);
+    }
+#endif
 #endif /* __ANDROID__ */
 
     g_nns_is_initialized = TRUE;
@@ -425,6 +439,28 @@ nnstreamer_native_initialize (JNIEnv * env, jobject context)
 done:
   G_UNLOCK (nns_native_lock);
   return (g_nns_is_initialized == TRUE);
+}
+
+/**
+ * @brief Release NNStreamer, close internal resources.
+ */
+void
+nnstreamer_native_finalize (void)
+{
+  _ml_logi ("Called native finalize.");
+
+  G_LOCK (nns_native_lock);
+
+#if defined(__ANDROID__)
+#if defined(ENABLE_ML_AGENT)
+  ml_agent_finalize ();
+#endif
+#endif
+
+  g_free (g_files_dir);
+  g_files_dir = NULL;
+  g_nns_is_initialized = FALSE;
+  G_UNLOCK (nns_native_lock);
 }
 
 /**
