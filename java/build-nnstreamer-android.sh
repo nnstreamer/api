@@ -758,17 +758,14 @@ echo "Starting gradle build for Android library."
 chmod +x gradlew
 sh ./gradlew nnstreamer:build
 android_lib_build_res=$?
-# Check if build procedure is done.
-nnstreamer_android_api_lib=./nnstreamer/build/outputs/aar/nnstreamer-release.aar
 
+# Check if build procedure is done.
 if [[ $android_lib_build_res -eq 0 ]]; then
+    nnstreamer_android_api_lib=nnstreamer/build/outputs/aar/nnstreamer-release.aar
     today=$(date "+%Y-%m-%d")
 
     # Prepare native libraries and header files for C-API
     unzip $nnstreamer_android_api_lib -d aar_extracted
-
-    mkdir -p main/jni/nnstreamer/lib
-    mkdir -p main/jni/nnstreamer/include
 
     # assets
     if [[ $include_assets == "yes" ]]; then
@@ -776,7 +773,13 @@ if [[ $android_lib_build_res -eq 0 ]]; then
         cp -r aar_extracted/assets/* main/assets
     fi
 
+    # java from gstreamer
+    mkdir -p main/java/org/freedesktop/gstreamer
+    cp -r nnstreamer/src/main/java/org/freedesktop/gstreamer/* main/java/org/freedesktop/gstreamer
+
     # native libraries and mk files
+    mkdir -p main/jni/nnstreamer/lib
+    mkdir -p main/jni/nnstreamer/include
     cp -r aar_extracted/jni/* main/jni/nnstreamer/lib
     cp nnstreamer/src/main/jni/*-prebuilt.mk main/jni
 
@@ -802,17 +805,17 @@ if [[ $android_lib_build_res -eq 0 ]]; then
     nnstreamer_native_files="$nnstreamer_lib_name-native-$today.zip"
     zip -r $nnstreamer_native_files main
 
-    # Prepare static libs in ndk build
-    mkdir -p ndk_static/debug
-    mkdir -p ndk_static/release
+    # Prepare shared/static libs in ndk build
+    mkdir -p ndk_build_libs/debug
+    mkdir -p ndk_build_libs/release
 
-    cp nnstreamer/build/intermediates/cxx/Debug/*/obj/local/$target_abi/*.a ndk_static/debug
-    cp nnstreamer/build/intermediates/cxx/Release/*/obj/local/$target_abi/*.a ndk_static/release
+    cp nnstreamer/build/intermediates/cxx/Debug/*/obj/local/$target_abi/* ndk_build_libs/debug
+    cp nnstreamer/build/intermediates/cxx/Release/*/obj/local/$target_abi/* ndk_build_libs/release
 
-    nnstreamer_static_libs="$nnstreamer_lib_name-static-libs-$today.zip"
-    zip -r $nnstreamer_static_libs ndk_static
+    nnstreamer_ndk_build_libs="$nnstreamer_lib_name-build-libs-$today.zip"
+    zip -r $nnstreamer_ndk_build_libs ndk_build_libs
 
-    rm -rf aar_extracted main ndk_static
+    rm -rf aar_extracted main ndk_build_libs
 
     # Run instrumentation test
     if [[ $run_test == "yes" ]]; then
@@ -831,12 +834,12 @@ if [[ $android_lib_build_res -eq 0 ]]; then
     fi
 
     # Copy build result
-    if [[ $android_lib_build_res == 0 ]]; then
+    if [[ $android_lib_build_res -eq 0 ]]; then
         echo "Build procedure is done, copy NNStreamer library to $result_dir directory."
 
         cp $nnstreamer_android_api_lib $result_dir/$nnstreamer_lib_name-$today.aar
         cp $nnstreamer_native_files $result_dir
-        cp $nnstreamer_static_libs $result_dir
+        cp $nnstreamer_ndk_build_libs $result_dir
     fi
 else
     echo "Failed to build NNStreamer library."
