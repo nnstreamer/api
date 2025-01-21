@@ -10,7 +10,7 @@
  * @bug		No known bugs except for NYI items
  */
 
-#include "nnstreamer-native.h"
+#include "nnstreamer-native-internal.h"
 
 /**
  * @brief Private data for CustomFilter class.

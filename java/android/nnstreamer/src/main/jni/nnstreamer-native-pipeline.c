@@ -10,7 +10,7 @@
  * @bug		No known bugs except for NYI items
  */
 
-#include "nnstreamer-native.h"
+#include "nnstreamer-native-internal.h"
 
 #if defined(__ANDROID__)
 #include <android/native_window.h>
