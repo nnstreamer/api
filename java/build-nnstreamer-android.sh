@@ -775,7 +775,7 @@ if [[ $android_lib_build_res -eq 0 ]]; then
     cp nnstreamer/src/main/jni/*-prebuilt.mk main/jni
 
     # header for native
-    cp nnstreamer/src/main/jni/nnstreamer-android.h main/jni/nnstreamer/include
+    cp nnstreamer/src/main/jni/nnstreamer-native.h main/jni/nnstreamer/include
 
     # header for C-API
     cp $ml_api_dir/c/include/nnstreamer.h main/jni/nnstreamer/include

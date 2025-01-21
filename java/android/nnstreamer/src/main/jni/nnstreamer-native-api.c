@@ -10,7 +10,7 @@
  * @bug		No known bugs except for NYI items
  */
 
-#include "nnstreamer-native.h"
+#include "nnstreamer-native-internal.h"
 
 /**
  * @brief Attach thread with Java VM.
