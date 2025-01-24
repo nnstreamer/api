@@ -100,6 +100,10 @@
 ##@@   --enable_mqtt=(yes|no)
 ##@@       'yes'      : [default] build with paho.mqtt.c prebuilt libs. This option supports the mqtt plugin
 ##@@       'no'       : build without the mqtt support
+##@@ options for llamacpp:
+##@@   --enable_llamacpp=(yes|no)
+##@@       'yes'      : build with llamacpp prebuilt libs.
+##@@       'no'       : [default]
 ##@@ 
 ##@@ For example, to build library with core plugins for arm64-v8a
 ##@@  ./build-nnstreamer-android.sh --api_option=lite --target_abi=arm64-v8a
@@ -179,6 +183,9 @@ tf_lite_vers_support="2.8.1 2.16.1"
 # Set NNFW version (https://github.com/Samsung/ONE/releases)
 nnfw_ver="1.28.0"
 enable_nnfw_ext="no"
+
+enable_llamacpp="no"
+llamacpp_ver="b4358"
 
 # Find '--help' in the given arguments
 arg_help="--help"
@@ -305,6 +312,9 @@ for arg in "$@"; do
         --enable_mqtt=*)
             enable_mqtt=${arg#*=}
             ;;
+        --enable_llamacpp=*)
+            enable_llamacpp=${arg#*=}
+            ;;
     esac
 done
 
@@ -324,6 +334,7 @@ elif [[ $build_type == "internal" ]]; then
     enable_pytorch="no"
     enable_tflite="no"
     enable_mxnet="no"
+    enable_llamacpp="no"
 
     target_abi="arm64-v8a"
 elif [[ $build_type != "all" ]]; then
@@ -410,6 +421,10 @@ fi
 
 if [[ $enable_mqtt == "yes" ]]; then
     echo "Build with paho.mqtt.c-v$paho_mqtt_c_ver for the mqtt plugin"
+fi
+
+if [[ $enable_llamacpp == "yes" ]]; then
+    echo "Build with LLaMA.cpp $llamacpp_ver"
 fi
 
 # Set library name
@@ -568,6 +583,10 @@ fi
 if [[ $enable_ml_service == "yes" ]]; then
     cp $nnstreamer_android_resource_dir/external/sqlite-${sqlite_ver}.tar.xz ./$build_dir/external
     cp $nnstreamer_android_resource_dir/external/curl-${curl_ver}.tar.xz ./$build_dir/external
+fi
+
+if [[ $enable_llamacpp == "yes" ]]; then
+    cp $nnstreamer_android_resource_dir/external/llamacpp-${llamacpp_ver}.tar.xz ./$build_dir/external
 fi
 
 pushd ./$build_dir
@@ -740,6 +759,12 @@ fi
 if [[ $enable_mqtt == "yes" ]]; then
     sed -i "s|ENABLE_MQTT := false|ENABLE_MQTT := true|" nnstreamer/src/main/jni/Android.mk
     tar -xJf ./external/paho-mqtt-c-${paho_mqtt_c_ver}.tar.xz -C ./nnstreamer/src/main/jni
+fi
+
+if [[ $enable_llamacpp == "yes" ]]; then
+    sed -i "s|ENABLE_LLAMACPP := false|ENABLE_LLAMACPP := true|" nnstreamer/src/main/jni/Android.mk
+    sed -i "s|ENABLE_LLAMACPP := false|ENABLE_LLAMACPP := true|" nnstreamer/src/main/jni/Android-nnstreamer-prebuilt.mk
+    tar -xJf ./external/llamacpp-${llamacpp_ver}.tar.xz -C ./nnstreamer/src/main/jni
 fi
 
 # If build option is single-shot only, remove unnecessary files.

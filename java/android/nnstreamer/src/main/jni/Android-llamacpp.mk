@@ -2,7 +2,15 @@ LOCAL_PATH := $(call my-dir)
 
 LLAMACPP_DIR := $(LOCAL_PATH)/llamacpp
 LLAMACPP_INCLUDES := $(LLAMACPP_DIR)/include
-LLAMACPP_LIB_PATH := $(LLAMACPP_DIR)/lib
+
+# Check Target ABI. Only supports arm64 and x86_64.
+ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
+LLAMACPP_LIB_PATH := $(LLAMACPP_DIR)/lib/arm64
+else ifeq ($(TARGET_ARCH_ABI),x86_64)
+LLAMACPP_LIB_PATH := $(LLAMACPP_DIR)/lib/x86_64
+else
+$(error LLaMA.cpp target arch ABI not supported: $(TARGET_ARCH_ABI))
+endif
 
 #------------------------------------------------------
 # Import LLAMACPP_PREBUILT_LIBS

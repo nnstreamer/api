@@ -18,6 +18,7 @@ ENABLE_SNAP := false
 ENABLE_NNFW := false
 ENABLE_SNPE := false
 ENABLE_MXNET := false
+ENABLE_LLAMACPP := false
 
 #------------------------------------------------------
 # define required libraries for nnstreamer
@@ -98,6 +99,16 @@ MXNET_LIB_PATH := $(NNSTREAMER_LIB_PATH)
 include $(LOCAL_PATH)/Android-mxnet-prebuilt.mk
 
 NNSTREAMER_LIBS += $(MXNET_PREBUILT_LIBS)
+endif
+
+#------------------------------------------------------
+# LLaMA.cpp
+#------------------------------------------------------
+ifeq ($(ENABLE_LLAMACPP),true)
+LLAMACPP_LIB_PATH := $(NNSTREAMER_LIB_PATH)
+include $(LOCAL_PATH)/Android-llamacpp-prebuilt.mk
+
+NNSTREAMER_LIBS += $(LLAMACPP_PREBUILT_LIBS)
 endif
 
 # Remove any duplicates.
