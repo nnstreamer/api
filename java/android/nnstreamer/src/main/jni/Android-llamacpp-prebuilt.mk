@@ -8,15 +8,6 @@ ifndef LLAMACPP_LIB_PATH
 $(error LLAMACPP_LIB_PATH is not defined!)
 endif
 
-# Check Target ABI. Only supports arm64 and x86_64.
-ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
-LLAMACPP_LIB_PATH := $(LLAMACPP_LIB_PATH)/arm64
-else ifeq ($(TARGET_ARCH_ABI),x86_64)
-LLAMACPP_LIB_PATH := $(LLAMACPP_LIB_PATH)/x86_64
-else
-$(error Target arch ABI not supported: $(TARGET_ARCH_ABI))
-endif
-
 #------------------------------------------------------
 # llamacpp prebuilt shared libraries
 #------------------------------------------------------
