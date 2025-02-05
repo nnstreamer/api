@@ -176,7 +176,7 @@ nns_native_single_open (JNIEnv * env, jobject thiz,
 
   pipe_info->pipeline_handle = single;
 
-  /* set private date */
+  /* set private data */
   priv = g_new0 (singleshot_priv_data_s, 1);
   ml_tensors_info_create_extended (&priv->in_info);
   ml_tensors_info_create_extended (&priv->out_info);

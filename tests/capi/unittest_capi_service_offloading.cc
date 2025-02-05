@@ -324,7 +324,7 @@ TEST_F (MLOffloadingService, registerModel)
   ml_tensors_data_h input = NULL;
 
   const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
-  /* _ml_service_offloading_request () requires absolute path to model, ignore this case. */
+  /* _ml_service_offloading_request() requires absolute path to model, ignore this case. */
   if (root_path == NULL)
     return;
 
@@ -368,7 +368,7 @@ TEST_F (MLOffloadingService, registerModelURI)
   int status;
   ml_tensors_data_h input = NULL;
   const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
-  /* _ml_service_offloading_request () requires absolute path to model, ignore this case. */
+  /* _ml_service_offloading_request() requires absolute path to model, ignore this case. */
   if (root_path == NULL)
     return;
 
@@ -410,7 +410,7 @@ TEST_F (MLOffloadingService, registerModelPath)
   int status;
   ml_tensors_data_h input = NULL;
   const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
-  /* _ml_service_offloading_request () requires absolute path to model, ignore this case. */
+  /* _ml_service_offloading_request() requires absolute path to model, ignore this case. */
   if (root_path == NULL)
     return;
 
@@ -418,7 +418,7 @@ TEST_F (MLOffloadingService, registerModelPath)
       = g_build_filename (root_path, "tests", "test_models", "models", NULL);
   EXPECT_TRUE (g_file_test (model_dir, G_FILE_TEST_IS_DIR));
 
-  /** A path to save the received model file */
+  /* A path to save the received model file */
   status = ml_service_set_information (server_h, "path", model_dir);
   EXPECT_EQ (ML_ERROR_NONE, status);
 
@@ -471,7 +471,6 @@ TEST_F (MLOffloadingService, requestInvalidParam_n)
   status = ml_tensors_data_destroy (input);
   EXPECT_EQ (ML_ERROR_NONE, status);
 }
-
 
 /**
  * @brief Callback function for reply test.
@@ -547,7 +546,6 @@ TEST_F (MLOffloadingService, replyToClient)
   g_free (pipeline_desc);
 }
 
-
 /**
  * @brief A tensor-sink callback for sink handle in a pipeline
  */
@@ -558,7 +556,6 @@ test_sink_callback (const ml_tensors_data_h data, const ml_tensors_info_h info, 
 
   (*received)++;
 }
-
 
 /**
  * @brief use case of launching the pipeline on server.
@@ -758,7 +755,6 @@ TEST_F (MLOffloadingService, launchPipeline2)
 
   status = ml_service_pipeline_delete ("pipeline_registration_test_key");
   EXPECT_TRUE (status == ML_ERROR_NONE);
-
 
   status = ml_tensors_data_destroy (input);
   EXPECT_EQ (ML_ERROR_NONE, status);

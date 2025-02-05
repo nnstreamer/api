@@ -31,6 +31,10 @@
 #include <ml-api-inference-single-internal.h>
 #include <ml-api-inference-pipeline-internal.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 #if GLIB_SIZEOF_VOID_P == 8
 #define CAST_TO_LONG(p) (jlong)(p)
 #define CAST_TO_TYPE(l,type) (type)(l)
@@ -256,4 +260,7 @@ extern gboolean
 nns_native_custom_register_natives (JNIEnv * env);
 #endif
 
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 #endif /* __NNSTREAMER_NATIVE_INTERNAL_H__ */
