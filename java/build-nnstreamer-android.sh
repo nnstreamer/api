@@ -80,6 +80,9 @@
 ##@@   --enable_mxnet=(yes|no)
 ##@@       'yes'      : build with sub-plugin for MXNet. Currently, mxnet 1.9.1 version supported.
 ##@@       'no'       : [default] build without the sub-plugin for MXNet
+##@@   --enable_llamacpp=(yes|no)
+##@@       'yes'      : build with llamacpp prebuilt libs.
+##@@       'no'       : [default]
 ##@@ 
 ##@@ options for tensor converter/decoder sub-plugins:
 ##@@   --enable_flatbuf=(yes|no)
@@ -100,10 +103,6 @@
 ##@@   --enable_mqtt=(yes|no)
 ##@@       'yes'      : [default] build with paho.mqtt.c prebuilt libs. This option supports the mqtt plugin
 ##@@       'no'       : build without the mqtt support
-##@@ options for llamacpp:
-##@@   --enable_llamacpp=(yes|no)
-##@@       'yes'      : build with llamacpp prebuilt libs.
-##@@       'no'       : [default]
 ##@@ 
 ##@@ For example, to build library with core plugins for arm64-v8a
 ##@@  ./build-nnstreamer-android.sh --api_option=lite --target_abi=arm64-v8a
@@ -470,7 +469,6 @@ fi
 echo "NNStreamer root directory: $nnstreamer_dir"
 
 # nnstreamer-edge root directory
-
 if [[ $enable_ml_offloading == "yes" ]]; then
     if [[ -z "$nnstreamer_edge_dir" ]]; then
         [ -z "$NNSTREAMER_EDGE_ROOT" ] && echo "Need to set NNSTREAMER_EDGE_ROOT." && exit 1
