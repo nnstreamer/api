@@ -437,6 +437,7 @@ nns_parse_tensors_data (pipeline_info_s * pipe_info, JNIEnv * env,
   ml_tensors_data_s *data;
   jobjectArray data_arr;
   gboolean failed = FALSE;
+  gboolean created = FALSE;
   int status;
 
   g_return_val_if_fail (pipe_info, FALSE);
@@ -469,6 +470,8 @@ nns_parse_tensors_data (pipeline_info_s * pipe_info, JNIEnv * env,
       _ml_loge ("Failed to create handle for tensors data.");
       return FALSE;
     }
+
+    created = TRUE;
   }
 
   data = (ml_tensors_data_s *) (*data_h);
@@ -507,8 +510,8 @@ nns_parse_tensors_data (pipeline_info_s * pipe_info, JNIEnv * env,
 done:
   (*env)->DeleteLocalRef (env, data_arr);
 
-  if (failed) {
-    ml_tensors_data_destroy (*data_h);
+  if (failed && created) {
+    _ml_tensors_data_destroy_internal (*data_h, clone);
     *data_h = NULL;
   }
 

@@ -263,8 +263,9 @@ done:
   }
 
   /* do not free input/output tensors (direct access from object) */
-  g_free (in_data);
-  g_free (out_data);
+  _ml_tensors_data_destroy_internal (in_data, FALSE);
+  _ml_tensors_data_destroy_internal (out_data, FALSE);
+
   return result;
 }
 
