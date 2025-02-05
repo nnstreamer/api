@@ -2809,8 +2809,8 @@ ml_pipeline_custom_invoke (void *data, const GstTensorFilterProperties * prop,
 done:
   g_mutex_unlock (&c->lock);
   /* NOTE: DO NOT free tensor data */
-  g_free (in_data);
-  g_free (out_data);
+  _ml_tensors_data_destroy_internal (in_data, FALSE);
+  _ml_tensors_data_destroy_internal (out_data, FALSE);
 
   return status;
 }
@@ -3045,9 +3045,8 @@ ml_pipeline_if_custom (const GstTensorsInfo * info,
         ("The callback function of if-statement has returned error: %d.", ret);
 
 done:
-  if (ml_info)
-    ml_tensors_info_destroy (ml_info);
-  g_free (in_data);
+  ml_tensors_info_destroy (ml_info);
+  _ml_tensors_data_destroy_internal (in_data, FALSE);
 
   return ret;
 }
