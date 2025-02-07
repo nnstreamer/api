@@ -743,7 +743,7 @@ JNI_OnLoad (JavaVM * vm, void *reserved)
   JNIEnv *env = NULL;
   jclass klass;
 
-  if ((*vm)->GetEnv (vm, (void **) &env, JNI_VERSION_1_4) != JNI_OK) {
+  if ((*vm)->GetEnv (vm, (void **) &env, NNS_JNI_VERSION) != JNI_OK) {
     _ml_loge ("On initializing, failed to get JNIEnv.");
     return 0;
   }
@@ -768,5 +768,14 @@ JNI_OnLoad (JavaVM * vm, void *reserved)
   }
 #endif
 
-  return JNI_VERSION_1_4;
+  return NNS_JNI_VERSION;
+}
+
+/**
+ * @brief Finalize native library.
+ */
+void
+JNI_OnUnload (JavaVM * vm, void *reversed)
+{
+  nnstreamer_native_finalize ();
 }

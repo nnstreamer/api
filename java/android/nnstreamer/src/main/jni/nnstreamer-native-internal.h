@@ -44,6 +44,11 @@ extern "C" {
 #endif
 
 /**
+ * @brief JNI version for NNStreamer Android, sync with GStreamer.
+ */
+#define NNS_JNI_VERSION (JNI_VERSION_1_4)
+
+/**
  * @brief NNStreamer package name.
  */
 #define NNS_PKG "org/nnsuite/nnstreamer"

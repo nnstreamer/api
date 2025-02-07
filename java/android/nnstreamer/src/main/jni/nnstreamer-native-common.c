@@ -451,15 +451,18 @@ nnstreamer_native_finalize (void)
 
   G_LOCK (nns_native_lock);
 
+  if (g_nns_is_initialized) {
 #if defined(__ANDROID__)
 #if defined(ENABLE_ML_AGENT)
-  ml_agent_finalize ();
+    ml_agent_finalize ();
 #endif
 #endif
 
-  g_free (g_files_dir);
-  g_files_dir = NULL;
-  g_nns_is_initialized = FALSE;
+    g_free (g_files_dir);
+    g_files_dir = NULL;
+    g_nns_is_initialized = FALSE;
+  }
+
   G_UNLOCK (nns_native_lock);
 }
 
