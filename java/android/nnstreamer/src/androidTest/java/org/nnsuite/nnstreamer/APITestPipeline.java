@@ -2382,6 +2382,7 @@ public class APITestPipeline {
         }
     }
 
+    @Ignore("Build library with nnstreamer-edge and check available port.")
     @Test
     public void testTensorQuery() {
         int serversrc_port = APITestCommon.getAvailablePort();
