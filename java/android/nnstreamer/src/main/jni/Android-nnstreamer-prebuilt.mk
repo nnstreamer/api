@@ -12,7 +12,6 @@ NNSTREAMER_DIR := $(LOCAL_PATH)/nnstreamer
 NNSTREAMER_INCLUDES := $(NNSTREAMER_DIR)/include
 NNSTREAMER_LIB_PATH := $(NNSTREAMER_DIR)/lib/$(TARGET_ARCH_ABI)
 
-ENABLE_ML_SERVICE := false
 ENABLE_TF_LITE := false
 ENABLE_SNAP := false
 ENABLE_NNFW := false
@@ -40,16 +39,6 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := gst-android
 LOCAL_SRC_FILES := $(NNSTREAMER_LIB_PATH)/libgstreamer_android.so
 include $(PREBUILT_SHARED_LIBRARY)
-
-#------------------------------------------------------
-# Libraries for nnstreamer and ML API
-#------------------------------------------------------
-ifeq ($(ENABLE_ML_SERVICE),true)
-SQLITE_LIB_PATH := $(NNSTREAMER_LIB_PATH)
-include $(LOCAL_PATH)/Android-sqlite-prebuilt.mk
-
-NNSTREAMER_LIBS += $(SQLITE_PREBUILT_LIBS)
-endif
 
 #------------------------------------------------------
 # Tensorflow-Lite

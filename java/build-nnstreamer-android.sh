@@ -170,9 +170,6 @@ enable_ml_offloading="no"
 # Enable option for service api and ml-agent
 enable_ml_service="no"
 
-# sqlite for mlops-agent
-sqlite_ver="3.48.0"
-
 # curl for ml-service offloading
 curl_ver="7.60.0"
 
@@ -581,7 +578,6 @@ if [[ $enable_mqtt == "yes" ]]; then
 fi
 
 if [[ $enable_ml_service == "yes" ]]; then
-    cp $nnstreamer_android_resource_dir/external/sqlite-${sqlite_ver}.tar.xz ./$build_dir/external
     cp $nnstreamer_android_resource_dir/external/curl-${curl_ver}.tar.xz ./$build_dir/external
 fi
 
@@ -751,8 +747,6 @@ fi
 
 if [[ $enable_ml_service == "yes" ]]; then
     sed -i "s|ENABLE_ML_SERVICE := false|ENABLE_ML_SERVICE := true|" nnstreamer/src/main/jni/Android.mk
-    sed -i "s|ENABLE_ML_SERVICE := false|ENABLE_ML_SERVICE := true|" nnstreamer/src/main/jni/Android-nnstreamer-prebuilt.mk
-    tar -xJf ./external/sqlite-${sqlite_ver}.tar.xz -C ./nnstreamer/src/main/jni
     tar -xJf ./external/curl-${curl_ver}.tar.xz -C ./nnstreamer/src/main/jni
 fi
 

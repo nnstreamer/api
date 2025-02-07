@@ -128,7 +128,6 @@ $(error MLOPS_AGENT_ROOT is not defined!)
 endif
 
 NNS_API_FLAGS += -DENABLE_ML_AGENT=1 -DDB_KEY_PREFIX=\"mlops-android\"
-include $(LOCAL_PATH)/Android-sqlite.mk
 include $(MLOPS_AGENT_ROOT)/jni/mlops-agent.mk
 
 ifeq ($(ENABLE_ML_OFFLOADING), true)
@@ -306,6 +305,10 @@ GSTREAMER_EXTRA_LIBS     := $(GST_REQUIRED_LIBS) -liconv
 
 ifeq ($(NNSTREAMER_API_OPTION),all)
 GSTREAMER_EXTRA_LIBS += -lcairo
+endif
+
+ifeq ($(ENABLE_ML_SERVICE),true)
+GSTREAMER_EXTRA_DEPS += sqlite3
 endif
 
 GSTREAMER_INCLUDE_FONTS := no
