@@ -30,14 +30,14 @@
 # Find '--help' in the given arguments
 arg_help="--help"
 for arg in "$@"; do
-    if [[ $arg == $arg_help ]]; then
+    if [[ ${arg} == ${arg_help} ]]; then
         sed -ne 's/^##@@ \(.*\)/\1/p' $0 && exit 1
     fi
 done
 
 # Parse args
 for arg in "$@"; do
-    case $arg in
+    case ${arg} in
         --java_home=*)
             java_home=${arg#*=}
             ;;
@@ -51,70 +51,70 @@ for arg in "$@"; do
 done
 
 # Java home
-if [[ -z "$java_home" ]]; then
-    [ -z "$JAVA_HOME" ] && echo "Need to set JAVA_HOME." && exit 1
-    java_home=$JAVA_HOME
+if [[ -z "${java_home}" ]]; then
+    [ -z "${JAVA_HOME}" ] && echo "Need to set JAVA_HOME." && exit 1
+    java_home=${JAVA_HOME}
 fi
 
-echo "Java home: $java_home"
+echo "Java home: ${java_home}"
 
-buildtool_javac=$java_home/bin/javac
-buildtool_java=$java_home/bin/java
-buildtool_jar=$java_home/bin/jar
+buildtool_javac=${java_home}/bin/javac
+buildtool_java=${java_home}/bin/java
+buildtool_jar=${java_home}/bin/jar
 
 # ML API root directory
-if [[ -z "$ml_api_dir" ]]; then
-    [ -z "$ML_API_ROOT" ] && echo "Need to set ML_API_ROOT." && exit 1
-    ml_api_dir=$ML_API_ROOT
+if [[ -z "${ml_api_dir}" ]]; then
+    [ -z "${ML_API_ROOT}" ] && echo "Need to set ML_API_ROOT." && exit 1
+    ml_api_dir=${ML_API_ROOT}
 fi
 
-echo "ML API root directory: $ml_api_dir"
+echo "ML API root directory: ${ml_api_dir}"
 
 # Build result directory
-if [[ -z "$result_dir" ]]; then
-    result_dir=$ml_api_dir/ubuntu_lib
+if [[ -z "${result_dir}" ]]; then
+    result_dir=${ml_api_dir}/ubuntu_lib
 fi
 
-mkdir -p $result_dir
+mkdir -p ${result_dir}
 
 # Set library name
 today=$(date "+%Y-%m-%d")
-nnstreamer_lib_name="nnstreamer-$today.jar"
+nnstreamer_lib_name="nnstreamer-${today}.jar"
 
-echo "NNStreamer library name: $nnstreamer_lib_name"
+echo "NNStreamer library name: ${nnstreamer_lib_name}"
 
 echo "Start to build NNStreamer library for Ubuntu"
-pushd $ml_api_dir
+pushd ${ml_api_dir}
 
 # Make directory to build NNStreamer library
 build_dir=build_ubuntu_jar
-mkdir -p $build_dir
+mkdir -p ${build_dir}
 
 # Copy java files from Android directory
-cp -r ./java/android/nnstreamer/src/main/java/org/nnsuite/nnstreamer/* ./$build_dir
+cp -r ./java/android/nnstreamer/src/main/java/org/nnsuite/nnstreamer/* ./${build_dir}
 
-sed -i "s|android.content.Context|Object|" $build_dir/*.java
-sed -i "s|android.view.Surface|Object|" $build_dir/*.java
-sed -i "s|@BUILD_ANDROID@|//|" $build_dir/*.java
+sed -i "s|android.content.Context|Object|" ${build_dir}/*.java
+sed -i "s|android.view.Surface|Object|" ${build_dir}/*.java
+sed -i "s|@BUILD_ANDROID@|//|" ${build_dir}/*.java
 
-pushd $build_dir
+pushd ${build_dir}
 
-$buildtool_javac -d . *.java
+${buildtool_javac} -d . *.java
 lib_build_res=$?
 
-if [[ $lib_build_res -ne 0 ]]; then
+if [[ ${lib_build_res} -ne 0 ]]; then
     echo "Failed to build NNStreamer library"
 else
-    $buildtool_jar cvfM $nnstreamer_lib_name org/nnsuite/nnstreamer/*.class
-    cp $nnstreamer_lib_name $result_dir
+    ${buildtool_jar} cvfM ${nnstreamer_lib_name} org/nnsuite/nnstreamer/*.class
+    cp ${nnstreamer_lib_name} ${result_dir}
 fi
 
 popd
 
 # Remove build directory
-rm -rf $build_dir
+rm -rf ${build_dir}
 
 popd
 
 # exit with success/failure status
-exit $lib_build_res
+exit ${lib_build_res}
