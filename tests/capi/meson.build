@@ -57,7 +57,7 @@ if get_option('enable-ml-service')
   )
   test('unittest_capi_service_agent_client', unittest_capi_service_agent_client, env: testenv, timeout: 100)
 
-  if support_service_offloading
+  if support_ml_offloading
     unittest_capi_service_offloading = executable('unittest_capi_service_offloading',
       'unittest_capi_service_offloading.cc',
       dependencies: service_unittest_deps,

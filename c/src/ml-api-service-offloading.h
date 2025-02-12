@@ -46,7 +46,7 @@ typedef enum
   ML_SERVICE_OFFLOADING_MODE_MAX
 } ml_service_offloading_mode_e;
 
-#if defined(ENABLE_SERVICE_OFFLOADING)
+#if defined(ENABLE_ML_OFFLOADING)
 /**
  * @brief Internal function to parse configuration file and create offloading service.
  * @param[in] handle The handle of ml-service created by ml_service_new().
@@ -162,7 +162,7 @@ int _ml_service_offloading_release_internal (ml_service_s *mls);
 #define _ml_service_offloading_release_internal(...) ML_ERROR_NOT_SUPPORTED
 #define _ml_service_offloading_set_mode(...) ML_ERROR_NOT_SUPPORTED
 #define _ml_service_offloading_get_mode(...) ML_ERROR_NOT_SUPPORTED
-#endif /* ENABLE_SERVICE_OFFLOADING */
+#endif /* ENABLE_ML_OFFLOADING */
 
 #ifdef __cplusplus
 }

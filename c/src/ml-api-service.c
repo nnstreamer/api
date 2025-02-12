@@ -15,6 +15,7 @@
 #include "ml-api-service.h"
 #include "ml-api-service-extension.h"
 #include "ml-api-service-offloading.h"
+#include "ml-api-service-query.h"
 
 #define ML_SERVICE_MAGIC 0xfeeedeed
 #define ML_SERVICE_MAGIC_DEAD 0xdeaddead
@@ -741,6 +742,76 @@ ml_service_destroy (ml_service_h handle)
   }
 
   return _ml_service_destroy_internal (mls);
+}
+
+/**
+ * @brief Creates query client service handle with given ml-option handle.
+ */
+int
+ml_service_query_create (ml_option_h option, ml_service_h * handle)
+{
+  ml_service_s *mls;
+  int status;
+
+  check_feature_state (ML_FEATURE_SERVICE);
+  check_feature_state (ML_FEATURE_INFERENCE);
+
+  if (!option) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'option' is NULL. It should be a valid ml_option_h, which should be created by ml_option_create().");
+  }
+
+  if (!handle) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'handle' (ml_service_h), is NULL. It should be a valid ml_service_h.");
+  }
+
+  mls = _ml_service_create_internal (ML_SERVICE_TYPE_CLIENT_QUERY);
+  if (mls == NULL) {
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Failed to allocate memory for the service handle. Out of memory?");
+  }
+
+  status = _ml_service_query_create (mls, option);
+
+  if (status == ML_ERROR_NONE) {
+    *handle = mls;
+  } else {
+    _ml_error_report ("Failed to create ml-service for query.");
+    _ml_service_destroy_internal (mls);
+  }
+
+  return status;
+}
+
+/**
+ * @brief Requests query client service an output with given input data.
+ */
+int
+ml_service_query_request (ml_service_h handle, const ml_tensors_data_h input,
+    ml_tensors_data_h * output)
+{
+  ml_service_s *mls = (ml_service_s *) handle;
+
+  check_feature_state (ML_FEATURE_SERVICE);
+  check_feature_state (ML_FEATURE_INFERENCE);
+
+  if (!_ml_service_handle_is_valid (mls)) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'handle' (ml_service_h), is invalid. It should be a valid ml_service_h instance.");
+  }
+
+  if (!input) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'input' (ml_tensors_data_h), is NULL. It should be a valid ml_tensors_data_h.");
+  }
+
+  if (!output) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'output' (ml_tensors_data_h *), is NULL. It should be a valid pointer to an instance of ml_tensors_data_h.");
+  }
+
+  return _ml_service_query_request (mls, input, output);
 }
 
 /**

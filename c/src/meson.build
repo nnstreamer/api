@@ -1,11 +1,17 @@
 nns_capi_common_srcs = files('ml-api-common.c', 'ml-api-inference-internal.c')
 nns_capi_single_srcs = files('ml-api-inference-single.c')
 nns_capi_pipeline_srcs = files('ml-api-inference-pipeline.c')
-nns_capi_service_srcs = files('ml-api-service.c', 'ml-api-service-extension.c', 'ml-api-service-agent-client.c', 'ml-api-service-query-client.c')
-if support_service_offloading
-  nns_capi_service_srcs += files('ml-api-service-offloading.c')
-  if support_training_offloading
-    nns_capi_service_srcs += files('ml-api-service-training-offloading.c')
+nns_capi_service_srcs = files('ml-api-service.c', 'ml-api-service-extension.c', 'ml-api-service-agent-client.c')
+
+if support_nnstreamer_edge
+  nns_capi_service_srcs += files('ml-api-service-query.c')
+
+  if support_ml_offloading
+    nns_capi_service_srcs += files('ml-api-service-offloading.c')
+
+    if support_training_offloading
+      nns_capi_service_srcs += files('ml-api-service-training-offloading.c')
+    endif
   endif
 endif
 
@@ -106,9 +112,14 @@ nns_capi_dep = declare_dependency(link_with: nns_capi_lib,
 # Service API
 if get_option('enable-ml-service')
   ml_service_deps = [nns_capi_dep, gio_dep, mlops_agent_dep, json_glib_dep]
-  if support_service_offloading
-    ml_service_deps += [nnstreamer_edge_dep, curl_dep]
+  if support_nnstreamer_edge
+    ml_service_deps += nnstreamer_edge_dep
+
+    if support_ml_offloading
+      ml_service_deps += curl_dep
+    endif
   endif
+
   if get_option('enable-tizen')
     ml_service_deps += dependency('capi-appfw-app-common')
   endif
