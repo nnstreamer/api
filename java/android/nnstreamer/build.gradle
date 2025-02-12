@@ -77,6 +77,17 @@ android {
 
                 abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
 
+                def llama2cRoot
+
+                if (project.hasProperty('llama2cRoot'))
+                    llama2cRoot = project.llama2cRoot
+                else
+                    llama2cRoot = System.env.LLAMA2C_ROOT_ANDROID
+
+                if (llama2cRoot != null)
+                    arguments "LLAMA2C_DIR=$llama2cRoot",
+                              "ENABLE_LLAMA2C=true"
+
                 def tfliteRoot
 
                 if (project.hasProperty('tfliteRoot'))
