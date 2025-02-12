@@ -69,21 +69,21 @@ runs:
         export NNSTREAMER_ANDROID_RESOURCE=${{ github.workspace }}/nnstreamer-android-resource
         export MLOPS_AGENT_ROOT=${{ github.workspace }}/deviceMLOps.MLAgent
         export ML_API_ROOT=${{ github.workspace }}
-        if [ $TARGET_ABI == 'arm64-v8a' ]; then
-          bash ${{ github.workspace }}/java/build-nnstreamer-android.sh --target_abi=$TARGET_ABI --enable_nnfw=yes --build_type=$BUILD_TYPE --enable_mqtt=yes --enable_ml_offloading=yes --enable_ml_service=yes --enable_llamacpp=yes
-        elif [ $TARGET_ABI == 'x86_64' ]; then
-          bash ${{ github.workspace }}/java/build-nnstreamer-android.sh --target_abi=$TARGET_ABI --enable_nnfw=no --build_type=$BUILD_TYPE
+        if [ ${TARGET_ABI} == 'arm64-v8a' ]; then
+          bash ${{ github.workspace }}/java/build-nnstreamer-android.sh --target_abi=${TARGET_ABI} --enable_nnfw=yes --build_type=${BUILD_TYPE} --enable_mqtt=yes --enable_ml_offloading=yes --enable_ml_service=yes --enable_llamacpp=yes
+        elif [ ${TARGET_ABI} == 'x86_64' ]; then
+          bash ${{ github.workspace }}/java/build-nnstreamer-android.sh --target_abi=${TARGET_ABI} --enable_nnfw=no --build_type=${BUILD_TYPE}
         else
-          bash ${{ github.workspace }}/java/build-nnstreamer-android.sh --target_abi=$TARGET_ABI --enable_nnfw=no --enable_tflite=no --build_type=$BUILD_TYPE
+          bash ${{ github.workspace }}/java/build-nnstreamer-android.sh --target_abi=${TARGET_ABI} --enable_nnfw=no --enable_tflite=no --build_type=${BUILD_TYPE}
         fi
 
         result=$?
         if [[ ${result} -ne 0 ]]; then
           echo "NDK build failed"
-          echo "result=failure" >> $GITHUB_OUTPUT
+          echo "result=failure" >> ${GITHUB_OUTPUT}
         else
           echo "NDK build success"
-          echo "result=success" >> $GITHUB_OUTPUT
+          echo "result=success" >> ${GITHUB_OUTPUT}
         fi
       shell: bash
       env:
