@@ -33,6 +33,9 @@
 ##@@   --run_test=(yes|no)
 ##@@       'yes'      : run instrumentation test after build procedure is done
 ##@@       'no'       : [default]
+##@@   --save_cxx_build=(yes|no)
+##@@       'yes'      : compress ndk build libs for debug
+##@@       'no'       : [default]
 ##@@   --nnstreamer_dir=(the_source_root_of_nnstreamer)
 ##@@       This option overrides the NNSTREAMER_ROOT variable
 ##@@   --nnstreamer_edge_dir=(the_source_root_of_nnstreamer_edge)
@@ -125,6 +128,9 @@ target_abi="arm64-v8a"
 # Run instrumentation test after build procedure is done
 run_test="no"
 
+# Compress ndk build libs for debug
+save_cxx_build="no"
+
 # Enable GStreamer Tracing
 enable_tracing="no"
 
@@ -204,6 +210,9 @@ for arg in "$@"; do
             ;;
         --run_test=*)
             run_test=${arg#*=}
+            ;;
+        --save_cxx_build=*)
+            save_cxx_build=${arg#*=}
             ;;
         --nnstreamer_dir=*)
             nnstreamer_dir=${arg#*=}
@@ -852,16 +861,18 @@ if [[ ${android_lib_build_res} -eq 0 ]]; then
     cp ${nnstreamer_native_files} ${result_dir}
 
     # Prepare shared/static libs in ndk build
-    nnstreamer_ndk_build_libs="${nnstreamer_lib_name}-build-libs-${today}.zip"
+    if [[ ${save_cxx_build} == "yes" ]]; then
+        nnstreamer_ndk_build_libs="${nnstreamer_lib_name}-build-libs-${today}.zip"
 
-    mkdir -p ndk_build_libs/debug
-    mkdir -p ndk_build_libs/release
+        mkdir -p ndk_build_libs/debug
+        mkdir -p ndk_build_libs/release
 
-    cp nnstreamer/build/intermediates/cxx/Debug/*/obj/local/*/* ndk_build_libs/debug
-    cp nnstreamer/build/intermediates/cxx/Release/*/obj/local/*/* ndk_build_libs/release
+        cp nnstreamer/build/intermediates/cxx/Debug/*/obj/local/*/* ndk_build_libs/debug
+        cp nnstreamer/build/intermediates/cxx/Release/*/obj/local/*/* ndk_build_libs/release
 
-    zip -r ${nnstreamer_ndk_build_libs} ndk_build_libs
-    cp ${nnstreamer_ndk_build_libs} ${result_dir}
+        zip -r ${nnstreamer_ndk_build_libs} ndk_build_libs
+        cp ${nnstreamer_ndk_build_libs} ${result_dir}
+    fi
 
     rm -rf aar_extracted main ndk_build_libs
 fi
