@@ -83,6 +83,9 @@
 ##@@   --enable_mxnet=(yes|no)
 ##@@       'yes'      : build with sub-plugin for MXNet. Currently, mxnet 1.9.1 version supported.
 ##@@       'no'       : [default] build without the sub-plugin for MXNet
+##@@   --enable_llama2c=(yes|no)
+##@@       'yes'      : build with llama2.c.
+##@@       'no'       : [default]
 ##@@   --enable_llamacpp=(yes|no)
 ##@@       'yes'      : build with llamacpp prebuilt libs.
 ##@@       'no'       : [default]
@@ -188,6 +191,7 @@ enable_ml_service="no"
 # curl for ml-service offloading
 curl_ver="7.60.0"
 
+enable_llama2c="no"
 enable_llamacpp="no"
 llamacpp_ver="b4358"
 
@@ -319,6 +323,9 @@ for arg in "$@"; do
         --enable_mqtt=*)
             enable_mqtt=${arg#*=}
             ;;
+        --enable_llama2c=*)
+            enable_llama2c=${arg#*=}
+            ;;
         --enable_llamacpp=*)
             enable_llamacpp=${arg#*=}
             ;;
@@ -341,6 +348,7 @@ elif [[ ${build_type} == "internal" ]]; then
     enable_pytorch="no"
     enable_tflite="no"
     enable_mxnet="no"
+    enable_llama2c="no"
     enable_llamacpp="no"
 
     target_abi="arm64-v8a"
@@ -428,6 +436,11 @@ fi
 
 if [[ ${enable_mqtt} == "yes" ]]; then
     echo "Build with paho.mqtt.c v${paho_mqtt_c_ver} for the mqtt plugin"
+fi
+
+if [[ ${enable_llama2c} == "yes" ]]; then
+    [ -z "${LLAMA2C_ROOT}" ] && echo "Need to set LLAMA2C_ROOT, to build sub-plugin for llama2.c." && exit 1
+    echo "Build with LLaMA 2 of pure C"
 fi
 
 if [[ ${enable_llamacpp} == "yes" ]]; then
@@ -764,6 +777,11 @@ fi
 if [[ ${enable_mqtt} == "yes" ]]; then
     sed -i "s|ENABLE_MQTT := false|ENABLE_MQTT := true|" nnstreamer/src/main/jni/Android.mk
     tar -xJf ./external/paho-mqtt-c-${paho_mqtt_c_ver}.tar.xz -C ./nnstreamer/src/main/jni
+fi
+
+if [[ ${enable_llama2c} == "yes" ]]; then
+    sed -i "s|ENABLE_LLAMA2C := false|ENABLE_LLAMA2C := true|" nnstreamer/src/main/jni/Android.mk
+    export LLAMA2C_ROOT_ANDROID=${LLAMA2C_ROOT}
 fi
 
 if [[ ${enable_llamacpp} == "yes" ]]; then
