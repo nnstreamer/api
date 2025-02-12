@@ -141,11 +141,6 @@ int _ml_service_conf_parse_tensors_info (JsonNode *info_node, ml_tensors_info_h 
 int _ml_service_pipeline_release_internal (ml_service_s *mls);
 
 /**
- * @brief Internal function to release ml-service query data.
- */
-int _ml_service_query_release_internal (ml_service_s *mls);
-
-/**
  * @brief Internal function to get json string member.
  */
 const gchar * _ml_service_get_json_string_member (JsonObject *object, const gchar *member_name);

@@ -86,7 +86,7 @@ NNSTREAMER_CAPI_INCLUDES += $(MLOPS_AGENT_INCLUDE)
 
 ifeq ($(ENABLE_ML_OFFLOADING), true)
 NNSTREAMER_SRC_FILES += \
-    $(ML_API_ROOT)/c/src/ml-api-service-query-client.c \
+    $(ML_API_ROOT)/c/src/ml-api-service-query.c \
     $(ML_API_ROOT)/c/src/ml-api-service-offloading.c
 
 NNSTREAMER_EXTERNAL_LIBS += libcurl

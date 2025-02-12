@@ -123,6 +123,8 @@ include $(NNSTREAMER_EDGE_ROOT)/jni/nnstreamer-edge.mk
 endif
 
 ifeq ($(ENABLE_ML_SERVICE), true)
+NNS_API_FLAGS += -DENABLE_ML_SERVICE=1
+
 ifndef MLOPS_AGENT_ROOT
 $(error MLOPS_AGENT_ROOT is not defined!)
 endif
@@ -131,7 +133,7 @@ NNS_API_FLAGS += -DENABLE_ML_AGENT=1 -DDB_KEY_PREFIX=\"mlops-android\"
 include $(MLOPS_AGENT_ROOT)/jni/mlops-agent.mk
 
 ifeq ($(ENABLE_ML_OFFLOADING), true)
-NNS_API_FLAGS += -DENABLE_SERVICE_OFFLOADING=1
+NNS_API_FLAGS += -DENABLE_ML_OFFLOADING=1
 include $(LOCAL_PATH)/Android-curl.mk
 endif
 endif

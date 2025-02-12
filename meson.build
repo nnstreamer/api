@@ -31,22 +31,31 @@ gst_app_dep = dependency('gstreamer-app-1.0')
 nnstreamer_single_dep = dependency('nnstreamer-single')
 nnstreamer_dep = dependency('nnstreamer')
 
-support_service_offloading = false
+support_nnstreamer_edge = false
+support_ml_offloading = false
+support_training_offloading = false
 if get_option('enable-ml-service')
   json_glib_dep = dependency('json-glib-1.0')
   mlops_agent_dep = dependency('mlops-agent')
   nnstreamer_edge_dep = dependency('nnstreamer-edge', required: false)
   curl_dep = cc.find_library('curl', required: false)
-  if nnstreamer_edge_dep.found() and curl_dep.found()
-    add_project_arguments('-DENABLE_SERVICE_OFFLOADING=1', language: ['c', 'cpp'])
-    support_service_offloading = true
-  endif
-endif
 
-support_training_offloading = false
-if get_option('enable-nntrainer')
-  add_project_arguments('-DENABLE_TRAINING_OFFLOADING=1', language: ['c', 'cpp'])
-  support_training_offloading = true
+  add_project_arguments('-DENABLE_ML_SERVICE=1', language: ['c', 'cpp'])
+
+  if nnstreamer_edge_dep.found()
+    add_project_arguments('-DENABLE_NNSTREAMER_EDGE=1', language: ['c', 'cpp'])
+    support_nnstreamer_edge = true
+
+    if curl_dep.found()
+      add_project_arguments('-DENABLE_ML_OFFLOADING=1', language: ['c', 'cpp'])
+      support_ml_offloading = true
+
+      if get_option('enable-nntrainer')
+        add_project_arguments('-DENABLE_TRAINING_OFFLOADING=1', language: ['c', 'cpp'])
+        support_training_offloading = true
+      endif
+    endif
+  endif
 endif
 
 # Set version info
