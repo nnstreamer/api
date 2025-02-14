@@ -14,8 +14,8 @@ endif
 # nnfw prebuilt shared libraries
 #------------------------------------------------------
 include $(CLEAR_VARS)
-LOCAL_MODULE := nnfw-libnnfw-dev
+LOCAL_MODULE := libnnfw-dev
 LOCAL_SRC_FILES := $(NNFW_LIB_PATH)/libnnfw-dev.so
 include $(PREBUILT_SHARED_LIBRARY)
 
-NNFW_PREBUILT_LIBS := nnfw-libnnfw-dev
+NNFW_PREBUILT_LIBS := libnnfw-dev

@@ -107,6 +107,8 @@
 ##@@ For example, to build library with core plugins for arm64-v8a
 ##@@  ./build-nnstreamer-android.sh --api_option=lite --target_abi=arm64-v8a
 
+today=$(date "+%Y-%m-%d")
+
 # API build option
 # 'all' : default
 # 'lite' : with GStreamer core plugins
@@ -528,13 +530,14 @@ mkdir -p ${build_dir}
 cp -r ./java/android/* ./${build_dir}
 
 # Get the prebuilt libraries and build-script
+rm -rf ${build_dir}/external
 mkdir -p ${build_dir}/external
 
 # @todo We need another mechanism for downloading third-party/external software
 cp -r ${nnstreamer_android_resource_dir}/android_api/* ./${build_dir}
 echo "file list for build dir ${build_dir}"
 ls -l ./${build_dir}
-rm -f ./${build_dir}/external/*.tar.gz ./${build_dir}/external/*.tar.xz
+
 if [[ ${enable_tracing} == "yes" ]]; then
     echo "Get Gst-Shark library"
     cp ${nnstreamer_android_resource_dir}/external/gst-shark.tar.xz ./${build_dir}/external
@@ -692,6 +695,7 @@ fi
 
 # Update tf-lite option
 if [[ ${enable_tflite} == "yes" ]]; then
+    sed -i "s|ENABLE_TF_LITE := false|ENABLE_TF_LITE := true|" nnstreamer/src/main/jni/Android.mk
     sed -i "s|ENABLE_TF_LITE := false|ENABLE_TF_LITE := true|" nnstreamer/src/main/jni/Android-nnstreamer-prebuilt.mk
     sed -i "s|TFLITE_VERSION := 2.16.1|TFLITE_VERSION := ${tf_lite_ver}|" nnstreamer/src/main/jni/Android-tensorflow-lite.mk
     tar -xJf ./external/tensorflow-lite-${tf_lite_ver}.tar.xz -C ./nnstreamer/src/main/jni
@@ -776,10 +780,31 @@ chmod +x gradlew
 sh ./gradlew nnstreamer:build
 android_lib_build_res=$?
 
-# Check if build procedure is done.
+# Run instrumentation test if build procedure is done.
 if [[ ${android_lib_build_res} -eq 0 ]]; then
+    if [[ ${run_test} == "yes" ]]; then
+        echo "Run instrumentation test."
+        sh ./gradlew nnstreamer:connectedCheck
+
+        test_result="${nnstreamer_lib_name}-test-${today}.zip"
+        zip -r ${test_result} nnstreamer/build/reports
+        cp ${test_result} ${result_dir}
+
+        test_summary=$(sed -n "/<div class=\"percent\">/p" nnstreamer/build/reports/androidTests/connected/index.html)
+        if [[ ${test_summary} != "<div class=\"percent\">100%</div>" ]]; then
+            echo "Instrumentation test is failed."
+            android_lib_build_res=1
+        fi
+    fi
+else
+    echo "Failed to build NNStreamer library."
+fi
+
+# Copy result files.
+if [[ ${android_lib_build_res} -eq 0 ]]; then
+    echo "Build procedure is done, copy NNStreamer library to ${result_dir} directory."
+
     nnstreamer_android_api_lib=nnstreamer/build/outputs/aar/nnstreamer-release.aar
-    today=$(date "+%Y-%m-%d")
 
     # Prepare native libraries and header files for C-API
     unzip ${nnstreamer_android_api_lib} -d aar_extracted
@@ -822,45 +847,23 @@ if [[ ${android_lib_build_res} -eq 0 ]]; then
     nnstreamer_native_files="${nnstreamer_lib_name}-native-${today}.zip"
     zip -r ${nnstreamer_native_files} main
 
+    # Copy build result
+    cp ${nnstreamer_android_api_lib} ${result_dir}/${nnstreamer_lib_name}-${today}.aar
+    cp ${nnstreamer_native_files} ${result_dir}
+
     # Prepare shared/static libs in ndk build
     nnstreamer_ndk_build_libs="${nnstreamer_lib_name}-build-libs-${today}.zip"
 
     mkdir -p ndk_build_libs/debug
     mkdir -p ndk_build_libs/release
 
-    cp nnstreamer/build/intermediates/cxx/Debug/*/obj/local/${target_abi}/* ndk_build_libs/debug
-    cp nnstreamer/build/intermediates/cxx/Release/*/obj/local/${target_abi}/* ndk_build_libs/release
+    cp nnstreamer/build/intermediates/cxx/Debug/*/obj/local/*/* ndk_build_libs/debug
+    cp nnstreamer/build/intermediates/cxx/Release/*/obj/local/*/* ndk_build_libs/release
 
     zip -r ${nnstreamer_ndk_build_libs} ndk_build_libs
+    cp ${nnstreamer_ndk_build_libs} ${result_dir}
 
     rm -rf aar_extracted main ndk_build_libs
-
-    # Run instrumentation test
-    if [[ ${run_test} == "yes" ]]; then
-        echo "Run instrumentation test."
-        sh ./gradlew nnstreamer:connectedCheck
-
-        test_result="${nnstreamer_lib_name}-test-${today}.zip"
-        zip -r ${test_result} nnstreamer/build/reports
-        cp ${test_result} ${result_dir}
-
-        test_summary=$(sed -n "/<div class=\"percent\">/p" nnstreamer/build/reports/androidTests/connected/index.html)
-        if [[ ${test_summary} != "<div class=\"percent\">100%</div>" ]]; then
-            echo "Instrumentation test failed."
-            android_lib_build_res=1
-        fi
-    fi
-
-    # Copy build result
-    if [[ ${android_lib_build_res} -eq 0 ]]; then
-        echo "Build procedure is done, copy NNStreamer library to ${result_dir} directory."
-
-        cp ${nnstreamer_android_api_lib} ${result_dir}/${nnstreamer_lib_name}-${today}.aar
-        cp ${nnstreamer_native_files} ${result_dir}
-        cp ${nnstreamer_ndk_build_libs} ${result_dir}
-    fi
-else
-    echo "Failed to build NNStreamer library."
 fi
 
 popd
