@@ -30,7 +30,7 @@ runs:
         java-version: 17
     - name: Get gstreamer-android
       run: |
-        gst_android_ver=1.24.0
+        gst_android_ver=1.24.12
         gst_android_pkg=gstreamer-1.0-android-universal-${gst_android_ver}.tar.xz
         mkdir -p ~/android/gst_root_android/
         pushd ~/android/gst_root_android/
