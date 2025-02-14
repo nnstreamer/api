@@ -14,7 +14,23 @@ ifndef NNSTREAMER_ROOT
 $(error NNSTREAMER_ROOT is not defined!)
 endif
 
+ifndef TFLITE_ROOT_ANDROID
+$(error To enable the NNStreamer TensorFlow Lite sub-plugin, TFLITE_ROOT_ANDROID must be specified.)
+endif
+
 include $(NNSTREAMER_ROOT)/jni/nnstreamer.mk
+
+TF_LITE_DIR := $(TFLITE_ROOT_ANDROID)
+TF_LITE_INCLUDES := $(TF_LITE_DIR)/include
+
+# Check Target ABI. Only supports arm64 and x86_64.
+ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
+TF_LITE_LIB_PATH := $(TF_LITE_DIR)/lib/arm64
+else ifeq ($(TARGET_ARCH_ABI),x86_64)
+TF_LITE_LIB_PATH := $(TF_LITE_DIR)/lib/x86_64
+else
+$(error Target arch ABI not supported: $(TARGET_ARCH_ABI))
+endif
 
 TFLITE_VERSION := 2.16.1
 
@@ -48,13 +64,10 @@ ifeq ($(TFLITE_ENABLE_XNNPACK_DELEGATE),true)
 TFLITE_FLAGS += -DTFLITE_XNNPACK_DELEGATE_SUPPORTED=1
 endif
 
-TF_LITE_DIR := $(TFLITE_ROOT)
-TF_LITE_INCLUDES := $(TF_LITE_DIR)/include
-
 # TFLite QNN Delegate
 TFLITE_ENABLE_QNN_DELEGATE := false
 ifneq ($(TARGET_ARCH_ABI),arm64-v8a)
-$(warning Warning: TensorFlow Lite QNN Delegate is available only for ABI arm64-v8a)
+$(warning TensorFlow-Lite QNN delegate is available only for ABI arm64-v8a)
 TFLITE_ENABLE_QNN_DELEGATE := false
 endif
 
@@ -64,15 +77,6 @@ TFLITE_FLAGS += -DTFLITE_QNN_DELEGATE_SUPPORTED=1
 QNN_DELEGATE_DIR := $(LOCAL_PATH)/tensorflow-lite-QNN-delegate
 QNN_DELEGATE_INCLUDE := $(QNN_DELEGATE_DIR)/include
 QNN_DELEGATE_LIB_PATH := $(QNN_DELEGATE_DIR)/lib/arm64-v8a
-endif
-
-# Check Target ABI. Only supports arm64 and x86_64.
-ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
-TF_LITE_LIB_PATH := $(TF_LITE_DIR)/lib/arm64
-else ifeq ($(TARGET_ARCH_ABI),x86_64)
-TF_LITE_LIB_PATH := $(TF_LITE_DIR)/lib/x86_64
-else
-$(error Target arch ABI not supported: $(TARGET_ARCH_ABI))
 endif
 
 #------------------------------------------------------

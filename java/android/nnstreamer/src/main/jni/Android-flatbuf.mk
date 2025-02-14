@@ -28,7 +28,7 @@ endif
 
 FLATBUF_DIR := $(LOCAL_PATH)/flatbuffers
 FLATBUF_INCLUDES := $(FLATBUF_DIR)/include
-GEN_FLATBUF_HEADER := $(shell flatc --cpp -o $(LOCAL_PATH) $(NNSTREAMER_ROOT)/ext/nnstreamer/include/nnstreamer.fbs )
+GEN_FLATBUF_HEADER := $(shell flatc --cpp -o $(LOCAL_PATH) $(NNSTREAMER_ROOT)/ext/nnstreamer/include/nnstreamer.fbs)
 FLATBUF_HEADER_GEN := $(wildcard $(LOCAL_PATH)/nnstreamer_generated.h)
 ifeq ($(FLATBUF_HEADER_GEN), '')
 $(error Failed to generate the header file, '$(LOCAL_PATH)/nnstreamer_generated.h')

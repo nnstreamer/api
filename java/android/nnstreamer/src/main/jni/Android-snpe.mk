@@ -27,6 +27,7 @@ endif
 
 SNPE_INCLUDES :=
 SNPE_FLAGS :=
+
 # Check the version of SNPE SDK (v1 or v2)
 ifeq ($(shell test -d $(SNPE_DIR)/include/zdl; echo $$?),0)
 SNPE_FLAGS += -DSNPE_VERSION_MAJOR=1

@@ -1,6 +1,6 @@
 #------------------------------------------------------
 # llama.cpp : Inference of Meta's LLaMA model (and others) in pure C/C++
-#   https://github.com/ggerganov/llama.cpp (original upstream repository
+#   https://github.com/ggerganov/llama.cpp (original upstream repository)
 #
 # This mk file defines a prebuilt shared library for the llamacpp module.
 #------------------------------------------------------

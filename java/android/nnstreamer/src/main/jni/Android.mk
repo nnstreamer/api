@@ -41,23 +41,8 @@ ENABLE_ML_OFFLOADING := false
 # enable service api and mlops-agent
 ENABLE_ML_SERVICE := false
 
-ENABLE_TF_LITE ?= false
-# TensorFlow Lite  (nnstreamer tf-lite sub-plugin)
-ifeq ($(ENABLE_TF_LITE),true)
-
-ifndef TFLITE_ROOT_ANDROID
-$(error To enable the NNStreamer TensorFlow Lite sub-plugin, TFLITE_ROOT_ANDROID must be specified.)
-endif #endif TFLITE_ROOT_ANDROID
-
-ifneq ($(filter $(TARGET_ARCH_ABI), arm64-v8a x86_64),)
-TFLITE_ROOT := $(TFLITE_ROOT_ANDROID)
-_ENABLE_TF_LITE := true
-else #ifeq ($(filter $(TARGET_ARCH_ABI), armeabi-v7a x86),)
-$(warning Warning: TensorFlow Lite is available only for the following ABIs: x86_64 and armv6-v8a.)
-$(warning For the other ABIs, ENABLE_TF_LITE is overridden to false.)
-_ENABLE_TF_LITE := false
-endif #endif ($(filter $(TARGET_ARCH_ABI), arm64-v8a x86_64),)
-endif #endif ($(ENABLE_TF_LITE),true)
+# TensorFlow-Lite
+ENABLE_TF_LITE := false
 
 # SNAP (Samsung Neural Acceleration Platform)
 ENABLE_SNAP := false
@@ -65,17 +50,8 @@ ENABLE_SNAP := false
 # NNFW (On-device neural network inference framework, Samsung Research)
 ENABLE_NNFW := false
 
-ENABLE_SNPE ?= false
 # SNPE (Snapdragon Neural Processing Engine)
-ifeq ($(ENABLE_SNPE),true)
-ifneq ($(filter $(TARGET_ARCH_ABI), arm64-v8a),)
-_ENABLE_SNPE := true
-else #ifeq ($(filter $(TARGET_ARCH_ABI), armeabi-v7a x86 x86_64),)
-$(warning Warning: SNPEv2 is available only for the ABI: armv6-v8a.)
-$(warning For the other ABIs (i.e., $(TARGET_ARCH_ABI)), ENABLE_SNPE is overridden to false.)
-_ENABLE_SNPE := false
-endif #endif ($(filter $(TARGET_ARCH_ABI), arm64-v8a,)
-endif #endif ($(ENABLE_SNPE),true)
+ENABLE_SNPE := false
 
 # QNN
 ENABLE_QNN := false
@@ -143,7 +119,7 @@ NNS_API_FLAGS += -DENABLE_MQTT=1
 include $(LOCAL_PATH)/Android-paho-mqtt-c.mk
 endif
 
-ifeq ($(_ENABLE_TF_LITE), true)
+ifeq ($(ENABLE_TF_LITE), true)
 NNS_API_FLAGS += -DENABLE_TENSORFLOW_LITE=1
 endif
 
@@ -155,7 +131,7 @@ ifeq ($(ENABLE_NNFW), true)
 NNS_API_FLAGS += -DENABLE_NNFW_RUNTIME=1
 endif
 
-ifeq ($(_ENABLE_SNPE), true)
+ifeq ($(ENABLE_SNPE), true)
 NNS_API_FLAGS += -DENABLE_SNPE=1
 endif
 
@@ -191,7 +167,7 @@ include $(LOCAL_PATH)/Android-nnstreamer.mk
 #------------------------------------------------------
 # external libs and sub-plugins
 #------------------------------------------------------
-ifeq ($(_ENABLE_TF_LITE),true)
+ifeq ($(ENABLE_TF_LITE),true)
 include $(LOCAL_PATH)/Android-tensorflow-lite.mk
 NNS_SUBPLUGINS += tensorflow-lite-subplugin
 endif
@@ -206,7 +182,7 @@ include $(LOCAL_PATH)/Android-nnfw.mk
 NNS_SUBPLUGINS += nnfw-subplugin
 endif
 
-ifeq ($(_ENABLE_SNPE),true)
+ifeq ($(ENABLE_SNPE),true)
 include $(LOCAL_PATH)/Android-snpe.mk
 NNS_SUBPLUGINS += snpe-subplugin
 endif
