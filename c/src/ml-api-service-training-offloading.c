@@ -593,7 +593,7 @@ _training_offloading_check_received_data (ml_training_services_s * training_s)
  * @brief replace path.
  */
 static void
-_training_offloading_replce_pipeline_data_path (ml_service_s * mls)
+_training_offloading_replace_pipeline_data_path (ml_service_s * mls)
 {
   guint changed = 0;
   ml_training_services_s *training_s = NULL;
@@ -662,7 +662,7 @@ _ml_service_training_offloading_prepare_sender (ml_service_s * mls,
   if (ret != ML_ERROR_NONE) {
     _ml_error_report_return (ret, "Failed to request service.");
   }
-  _training_offloading_replce_pipeline_data_path (mls);
+  _training_offloading_replace_pipeline_data_path (mls);
 
   ret = ml_pipeline_construct (training_s->sender_pipe, NULL, NULL,
       &training_s->pipeline_h);
@@ -690,7 +690,7 @@ _ml_service_training_offloading_prepare_receiver (ml_service_s * mls,
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "Failed to receive the required data");
   }
-  _training_offloading_replce_pipeline_data_path (mls);
+  _training_offloading_replace_pipeline_data_path (mls);
 
   pipeline_node = json_from_string (training_s->receiver_pipe_json_str, NULL);
   if (!pipeline_node) {
