@@ -8,7 +8,7 @@ ifndef TF_LITE_LIB_PATH
 $(error TF_LITE_LIB_PATH is not defined!)
 endif
 
-ENABLE_QNN_DELEGATE := false
+TFLITE_ENABLE_QNN_DELEGATE := false
 
 #------------------------------------------------------
 # tensorflow-lite (prebuilt shared libraries)
@@ -25,7 +25,7 @@ include $(PREBUILT_SHARED_LIBRARY)
 
 TF_LITE_PREBUILT_LIBS := libtensorflowlite libtensorflowlite-gpu-delegate
 
-ifeq ($(ENABLE_QNN_DELEGATE),true)
+ifeq ($(TFLITE_ENABLE_QNN_DELEGATE),true)
 include $(CLEAR_VARS)
 LOCAL_MODULE := libtensorflowlite-qnn-delegate
 LOCAL_SRC_FILES := $(TF_LITE_LIB_PATH)/libQnnTFLiteDelegate.so

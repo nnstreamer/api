@@ -16,6 +16,7 @@ ENABLE_TF_LITE := false
 ENABLE_SNAP := false
 ENABLE_NNFW := false
 ENABLE_SNPE := false
+ENABLE_QNN := false
 ENABLE_MXNET := false
 ENABLE_LLAMACPP := false
 
@@ -78,6 +79,16 @@ SNPE_LIB_PATH := $(NNSTREAMER_LIB_PATH)
 include $(LOCAL_PATH)/Android-snpe-prebuilt.mk
 
 NNSTREAMER_LIBS += $(SNPE_PREBUILT_LIBS)
+endif
+
+#------------------------------------------------------
+# QNN
+#------------------------------------------------------
+ifeq ($(ENABLE_QNN),true)
+QNN_LIB_PATH := $(NNSTREAMER_LIB_PATH)
+include $(LOCAL_PATH)/Android-qnn-prebuilt.mk
+
+NNSTREAMER_LIBS += $(QNN_PREBUILT_LIBS)
 endif
 
 #------------------------------------------------------

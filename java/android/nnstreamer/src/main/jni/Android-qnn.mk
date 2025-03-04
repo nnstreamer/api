@@ -22,31 +22,7 @@ QNN_INCLUDES := $(QNN_DIR)/include/QNN
 #------------------------------------------------------
 # qnn-sdk (prebuilt shared library)
 #------------------------------------------------------
-QNN_PREBUILT_LIBS :=
-
-include $(CLEAR_VARS)
-LOCAL_MODULE := libQnnCpu
-LOCAL_SRC_FILES := $(QNN_LIB_PATH)/libQnnCpu.so
-include $(PREBUILT_SHARED_LIBRARY)
-QNN_PREBUILT_LIBS += libQnnCpu
-
-include $(CLEAR_VARS)
-LOCAL_MODULE := libQnnGpu
-LOCAL_SRC_FILES := $(QNN_LIB_PATH)/libQnnGpu.so
-include $(PREBUILT_SHARED_LIBRARY)
-QNN_PREBUILT_LIBS += libQnnGpu
-
-include $(CLEAR_VARS)
-LOCAL_MODULE := libQnnDsp
-LOCAL_SRC_FILES := $(QNN_LIB_PATH)/libQnnDsp.so
-include $(PREBUILT_SHARED_LIBRARY)
-QNN_PREBUILT_LIBS += libQnnDsp
-
-include $(CLEAR_VARS)
-LOCAL_MODULE := libQnnHtp
-LOCAL_SRC_FILES := $(QNN_LIB_PATH)/libQnnHtp.so
-include $(PREBUILT_SHARED_LIBRARY)
-QNN_PREBUILT_LIBS += libQnnHtp
+include $(LOCAL_PATH)/Android-qnn-prebuilt.mk
 
 #------------------------------------------------------
 # tensor-filter sub-plugin for qnn
