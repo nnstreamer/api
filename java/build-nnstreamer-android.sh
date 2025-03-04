@@ -686,6 +686,7 @@ fi
 # Update QNN option
 if [[ ${enable_qnn} == "yes" ]]; then
     sed -i "s|ENABLE_QNN := false|ENABLE_QNN := true|" nnstreamer/src/main/jni/Android.mk
+    sed -i "s|ENABLE_QNN := false|ENABLE_QNN := true|" nnstreamer/src/main/jni/Android-nnstreamer-prebuilt.mk
     sed -i "$ a QNN_EXT_LIBRARY_PATH=src/main/jni/qnn/lib/ext" gradle.properties
 
     mkdir -p nnstreamer/src/main/jni/qnn/lib/ext/arm64-v8a
@@ -727,17 +728,17 @@ if [[ ${enable_tflite} == "yes" ]]; then
     if [[ ${enable_tflite_qnn_delegate} == "yes" ]]; then
         tflite_qnn_delegate_path="nnstreamer/src/main/jni/tensorflow-lite-QNN-delegate"
         sed -i "s|TFLITE_ENABLE_QNN_DELEGATE := false|TFLITE_ENABLE_QNN_DELEGATE := true|" nnstreamer/src/main/jni/Android-tensorflow-lite.mk
+        sed -i "s|TFLITE_ENABLE_QNN_DELEGATE := false|TFLITE_ENABLE_QNN_DELEGATE := true|" nnstreamer/src/main/jni/Android-tensorflow-lite-prebuilt.mk
         sed -i "$ a TFLITE_QNN_DELEGATE_EXT_LIBRARY_PATH=src/main/jni/tensorflow-lite-QNN-delegate/ext" gradle.properties
 
         mkdir -p ${tflite_qnn_delegate_path}/include # header files
-        mkdir -p ${tflite_qnn_delegate_path}/lib/arm64-v8a # libQnnTFLiteDelegate.so
         mkdir -p ${tflite_qnn_delegate_path}/ext/arm64-v8a # external libraries for HTP / DSP / GPU
 
         # Copy header files
         cp -r ${QNN_DELEGATE_DIRECTORY}/include/QNN ${tflite_qnn_delegate_path}/include
 
         # Copy libQnnTFLiteDelegate.so
-        cp ${QNN_DELEGATE_DIRECTORY}/lib/aarch64-android/libQnnTFLiteDelegate.so ${tflite_qnn_delegate_path}/lib/arm64-v8a
+        cp ${QNN_DELEGATE_DIRECTORY}/lib/aarch64-android/libQnnTFLiteDelegate.so nnstreamer/src/main/jni/tensorflow-lite/lib/arm64
 
         # Copy external so files for QNN Delegate
         cp ${QNN_DELEGATE_DIRECTORY}/lib/aarch64-android/libQnnGpu.so ${tflite_qnn_delegate_path}/ext/arm64-v8a

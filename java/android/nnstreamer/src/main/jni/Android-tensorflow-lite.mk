@@ -49,6 +49,7 @@ TFLITE_FLAGS := \
 TFLITE_ENABLE_GPU_DELEGATE := true
 TFLITE_ENABLE_NNAPI_DELEGATE := true
 TFLITE_ENABLE_XNNPACK_DELEGATE := true
+TFLITE_ENABLE_QNN_DELEGATE := false
 TFLITE_EXPORT_LDLIBS :=
 
 ifeq ($(TFLITE_ENABLE_NNAPI_DELEGATE),true)
@@ -64,35 +65,23 @@ ifeq ($(TFLITE_ENABLE_XNNPACK_DELEGATE),true)
 TFLITE_FLAGS += -DTFLITE_XNNPACK_DELEGATE_SUPPORTED=1
 endif
 
-# TFLite QNN Delegate
-TFLITE_ENABLE_QNN_DELEGATE := false
+ifeq ($(TFLITE_ENABLE_QNN_DELEGATE),true)
 ifneq ($(TARGET_ARCH_ABI),arm64-v8a)
-$(warning TensorFlow-Lite QNN delegate is available only for ABI arm64-v8a)
-TFLITE_ENABLE_QNN_DELEGATE := false
+$(error TensorFlow-Lite QNN delegate is available only for ABI arm64-v8a)
 endif
 
-ifeq ($(TFLITE_ENABLE_QNN_DELEGATE),true)
-NNS_API_FLAGS += -DENABLE_TFLITE_QNN_DELEGATE=1
-TFLITE_FLAGS += -DTFLITE_QNN_DELEGATE_SUPPORTED=1
 QNN_DELEGATE_DIR := $(LOCAL_PATH)/tensorflow-lite-QNN-delegate
 QNN_DELEGATE_INCLUDE := $(QNN_DELEGATE_DIR)/include
-QNN_DELEGATE_LIB_PATH := $(QNN_DELEGATE_DIR)/lib/arm64-v8a
+
+NNS_API_FLAGS += -DENABLE_TFLITE_QNN_DELEGATE=1
+TFLITE_FLAGS += -DTFLITE_QNN_DELEGATE_SUPPORTED=1
+TF_LITE_INCLUDES += $(QNN_DELEGATE_INCLUDE)
 endif
 
 #------------------------------------------------------
 # tensorflow-lite (prebuilt shared libraries)
 #------------------------------------------------------
 include $(LOCAL_PATH)/Android-tensorflow-lite-prebuilt.mk
-
-## set include and deps for QNN delegate
-ifeq ($(TFLITE_ENABLE_QNN_DELEGATE),true)
-TF_LITE_INCLUDES += $(QNN_DELEGATE_INCLUDE)
-
-include $(CLEAR_VARS)
-LOCAL_MODULE := libtensorflowlite-qnn-delegate
-LOCAL_SRC_FILES := $(QNN_DELEGATE_LIB_PATH)/libQnnTFLiteDelegate.so
-include $(PREBUILT_SHARED_LIBRARY)
-endif ## QNN delegate
 
 #------------------------------------------------------
 # tensor-filter sub-plugin for tensorflow-lite
@@ -105,8 +94,5 @@ LOCAL_CXXFLAGS := -O3 -fPIC -frtti -fexceptions $(NNS_API_FLAGS) $(TFLITE_FLAGS)
 LOCAL_C_INCLUDES := $(TF_LITE_INCLUDES) $(NNSTREAMER_INCLUDES) $(GST_HEADERS_COMMON)
 LOCAL_EXPORT_LDLIBS := $(TFLITE_EXPORT_LDLIBS)
 LOCAL_SHARED_LIBRARIES := $(TF_LITE_PREBUILT_LIBS)
-ifeq ($(TFLITE_ENABLE_QNN_DELEGATE),true)
-LOCAL_SHARED_LIBRARIES += libtensorflowlite-qnn-delegate
-endif
 
 include $(BUILD_STATIC_LIBRARY)
