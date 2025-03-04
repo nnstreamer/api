@@ -85,8 +85,7 @@ android {
                     llama2cRoot = System.env.LLAMA2C_ROOT_ANDROID
 
                 if (llama2cRoot != null)
-                    arguments "LLAMA2C_DIR=$llama2cRoot",
-                              "ENABLE_LLAMA2C=true"
+                    arguments "LLAMA2C_DIR=$llama2cRoot"
 
                 def tfliteRoot
 
@@ -96,8 +95,7 @@ android {
                     tfliteRoot = System.env.TFLITE_ROOT_ANDROID
 
                 if (tfliteRoot != null)
-                    arguments "TFLITE_ROOT_ANDROID=$tfliteRoot",
-                              "ENABLE_TF_LITE=true"
+                    arguments "TFLITE_ROOT_ANDROID=$tfliteRoot"
             }
         }
     }
