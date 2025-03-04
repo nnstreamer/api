@@ -32,7 +32,7 @@ else
 $(error Target arch ABI not supported: $(TARGET_ARCH_ABI))
 endif
 
-TFLITE_VERSION := 2.16.1
+TFLITE_VERSION := 2.18.0
 
 _TFLITE_VERSIONS = $(subst ., , $(TFLITE_VERSION))
 TFLITE_VERSION_MAJOR := $(word 1, $(_TFLITE_VERSIONS))

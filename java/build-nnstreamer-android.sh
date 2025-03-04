@@ -73,9 +73,9 @@
 ##@@       'yes'      : build with sub-plugin for PyTorch. You can optionally specify the version of
 ##@@                    PyTorch to use by appending ':version' [1.10.1 is the default].
 ##@@       'no'       : [default] build without the sub-plugin for PyTorch
-##@@   --enable_tflite=(yes(:(2.16.1))?|no)
+##@@   --enable_tflite=(yes(:(2.18.0))?|no)
 ##@@       'yes'      : [default] you can optionally specify the version of tensorflow-lite to use
-##@@                    by appending ':version' [2.16.1 is the default].
+##@@                    by appending ':version' [2.18.0 is the default].
 ##@@       'no'       : build without the sub-plugin for tensorflow-lite
 ##@@   --enable_tflite_qnn_delegate=(yes|no)
 ##@@       'yes'      : build tflite with QNN delegate. you must set env variable 'QNN_DELEGATE_DIRECTORY' to the right path
@@ -166,9 +166,9 @@ enable_tflite="yes"
 # Enable tensorflow-lite-QNN-delegate
 enable_tflite_qnn_delegate="no"
 
-# Set tensorflow-lite version (available: 2.8.1 / 2.16.1)
-tf_lite_ver="2.16.1"
-tf_lite_vers_support="2.8.1 2.16.1"
+# Set tensorflow-lite version (available: 2.16.1 / 2.18.0)
+tf_lite_ver="2.18.0"
+tf_lite_vers_support="2.16.1 2.18.0"
 
 # Enable MXNet
 enable_mxnet="no"
@@ -719,7 +719,7 @@ fi
 if [[ ${enable_tflite} == "yes" ]]; then
     sed -i "s|ENABLE_TF_LITE := false|ENABLE_TF_LITE := true|" nnstreamer/src/main/jni/Android.mk
     sed -i "s|ENABLE_TF_LITE := false|ENABLE_TF_LITE := true|" nnstreamer/src/main/jni/Android-nnstreamer-prebuilt.mk
-    sed -i "s|TFLITE_VERSION := 2.16.1|TFLITE_VERSION := ${tf_lite_ver}|" nnstreamer/src/main/jni/Android-tensorflow-lite.mk
+    sed -i "s|TFLITE_VERSION := 2.18.0|TFLITE_VERSION := ${tf_lite_ver}|" nnstreamer/src/main/jni/Android-tensorflow-lite.mk
     tar -xJf ./external/tensorflow-lite-${tf_lite_ver}.tar.xz -C ./nnstreamer/src/main/jni
     export TFLITE_ROOT_ANDROID=${ml_api_dir}/${build_dir}/nnstreamer/src/main/jni/tensorflow-lite
 
