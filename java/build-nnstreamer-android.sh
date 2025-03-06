@@ -610,6 +610,12 @@ fi
 
 pushd ./${build_dir}
 
+# Set directory for external libraries
+external_lib_dir=nnstreamer/src/main/jni/external/lib/${target_abi}
+external_include_dir=nnstreamer/src/main/jni/external/include
+mkdir -p ${external_lib_dir} ${external_include_dir}
+sed -i "$ a NNS_EXT_LIBRARY_PATH=src/main/jni/external/lib" gradle.properties
+
 # Update target ABI
 sed -i "s|abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'|abiFilters '${target_abi}'|" nnstreamer/build.gradle
 
@@ -643,7 +649,6 @@ fi
 if [[ ${enable_nnfw} == "yes" ]]; then
     sed -i "s|ENABLE_NNFW := false|ENABLE_NNFW := true|" nnstreamer/src/main/jni/Android-nnstreamer-prebuilt.mk
     sed -i "s|ENABLE_NNFW := false|ENABLE_NNFW := true|" nnstreamer/src/main/jni/Android.mk
-    sed -i "$ a NNFW_EXT_LIBRARY_PATH=src/main/jni/nnfw/ext" gradle.properties
 
     mkdir -p external/nnfw
     tar -zxf external/onert-${nnfw_ver}-android-aarch64.tar.gz -C external/nnfw
@@ -658,48 +663,40 @@ if [[ ${enable_nnfw} == "yes" ]]; then
     rm -f external/nnfw/lib/libtensorflowlite_jni.so
     rm -f external/nnfw/lib/libneuralnetworks.so
 
-    mkdir -p nnstreamer/src/main/jni/nnfw/include nnstreamer/src/main/jni/nnfw/lib
-    mkdir -p nnstreamer/src/main/jni/nnfw/ext/arm64-v8a
-    mv external/nnfw/include/* nnstreamer/src/main/jni/nnfw/include
-    mv external/nnfw/lib/libnnfw-dev.so nnstreamer/src/main/jni/nnfw/lib
-    find external/nnfw/lib -type f -exec mv -t nnstreamer/src/main/jni/nnfw/ext/arm64-v8a {} +
+    mv external/nnfw/include/* ${external_include_dir}
+    find external/nnfw/lib -type f -exec mv -t ${external_lib_dir} {} +
 fi
 
 # Update SNPE option
 if [[ ${enable_snpe} == "yes" ]]; then
     sed -i "s|ENABLE_SNPE := false|ENABLE_SNPE := true|" nnstreamer/src/main/jni/Android-nnstreamer-prebuilt.mk
     sed -i "s|ENABLE_SNPE := false|ENABLE_SNPE := true|" nnstreamer/src/main/jni/Android.mk
-    sed -i "$ a SNPE_EXT_LIBRARY_PATH=src/main/jni/snpe/lib/ext" gradle.properties
 
-    mkdir -p nnstreamer/src/main/jni/snpe/lib/ext/arm64-v8a
-    cp -r ${SNPE_DIRECTORY}/include nnstreamer/src/main/jni/snpe
+    cp -r ${SNPE_DIRECTORY}/include/* ${external_include_dir}
 
     # Copy external so files for SNPE
-    cp ${SNPE_DIRECTORY}/lib/aarch64-android*/*.so nnstreamer/src/main/jni/snpe/lib/ext/arm64-v8a
-    cp ${SNPE_DIRECTORY}/lib/dsp/*.so nnstreamer/src/main/jni/snpe/lib/ext/arm64-v8a
-    cp ${SNPE_DIRECTORY}/lib/hexagon-v*/unsigned/*.* nnstreamer/src/main/jni/snpe/lib/ext/arm64-v8a
+    cp ${SNPE_DIRECTORY}/lib/aarch64-android*/*.so ${external_lib_dir}
+    cp ${SNPE_DIRECTORY}/lib/dsp/*.so ${external_lib_dir}
+    cp ${SNPE_DIRECTORY}/lib/hexagon-v*/unsigned/*.* ${external_lib_dir}
 
-    rm nnstreamer/src/main/jni/snpe/lib/ext/arm64-v8a/libc++_shared.so
-    mv nnstreamer/src/main/jni/snpe/lib/ext/arm64-v8a/libSNPE.so nnstreamer/src/main/jni/snpe/lib
+    rm ${external_lib_dir}/libc++_shared.so
 fi
 
 # Update QNN option
 if [[ ${enable_qnn} == "yes" ]]; then
     sed -i "s|ENABLE_QNN := false|ENABLE_QNN := true|" nnstreamer/src/main/jni/Android.mk
     sed -i "s|ENABLE_QNN := false|ENABLE_QNN := true|" nnstreamer/src/main/jni/Android-nnstreamer-prebuilt.mk
-    sed -i "$ a QNN_EXT_LIBRARY_PATH=src/main/jni/qnn/lib/ext" gradle.properties
 
-    mkdir -p nnstreamer/src/main/jni/qnn/lib/ext/arm64-v8a
-    cp -r ${QNN_DIRECTORY}/include nnstreamer/src/main/jni/qnn
+    cp -r ${QNN_DIRECTORY}/include/QNN ${external_include_dir}
 
     # Copy libs to build QNN
-    cp ${QNN_DIRECTORY}/lib/aarch64-android/libQnnCpu.so nnstreamer/src/main/jni/qnn/lib/
-    cp ${QNN_DIRECTORY}/lib/aarch64-android/libQnnGpu.so nnstreamer/src/main/jni/qnn/lib/
-    cp ${QNN_DIRECTORY}/lib/aarch64-android/libQnnDsp.so nnstreamer/src/main/jni/qnn/lib/
-    cp ${QNN_DIRECTORY}/lib/aarch64-android/libQnnHtp.so nnstreamer/src/main/jni/qnn/lib/
+    cp ${QNN_DIRECTORY}/lib/aarch64-android/libQnnCpu.so ${external_lib_dir}
+    cp ${QNN_DIRECTORY}/lib/aarch64-android/libQnnGpu.so ${external_lib_dir}
+    cp ${QNN_DIRECTORY}/lib/aarch64-android/libQnnDsp.so ${external_lib_dir}
+    cp ${QNN_DIRECTORY}/lib/aarch64-android/libQnnHtp.so ${external_lib_dir}
 
     # Copy external so files for QNN
-    cp ${QNN_DIRECTORY}/lib/hexagon-v*/unsigned/libQnn*Skel.so nnstreamer/src/main/jni/qnn/lib/ext/arm64-v8a
+    cp ${QNN_DIRECTORY}/lib/hexagon-v*/unsigned/libQnn*Skel.so ${external_lib_dir}
 fi
 
 # Update PyTorch option
@@ -726,37 +723,32 @@ if [[ ${enable_tflite} == "yes" ]]; then
 
     # Update tf-lite qnn delegate option
     if [[ ${enable_tflite_qnn_delegate} == "yes" ]]; then
-        tflite_qnn_delegate_path="nnstreamer/src/main/jni/tensorflow-lite-QNN-delegate"
         sed -i "s|TFLITE_ENABLE_QNN_DELEGATE := false|TFLITE_ENABLE_QNN_DELEGATE := true|" nnstreamer/src/main/jni/Android-tensorflow-lite.mk
         sed -i "s|TFLITE_ENABLE_QNN_DELEGATE := false|TFLITE_ENABLE_QNN_DELEGATE := true|" nnstreamer/src/main/jni/Android-tensorflow-lite-prebuilt.mk
-        sed -i "$ a TFLITE_QNN_DELEGATE_EXT_LIBRARY_PATH=src/main/jni/tensorflow-lite-QNN-delegate/ext" gradle.properties
-
-        mkdir -p ${tflite_qnn_delegate_path}/include # header files
-        mkdir -p ${tflite_qnn_delegate_path}/ext/arm64-v8a # external libraries for HTP / DSP / GPU
 
         # Copy header files
-        cp -r ${QNN_DELEGATE_DIRECTORY}/include/QNN ${tflite_qnn_delegate_path}/include
+        cp -r ${QNN_DELEGATE_DIRECTORY}/include/QNN ${external_include_dir}
 
         # Copy libQnnTFLiteDelegate.so
         cp ${QNN_DELEGATE_DIRECTORY}/lib/aarch64-android/libQnnTFLiteDelegate.so nnstreamer/src/main/jni/tensorflow-lite/lib/arm64
 
         # Copy external so files for QNN Delegate
-        cp ${QNN_DELEGATE_DIRECTORY}/lib/aarch64-android/libQnnGpu.so ${tflite_qnn_delegate_path}/ext/arm64-v8a
-        cp ${QNN_DELEGATE_DIRECTORY}/lib/aarch64-android/libQnnDsp.so ${tflite_qnn_delegate_path}/ext/arm64-v8a
-        cp ${QNN_DELEGATE_DIRECTORY}/lib/aarch64-android/libQnnHtp.so ${tflite_qnn_delegate_path}/ext/arm64-v8a
-        cp ${QNN_DELEGATE_DIRECTORY}/lib/aarch64-android/libQnnSystem.so ${tflite_qnn_delegate_path}/ext/arm64-v8a
+        cp ${QNN_DELEGATE_DIRECTORY}/lib/aarch64-android/libQnnGpu.so ${external_lib_dir}
+        cp ${QNN_DELEGATE_DIRECTORY}/lib/aarch64-android/libQnnDsp.so ${external_lib_dir}
+        cp ${QNN_DELEGATE_DIRECTORY}/lib/aarch64-android/libQnnHtp.so ${external_lib_dir}
+        cp ${QNN_DELEGATE_DIRECTORY}/lib/aarch64-android/libQnnSystem.so ${external_lib_dir}
 
-        cp ${QNN_DELEGATE_DIRECTORY}/lib/aarch64-android/libQnnDspV66Stub.so ${tflite_qnn_delegate_path}/ext/arm64-v8a
-        cp ${QNN_DELEGATE_DIRECTORY}/lib/aarch64-android/libQnnHtpV68Stub.so ${tflite_qnn_delegate_path}/ext/arm64-v8a
-        cp ${QNN_DELEGATE_DIRECTORY}/lib/aarch64-android/libQnnHtpV69Stub.so ${tflite_qnn_delegate_path}/ext/arm64-v8a
-        cp ${QNN_DELEGATE_DIRECTORY}/lib/aarch64-android/libQnnHtpV73Stub.so ${tflite_qnn_delegate_path}/ext/arm64-v8a
-        cp ${QNN_DELEGATE_DIRECTORY}/lib/aarch64-android/libQnnHtpV75Stub.so ${tflite_qnn_delegate_path}/ext/arm64-v8a
+        cp ${QNN_DELEGATE_DIRECTORY}/lib/aarch64-android/libQnnDspV66Stub.so ${external_lib_dir}
+        cp ${QNN_DELEGATE_DIRECTORY}/lib/aarch64-android/libQnnHtpV68Stub.so ${external_lib_dir}
+        cp ${QNN_DELEGATE_DIRECTORY}/lib/aarch64-android/libQnnHtpV69Stub.so ${external_lib_dir}
+        cp ${QNN_DELEGATE_DIRECTORY}/lib/aarch64-android/libQnnHtpV73Stub.so ${external_lib_dir}
+        cp ${QNN_DELEGATE_DIRECTORY}/lib/aarch64-android/libQnnHtpV75Stub.so ${external_lib_dir}
 
-        cp ${QNN_DELEGATE_DIRECTORY}/lib/hexagon-v66/unsigned/libQnnDspV66Skel.so ${tflite_qnn_delegate_path}/ext/arm64-v8a
-        cp ${QNN_DELEGATE_DIRECTORY}/lib/hexagon-v68/unsigned/libQnnHtpV68Skel.so ${tflite_qnn_delegate_path}/ext/arm64-v8a
-        cp ${QNN_DELEGATE_DIRECTORY}/lib/hexagon-v69/unsigned/libQnnHtpV69Skel.so ${tflite_qnn_delegate_path}/ext/arm64-v8a
-        cp ${QNN_DELEGATE_DIRECTORY}/lib/hexagon-v73/unsigned/libQnnHtpV73Skel.so ${tflite_qnn_delegate_path}/ext/arm64-v8a
-        cp ${QNN_DELEGATE_DIRECTORY}/lib/hexagon-v75/unsigned/libQnnHtpV75Skel.so ${tflite_qnn_delegate_path}/ext/arm64-v8a
+        cp ${QNN_DELEGATE_DIRECTORY}/lib/hexagon-v66/unsigned/libQnnDspV66Skel.so ${external_lib_dir}
+        cp ${QNN_DELEGATE_DIRECTORY}/lib/hexagon-v68/unsigned/libQnnHtpV68Skel.so ${external_lib_dir}
+        cp ${QNN_DELEGATE_DIRECTORY}/lib/hexagon-v69/unsigned/libQnnHtpV69Skel.so ${external_lib_dir}
+        cp ${QNN_DELEGATE_DIRECTORY}/lib/hexagon-v73/unsigned/libQnnHtpV73Skel.so ${external_lib_dir}
+        cp ${QNN_DELEGATE_DIRECTORY}/lib/hexagon-v75/unsigned/libQnnHtpV75Skel.so ${external_lib_dir}
     fi
 fi
 

@@ -9,15 +9,13 @@ endif
 
 include $(NNSTREAMER_ROOT)/jni/nnstreamer.mk
 
-QNN_DIR := $(LOCAL_PATH)/qnn
-
 ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
-QNN_LIB_PATH := $(QNN_DIR)/lib
+QNN_LIB_PATH := $(EXT_LIB_PATH)
 else
 $(error Target arch ABI not supported: $(TARGET_ARCH_ABI))
 endif
 
-QNN_INCLUDES := $(QNN_DIR)/include/QNN
+QNN_INCLUDES := $(EXT_INCLUDE_PATH)/QNN
 
 #------------------------------------------------------
 # qnn-sdk (prebuilt shared library)

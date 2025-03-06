@@ -5,9 +5,9 @@
 # This mk file defines nnfw module with prebuilt shared library.
 # (nnfw core libraries, arm64-v8a only)
 #
-# You should check your `gradle.properties` to set the variable `NNFW_EXT_LIBRARY_PATH` properly.
+# You should check your `gradle.properties` to set the variable `NNS_EXT_LIBRARY_PATH` properly.
 # The variable should be assigned with path for external shared libs.
-# An example: "NNFW_EXT_LIBRARY_PATH=src/main/jni/nnfw/ext"
+# An example: "NNS_EXT_LIBRARY_PATH=src/main/jni/external/lib"
 #------------------------------------------------------
 LOCAL_PATH := $(call my-dir)
 
@@ -17,11 +17,10 @@ endif
 
 include $(NNSTREAMER_ROOT)/jni/nnstreamer.mk
 
-NNFW_DIR := $(LOCAL_PATH)/nnfw
-NNFW_INCLUDES := $(NNFW_DIR)/include $(NNFW_DIR)/include/nnfw
+NNFW_INCLUDES := $(EXT_INCLUDE_PATH)/nnfw
 
 ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
-NNFW_LIB_PATH := $(NNFW_DIR)/lib
+NNFW_LIB_PATH := $(EXT_LIB_PATH)
 else
 $(error Target arch ABI not supported: $(TARGET_ARCH_ABI))
 endif
