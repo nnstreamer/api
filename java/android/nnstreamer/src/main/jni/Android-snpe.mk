@@ -5,9 +5,9 @@
 # (snpe-sdk, arm64-v8a only)
 # See Qualcomm Neural Processing SDK for AI (https://developer.qualcomm.com/software/qualcomm-neural-processing-sdk) for the details.
 #
-# You should check your `gradle.properties` to set the variable `SNPE_EXT_LIBRARY_PATH` properly.
+# You should check your `gradle.properties` to set the variable `NNS_EXT_LIBRARY_PATH` properly.
 # The variable should be assigned with path for external shared libs.
-# An example: "SNPE_EXT_LIBRARY_PATH=src/main/jni/snpe/lib/ext"
+# An example: "NNS_EXT_LIBRARY_PATH=src/main/jni/external/lib"
 #------------------------------------------------------
 LOCAL_PATH := $(call my-dir)
 
@@ -17,10 +17,8 @@ endif
 
 include $(NNSTREAMER_ROOT)/jni/nnstreamer.mk
 
-SNPE_DIR := $(LOCAL_PATH)/snpe
-
 ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
-SNPE_LIB_PATH := $(SNPE_DIR)/lib
+SNPE_LIB_PATH := $(EXT_LIB_PATH)
 else
 $(error Target arch ABI not supported: $(TARGET_ARCH_ABI))
 endif
@@ -29,14 +27,14 @@ SNPE_INCLUDES :=
 SNPE_FLAGS :=
 
 # Check the version of SNPE SDK (v1 or v2)
-ifeq ($(shell test -d $(SNPE_DIR)/include/zdl; echo $$?),0)
+ifeq ($(shell test -d $(EXT_INCLUDE_PATH)/zdl; echo $$?),0)
 SNPE_FLAGS += -DSNPE_VERSION_MAJOR=1
-SNPE_INCLUDES += $(SNPE_DIR)/include/zdl
-else ifeq ($(shell test -d $(SNPE_DIR)/include/SNPE; echo $$?),0)
+SNPE_INCLUDES += $(EXT_INCLUDE_PATH)/zdl
+else ifeq ($(shell test -d $(EXT_INCLUDE_PATH)/SNPE; echo $$?),0)
 SNPE_FLAGS += -DSNPE_VERSION_MAJOR=2
-SNPE_INCLUDES += $(SNPE_DIR)/include/SNPE
+SNPE_INCLUDES += $(EXT_INCLUDE_PATH)/SNPE
 else
-$(error SNPE SDK not found: $(SNPE_DIR))
+$(error Cannot find SNPE SDK)
 endif
 
 #------------------------------------------------------
