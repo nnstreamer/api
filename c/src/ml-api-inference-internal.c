@@ -45,7 +45,7 @@ gst_info_is_extended (const GstTensorsInfo * gst_info)
  */
 int
 _ml_tensors_info_create_from_gst (ml_tensors_info_h * ml_info,
-    GstTensorsInfo * gst_info)
+    const GstTensorsInfo * gst_info)
 {
   gboolean is_extended;
 

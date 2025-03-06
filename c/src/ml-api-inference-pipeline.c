@@ -3002,23 +3002,21 @@ ml_pipeline_if_custom (const GstTensorsInfo * info,
   int status = 0;
   guint i;
   ml_if_custom_s *c;
-  ml_tensors_data_h in_data;
+  ml_tensors_data_h in_data = NULL;
   ml_tensors_data_s *_data;
   ml_tensors_info_h ml_info = NULL;
-  GstTensorsInfo in_info = *info;
   gboolean ret = FALSE;
 
   c = (ml_if_custom_s *) data;
-  in_data = NULL;
 
   /* internal error? */
   if (!c || !c->cb)
     _ml_error_report_return (FALSE,
         "Internal error: the parameter, data, is not valid. App thread might have touched internal data structure.");
 
-  status = _ml_tensors_info_create_from_gst (&ml_info, &in_info);
+  status = _ml_tensors_info_create_from_gst (&ml_info, info);
   if (status != ML_ERROR_NONE)
-    _ml_error_report_return_continue (status,
+    _ml_error_report_return_continue (FALSE,
         "Cannot create tensors-info from the parameter, info (const GstTensorsInfo). _ml_tensors_info_create_from_gst has returned %d.",
         status);
   status = _ml_tensors_data_create_no_alloc (ml_info, &in_data);
@@ -3038,11 +3036,11 @@ ml_pipeline_if_custom (const GstTensorsInfo * info,
   status = c->cb (in_data, ml_info, result, c->pdata);
   g_mutex_unlock (&c->lock);
 
-  if (status == 0)
-    ret = TRUE;
-  else
+  ret = (status == ML_ERROR_NONE);
+  if (!ret)
     _ml_error_report
-        ("The callback function of if-statement has returned error: %d.", ret);
+        ("The callback function of if-statement has returned error: %d.",
+        status);
 
 done:
   ml_tensors_info_destroy (ml_info);

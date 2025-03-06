@@ -2766,8 +2766,8 @@ TEST (nnstreamer_capi_util, info_create_1_n)
  */
 TEST (nnstreamer_capi_util, info_create_2_n)
 {
-  ml_tensors_info_h i;
-  int status = _ml_tensors_info_create_from_gst (&i, nullptr);
+  ml_tensors_info_h info = NULL;
+  int status = _ml_tensors_info_create_from_gst (&info, nullptr);
   ASSERT_EQ (status, ML_ERROR_INVALID_PARAMETER);
 }
 
@@ -2777,7 +2777,10 @@ TEST (nnstreamer_capi_util, info_create_2_n)
 TEST (nnstreamer_capi_util, info_create_3_n)
 {
   GstTensorsInfo gi;
-  int status = _ml_tensors_info_create_from_gst (nullptr, &gi);
+  int status;
+
+  gst_tensors_info_init (&gi);
+  status = _ml_tensors_info_create_from_gst (nullptr, &gi);
   ASSERT_EQ (status, ML_ERROR_INVALID_PARAMETER);
 }
 
