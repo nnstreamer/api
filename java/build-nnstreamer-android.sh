@@ -279,7 +279,7 @@ for arg in "$@"; do
                     fi
                 done
                 if [[ ${is_valid_pytorch_version} == 0 ]]; then
-                    printf "'%s' is not a supported version of PyTorch." "${enable_pytorch_args[1]}"
+                    printf "'%s' is not a supported version of PyTorch.\n" "${enable_pytorch_args[1]}"
                     printf "The default version, '%s', will be used.\n"  "${pytorch_ver}"
                 fi
             fi
@@ -300,7 +300,7 @@ for arg in "$@"; do
                     fi
                 done
                 if [[ ${is_valid_tflite_version} == 0 ]]; then
-                    printf "'%s' is not a supported version of TensorFlow Lite." "${enable_tflite_args[1]}"
+                    printf "'%s' is not a supported version of TensorFlow-Lite.\n" "${enable_tflite_args[1]}"
                     printf "The default version, '%s', will be used.\n"  "${tf_lite_ver}"
                 fi
             fi

@@ -540,7 +540,6 @@ public class APITestCommon {
         throw new RuntimeException("Could not find any available port");
     }
 
-
     @Before
     public void setUp() {
         initNNStreamer();
