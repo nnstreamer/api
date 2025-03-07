@@ -70,12 +70,9 @@ ifneq ($(TARGET_ARCH_ABI),arm64-v8a)
 $(error TensorFlow-Lite QNN delegate is available only for ABI arm64-v8a)
 endif
 
-QNN_DELEGATE_DIR := $(LOCAL_PATH)/tensorflow-lite-QNN-delegate
-QNN_DELEGATE_INCLUDE := $(QNN_DELEGATE_DIR)/include
-
 NNS_API_FLAGS += -DENABLE_TFLITE_QNN_DELEGATE=1
 TFLITE_FLAGS += -DTFLITE_QNN_DELEGATE_SUPPORTED=1
-TF_LITE_INCLUDES += $(QNN_DELEGATE_INCLUDE)
+TF_LITE_INCLUDES += $(EXT_INCLUDE_PATH)
 endif
 
 #------------------------------------------------------

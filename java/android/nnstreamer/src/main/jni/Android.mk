@@ -24,6 +24,10 @@ else
 $(error Target arch ABI not supported: $(TARGET_ARCH_ABI))
 endif
 
+# Path for external libraries
+EXT_INCLUDE_PATH := $(LOCAL_PATH)/external/include
+EXT_LIB_PATH := $(LOCAL_PATH)/external/lib/$(TARGET_ARCH_ABI)
+
 # Set ML API Version
 ML_API_VERSION  := 1.8.6
 ML_API_VERSION_MAJOR := $(word 1,$(subst ., ,${ML_API_VERSION}))

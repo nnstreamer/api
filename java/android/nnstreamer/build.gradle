@@ -124,24 +124,9 @@ android {
     }
     sourceSets {
         main {
-            if (project.hasProperty('SNPE_EXT_LIBRARY_PATH')) {
-                jniLibs.srcDirs += project.properties['SNPE_EXT_LIBRARY_PATH']
-                println 'Set jniLibs.srcDirs includes libraries for SNPE'
-            }
-
-            if (project.hasProperty('QNN_EXT_LIBRARY_PATH')) {
-                jniLibs.srcDirs += project.properties['QNN_EXT_LIBRARY_PATH']
-                println 'Set jniLibs.srcDirs includes libraries for QNN'
-            }
-
-            if (project.hasProperty('NNFW_EXT_LIBRARY_PATH')) {
-                jniLibs.srcDirs += project.properties['NNFW_EXT_LIBRARY_PATH']
-                println 'Set jniLibs.srcDirs includes libraries for NNFW'
-            }
-
-            if (project.hasProperty('TFLITE_QNN_DELEGATE_EXT_LIBRARY_PATH')) {
-                jniLibs.srcDirs += project.properties['TFLITE_QNN_DELEGATE_EXT_LIBRARY_PATH']
-                println 'Set jniLibs.srcDirs includes libraries for TFLite QNN Delegate'
+            if (project.hasProperty('NNS_EXT_LIBRARY_PATH')) {
+                jniLibs.srcDirs += project.properties['NNS_EXT_LIBRARY_PATH']
+                println 'Set jniLibs.srcDirs for external libraries'
             }
         }
     }
