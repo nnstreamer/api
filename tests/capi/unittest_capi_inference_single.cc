@@ -3181,6 +3181,52 @@ TEST (nnstreamer_capi_singleshot, invoke_ncnn)
 #endif /* ENABLE_NCNN */
 
 /**
+ * @brief DISABLED Test to show executorch_llama filter usage
+ */
+TEST (nnstreamer_capi_singleshot, DISABLED_executorch_llama)
+{
+  int status;
+  ml_single_h single;
+
+  status = ml_single_open (&single, "/path/to/pte,/path/to/tokienizer", NULL,
+      NULL, ML_NNFW_TYPE_EXECUTORCH_LLAMA, ML_NNFW_HW_ANY);
+  ASSERT_EQ (status, ML_ERROR_NONE);
+
+  /* prepare input data */
+  std::string prompt ("Once upon a time");
+  ml_tensors_info_h in_info;
+  ml_tensors_data_h in_data;
+  ml_tensor_dimension dim = { (unsigned int) prompt.size () + 1, 0 };
+
+  ml_tensors_info_create (&in_info);
+  ml_tensors_info_set_count (in_info, 1);
+  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_UINT8);
+  ml_tensors_info_set_tensor_dimension (in_info, 0, dim);
+
+  ml_tensors_data_create (in_info, &in_data);
+  ml_tensors_data_set_tensor_data (in_data, 0, prompt.c_str (), prompt.size () + 1);
+
+  /* invoke */
+  ml_tensors_data_h out_data;
+  status = ml_single_invoke (single, in_data, &out_data);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  char *result;
+  size_t result_size;
+  status = ml_tensors_data_get_tensor_data (out_data, 0U, (void **) &result, &result_size);
+  EXPECT_EQ (ML_ERROR_NONE, status);
+
+  g_info ("result: %s", result);
+  EXPECT_EQ (0, strncmp (result, prompt.c_str (), prompt.size ()));
+
+  /* free data */
+  ml_tensors_data_destroy (out_data);
+  ml_tensors_data_destroy (in_data);
+  ml_tensors_info_destroy (in_info);
+  ml_single_close (single);
+}
+
+/**
  * @brief Test NNStreamer single shot (custom filter)
  * @detail Run pipeline with custom filter with allocate in invoke, handle multi tensors.
  */

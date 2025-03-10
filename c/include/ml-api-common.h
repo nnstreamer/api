@@ -75,6 +75,7 @@ typedef enum {
   ML_NNFW_TYPE_NCNN = 18,             /**< Tencent ncnn (Since 9.0) */
   ML_NNFW_TYPE_TENSORRT = 19,         /**< NVidia Tensor-RT (Since 9.0) */
   ML_NNFW_TYPE_QNN = 20,              /**< Qualcomm QNN (Qualcomm® AI Engine Direct) (Since 9.0) */
+  ML_NNFW_TYPE_EXECUTORCH_LLAMA = 21, /**< ExecuTorch Llama runner */
   ML_NNFW_TYPE_SNAP = 0x2001,         /**< SNAP (Samsung Neural Acceleration Platform), only for Android. (Since 6.0) */
 } ml_nnfw_type_e;
 
