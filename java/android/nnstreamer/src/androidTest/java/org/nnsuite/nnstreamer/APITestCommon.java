@@ -1,8 +1,6 @@
 package org.nnsuite.nnstreamer;
 
-import android.Manifest;
 import android.content.Context;
-import android.content.res.AssetManager;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 
@@ -11,7 +9,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -43,9 +40,12 @@ public class APITestCommon {
      */
     private static boolean copyAssetFolder(Context context, String srcName, String dstName) {
         try {
-            boolean result = true;
-            String fileList[] = context.getAssets().list(srcName);
-            if (fileList == null) return false;
+            boolean result;
+            String[] fileList = context.getAssets().list(srcName);
+
+            if (fileList == null) {
+                return false;
+            }
 
             if (fileList.length == 0) {
                 result = copyAssetFile(context, srcName, dstName);
@@ -56,6 +56,7 @@ public class APITestCommon {
                     result &= copyAssetFolder(context, srcName + File.separator + filename, dstName + File.separator + filename);
                 }
             }
+
             return result;
         } catch (IOException e) {
             e.printStackTrace();
@@ -70,17 +71,20 @@ public class APITestCommon {
         try {
             InputStream in = context.getAssets().open(srcName);
             File outFile = new File(dstName);
+
             if (outFile.exists()) {
                 /* already exists */
                 return true;
             }
 
-            OutputStream out = new FileOutputStream(outFile);
+            OutputStream out = Files.newOutputStream(outFile.toPath());
             byte[] buffer = new byte[1024];
             int read;
+
             while ((read = in.read(buffer)) != -1) {
                 out.write(buffer, 0, read);
             }
+
             in.close();
             out.close();
             return true;
@@ -129,6 +133,54 @@ public class APITestCommon {
         }
 
         return model;
+    }
+
+    /**
+     * Gets the path string of video file.
+     */
+    public static String getTestVideoPath() {
+        String root = getRootDirectory();
+        File media = new File(root + "/nnstreamer/test/test_video.mp4");
+
+        if (!media.exists()) {
+            fail();
+        }
+
+        return media.getAbsolutePath();
+    }
+
+    /**
+     * Reads png image file (orange) and returns TensorsData instance.
+     */
+    public static TensorsData readPngImage() {
+        String root = getRootDirectory();
+        File png = new File(root + "/nnstreamer/test/orange.png");
+
+        if (!png.exists()) {
+            fail();
+        }
+
+        TensorsInfo info = new TensorsInfo();
+        info.addTensorInfo(NNStreamer.TensorType.UINT8, new int[]{(int) png.length()});
+
+        int size = info.getTensorSize(0);
+        TensorsData data = TensorsData.allocate(info);
+
+        try {
+            byte[] content = Files.readAllBytes(png.toPath());
+            if (content.length != size) {
+                fail();
+            }
+
+            ByteBuffer buffer = TensorsData.allocateByteBuffer(size);
+            buffer.put(content);
+
+            data.setTensorData(0, buffer);
+        } catch (Exception e) {
+            fail();
+        }
+
+        return data;
     }
 
     /**
@@ -316,7 +368,13 @@ public class APITestCommon {
      */
     public static String getTFLiteAddModelPath() {
         String root = getRootDirectory();
-        return root + "/nnstreamer/test/add";
+        File path = new File(root + "/nnstreamer/test/add");
+
+        if (!path.exists()) {
+            fail();
+        }
+
+        return path.getAbsolutePath();
     }
 
     /**
@@ -428,11 +486,11 @@ public class APITestCommon {
     }
 
     /**
-     * Gets the option string to run TensorFlow Lite model for SNAP.
+     * Gets the option string to run TensorFlow-Lite model for SNAP.
      *
      * CPU: "custom=ModelFWType:TENSORFLOWLITE,ExecutionDataType:FLOAT32,ComputingUnit:CPU"
      * GPU: "custom=ModelFWType:TENSORFLOWLITE,ExecutionDataType:FLOAT32,ComputingUnit:GPU"
-     * DSP: Not supported for TensorFlow Lite model
+     * DSP: Not supported for TensorFlow-Lite model
      * NPU: "custom=ModelFWType:TENSORFLOWLITE,ExecutionDataType:FLOAT32,ComputingUnit:NPU"
      */
     public static String getSNAPTensorflowLiteOption(SNAPComputingUnit CUnit) {
@@ -442,7 +500,7 @@ public class APITestCommon {
     }
 
     /**
-     * Gets the File objects of Tensorflow Lite model for SNAP.
+     * Gets the File objects of Tensorflow-Lite model for SNAP.
      * Note that, to invoke model in the storage, the permission READ_EXTERNAL_STORAGE is required.
      */
     public static File[] getSNAPTensorflowLiteModel() {
@@ -475,7 +533,7 @@ public class APITestCommon {
     /**
      * Get the File object of SNPE model for testing multiple output.
      * The model is converted to dlc format with SNPE SDK and it's from
-     * https://github.com/nnsuite/testcases/tree/master/DeepLearningModels/tensorflow/ssdlite_mobilenet_v2
+     * <a href="https://github.com/nnsuite/testcases/tree/master/DeepLearningModels/tensorflow/ssdlite_mobilenet_v2">NNStreamer testcases repository</a>.
      */
     public static File getMultiOutputSNPEModel() {
         String root = getRootDirectory();
