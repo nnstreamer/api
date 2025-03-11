@@ -38,11 +38,11 @@ public final class NNStreamer {
      */
     public enum NNFWType {
         /**
-         * <a href="https://www.tensorflow.org/lite">TensorFlow Lite</a> is an open source
+         * <a href="https://www.tensorflow.org/lite">TensorFlow-Lite</a> is an open source
          * deep learning framework for on-device inference.<br>
          * <br>
-         * Custom options (available from TensorFlow Lite 2.3.0 and Android 10)<br>
-         * - Delegate: the hardware acceleration of TensorFlow Lite model (GPU/NNAPI/XNNPACK delegates are available)<br>
+         * Custom options (available from TensorFlow-Lite 2.3.0 and Android 10)<br>
+         * - Delegate: the hardware acceleration of TensorFlow-Lite model (GPU/NNAPI/XNNPACK delegates are available)<br>
          * - NumThreads: the number of threads available to the interpreter
          */
         TENSORFLOW_LITE,
@@ -54,7 +54,7 @@ public final class NNStreamer {
          * to specify the neural network and data format.<br>
          * <br>
          * Custom options<br>
-         * - ModelFWType: the type of model (TensorFlow Lite/TensorFlow/Caffe)<br>
+         * - ModelFWType: the type of model (TensorFlow-Lite/TensorFlow/Caffe)<br>
          * - ExecutionDataType: the execution data type for SNAP (default float32)<br>
          * - ComputingUnit: the computing unit to execute the model (default CPU)<br>
          * - CpuThreadCount: the number of CPU threads to be executed (optional, default 4 if ComputingUnit is CPU)<br>

@@ -33,7 +33,7 @@ public final class SingleShot implements AutoCloseable {
     private native boolean nativeSetTimeout(long handle, int timeout);
 
     /**
-     * Creates a new {@link SingleShot} instance with the given model for TensorFlow Lite.
+     * Creates a new {@link SingleShot} instance with the given model for TensorFlow-Lite.
      * If the model has flexible data dimensions, the pipeline will not be constructed and this will make an exception.
      *
      * @param model The path to the neural network model file
@@ -79,7 +79,7 @@ public final class SingleShot implements AutoCloseable {
     }
 
     /**
-     * Creates a new {@link SingleShot} instance with the given model for TensorFlow Lite.
+     * Creates a new {@link SingleShot} instance with the given model for TensorFlow-Lite.
      * The input and output tensors information are required if the given model has flexible data dimensions,
      * where the information MUST be given before executing the model.
      * However, once it's given, the dimension cannot be changed for the given model handle.
