@@ -18,7 +18,7 @@
 #include "ml-api-service.h"
 #include "ml-api-service-training-offloading.h"
 
-/** It(@~~@) will be replaced with the path set by the app.*/
+/** It(@~~@) will be replaced with the path set by the app. */
 #define APP_RW_PATH "@APP_RW_PATH@"
 #define REMOTE_APP_RW_PATH "@REMOTE_APP_RW_PATH@"
 /** combined with trained model file name set in conf */
@@ -173,7 +173,7 @@ _training_offloading_conf_parse_json (ml_service_s * mls, JsonObject * object)
 
   if (json_object_has_member (training_obj, "time-limit")) {
     training_s->time_limit =
-        json_object_get_int_member (training_obj, "time-limit");
+        (gint) json_object_get_int_member (training_obj, "time-limit");
   } else {
     _ml_logw
         ("The default time-limit(10 sec) is set because `time-limit` is not set.");
@@ -448,8 +448,7 @@ _training_offloading_services_request (ml_service_s * mls)
   GList *list, *iter;
   gchar *transfer_data = NULL, *service_name = NULL;
   gchar *contents = NULL, *pipeline = NULL;
-  guint changed;
-  gsize len;
+  gsize len = 0;
 
   ret = _training_offloading_get_priv (mls, &training_s);
   g_return_val_if_fail (ret == ML_ERROR_NONE, ret);
@@ -470,7 +469,7 @@ _training_offloading_services_request (ml_service_s * mls)
 
     if (g_strstr_len (transfer_data, -1, APP_RW_PATH)) {
       transfer_data = _ml_replace_string (transfer_data, APP_RW_PATH,
-          training_s->path, NULL, &changed);
+          training_s->path, NULL, NULL);
 
       _ml_logd ("transfer_data:%s", transfer_data);
 
@@ -595,7 +594,6 @@ _training_offloading_check_received_data (ml_training_services_s * training_s)
 static void
 _training_offloading_replace_pipeline_data_path (ml_service_s * mls)
 {
-  guint changed = 0;
   ml_training_services_s *training_s = NULL;
   int ret;
 
@@ -606,7 +604,7 @@ _training_offloading_replace_pipeline_data_path (ml_service_s * mls)
     if (training_s->sender_pipe) {
       training_s->sender_pipe =
           _ml_replace_string (training_s->sender_pipe, APP_RW_PATH,
-          training_s->path, NULL, &changed);
+          training_s->path, NULL, NULL);
       _ml_logd ("@APP_RW_PATH@ is replaced, sender_pipe:%s",
           training_s->sender_pipe);
     }
@@ -614,13 +612,13 @@ _training_offloading_replace_pipeline_data_path (ml_service_s * mls)
     if (training_s->receiver_pipe_json_str) {
       training_s->trained_model_path =
           _ml_replace_string (training_s->trained_model_path, APP_RW_PATH,
-          training_s->path, NULL, &changed);
+          training_s->path, NULL, NULL);
       training_s->receiver_pipe_json_str =
           _ml_replace_string (training_s->receiver_pipe_json_str,
-          REMOTE_APP_RW_PATH, training_s->path, NULL, &changed);
+          REMOTE_APP_RW_PATH, training_s->path, NULL, NULL);
       training_s->receiver_pipe_json_str =
           _ml_replace_string (training_s->receiver_pipe_json_str,
-          TRAINED_MODEL_FILE, training_s->trained_model_path, NULL, &changed);
+          TRAINED_MODEL_FILE, training_s->trained_model_path, NULL, NULL);
       _ml_logd
           ("@REMOTE_APP_RW_PATH@ and @TRAINED_MODEL_FILE@ are replaced, receiver_pipe JSON string: %s",
           training_s->receiver_pipe_json_str);
@@ -752,6 +750,7 @@ _ml_service_training_offloading_start (ml_service_s * mls)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The node type information in JSON is incorrect.");
   }
+
   if (ret != ML_ERROR_NONE)
     return ret;
 
@@ -759,7 +758,6 @@ _ml_service_training_offloading_start (ml_service_s * mls)
   if (ret != ML_ERROR_NONE) {
     _ml_error_report_return (ret, "Failed to start ml pipeline.");
   }
-
 
   return ret;
 }
@@ -842,7 +840,7 @@ _training_offloading_send_trained_model (ml_service_s * mls)
   ml_training_services_s *training_s = NULL;
   GList *list, *iter;
   gchar *contents = NULL;
-  gsize len;
+  gsize len = 0;
   int ret;
 
   ret = _training_offloading_get_priv (mls, &training_s);
