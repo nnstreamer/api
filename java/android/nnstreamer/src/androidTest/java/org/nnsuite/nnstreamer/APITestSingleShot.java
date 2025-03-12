@@ -3,7 +3,6 @@ package org.nnsuite.nnstreamer;
 import android.support.test.runner.AndroidJUnit4;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -802,7 +801,7 @@ public class APITestSingleShot {
     }
 
     /**
-     * Run SNAP with TensorFlow Lite model.
+     * Run SNAP with TensorFlow-Lite model.
      */
     private void runSNAPTensorflowLite(APITestCommon.SNAPComputingUnit CUnit) {
         File[] model = APITestCommon.getSNAPTensorflowLiteModel();
@@ -875,7 +874,7 @@ public class APITestSingleShot {
 
         if (android.os.Build.HARDWARE.equals("qcom")) {
             /*
-             * TensorFlow Lite model using NPU runtime can only be executed on
+             * TensorFlow-Lite model using NPU runtime can only be executed on
              * Exynos. Cannot run this test on Snapdragon.
              */
             return;

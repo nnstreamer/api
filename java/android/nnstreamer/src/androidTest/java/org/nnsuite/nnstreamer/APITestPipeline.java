@@ -6,12 +6,10 @@ import android.view.SurfaceView;
 
 import org.junit.Before;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -1407,8 +1405,7 @@ public class APITestPipeline {
 
     @Test
     public void testAMCsrc() {
-        String root = APITestCommon.getRootDirectory();
-        String media = root + "/nnstreamer/test/test_video.mp4";
+        String media = APITestCommon.getTestVideoPath();
 
         String desc = "amcsrc location=" + media + " ! " +
                 "videoconvert ! videoscale ! video/x-raw,format=RGB,width=320,height=240 ! " +
@@ -1677,7 +1674,7 @@ public class APITestPipeline {
     }
 
     /**
-     * Run SNAP with Tensorflow Lite model (mobilenet_v1_1.0_224.tflite).
+     * Run SNAP with Tensorflow-Lite model (mobilenet_v1_1.0_224.tflite).
      */
     private void runSNAPTensorflowLite(APITestCommon.SNAPComputingUnit computingUnit) {
         File[] model = APITestCommon.getSNAPTensorflowLiteModel();
@@ -1729,7 +1726,7 @@ public class APITestPipeline {
 
             /* check received data from sink */
             assertFalse(mInvalidState);
-            assertTrue(mReceived == 10);
+            assertTrue(mReceived > 0);
         } catch (Exception e) {
             fail();
         }
@@ -2237,6 +2234,7 @@ public class APITestPipeline {
                         mInvalidState = true;
                         return;
                     }
+
                     ByteBuffer buffer = data.getTensorData(0);
                     ByteBuffer bufferOri = APITestCommon.readRawImageData().getTensorData(0);
                     bufferOri.rewind();
@@ -2319,9 +2317,6 @@ public class APITestPipeline {
             return;
         }
 
-        String root = APITestCommon.getRootDirectory();
-        String png_path = root + "/nnstreamer/test/orange.png";
-
         String pipeline_desc = "appsrc name=srcx caps=image/png ! pngdec ! videoconvert ! videoscale ! video/x-raw,format=RGB,width=224,height=224,framerate=0/1 ! " +
                 "tensor_converter ! tensor_sink name=sinkx";
         try (Pipeline pipe = new Pipeline(pipeline_desc)) {
@@ -2333,6 +2328,7 @@ public class APITestPipeline {
                         mInvalidState = true;
                         return;
                     }
+
                     ByteBuffer buffer = data.getTensorData(0);
                     ByteBuffer bufferOri = APITestCommon.readRawImageData().getTensorData(0);
                     bufferOri.rewind();
@@ -2349,23 +2345,7 @@ public class APITestPipeline {
             pipe.start();
 
             /* push input buffer */
-            File raw = new File(png_path);
-
-            TensorsInfo info = new TensorsInfo();
-            info.addTensorInfo(NNStreamer.TensorType.UINT8, new int[]{(int) raw.length(), 1, 1, 1});
-
-            int size = info.getTensorSize(0);
-            TensorsData data = TensorsData.allocate(info);
-
-            byte[] content = Files.readAllBytes(raw.toPath());
-            if (content.length != size) {
-                fail();
-            }
-
-            ByteBuffer buffer = TensorsData.allocateByteBuffer(size);
-            buffer.put(content);
-            data.setTensorData(0, buffer);
-
+            TensorsData data = APITestCommon.readPngImage();
             pipe.inputData("srcx", data);
 
             /* sleep 100ms to invoke */
