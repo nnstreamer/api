@@ -41,6 +41,11 @@ NNSTREAMER_SRC_FILES += \
     $(NNSTREAMER_DECODER_IS_SRCS) \
     $(NNSTREAMER_JOIN_SRCS)
 
+# generate header for nnstreamer version
+$(shell sed "s/@__NNSTREAMER_VERSION_MAJOR__@/${NNSTREAMER_VERSION_MAJOR}/" ${NNSTREAMER_GST_HOME}/include/nnstreamer_version.h.in > ${LOCAL_PATH}/nnstreamer_version.h)
+$(shell sed -i "s/@__NNSTREAMER_VERSION_MINOR__@/${NNSTREAMER_VERSION_MINOR}/" ${LOCAL_PATH}/nnstreamer_version.h)
+$(shell sed -i "s/@__NNSTREAMER_VERSION_MICRO__@/${NNSTREAMER_VERSION_MICRO}/" ${LOCAL_PATH}/nnstreamer_version.h)
+
 ifeq ($(shell which orcc),)
 $(info No 'orcc' in your PATH, install it to enable orc.)
 else
