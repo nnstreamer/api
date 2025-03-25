@@ -44,48 +44,69 @@ GST_PLUGIN_STATIC_DECLARE (edge);
 GST_PLUGIN_STATIC_DECLARE (mqtt);
 #endif
 extern void init_dv (void);
+extern void fini_dv (void);
 extern void init_bb (void);
+extern void fini_bb (void);
 extern void init_il (void);
+extern void fini_il (void);
 extern void init_pose (void);
+extern void fini_pose (void);
 extern void init_is (void);
+extern void fini_is (void);
 #if defined(ENABLE_FLATBUF)
 extern void init_fbd (void);
+extern void fini_fbd (void);
 extern void init_fbc (void);
+extern void fini_fbc (void);
 extern void init_flxc (void);
+extern void fini_flxc (void);
 extern void init_flxd (void);
+extern void fini_flxd (void);
 #endif /* ENABLE_FLATBUF */
 #endif
 
 extern void init_filter_cpp (void);
+extern void fini_filter_cpp (void);
 extern void init_filter_custom (void);
+extern void fini_filter_custom (void);
 extern void init_filter_custom_easy (void);
+extern void fini_filter_custom_easy (void);
 
 #if defined(ENABLE_TENSORFLOW_LITE)
 extern void init_filter_tflite (void);
+extern void fini_filter_tflite (void);
 #endif
 #if defined(ENABLE_SNAP)
 extern void init_filter_snap (void);
+extern void fini_filter_snap (void);
 #endif
 #if defined(ENABLE_NNFW_RUNTIME)
 extern void init_filter_nnfw (void);
+extern void fini_filter_nnfw (void);
 #endif
 #if defined(ENABLE_SNPE)
 extern void init_filter_snpe (void);
+extern void fini_filter_snpe (void);
 #endif
 #if defined(ENABLE_QNN)
 extern void init_filter_qnn (void);
+extern void fini_filter_qnn (void);
 #endif
 #if defined(ENABLE_PYTORCH)
 extern void init_filter_torch (void);
+extern void fini_filter_torch (void);
 #endif
 #if defined(ENABLE_MXNET)
 extern void init_filter_mxnet (void);
+extern void fini_filter_mxnet (void);
 #endif
 #if defined(ENABLE_LLAMA2C)
 extern void init_filter_llama2c (void);
+extern void fini_filter_llama2c (void);
 #endif
 #if defined(ENABLE_LLAMACPP)
 extern void init_filter_llamacpp (void);
+extern void fini_filter_llamacpp (void);
 #endif
 
 #if !GST_CHECK_VERSION(1, 24, 0)
@@ -296,6 +317,135 @@ error:
 
   return (g_files_dir != NULL);
 }
+
+/**
+ * @brief Internal function to register plugins.
+ */
+static void
+_register_plugins (void)
+{
+#if !defined(NNS_SINGLE_ONLY)
+  /* register nnstreamer plugins */
+  GST_PLUGIN_STATIC_REGISTER (nnstreamer);
+
+  /* Android MediaCodec */
+  GST_PLUGIN_STATIC_REGISTER (amcsrc);
+
+  /* join element of nnstreamer */
+  GST_PLUGIN_STATIC_REGISTER (join);
+
+#if defined(ENABLE_NNSTREAMER_EDGE)
+  /* edge element of nnstreamer */
+  GST_PLUGIN_STATIC_REGISTER (edge);
+#endif
+
+#if defined(ENABLE_MQTT)
+  /* MQTT element of nnstreamer */
+  GST_PLUGIN_STATIC_REGISTER (mqtt);
+#endif
+
+  /* tensor-decoder sub-plugins */
+  init_dv ();
+  init_bb ();
+  init_il ();
+  init_pose ();
+  init_is ();
+#if defined(ENABLE_FLATBUF)
+  init_fbd ();
+  init_fbc ();
+  init_flxc ();
+  init_flxd ();
+#endif /* ENABLE_FLATBUF */
+#endif
+
+  /* tensor-filter sub-plugins */
+  init_filter_cpp ();
+  init_filter_custom ();
+  init_filter_custom_easy ();
+
+#if defined(ENABLE_TENSORFLOW_LITE)
+  init_filter_tflite ();
+#endif
+#if defined(ENABLE_SNAP)
+  init_filter_snap ();
+#endif
+#if defined(ENABLE_NNFW_RUNTIME)
+  init_filter_nnfw ();
+#endif
+#if defined(ENABLE_SNPE)
+  init_filter_snpe ();
+#endif
+#if defined(ENABLE_QNN)
+  init_filter_qnn ();
+#endif
+#if defined(ENABLE_PYTORCH)
+  init_filter_torch ();
+#endif
+#if defined(ENABLE_MXNET)
+  init_filter_mxnet ();
+#endif
+#if defined(ENABLE_LLAMA2C)
+  init_filter_llama2c ();
+#endif
+#if defined(ENABLE_LLAMACPP)
+  init_filter_llamacpp ();
+#endif
+}
+
+/**
+ * @brief Internal function to unregister plugins.
+ */
+static void
+_unregister_plugins (void)
+{
+#if !defined(NNS_SINGLE_ONLY)
+  /* tensor-decoder sub-plugins */
+  fini_dv ();
+  fini_bb ();
+  fini_il ();
+  fini_pose ();
+  fini_is ();
+#if defined(ENABLE_FLATBUF)
+  fini_fbd ();
+  fini_fbc ();
+  fini_flxc ();
+  fini_flxd ();
+#endif /* ENABLE_FLATBUF */
+#endif
+
+  /* tensor-filter sub-plugins */
+  fini_filter_cpp ();
+  fini_filter_custom ();
+  fini_filter_custom_easy ();
+
+#if defined(ENABLE_TENSORFLOW_LITE)
+  fini_filter_tflite ();
+#endif
+#if defined(ENABLE_SNAP)
+  fini_filter_snap ();
+#endif
+#if defined(ENABLE_NNFW_RUNTIME)
+  fini_filter_nnfw ();
+#endif
+#if defined(ENABLE_SNPE)
+  fini_filter_snpe ();
+#endif
+#if defined(ENABLE_QNN)
+  fini_filter_qnn ();
+#endif
+#if defined(ENABLE_PYTORCH)
+  fini_filter_torch ();
+#endif
+#if defined(ENABLE_MXNET)
+  fini_filter_mxnet ();
+#endif
+#if defined(ENABLE_LLAMA2C)
+  fini_filter_llama2c ();
+#endif
+#if defined(ENABLE_LLAMACPP)
+  fini_filter_llamacpp ();
+#endif
+}
 #endif /* __ANDROID__ */
 
 /**
@@ -333,39 +483,10 @@ nnstreamer_native_initialize (JNIEnv * env, jobject context)
 
   if (g_nns_is_initialized == FALSE) {
 #if defined(__ANDROID__)
-    /* register nnstreamer plugins */
-#if !defined(NNS_SINGLE_ONLY)
-    GST_PLUGIN_STATIC_REGISTER (nnstreamer);
-
-    /* Android MediaCodec */
-    GST_PLUGIN_STATIC_REGISTER (amcsrc);
-
-    /* join element of nnstreamer */
-    GST_PLUGIN_STATIC_REGISTER (join);
-
-#if defined(ENABLE_NNSTREAMER_EDGE)
-    /* edge element of nnstreamer */
-    GST_PLUGIN_STATIC_REGISTER (edge);
-#endif
-
-#if defined(ENABLE_MQTT)
-    /* MQTT element of nnstreamer */
-    GST_PLUGIN_STATIC_REGISTER (mqtt);
-#endif
-
-    /* tensor-decoder sub-plugins */
-    init_dv ();
-    init_bb ();
-    init_il ();
-    init_pose ();
-    init_is ();
-#if defined(ENABLE_FLATBUF)
-    init_fbd ();
-    init_fbc ();
-    init_flxc ();
-    init_flxd ();
-#endif /* ENABLE_FLATBUF */
-#endif
+    if (!_load_app_context (env, context)) {
+      _ml_loge ("Cannot load application context.");
+        goto done;
+    }
 
 #if defined(ANDROID_QC_ENV)
     /* some filters require additional tasks */
@@ -374,43 +495,7 @@ nnstreamer_native_initialize (JNIEnv * env, jobject context)
     }
 #endif
 
-    /* tensor-filter sub-plugins */
-    init_filter_cpp ();
-    init_filter_custom ();
-    init_filter_custom_easy ();
-
-#if defined(ENABLE_TENSORFLOW_LITE)
-    init_filter_tflite ();
-#endif
-#if defined(ENABLE_SNAP)
-    init_filter_snap ();
-#endif
-#if defined(ENABLE_NNFW_RUNTIME)
-    init_filter_nnfw ();
-#endif
-#if defined(ENABLE_SNPE)
-    init_filter_snpe ();
-#endif
-#if defined(ENABLE_QNN)
-    init_filter_qnn ();
-#endif
-#if defined(ENABLE_PYTORCH)
-    init_filter_torch ();
-#endif
-#if defined(ENABLE_MXNET)
-    init_filter_mxnet ();
-#endif
-#if defined(ENABLE_LLAMA2C)
-    init_filter_llama2c ();
-#endif
-#if defined(ENABLE_LLAMACPP)
-    init_filter_llamacpp ();
-#endif
-
-    if (!_load_app_context (env, context)) {
-      _ml_loge ("Cannot load application context.");
-        goto done;
-    }
+    _register_plugins ();
 
 #if defined(ENABLE_ML_AGENT)
     {
@@ -453,6 +538,8 @@ nnstreamer_native_finalize (void)
 
   if (g_nns_is_initialized) {
 #if defined(__ANDROID__)
+    _unregister_plugins ();
+
 #if defined(ENABLE_ML_AGENT)
     ml_agent_finalize ();
 #endif
