@@ -88,13 +88,6 @@ extern void init_filter_llama2c (void);
 extern void init_filter_llamacpp (void);
 #endif
 
-#if !GST_CHECK_VERSION(1, 24, 0)
-/**
- * @brief External function from GStreamer Android.
- */
-extern void gst_android_init (JNIEnv * env, jobject context);
-#endif
-
 #if defined(ENABLE_QNN) || defined(ENABLE_SNPE) || defined(ENABLE_TFLITE_QNN_DELEGATE)
 #define ANDROID_QC_ENV 1
 #endif
@@ -304,8 +297,6 @@ error:
 jboolean
 nnstreamer_native_initialize (JNIEnv * env, jobject context)
 {
-  gchar *gst_ver, *nns_ver;
-
   _ml_logi ("Called native initialize.");
 
   G_LOCK (nns_native_lock);
@@ -313,13 +304,12 @@ nnstreamer_native_initialize (JNIEnv * env, jobject context)
 #if !defined(NNS_SINGLE_ONLY)
   /* single-shot does not require gstreamer */
   if (!gst_is_initialized ()) {
-#if defined(__ANDROID__) && !GST_CHECK_VERSION(1, 24, 0)
-    if (env && context) {
-      gst_android_init (env, context);
-    } else {
-#else
+    /**
+     * @note Initialize GStreamer on Android.
+     * We now call gst_init_check() to initialize GStreamer.
+     * Consider calling gst_android_init() to set proper environment variables on Android.
+     */
     if (_ml_initialize_gstreamer () != ML_ERROR_NONE) {
-#endif
       _ml_loge ("Invalid params, cannot initialize GStreamer.");
       goto done;
     }
@@ -426,15 +416,19 @@ nnstreamer_native_initialize (JNIEnv * env, jobject context)
     g_nns_is_initialized = TRUE;
   }
 
-  /* print version info */
-  gst_ver = gst_version_string ();
-  nns_ver = nnstreamer_version_string ();
+  if (g_nns_is_initialized) {
+    /* print version info */
+    gchar *gst_ver = gst_version_string ();
+    gchar *nns_ver = nnstreamer_version_string ();
 
-  _ml_logi ("%s %s GLib %d.%d.%d", nns_ver, gst_ver, GLIB_MAJOR_VERSION,
-      GLIB_MINOR_VERSION, GLIB_MICRO_VERSION);
+    _ml_logi ("%s %s GLib %d.%d.%d", nns_ver, gst_ver, GLIB_MAJOR_VERSION,
+        GLIB_MINOR_VERSION, GLIB_MICRO_VERSION);
 
-  g_free (gst_ver);
-  g_free (nns_ver);
+    g_free (gst_ver);
+    g_free (nns_ver);
+  } else {
+    _ml_loge ("Failed to initialize NNStreamer.");
+  }
 
 done:
   G_UNLOCK (nns_native_lock);
