@@ -31,6 +31,12 @@
 #include <ml-api-inference-single-internal.h>
 #include <ml-api-inference-pipeline-internal.h>
 
+#if defined(__ANDROID__)
+#if !GST_CHECK_VERSION(1, 24, 0)
+#error "NNStreamer native library is available with GStreamer 1.24 or higher."
+#endif
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
