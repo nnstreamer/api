@@ -1,0 +1,64 @@
+name: Machine learning API with TestHub
+
+on:
+    schedule:
+      # 08:00 AM (KST) Mon-Fri
+      - cron: "00 23 * * 0-4"
+
+    # Allow manually triggering the workflow
+    workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: [ code-linux, code-large ]
+    if: github.repository_owner == 'OASIS'
+    # Runs an action only if org is OASIS
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Prepare gbs build
+      run: |
+        ubuntu_version=`lsb_release -rs`
+        echo "deb [trusted=yes] http://download.tizen.org/tools/latest-release/Ubuntu_$ubuntu_version/ /" | sudo tee /etc/apt/sources.list.d/tizen.list
+        sudo apt-get update && sudo apt-get install -y gbs rpm2cpio cpio
+        cp .github/workflows/tizen.gbs.conf ~/.gbs.conf
+
+    - name: Run gbs build
+      run: |
+        gbs build --define "unit_test 1" --define "testcoverage 1" --include-all
+
+    - name: Parse coverage result
+      run: |
+        mkdir -p rpms
+        mv ~/GBS-ROOT/local/repos/tizen/*/RPMS/*coverage*.rpm rpms
+        rpm2cpio rpms/*coverage*.rpm | cpio -idumv
+        mkdir -p gcov_html
+        mkdir -p unittest_result
+        mv -f usr/share/ml-api/unittest/result/* gcov_html
+
+        cp ~/GBS-ROOT/local/BUILD-ROOTS/scratch.*/home/abuild/rpmbuild/BUILD/capi-machine-learning*/build/*.xml unittest_result
+
+    - name: upload artifacts (gcov_html)
+      uses: CODE-Actions/upload-artifact@v2
+      with:
+        name: gcov_html     # name of stored artifact
+        path: gcov_html     # target directory or file to store
+
+    - name: upload artifacts (coverage_results)
+      uses: CODE-Actions/upload-artifact@v2
+      with:
+        name: unittest_result           # name of stored artifact
+        path: unittest_result           # target directory or file to store
+
+  testhub:
+    runs-on: [ code-linux ]
+    needs: build
+    steps:
+      - name: Send to TestHub
+        uses: CODE-Actions/testhub@v1
+        with:
+          test-tool: gtest
+          test-artifact-name: unittest_result
+          coverage-tool: gcov
+          coverage-artifact-name: gcov_html
