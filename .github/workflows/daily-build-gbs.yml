@@ -29,7 +29,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/setup-python@v1
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
 
     - name: prepare deb sources for GBS
       run: echo "deb [trusted=yes] http://download.tizen.org/tools/latest-release/Ubuntu_22.04/ /" | sudo tee /etc/apt/sources.list.d/tizen.list

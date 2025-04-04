@@ -31,7 +31,9 @@ jobs:
       uses: ./.github/actions/check-rebuild
       with:
         mode: gbs
-    - uses: actions/setup-python@v1
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
 
     - name: prepare GBS
       if: env.rebuild == '1'
@@ -60,7 +62,7 @@ jobs:
         gbs build --skip-srcrpm --define "_skip_debug_rpm 1" -A ${{ matrix.gbs_build_arch }} ${{ matrix.gbs_build_option }}
 
     - name: get nntrainer
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         repository: nnstreamer/nntrainer
         path: nntrainer
