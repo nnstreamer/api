@@ -353,7 +353,7 @@ nns_native_single_set_prop (JNIEnv * env, jobject thiz, jlong handle,
   }
 
   (*env)->ReleaseStringUTFChars (env, name, prop_name);
-  (*env)->ReleaseStringUTFChars (env, name, prop_value);
+  (*env)->ReleaseStringUTFChars (env, value, prop_value);
   return ret;
 }
 
