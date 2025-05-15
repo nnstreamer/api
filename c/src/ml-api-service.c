@@ -849,7 +849,7 @@ _ml_service_invoke_event_new_data (ml_service_s * mls, const char *name,
     const ml_tensors_data_h data)
 {
   ml_service_event_cb_info_s cb_info = { 0 };
-  ml_information_h ml_information = NULL;
+  ml_information_h ml_info = NULL;
   int status = ML_ERROR_NONE;
 
   if (!mls || !data) {
@@ -861,25 +861,26 @@ _ml_service_invoke_event_new_data (ml_service_s * mls, const char *name,
 
   if (cb_info.cb) {
     /* Create information handle for ml-service event. */
-    status = _ml_information_create (&ml_information);
+    status = _ml_information_create (&ml_info);
     if (status != ML_ERROR_NONE)
       goto done;
 
     if (name) {
-      status =
-          _ml_information_set (ml_information, "name", (void *) name, NULL);
+      status = _ml_information_set (ml_info, "name", (void *) name, NULL);
       if (status != ML_ERROR_NONE)
         goto done;
     }
 
-    status = _ml_information_set (ml_information, "data", (void *) data, NULL);
-    if (status == ML_ERROR_NONE)
-      cb_info.cb (ML_SERVICE_EVENT_NEW_DATA, ml_information, cb_info.pdata);
+    status = _ml_information_set (ml_info, "data", (void *) data, NULL);
+    if (status != ML_ERROR_NONE)
+      goto done;
+
+    cb_info.cb (ML_SERVICE_EVENT_NEW_DATA, ml_info, cb_info.pdata);
   }
 
 done:
-  if (ml_information)
-    ml_information_destroy (ml_information);
+  if (ml_info)
+    ml_information_destroy (ml_info);
 
   if (status != ML_ERROR_NONE) {
     _ml_error_report ("Failed to invoke 'new data' event.");
