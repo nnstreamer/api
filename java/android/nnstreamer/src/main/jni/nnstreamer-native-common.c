@@ -246,8 +246,7 @@ _load_app_context (JNIEnv * env, jobject context)
   g_return_val_if_fail (context, FALSE);
 
   /* Clear old value. */
-  g_free (g_files_dir);
-  g_files_dir = NULL;
+  g_clear_pointer (&g_files_dir, g_free);
 
   cls_context = (*env)->GetObjectClass (env, context);
   if (!cls_context) {
@@ -539,8 +538,7 @@ nnstreamer_native_finalize (void)
 #endif
 #endif
 
-    g_free (g_files_dir);
-    g_files_dir = NULL;
+    g_clear_pointer (&g_files_dir, g_free);
     g_nns_is_initialized = FALSE;
   }
 

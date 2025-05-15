@@ -2374,13 +2374,13 @@ ml_pipeline_element_release_handle (ml_pipeline_element_h elem_h)
  * @brief Check property existence and its type.
  */
 static bool
-ml_pipeline_element_check_property (GObjectClass * class,
+ml_pipeline_element_check_property (GObjectClass * klass,
     const char *property_name, const GType type)
 {
   GParamSpec *pspec = NULL;
 
   /* Check property existence */
-  pspec = g_object_class_find_property (class, property_name);
+  pspec = g_object_class_find_property (klass, property_name);
   if (pspec == NULL) {
     _ml_logw ("The property name [%s] does not exist.", property_name);
     return FALSE;
