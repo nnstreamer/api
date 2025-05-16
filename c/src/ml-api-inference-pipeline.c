@@ -614,8 +614,8 @@ cleanup_resource (gpointer data)
  * @brief Converts predefined element in pipeline description.
  */
 static int
-convert_element (ml_pipeline_h pipe, const gchar * description, gchar ** result,
-    gboolean is_internal)
+convert_description (ml_pipeline_h pipe, const gchar * description,
+    gchar ** result, gboolean is_internal)
 {
   gchar *converted;
   int status = ML_ERROR_NONE;
@@ -626,7 +626,7 @@ convert_element (ml_pipeline_h pipe, const gchar * description, gchar ** result,
   /* init null */
   *result = NULL;
 
-  converted = g_strdup (description);
+  converted = _ml_convert_predefined_entity (description);
 
   /* convert pre-defined element for Tizen */
   status = convert_tizen_element (pipe, &converted, is_internal);
@@ -1020,12 +1020,11 @@ construct_pipeline_internal (const char *pipeline_description,
   create_internal_hash (pipe_h);
 
   /* convert predefined element and launch the pipeline */
-  status =
-      convert_element ((ml_pipeline_h) pipe_h, pipeline_description,
+  status = convert_description ((ml_pipeline_h) pipe_h, pipeline_description,
       &description, is_internal);
   if (status != ML_ERROR_NONE) {
     _ml_error_report_continue
-        ("ml_pipeline_construct error: failed while converting pipeline description for GStreamer w/ convert_element() function, which has returned %d",
+        ("ml_pipeline_construct error: failed while converting pipeline description for GStreamer w/ convert_description() function, which has returned %d",
         status);
     goto failed;
   }

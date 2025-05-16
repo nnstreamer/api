@@ -944,6 +944,7 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
   ml_nnfw_type_e nnfw;
   ml_nnfw_hw_e hw;
   const gchar *fw_name;
+  g_autofree gchar *converted_models = NULL;
   gchar **list_models;
   guint i, num_models;
   char *hw_name;
@@ -963,11 +964,12 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
   nnfw = info->nnfw;
   hw = info->hw;
   fw_name = _ml_get_nnfw_subplugin_name (nnfw);
+  converted_models = _ml_convert_predefined_entity (info->models);
 
   /**
    * 1. Determine nnfw and validate model file
    */
-  list_models = g_strsplit (info->models, ",", -1);
+  list_models = g_strsplit (converted_models, ",", -1);
   num_models = g_strv_length (list_models);
   for (i = 0; i < num_models; i++)
     g_strstrip (list_models[i]);
@@ -1069,7 +1071,7 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
   }
   hw_name = _ml_nnfw_to_str_prop (hw);
   g_object_set (filter_obj, "framework", fw_name, "accelerator", hw_name,
-      "model", info->models, NULL);
+      "model", converted_models, NULL);
   g_free (hw_name);
 
   if (info->custom_option) {
