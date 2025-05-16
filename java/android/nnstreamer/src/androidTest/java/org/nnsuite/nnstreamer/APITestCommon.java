@@ -120,6 +120,20 @@ public class APITestCommon {
     }
 
     /**
+     * Gets the path string of configurations.
+     */
+    public static String getConfigPath() {
+        String root = getRootDirectory();
+        File config = new File(root + "/nnstreamer/config");
+
+        if (!config.exists()) {
+            fail();
+        }
+
+        return config.getAbsolutePath();
+    }
+
+    /**
      * Gets the File object of tensorflow-lite model.
      * Note that, to invoke model in the storage, the permission READ_EXTERNAL_STORAGE is required.
      */
