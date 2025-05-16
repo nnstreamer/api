@@ -306,6 +306,7 @@ ml_service_new (const char *config, ml_service_h * handle)
   ml_service_s *mls;
   ml_service_type_e service_type = ML_SERVICE_TYPE_UNKNOWN;
   g_autofree gchar *json_string = NULL;
+  g_autofree gchar *contents = NULL;
   g_autoptr (JsonParser) parser = NULL;
   g_autoptr (GError) err = NULL;
   JsonNode *root;
@@ -328,10 +329,12 @@ ml_service_new (const char *config, ml_service_h * handle)
         "The parameter, config, is invalid. It should be a valid path.");
   }
 
-  if (!g_file_get_contents (config, &json_string, NULL, NULL)) {
+  if (!g_file_get_contents (config, &contents, NULL, NULL)) {
     _ml_error_report_return (ML_ERROR_IO_ERROR,
         "Failed to read configuration file '%s'.", config);
   }
+
+  json_string = _ml_convert_predefined_entity (contents);
 
   parser = json_parser_new ();
   if (!parser) {

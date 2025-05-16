@@ -1170,6 +1170,28 @@ _ml_replace_string (gchar * source, const gchar * what, const gchar * to,
 }
 
 /**
+ * @brief Converts predefined entity.
+ */
+gchar *
+_ml_convert_predefined_entity (const gchar * str)
+{
+  gchar *converted = g_strdup (str);
+
+#if defined(__ANDROID__)
+  {
+    extern const char *nnstreamer_native_get_data_path (void);
+
+    const char *data_path = nnstreamer_native_get_data_path ();
+
+    converted = _ml_replace_string (converted, "@APP_DATA_PATH@", data_path,
+        NULL, NULL);
+  }
+#endif
+
+  return converted;
+}
+
+/**
  * @brief error reporting infra
  */
 #define _ML_ERRORMSG_LENGTH (4096U)

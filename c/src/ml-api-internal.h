@@ -276,6 +276,13 @@ int _ml_tensors_data_clone_no_alloc (const ml_tensors_data_s * data_src, ml_tens
 gchar * _ml_replace_string (gchar * source, const gchar * what, const gchar * to, const gchar * delimiters, guint * count);
 
 /**
+ * @brief Converts predefined entity.
+ * @param[in] str The input string.
+ * @return Newly allocated string. The returned string should be freed with g_free().
+ */
+gchar * _ml_convert_predefined_entity (const gchar * str);
+
+/**
  * @brief Compares the given tensors information.
  * @details If the function returns an error, @a equal is not changed.
  * @since_tizen 6.0
