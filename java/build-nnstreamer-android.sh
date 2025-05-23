@@ -786,6 +786,11 @@ if [[ ${nnstreamer_api_option} == "single" ]]; then
     rm ./nnstreamer/src/androidTest/java/org/nnsuite/nnstreamer/APITestPipeline.java
 fi
 
+if [[ ${enable_ml_service} != "yes" ]]; then
+    rm ./nnstreamer/src/main/java/org/nnsuite/nnstreamer/MLService.java
+    rm ./nnstreamer/src/androidTest/java/org/nnsuite/nnstreamer/APITestMLService.java
+fi
+
 sed -i "s|@BUILD_ANDROID@||" nnstreamer/src/main/java/org/nnsuite/nnstreamer/*.java
 
 echo "Starting gradle build for Android library."
