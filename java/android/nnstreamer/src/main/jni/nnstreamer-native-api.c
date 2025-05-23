@@ -243,6 +243,11 @@ nns_destroy_pipe_info (pipeline_info_s * pipe_info, JNIEnv * env)
     case NNS_PIPE_TYPE_CUSTOM:
       ml_pipeline_custom_easy_filter_unregister (pipe_info->pipeline_handle);
       break;
+#if defined(ENABLE_ML_SERVICE)
+    case NNS_PIPE_TYPE_SERVICE:
+      ml_service_destroy (pipe_info->pipeline_handle);
+      break;
+#endif
 #endif
     case NNS_PIPE_TYPE_SINGLE:
       ml_single_close (pipe_info->pipeline_handle);
@@ -766,6 +771,12 @@ JNI_OnLoad (JavaVM * vm, void *reserved)
       !nns_native_custom_register_natives (env)) {
     return 0;
   }
+
+#if defined(ENABLE_ML_SERVICE)
+  if (!nns_native_service_register_natives (env)) {
+    return 0;
+  }
+#endif
 #endif
 
   return NNS_JNI_VERSION;
