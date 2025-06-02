@@ -120,22 +120,22 @@ public final class NNStreamer {
     /**
      * Initializes GStreamer and NNStreamer, registering the plugins and loading necessary libraries.
      *
-     * @param app The application context
+     * @param app The application context (android.content.Context)
      *
      * @return true if successfully initialized
      *
      * @throws IllegalArgumentException if given param is invalid
      */
-    public static boolean initialize(android.content.Context app) {
-        if (app == null) {
-            throw new IllegalArgumentException("Given context is invalid");
-        }
+    public static boolean initialize(Object app) {
+@BUILD_ANDROID@        if (!(app instanceof android.content.Context)) {
+@BUILD_ANDROID@            throw new IllegalArgumentException("Given context is invalid");
+@BUILD_ANDROID@        }
 
         try {
 @BUILD_ANDROID@            System.loadLibrary("gstreamer_android");
             System.loadLibrary("nnstreamer-native");
 
-@BUILD_ANDROID@            org.freedesktop.gstreamer.GStreamer.init(app);
+@BUILD_ANDROID@            org.freedesktop.gstreamer.GStreamer.init((android.content.Context) app);
         } catch (Exception e) {
             e.printStackTrace();
             return false;
