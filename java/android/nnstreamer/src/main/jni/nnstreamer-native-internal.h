@@ -111,7 +111,7 @@ typedef struct
   jmethodID mid_alloc;
   jmethodID mid_get_array;
   jmethodID mid_get_info;
-} data_class_info_s;
+} tensors_data_class_info_s;
 
 /**
  * @brief Struct for TensorsInfo class info.
@@ -127,7 +127,7 @@ typedef struct
   jfieldID fid_info_name;
   jfieldID fid_info_type;
   jfieldID fid_info_dim;
-} info_class_info_s;
+} tensors_info_class_info_s;
 
 /**
  * @brief Struct for constructed pipeline.
@@ -145,8 +145,8 @@ typedef struct
 
   jobject instance;
   jclass cls;
-  data_class_info_s data_cls_info;
-  info_class_info_s info_cls_info;
+  tensors_data_class_info_s tensors_data_cls_info;
+  tensors_info_class_info_s tensors_info_cls_info;
 
   gpointer priv_data;
   nns_priv_destroy priv_destroy_func;
