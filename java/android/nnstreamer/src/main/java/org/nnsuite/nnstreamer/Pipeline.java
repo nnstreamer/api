@@ -408,12 +408,12 @@ public final class Pipeline implements AutoCloseable {
      * Note that, this method is available only on Android.
      *
      * @param name    The name of video sink element
-     * @param surface The window surface instance
+     * @param surface The window surface instance (android.view.Surface)
      *
      * @throws IllegalArgumentException if given param is invalid
      * @throws IllegalStateException if failed to set the surface to video sink
      */
-    public void setSurface(String name, android.view.Surface surface) {
+    public void setSurface(String name, Object surface) {
         if (name == null || name.isEmpty()) {
             throw new IllegalArgumentException("Given name is invalid");
         }
@@ -421,7 +421,11 @@ public final class Pipeline implements AutoCloseable {
         if (surface == null) {
             nativeFinalizeSurface(mHandle, name);
         } else {
-@BUILD_ANDROID@            if (!surface.isValid()) {
+@BUILD_ANDROID@            if (!(surface instanceof android.view.Surface)) {
+@BUILD_ANDROID@                throw new IllegalArgumentException("Given surface is invalid");
+@BUILD_ANDROID@            }
+@BUILD_ANDROID@
+@BUILD_ANDROID@            if (!((android.view.Surface) surface).isValid()) {
 @BUILD_ANDROID@                throw new IllegalArgumentException("The surface is not available");
 @BUILD_ANDROID@            }
 
