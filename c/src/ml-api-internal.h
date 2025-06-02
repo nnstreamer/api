@@ -314,6 +314,11 @@ int _ml_tensors_data_destroy_internal (ml_tensors_data_h data, gboolean free_dat
 int _ml_tensors_data_create_no_alloc (const ml_tensors_info_h info, ml_tensors_data_h *data);
 
 /**
+ * @brief Callback to iterate the key and value of each pair in ml-information.
+ */
+typedef void (*ml_information_iterate_cb) (const char *key, const void *value, void *user_data);
+
+/**
  * @brief Creates ml-information instance.
  * @since_tizen 8.0
  * @remarks The @a ml_info should be released using ml_information_destroy().
@@ -340,6 +345,11 @@ int _ml_information_create (ml_information_h *ml_info);
  * @retval #ML_ERROR_INVALID_PARAMETER Fail. The parameter is invalid.
  */
 int _ml_information_set (ml_information_h ml_info, const char *key, void *value, ml_data_destroy_cb destroy);
+
+/**
+ * @brief Iterates the key and value of each pair in ml-information.
+ */
+int _ml_information_iterate (ml_information_h ml_info, ml_information_iterate_cb iterate, void *user_data);
 
 /**
  * @brief Creates an ml-information-list instance and returns the handle.
