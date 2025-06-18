@@ -533,6 +533,29 @@ typedef void *ml_information_h;
 typedef void *ml_information_list_h;
 
 /**
+ * @brief Callback to iterate the key and value of each pair in ml-information.
+ * @since_tizen 10.0
+ * @param[in] key The key in ml-information.
+ * @param[in] value The value of the key.
+ * @param[in] user_data Private data for the callback.
+ */
+typedef void (*ml_information_iterate_cb) (const char *key, const void *value, void *user_data);
+
+/**
+ * @brief Iterates the key and value of each pair in ml-information.
+ * @since_tizen 10.0
+ * @param[in] ml_info The handle of ml-information.
+ * @param[in] cb The callback to call for each key/value pair.
+ * @param[in] user_data Private data for the callback. This value is passed to the callback when it's invoked.
+ * @return @c 0 on success. Otherwise a negative error value.
+ * @retval #ML_ERROR_NONE Successful.
+ * @retval #ML_ERROR_NOT_SUPPORTED Not supported.
+ * @retval #ML_ERROR_INVALID_PARAMETER Given parameter is invalid.
+ * @retval #ML_ERROR_OUT_OF_MEMORY Failed to allocate required memory.
+ */
+int ml_information_iterate (ml_information_h ml_info, ml_information_iterate_cb cb, void *user_data);
+
+/**
  * @brief Destroys the ml-information instance.
  * @details Note that, user should free the allocated values of ml-information in the case that destroy function is not given.
  * @since_tizen 8.0
