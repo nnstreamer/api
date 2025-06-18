@@ -3,6 +3,9 @@ If you want to do unit tests, put the following files in this directory.
 $ tree .
 .
 └── nnstreamer
+    ├── config
+    │   ├── config_pipeline_imgclf.conf
+    │   └── config_single_imgclf.conf
     ├── pytorch_data
     │   ├── mobilenetv2-quant_core-nnapi.pt
     │   └── orange_float.raw

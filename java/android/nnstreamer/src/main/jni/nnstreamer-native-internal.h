@@ -30,6 +30,9 @@
 #include <ml-api-inference-internal.h>
 #include <ml-api-inference-single-internal.h>
 #include <ml-api-inference-pipeline-internal.h>
+#if defined(ENABLE_ML_SERVICE)
+#include <ml-api-service-private.h>
+#endif
 
 #if defined(__ANDROID__)
 #if !GST_CHECK_VERSION(1, 24, 0)
@@ -63,6 +66,7 @@ extern "C" {
 #define NNS_CLS_PIPELINE NNS_PKG "/Pipeline"
 #define NNS_CLS_SINGLE NNS_PKG "/SingleShot"
 #define NNS_CLS_CUSTOM_FILTER NNS_PKG "/CustomFilter"
+#define NNS_CLS_MLSERVICE NNS_PKG "/MLService"
 #define NNS_CLS_NNSTREAMER NNS_PKG "/NNStreamer"
 
 /**
@@ -78,6 +82,7 @@ typedef enum
   NNS_PIPE_TYPE_PIPELINE = 0,
   NNS_PIPE_TYPE_SINGLE,
   NNS_PIPE_TYPE_CUSTOM,
+  NNS_PIPE_TYPE_SERVICE,
 
   NNS_PIPE_TYPE_UNKNOWN
 } nns_pipe_type_e;
@@ -269,6 +274,14 @@ nns_native_pipe_register_natives (JNIEnv * env);
  */
 extern gboolean
 nns_native_custom_register_natives (JNIEnv * env);
+
+#if defined(ENABLE_ML_SERVICE)
+/**
+ * @brief Register native methods for ml-service class.
+ */
+extern gboolean
+nns_native_service_register_natives (JNIEnv * env);
+#endif
 #endif
 
 #ifdef __cplusplus

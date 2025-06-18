@@ -259,6 +259,11 @@ ifneq ($(NNSTREAMER_API_OPTION),single)
 LOCAL_SRC_FILES += \
     nnstreamer-native-customfilter.c \
     nnstreamer-native-pipeline.c
+
+ifeq ($(ENABLE_ML_SERVICE),true)
+LOCAL_SRC_FILES += \
+    nnstreamer-native-service.c
+endif
 endif
 
 LOCAL_C_INCLUDES := $(NNSTREAMER_INCLUDES) $(NNSTREAMER_CAPI_INCLUDES) $(GST_HEADERS_COMMON)
