@@ -4419,6 +4419,80 @@ TEST (nnstreamer_capi_ml_option, fw_name_tensorflow_lite)
 #endif
 
 /**
+ * @brief Internal callback for iterating ml-information.
+ */
+static void
+_test_ml_information_iter (const char *key, const void *value, void *user_data)
+{
+  gint *count = (gint *) user_data;
+
+  if (((key && g_ascii_strcasecmp (key, "tkey1") == 0)
+          && (value && g_ascii_strcasecmp ((const char *) value, "tvalue1") == 0))
+      || ((key && g_ascii_strcasecmp (key, "tkey2") == 0)
+          && (value && g_ascii_strcasecmp ((const char *) value, "tvalue2") == 0))) {
+    *count += 1;
+  } else {
+    *count = -1;
+  }
+}
+
+/**
+ * @brief Test for iterating ml-information.
+ */
+TEST (nnstreamer_capi_ml_information, iterate)
+{
+  ml_information_h info;
+  int status;
+  gint *count = (gint *) g_malloc0 (sizeof (gint));
+
+  status = _ml_information_create (&info);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = _ml_information_set (info, "tkey1", g_strdup ("tvalue1"), g_free);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  status = _ml_information_set (info, "tkey2", g_strdup ("tvalue2"), g_free);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_information_iterate (info, _test_ml_information_iter, count);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_information_destroy (info);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  EXPECT_EQ (*count, 2);
+  g_free (count);
+}
+
+/**
+ * @brief Test for iterating ml-information with invalid param.
+ */
+TEST (nnstreamer_capi_ml_information, iterateInvalidParam01_n)
+{
+  int status;
+
+  status = ml_information_iterate (NULL, _test_ml_information_iter, NULL);
+  EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
+}
+
+/**
+ * @brief Test for iterating ml-information with invalid param.
+ */
+TEST (nnstreamer_capi_ml_information, iterateInvalidParam02_n)
+{
+  ml_information_h info;
+  int status;
+
+  status = _ml_information_create (&info);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_information_iterate (info, NULL, NULL);
+  EXPECT_EQ (status, ML_ERROR_INVALID_PARAMETER);
+
+  status = ml_information_destroy (info);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+}
+
+/**
  * @brief Test utility functions (private)
  * @details check sub-plugin type and name
  */
