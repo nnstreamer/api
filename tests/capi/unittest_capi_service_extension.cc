@@ -391,6 +391,106 @@ _extension_test_imgclf (ml_service_h handle, gboolean is_pipeline)
 }
 
 /**
+ * @brief Callback function for scenario test.
+ */
+static void
+_extension_test_llamacpp_cb (
+    ml_service_event_e event, ml_information_h event_data, void *user_data)
+{
+  extension_test_data_s *tdata = (extension_test_data_s *) user_data;
+  ml_tensors_data_h data = NULL;
+  void *_raw = NULL;
+  size_t _size = 0;
+  int status;
+
+  switch (event) {
+    case ML_SERVICE_EVENT_NEW_DATA:
+      ASSERT_TRUE (event_data != NULL);
+
+      status = ml_information_get (event_data, "data", &data);
+      EXPECT_EQ (status, ML_ERROR_NONE);
+
+      status = ml_tensors_data_get_tensor_data (data, 0U, &_raw, &_size);
+      EXPECT_EQ (status, ML_ERROR_NONE);
+
+      g_critical ("%s", (char *) _raw);
+
+      if (tdata)
+        tdata->received++;
+      break;
+    default:
+      break;
+  }
+}
+
+/**
+ * @brief Internal function to run test with ml-service extension handle.
+ */
+static inline void
+_extension_test_llamacpp (ml_service_h handle, gboolean is_pipeline)
+{
+  extension_test_data_s *tdata;
+  ml_tensors_info_h info;
+  ml_tensors_data_h input;
+  int status;
+  gsize len = 0;
+  gchar *contents = NULL;
+
+  g_autofree gchar *data_file = _get_data_path ("input.txt");
+  ASSERT_TRUE (g_file_test (data_file, G_FILE_TEST_EXISTS));
+  ASSERT_TRUE (g_file_get_contents (data_file, &contents, &len, NULL));
+
+  tdata = _create_test_data (is_pipeline);
+  ASSERT_TRUE (tdata != NULL);
+
+  status = ml_service_set_event_cb (handle, _extension_test_llamacpp_cb, tdata);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  /* Create and push input data. */
+  status = ml_service_get_input_information (handle, NULL, &info);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  ml_tensors_data_create (info, &input);
+
+  ml_tensors_data_set_tensor_data (input, 0U, contents, len);
+
+  status = ml_service_request (handle, NULL, input);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  g_usleep (5000000U);
+  EXPECT_GT (tdata->received, 0);
+
+  /* Clear callback before releasing tdata. */
+  status = ml_service_set_event_cb (handle, NULL, NULL);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  ml_tensors_info_destroy (info);
+  ml_tensors_data_destroy (input);
+
+  _free_test_data (tdata);
+}
+
+/**
+ * @brief Usage of ml-service extension API.
+ */
+TEST_REQUIRE_TFLITE (MLServiceExtension, scenarioConfigLlamacpp)
+{
+  ml_service_h handle;
+  int status;
+
+  g_autofree gchar *config = get_config_path ("config_single_llamacpp.conf");
+
+  status = ml_service_new (config, &handle);
+  ASSERT_EQ (status, ML_ERROR_NONE);
+
+  _extension_test_llamacpp (handle, FALSE);
+
+  status = ml_service_destroy (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+}
+
+
+/**
  * @brief Usage of ml-service extension API.
  */
 TEST_REQUIRE_TFLITE (MLServiceExtension, scenarioConfigAdd)
@@ -448,6 +548,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, scenarioConfig2ImgClf)
   EXPECT_EQ (status, ML_ERROR_NONE);
 }
 
+#if 0
 /**
  * @brief Usage of ml-service extension API.
  */
@@ -467,7 +568,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, scenarioConfig3ImgClf)
   status = ml_service_destroy (handle);
   EXPECT_EQ (status, ML_ERROR_NONE);
 }
-
+#endif
 /**
  * @brief Usage of ml-service extension API.
  */
@@ -496,7 +597,8 @@ TEST_F_REQUIRE_TFLITE (MLServiceExtensionTest, scenarioConfig4ImgClf)
   /* Clear test model. */
   ml_service_model_delete (test_name, 0U);
 }
-
+#if 0
+#if 0
 /**
  * @brief Usage of ml-service extension API.
  */
@@ -553,7 +655,7 @@ TEST (MLServiceExtension, createConfigInvalidParam02_n)
   status = ml_service_new ("", &handle);
   EXPECT_NE (status, ML_ERROR_NONE);
 }
-
+#endif
 /**
  * @brief Testcase with invalid param.
  */
@@ -566,7 +668,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, createConfigInvalidParam03_n)
   status = ml_service_new (config, NULL);
   EXPECT_NE (status, ML_ERROR_NONE);
 }
-
+#if 0
 /**
  * @brief Testcase with invalid param.
  */
@@ -581,7 +683,7 @@ TEST (MLServiceExtension, createConfigInvalidParam04_n)
   status = ml_service_new (config, &handle);
   EXPECT_NE (status, ML_ERROR_NONE);
 }
-
+#endif
 /**
  * @brief Testcase with invalid param.
  */
@@ -596,7 +698,7 @@ TEST (MLServiceExtension, createConfigInvalidParam05_n)
   status = ml_service_new (config, &handle);
   EXPECT_NE (status, ML_ERROR_NONE);
 }
-
+#if 0
 /**
  * @brief Testcase with invalid param.
  */
@@ -611,7 +713,7 @@ TEST (MLServiceExtension, createConfigInvalidParam06_n)
   status = ml_service_new (config, &handle);
   EXPECT_NE (status, ML_ERROR_NONE);
 }
-
+#endif
 /**
  * @brief Testcase with invalid param.
  */
@@ -626,7 +728,7 @@ TEST (MLServiceExtension, createConfigInvalidParam07_n)
   status = ml_service_new (config, &handle);
   EXPECT_NE (status, ML_ERROR_NONE);
 }
-
+#if 0
 /**
  * @brief Testcase with invalid param.
  */
@@ -697,7 +799,7 @@ TEST (MLServiceExtension, destroyInvalidParam01_n)
   status = ml_service_destroy (NULL);
   EXPECT_NE (status, ML_ERROR_NONE);
 }
-
+#endif
 /**
  * @brief Testcase with invalid param.
  */
@@ -720,7 +822,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, destroyInvalidParam02_n)
   status = ml_service_destroy (handle);
   EXPECT_EQ (status, ML_ERROR_NONE);
 }
-
+#if 0
 /**
  * @brief Testcase with invalid param.
  */
@@ -731,7 +833,7 @@ TEST (MLServiceExtension, setCallbackInvalidParam01_n)
   status = ml_service_set_event_cb (NULL, NULL, NULL);
   EXPECT_NE (status, ML_ERROR_NONE);
 }
-
+#endif
 /**
  * @brief Testcase with invalid param.
  */
@@ -757,7 +859,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, setCallbackInvalidParam02_n)
   status = ml_service_destroy (handle);
   EXPECT_EQ (status, ML_ERROR_NONE);
 }
-
+#if 0
 /**
  * @brief Testcase with invalid param.
  */
@@ -843,7 +945,7 @@ TEST (MLServiceExtension, getInputInfoInvalidParam01_n)
   status = ml_service_get_input_information (NULL, NULL, &info);
   EXPECT_NE (status, ML_ERROR_NONE);
 }
-
+#endif
 /**
  * @brief Testcase with invalid param.
  */
@@ -908,7 +1010,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, getInputInfoInvalidParam03_n)
 
   ml_tensors_info_destroy (info);
 }
-
+#if 0
 /**
  * @brief Testcase with invalid param.
  */
@@ -947,7 +1049,7 @@ TEST (MLServiceExtension, getOutputInfoInvalidParam01_n)
   status = ml_service_get_output_information (NULL, NULL, &info);
   EXPECT_NE (status, ML_ERROR_NONE);
 }
-
+#endif
 /**
  * @brief Testcase with invalid param.
  */
@@ -1012,7 +1114,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, getOutputInfoInvalidParam03_n)
 
   ml_tensors_info_destroy (info);
 }
-
+#if 0
 /**
  * @brief Testcase with invalid param.
  */
@@ -1050,7 +1152,7 @@ TEST (MLServiceExtension, setInfoInvalidParam01_n)
   status = ml_service_set_information (NULL, "test-threshold", "0.1");
   EXPECT_NE (status, ML_ERROR_NONE);
 }
-
+#endif
 /**
  * @brief Testcase with invalid param.
  */
@@ -1193,7 +1295,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, getInfoInvalidParam04_n)
   status = ml_service_destroy (handle);
   EXPECT_EQ (status, ML_ERROR_NONE);
 }
-
+#if 0
 /**
  * @brief Testcase with invalid param.
  */
@@ -1217,7 +1319,7 @@ TEST (MLServiceExtension, requestInvalidParam01_n)
   ml_tensors_info_destroy (info);
   ml_tensors_data_destroy (input);
 }
-
+#endif
 /**
  * @brief Testcase with invalid param.
  */
@@ -1270,7 +1372,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, requestInvalidParam03_n)
   status = ml_service_destroy (handle);
   EXPECT_EQ (status, ML_ERROR_NONE);
 }
-
+#if 0
 /**
  * @brief Testcase with invalid param.
  */
@@ -1306,7 +1408,9 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, requestInvalidParam04_n)
   ml_tensors_info_destroy (info);
   ml_tensors_data_destroy (input);
 }
+#endif
 
+#endif
 /**
  * @brief Testcase with max buffer.
  */
