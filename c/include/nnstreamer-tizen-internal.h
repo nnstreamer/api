@@ -37,6 +37,8 @@ typedef struct {
   char *models;                  /**< Comma separated neural network model files. */
   char *custom_option;           /**< Custom option string for neural network framework. */
   char *fw_name;                 /**< The explicit framework name given by user */
+  int invoke_dynamic;            /**< True for supporting invoke with flexible output. */
+  int invoke_async;              /**< The sub-plugin must support asynchronous output to use this option. If set to TRUE, the sub-plugin can generate multiple outputs asynchronously per single input. Otherwise, only synchronous single-output is expected and async callback/handle are ignored. */
 } ml_single_preset;
 
 /**
