@@ -26,6 +26,8 @@ extern "C" {
  */
 int ml_pipeline_construct_internal (const char *pipeline_description, ml_pipeline_state_cb cb, void *user_data, ml_pipeline_h *pipe);
 
+typedef void (*ml_single_invoke_async_cb) (void *handle, void *output, void *user_data); /**< The callback function pointer to be called every time the sub-plugin generates a new output tensor asynchronously. */
+
 /**
  * @brief An information to create single-shot instance.
  */
@@ -39,6 +41,8 @@ typedef struct {
   char *fw_name;                 /**< The explicit framework name given by user */
   int invoke_dynamic;            /**< True for supporting invoke with flexible output. */
   int invoke_async;              /**< The sub-plugin must support asynchronous output to use this option. If set to TRUE, the sub-plugin can generate multiple outputs asynchronously per single input. Otherwise, only synchronous single-output is expected and async callback/handle are ignored. */
+  void *invoke_async_data;     /**< User data to be passed to async callback. */
+  ml_single_invoke_async_cb invoke_async_cb;    /**< Callback function to be called when the sub-plugin generates an output asynchronously. */
 } ml_single_preset;
 
 /**

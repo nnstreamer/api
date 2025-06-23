@@ -496,6 +496,31 @@ TEST (MLServiceExtension, scenarioConfigLlamacpp)
   EXPECT_EQ (status, ML_ERROR_NONE);
 }
 
+/**
+ * @brief Usage of ml-service extension API.
+ */
+TEST (MLServiceExtension, scenarioConfigLlamacppAsync)
+{
+  ml_service_h handle;
+  int status;
+
+  g_autofree gchar *model_file = _get_model_path ("llama-2-7b-chat.Q2_K.gguf");
+  if (!g_file_test (model_file, G_FILE_TEST_EXISTS)) {
+    g_critical ("Skipping scenarioConfigLlamacppAsync test due to missing model file. "
+                "Please download model file from https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF");
+    return;
+  }
+
+  g_autofree gchar *config = get_config_path ("config_single_llamacpp_async.conf");
+
+  status = ml_service_new (config, &handle);
+  ASSERT_EQ (status, ML_ERROR_NONE);
+
+  _extension_test_llamacpp (handle, FALSE);
+
+  status = ml_service_destroy (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+}
 
 /**
  * @brief Usage of ml-service extension API.
