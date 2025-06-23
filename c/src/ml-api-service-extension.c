@@ -235,6 +235,52 @@ _ml_extension_destroy_tensors_info (void *data)
 }
 
 /**
+ * @brief Internal function to invoke model asynchronously. It is called by the sub-plugin.
+ */
+static void
+_ml_extension_invoke_async_callback (void *handle, GstTensorMemory * output)
+{
+  int ret;
+  size_t len;
+  ml_service_s *mls = NULL;
+  ml_tensors_info_h info;
+  ml_tensors_data_h data;
+  ml_tensor_dimension dimension = { 0 };
+
+  mls = (ml_service_s *) handle;
+  if (!output || !output->data || !mls) {
+    _ml_loge ("Invalid callback parameters.");
+    return;
+  }
+  // TODO: Use the tensor information received from the sub-plugin. This should not be a problem for llama.cpp
+  dimension[0] = len = strlen ((char *) output->data);
+  ml_tensors_info_create (&info);
+  ml_tensors_info_set_count (info, 1U);
+  ml_tensors_info_set_tensor_type (info, 0U, ML_TENSOR_TYPE_UINT8);
+  ml_tensors_info_set_tensor_dimension (info, 0U, dimension);
+
+  ret = ml_tensors_data_create (info, &data);
+  if (ret != ML_ERROR_NONE) {
+    _ml_loge("Failed to create tensors info. error: %d", ret);
+     ml_tensors_info_destroy(info);
+    g_free(output->data);
+  return;
+  }
+
+  ret = ml_tensors_data_set_tensor_data (data, 0U, output->data, len);
+  if (ret != ML_ERROR_NONE) {
+    _ml_loge("Failed to set tensor data. error: %d", ret);
+    ml_tensors_data_destroy(data);
+    ml_tensors_info_destroy(info);
+    g_free(output->data);
+    return;
+  }
+  g_free (output->data);
+
+  _ml_service_invoke_event_new_data (mls, NULL, data);
+}
+
+/**
  * @brief Internal function to parse single-shot info from json.
  */
 static int
@@ -352,8 +398,14 @@ _ml_extension_conf_parse_single (ml_service_s * mls, JsonObject * single)
     const gchar *invoke_async =
         json_object_get_string_member (single, "invoke_async");
 
-    if (STR_IS_VALID (invoke_async))
+    if (STR_IS_VALID (invoke_async)) {
       ml_option_set (option, "invoke_async", g_strdup (invoke_async), g_free);
+    }
+    if (strcasecmp (invoke_async, "TRUE") == 0) {
+      ml_option_set (option, "invoke_async_cb",
+          (void *) _ml_extension_invoke_async_callback, NULL);
+      ml_option_set (option, "invoke_async_cb_data", (void *) mls, NULL);
+    }
   }
 
 error:
