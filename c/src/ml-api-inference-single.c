@@ -1088,6 +1088,20 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
     g_object_set (filter_obj, "custom", info->custom_option, NULL);
   }
 
+  if (single_h->klass && info->invoke_async) {
+    if (info->invoke_async_cb != NULL && info->invoke_async_data!= NULL) {
+      NNSFilterInvokeAsyncCallback invoke_async_cb =
+          (NNSFilterInvokeAsyncCallback) info->invoke_async_cb;
+      single_h->klass->set_invoke_async_callback (single_h->filter,
+          invoke_async_cb, info->invoke_async_data);
+    } else {
+      _ml_error_report
+        ("The parameters invoke_async_cb and invoke_async_data in the info argument are invalid");
+      status = ML_ERROR_INVALID_PARAMETER;
+      goto error;
+    }
+  }
+
   /* 4. Start the nnfw to get inout configurations if needed */
   if (!single_h->klass->start (single_h->filter)) {
     _ml_error_report
@@ -1234,6 +1248,14 @@ ml_single_open_with_option (ml_single_h * single, const ml_option_h option)
   if (ML_ERROR_NONE == ml_option_get (option, "invoke_async", &value)) {
     if (strcasecmp ((gchar *) value, "TRUE") == 0)
       info.invoke_async = TRUE;
+  }
+  if (info.invoke_async) {
+    if (ML_ERROR_NONE == ml_option_get (option, "invoke_async_cb", &value)) {
+      info.invoke_async_cb = (ml_single_invoke_async_cb) value;
+    }
+    if (ML_ERROR_NONE == ml_option_get (option, "invoke_async_cb_data", &value)) {
+      info.invoke_async_data = (void *) value;
+    }
   }
 
   return ml_single_open_custom (single, &info);
