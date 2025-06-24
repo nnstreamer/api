@@ -141,6 +141,7 @@ typedef struct
   ml_tensors_data_h out_tensors;      /**< output tensor wrapper for processing */
 
   GList *destroy_data_list;         /**< data to be freed by filter */
+  tensor_format format;             /**< current format */
 } ml_single;
 
 /**
@@ -780,6 +781,10 @@ ml_single_set_info_in_handle (ml_single_h single, gboolean is_input,
     ml_tensors_info_h info = NULL;
 
     ml_single_get_gst_info (single_h, is_input, &gst_info);
+    if (single_h->format == _NNS_TENSOR_FORMAT_FLEXIBLE) {
+      gst_info.format = single_h->format;
+      gst_info.num_tensors = 1U;
+    }
     _ml_tensors_info_create_from_gst (&info, &gst_info);
 
     gst_tensors_info_free (&gst_info);
@@ -1070,9 +1075,14 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
     fw_name = _ml_get_nnfw_subplugin_name (nnfw);       /* retry for "auto" */
   }
   hw_name = _ml_nnfw_to_str_prop (hw);
+
   g_object_set (filter_obj, "framework", fw_name, "accelerator", hw_name,
-      "model", converted_models, NULL);
+      "model", converted_models, "invoke-dynamic", info->invoke_dynamic,
+      "invoke-async", info->invoke_async, NULL);
   g_free (hw_name);
+
+  if (info->invoke_dynamic)
+    single_h->format = _NNS_TENSOR_FORMAT_FLEXIBLE;
 
   if (info->custom_option) {
     g_object_set (filter_obj, "custom", info->custom_option, NULL);
@@ -1207,6 +1217,14 @@ ml_single_open_with_option (ml_single_h * single, const ml_option_h option)
   if (ML_ERROR_NONE == ml_option_get (option, "framework_name", &value) ||
       ML_ERROR_NONE == ml_option_get (option, "framework", &value))
     info.fw_name = (gchar *) value;
+  if (ML_ERROR_NONE == ml_option_get (option, "invoke_dynamic", &value)) {
+    if (strcasecmp ((gchar *) value, "TRUE") == 0)
+      info.invoke_dynamic = TRUE;
+  }
+  if (ML_ERROR_NONE == ml_option_get (option, "invoke_async", &value)) {
+    if (strcasecmp ((gchar *) value, "TRUE") == 0)
+      info.invoke_async = TRUE;
+  }
 
   return ml_single_open_custom (single, &info);
 }
@@ -1321,6 +1339,9 @@ _ml_single_invoke_validate_data (ml_single_h single,
       _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
           "The %d-th input tensor is not valid. There is no valid dimension metadata for this tensor.",
           i);
+
+    if (single_h->format == _NNS_TENSOR_FORMAT_FLEXIBLE)
+      continue;
 
     raw_size = _model->tensors[i].size;
     if (G_UNLIKELY (_data->tensors[i].size != raw_size))
