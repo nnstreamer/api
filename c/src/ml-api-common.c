@@ -1458,8 +1458,10 @@ _ml_info_get_value (ml_info_s * info, const char *key, void **value)
         "The parameter, 'info', 'key' or 'value' is NULL. It should be a valid ml_info, key and value.");
 
   info_value = g_hash_table_lookup (info->table, key);
-  if (!info_value)
-    return ML_ERROR_INVALID_PARAMETER;
+  if (!info_value) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "Failed to find a value of key '%s', invalid key string?", key);
+  }
 
   *value = info_value->value;
 
