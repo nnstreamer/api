@@ -253,29 +253,23 @@ construct_element (GstElement * e, ml_pipeline * p, const char *name,
  * @brief Internal function to get the tensors info from the element caps.
  */
 static gboolean
-get_tensors_info_from_caps (GstCaps * caps, GstTensorsInfo * info,
+get_tensors_info_from_caps (const GstCaps * caps, GstTensorsInfo * info,
     gboolean * is_flexible)
 {
-  GstStructure *s;
   GstTensorsConfig config;
-  guint i, n_caps;
   gboolean found = FALSE;
 
-  n_caps = gst_caps_get_size (caps);
+  found = gst_tensors_config_from_caps (&config, caps, TRUE);
 
-  for (i = 0; i < n_caps; i++) {
-    s = gst_caps_get_structure (caps, i);
-    found = gst_tensors_config_from_structure (&config, s);
+  if (found) {
+    gst_tensors_info_free (info);
+    gst_tensors_info_copy (info, &config.info);
 
-    if (found) {
-      gst_tensors_info_free (info);
-      gst_tensors_info_copy (info, &config.info);
+    if (is_flexible) {
       *is_flexible = gst_tensors_config_is_flexible (&config);
     }
 
     gst_tensors_config_free (&config);
-    if (found)
-      break;
   }
 
   return found;
