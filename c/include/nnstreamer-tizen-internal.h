@@ -19,6 +19,8 @@
 extern "C" {
 #endif /* __cplusplus */
 
+#define ML_NNFW_TYPE_FLARE 23 /**< FLARE framework */
+
 /**
  * @brief Constructs the pipeline (GStreamer + NNStreamer).
  * @details This function is to construct the pipeline without checking the permission in platform internally. See ml_pipeline_construct() for the details.
