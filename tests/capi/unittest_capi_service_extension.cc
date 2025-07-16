@@ -9,7 +9,7 @@
 
 #include <gtest/gtest.h>
 #include <glib.h>
-
+#include <iostream>
 #include <ml-api-service-private.h>
 #include <ml-api-service.h>
 #include "ml-api-service-extension.h"
@@ -394,8 +394,7 @@ _extension_test_imgclf (ml_service_h handle, gboolean is_pipeline)
  * @brief Callback function for scenario test.
  */
 static void
-_extension_test_llamacpp_cb (
-    ml_service_event_e event, ml_information_h event_data, void *user_data)
+_extension_test_llm_cb (ml_service_event_e event, ml_information_h event_data, void *user_data)
 {
   extension_test_data_s *tdata = (extension_test_data_s *) user_data;
   ml_tensors_data_h data = NULL;
@@ -413,7 +412,8 @@ _extension_test_llamacpp_cb (
       status = ml_tensors_data_get_tensor_data (data, 0U, &_raw, &_size);
       EXPECT_EQ (status, ML_ERROR_NONE);
 
-      g_print ("%s", (char *) _raw);
+      std::cout.write (static_cast<const char *> (_raw), _size); /* korean output */
+      std::cout.flush ();
 
       if (tdata)
         tdata->received++;
@@ -427,7 +427,7 @@ _extension_test_llamacpp_cb (
  * @brief Internal function to run test with ml-service extension handle.
  */
 static inline void
-_extension_test_llamacpp (ml_service_h handle, gboolean is_pipeline)
+_extension_test_llm (ml_service_h handle, gboolean is_pipeline, gchar *file_name, guint sleep_us)
 {
   extension_test_data_s *tdata;
   ml_tensors_info_h info;
@@ -436,14 +436,14 @@ _extension_test_llamacpp (ml_service_h handle, gboolean is_pipeline)
   gsize len = 0;
   gchar *contents = NULL;
 
-  g_autofree gchar *data_file = _get_data_path ("input.txt");
+  g_autofree gchar *data_file = _get_data_path (file_name);
   ASSERT_TRUE (g_file_test (data_file, G_FILE_TEST_EXISTS));
   ASSERT_TRUE (g_file_get_contents (data_file, &contents, &len, NULL));
 
   tdata = _create_test_data (is_pipeline);
   ASSERT_TRUE (tdata != NULL);
 
-  status = ml_service_set_event_cb (handle, _extension_test_llamacpp_cb, tdata);
+  status = ml_service_set_event_cb (handle, _extension_test_llm_cb, tdata);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   /* Create and push input data. */
@@ -457,7 +457,7 @@ _extension_test_llamacpp (ml_service_h handle, gboolean is_pipeline)
   status = ml_service_request (handle, NULL, input);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  g_usleep (5000000U);
+  g_usleep (sleep_us);
   EXPECT_GT (tdata->received, 0);
 
   /* Clear callback before releasing tdata. */
@@ -477,8 +477,9 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, scenarioConfigLlamacpp)
 {
   ml_service_h handle;
   int status;
-
+  g_autofree gchar *input_file = g_strdup ("input.txt");
   g_autofree gchar *model_file = _get_model_path ("llama-2-7b-chat.Q2_K.gguf");
+
   if (!g_file_test (model_file, G_FILE_TEST_EXISTS)) {
     g_critical ("Skipping scenarioConfigLlamacpp test due to missing model file. "
                 "Please download model file from https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF");
@@ -490,7 +491,7 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, scenarioConfigLlamacpp)
   status = ml_service_new (config, &handle);
   ASSERT_EQ (status, ML_ERROR_NONE);
 
-  _extension_test_llamacpp (handle, FALSE);
+  _extension_test_llm (handle, FALSE, input_file, 5000000U);
 
   status = ml_service_destroy (handle);
   EXPECT_EQ (status, ML_ERROR_NONE);
@@ -503,8 +504,9 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, scenarioConfigLlamacppAsync)
 {
   ml_service_h handle;
   int status;
-
+  g_autofree gchar *input_file = g_strdup ("input.txt");
   g_autofree gchar *model_file = _get_model_path ("llama-2-7b-chat.Q2_K.gguf");
+
   if (!g_file_test (model_file, G_FILE_TEST_EXISTS)) {
     g_critical ("Skipping scenarioConfigLlamacppAsync test due to missing model file. "
                 "Please download model file from https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF");
@@ -516,7 +518,33 @@ TEST_REQUIRE_TFLITE (MLServiceExtension, scenarioConfigLlamacppAsync)
   status = ml_service_new (config, &handle);
   ASSERT_EQ (status, ML_ERROR_NONE);
 
-  _extension_test_llamacpp (handle, FALSE);
+  _extension_test_llm (handle, FALSE, input_file, 5000000U);
+
+  status = ml_service_destroy (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+}
+
+/**
+ * @brief Usage of ml-service extension API.
+ */
+TEST_REQUIRE_TFLITE (MLServiceExtension, scenarioConfigFlare)
+{
+  ml_service_h handle;
+  int status;
+  g_autofree gchar *input_file = g_strdup ("flare_input.txt");
+  g_autofree gchar *model_file = _get_model_path ("sflare_if_4bit_3b.bin");
+
+  if (!g_file_test (model_file, G_FILE_TEST_EXISTS)) {
+    g_critical ("Skipping scenarioConfigFlare test due to missing model file.Please download model file");
+    return;
+  }
+
+  g_autofree gchar *config = get_config_path ("config_single_flare.conf");
+
+  status = ml_service_new (config, &handle);
+  ASSERT_EQ (status, ML_ERROR_NONE);
+
+  _extension_test_llm (handle, FALSE, input_file, 40000000U);
 
   status = ml_service_destroy (handle);
   EXPECT_EQ (status, ML_ERROR_NONE);

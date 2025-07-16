@@ -114,6 +114,7 @@ static const char *ml_nnfw_subplugin_name[] = {
   [ML_NNFW_TYPE_QNN] = "qnn",
   [ML_NNFW_TYPE_LLAMACPP] = "llamacpp",
   [ML_NNFW_TYPE_TIZEN_HAL] = "tizen-hal",
+  [ML_NNFW_TYPE_FLARE] = "flare",
   NULL
 };
 
@@ -979,16 +980,24 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
   for (i = 0; i < num_models; i++)
     g_strstrip (list_models[i]);
 
-  status = _ml_validate_model_file ((const char **) list_models, num_models,
-      &nnfw);
-  if (status != ML_ERROR_NONE) {
-    _ml_error_report_continue
-        ("Cannot validate the model (1st model: %s. # models: %d). Error code: %d",
-        list_models[0], num_models, status);
-    g_strfreev (list_models);
-    return status;
+  /* Note : OpenVINO and flare use the bin extension.
+   * _ml_validate_model_file() infers nnfw based on the file extension.
+   * The .bin extension is recognized as OpenVINO (ML_NNFW_TYPE_OPENVINO) by default
+   * If "flare" is specified, it forces ML_NNFW_TYPE_FLARE.
+   */
+  if (info->fw_name && strcasecmp (info->fw_name, "flare") == 0) {
+    nnfw = ML_NNFW_TYPE_FLARE;
+  } else {
+    status = _ml_validate_model_file ((const char **) list_models, num_models,
+        &nnfw);
+    if (status != ML_ERROR_NONE) {
+      _ml_error_report_continue
+          ("Cannot validate the model (1st model: %s. # models: %d). Error code: %d",
+          list_models[0], num_models, status);
+      g_strfreev (list_models);
+      return status;
+    }
   }
-
   g_strfreev (list_models);
 
   /**
@@ -1089,14 +1098,14 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
   }
 
   if (single_h->klass && info->invoke_async) {
-    if (info->invoke_async_cb != NULL && info->invoke_async_data!= NULL) {
+    if (info->invoke_async_cb != NULL && info->invoke_async_data != NULL) {
       NNSFilterInvokeAsyncCallback invoke_async_cb =
           (NNSFilterInvokeAsyncCallback) info->invoke_async_cb;
       single_h->klass->set_invoke_async_callback (single_h->filter,
           invoke_async_cb, info->invoke_async_data);
     } else {
       _ml_error_report
-        ("The parameters invoke_async_cb and invoke_async_data in the info argument are invalid");
+          ("The parameters invoke_async_cb and invoke_async_data in the info argument are invalid");
       status = ML_ERROR_INVALID_PARAMETER;
       goto error;
     }
