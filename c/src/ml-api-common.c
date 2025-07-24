@@ -60,6 +60,15 @@ typedef struct
 } ml_info_list_s;
 
 /**
+ * @brief Internal data structure for iterating ml-information.
+ */
+typedef struct
+{
+  ml_information_iterate_cb callback;
+  void *user_data;
+} ml_info_iter_data_s;
+
+/**
  * @brief Gets the version number of machine-learning API.
  */
 void
@@ -1636,6 +1645,57 @@ _ml_information_set (ml_information_h information, const char *key, void *value,
         "The parameter, 'information' is not a ml-information handle.");
 
   return _ml_info_set_value ((ml_info_s *) information, key, value, destroy);
+}
+
+/**
+ * @brief Internal function to iterate ml-information.
+ */
+static void
+_ml_information_iter_internal (gpointer key, gpointer value, gpointer user_data)
+{
+  ml_info_iter_data_s *iter = (ml_info_iter_data_s *) user_data;
+  ml_info_value_s *info_value = (ml_info_value_s *) value;
+
+  iter->callback (key, info_value->value, iter->user_data);
+}
+
+/**
+ * @brief Iterates the key and value of each pair in ml-information.
+ */
+int
+ml_information_iterate (ml_information_h ml_info,
+    ml_information_iterate_cb cb, void *user_data)
+{
+  ml_info_s *_info;
+  ml_info_iter_data_s *iter;
+
+  check_feature_state (ML_FEATURE);
+
+  if (!_ml_info_is_valid (ml_info, ML_INFO_TYPE_INFORMATION)) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'ml_info' is not a ml-information handle.");
+  }
+
+  if (!cb) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'cb' is NULL. It should be a valid function.");
+  }
+
+  _info = (ml_info_s *) ml_info;
+
+  iter = g_new0 (ml_info_iter_data_s, 1);
+  if (!iter) {
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Failed to allocate memory for the iteration. Out of memory?");
+  }
+
+  iter->callback = cb;
+  iter->user_data = user_data;
+
+  g_hash_table_foreach (_info->table, _ml_information_iter_internal, iter);
+  g_free (iter);
+
+  return ML_ERROR_NONE;
 }
 
 /**
