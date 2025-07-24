@@ -67,6 +67,7 @@ extern "C" {
 #define NNS_CLS_SINGLE NNS_PKG "/SingleShot"
 #define NNS_CLS_CUSTOM_FILTER NNS_PKG "/CustomFilter"
 #define NNS_CLS_MLSERVICE NNS_PKG "/MLService"
+#define NNS_CLS_MLINFO NNS_PKG "/MLInformation"
 #define NNS_CLS_NNSTREAMER NNS_PKG "/NNStreamer"
 
 /**
