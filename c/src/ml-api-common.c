@@ -833,6 +833,25 @@ _ml_tensors_data_clone_no_alloc (const ml_tensors_data_s * data_src,
 }
 
 /**
+ * @brief  Allocates zero-initialized memory of the given size for the tensor at the specified index
+ * in the tensor data structure, and sets the size value for that tensor.
+ */
+static int
+_ml_tensor_data_alloc (ml_tensors_data_s * data, int index, const size_t size)
+{
+  if (!data || index < 0) {
+    return ML_ERROR_INVALID_PARAMETER;
+  }
+
+  data->tensors[index].size = size;
+  data->tensors[index].data = g_malloc0 (size);
+  if (data->tensors[index].data == NULL) {
+    return ML_ERROR_OUT_OF_MEMORY;
+  }
+  return ML_ERROR_NONE;
+}
+
+/**
  * @brief Copies the tensor data frame.
  */
 int
@@ -840,7 +859,8 @@ ml_tensors_data_clone (const ml_tensors_data_h in, ml_tensors_data_h * out)
 {
   int status;
   unsigned int i;
-  ml_tensors_data_s *_in, *_out;
+  ml_tensors_data_s *_in, *_out = NULL;
+  ml_tensors_info_s *_info = NULL;
 
   check_feature_state (ML_FEATURE);
 
@@ -862,12 +882,30 @@ ml_tensors_data_clone (const ml_tensors_data_h in, ml_tensors_data_h * out)
   }
 
   _out = (ml_tensors_data_s *) (*out);
+  _info = (ml_tensors_info_s *) _in->info;
+  if (_info == NULL)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, info, is NULL. It should be a valid ml_tensors_info_h handle, which is usually created by ml_tensors_info_create().");
+
+  if (_info->info.format == _NNS_TENSOR_FORMAT_FLEXIBLE) {
+    _ml_logw
+        ("For Flexible format, out->tensors[i].data is not allocated by ml_tensors_data_create().");
+    for (i = 0; i < _in->num_tensors; i++) {
+      status = _ml_tensor_data_alloc (_out, i, _in->tensors[i].size);
+      if (status != ML_ERROR_NONE) {
+        goto error;
+      }
+    }
+  }
 
   for (i = 0; i < _out->num_tensors; ++i) {
     memcpy (_out->tensors[i].data, _in->tensors[i].data, _in->tensors[i].size);
   }
 
 error:
+  if (status == ML_ERROR_OUT_OF_MEMORY)
+    _ml_tensors_data_destroy_internal (_out, TRUE);
+
   G_UNLOCK_UNLESS_NOLOCK (*_in);
   return status;
 }
@@ -914,6 +952,7 @@ int
 ml_tensors_data_create (const ml_tensors_info_h info, ml_tensors_data_h * data)
 {
   gint status = ML_ERROR_STREAMS_PIPE;
+  ml_tensors_info_s *_info = NULL;
   ml_tensors_data_s *_data = NULL;
   guint i;
   bool valid;
@@ -944,21 +983,32 @@ ml_tensors_data_create (const ml_tensors_info_h info, ml_tensors_data_h * data)
         status);
   }
 
+  _info = (ml_tensors_info_s *) info;
+  if (_info->info.format == _NNS_TENSOR_FORMAT_FLEXIBLE) {
+    _ml_logw
+        ("[ml_tensors_data_create] format is FLEXIBLE, skipping tensor memory allocation. "
+        "In this case, tensor_data->tensors[i].data will be allocated in ml_tensors_data_set_tensor_data() with the data size.");
+    *data = _data;
+    return ML_ERROR_NONE;
+  }
+
   for (i = 0; i < _data->num_tensors; i++) {
-    _data->tensors[i].data = g_malloc0 (_data->tensors[i].size);
-    if (_data->tensors[i].data == NULL) {
-      goto failed_oom;
-    }
+    status = _ml_tensor_data_alloc (_data, i, _data->tensors[i].size);
+    if (status != ML_ERROR_NONE)
+      goto error;
   }
 
   *data = _data;
   return ML_ERROR_NONE;
 
-failed_oom:
-  _ml_tensors_data_destroy_internal (_data, TRUE);
+error:
+  if (status == ML_ERROR_OUT_OF_MEMORY) {
+    _ml_tensors_data_destroy_internal (_data, TRUE);
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Failed to allocate memory blocks for tensors data. Check if it's out-of-memory.");
+  }
 
-  _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
-      "Failed to allocate memory blocks for tensors data. Check if it's out-of-memory.");
+  return status;
 }
 
 /**
@@ -1009,6 +1059,8 @@ int
 ml_tensors_data_set_tensor_data (ml_tensors_data_h data, unsigned int index,
     const void *raw_data, const size_t data_size)
 {
+
+  ml_tensors_info_s *_info = NULL;
   ml_tensors_data_s *_data;
   int status = ML_ERROR_NONE;
 
@@ -1033,6 +1085,24 @@ ml_tensors_data_set_tensor_data (ml_tensors_data_h data, unsigned int index,
     goto report;
   }
 
+  /**
+   * By default, the tensor format is _NNS_TENSOR_FORMAT_STATIC.
+   * In this case, memory allocation and the setting of _data->tensors[index].size
+   * are already handled in ml_tensors_data_create().
+   * So for the STATIC format, both the `size` and `data` pointer should already be valid here.
+   *
+   * For FLEXIBLE format, memory may not be allocated yet and will be handled here.
+   */
+  _info = (ml_tensors_info_s *) _data->info;
+  if (_info && _info->info.format == _NNS_TENSOR_FORMAT_FLEXIBLE) {
+    _ml_logw
+        ("Memory allocation was not performed in ml_tensor_data_create() when tensor format is _NNS_TENSOR_FORMAT_FLEXIBLE.");
+    status = _ml_tensor_data_alloc (_data, index, data_size);
+    if (status != ML_ERROR_NONE) {
+      goto report;
+    }
+  }
+
   if (data_size <= 0 || _data->tensors[index].size < data_size) {
     _ml_error_report
         ("The parameter, data_size (%zu), is invalid. It should be larger than 0 and not larger than the required size of tensors[index: %u] (%zu).",
@@ -1045,6 +1115,9 @@ ml_tensors_data_set_tensor_data (ml_tensors_data_h data, unsigned int index,
     memcpy (_data->tensors[index].data, raw_data, data_size);
 
 report:
+  if (status == ML_ERROR_OUT_OF_MEMORY)
+    _ml_tensors_data_destroy_internal (_data, TRUE);
+
   G_UNLOCK_UNLESS_NOLOCK (*_data);
   return status;
 }
