@@ -140,8 +140,9 @@ typedef struct
   ml_tensors_data_h in_tensors;       /**< input tensor wrapper for processing */
   ml_tensors_data_h out_tensors;      /**< output tensor wrapper for processing */
 
-  GList *destroy_data_list;         /**< data to be freed by filter */
-  tensor_format format;             /**< current format */
+  GList *destroy_data_list;           /**< data to be freed by filter */
+  gboolean invoke_dynamic;            /**< true to invoke flexible tensor */
+  gboolean invoke_async;              /**< true to invoke and return result asynchronously */
 } ml_single;
 
 /**
@@ -659,6 +660,16 @@ ml_single_get_gst_info (ml_single * single_h, gboolean is_input,
   if (gst_info->num_tensors != num) {
     _ml_logw ("The number of tensor name is mismatched in filter.");
   }
+
+  if (single_h->invoke_dynamic) {
+    /* flexible tensor stream */
+    gst_info->format = _NNS_TENSOR_FORMAT_FLEXIBLE;
+
+    /** @todo Consider multiple input tensors while invoking a model. */
+    if (gst_info->num_tensors == 0) {
+      gst_info->num_tensors = 1;
+    }
+  }
 }
 
 /**
@@ -781,10 +792,6 @@ ml_single_set_info_in_handle (ml_single_h single, gboolean is_input,
     ml_tensors_info_h info = NULL;
 
     ml_single_get_gst_info (single_h, is_input, &gst_info);
-    if (single_h->format == _NNS_TENSOR_FORMAT_FLEXIBLE) {
-      gst_info.format = single_h->format;
-      gst_info.num_tensors = 1U; /* TODO: Consider multiple input tensors filter */
-    }
     _ml_tensors_info_create_from_gst (&info, &gst_info);
 
     gst_tensors_info_free (&gst_info);
@@ -1007,6 +1014,9 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
         "Cannot create handle for the given nnfw, %s", fw_name);
   }
 
+  single_h->invoke_dynamic = info->invoke_dynamic;
+  single_h->invoke_async = info->invoke_async;
+
   filter_obj = G_OBJECT (single_h->filter);
 
   /**
@@ -1077,11 +1087,9 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
   hw_name = _ml_nnfw_to_str_prop (hw);
 
   g_object_set (filter_obj, "framework", fw_name, "accelerator", hw_name,
-      "model", converted_models, "invoke-dynamic", info->invoke_dynamic, NULL);
+      "model", converted_models, "invoke-dynamic", single_h->invoke_dynamic,
+      "invoke-async", single_h->invoke_async, NULL);
   g_free (hw_name);
-
-  if (info->invoke_dynamic)
-    single_h->format = _NNS_TENSOR_FORMAT_FLEXIBLE;
 
   if (info->custom_option) {
     g_object_set (filter_obj, "custom", info->custom_option, NULL);
@@ -1095,16 +1103,6 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
     status = ML_ERROR_STREAMS_PIPE;
     goto error;
   }
-
-  /* handle flexible single */
-  /**
-   * Set invoke_dynamic as TRUE if the given nnfw do invoke_dynamic
-   *
-   * if (info->nnfw == ML_NNFW_TYPE_EXECUTORCH_LLAMA || info->nnfw == ML_NNFW_TYPE_LLAMACPP) {
-   *   invoke_dynamic = TRUE;
-   * }
-   *
-   */
 
   if (nnfw == ML_NNFW_TYPE_NNTR_INF) {
     if (!in_tensors_info || !out_tensors_info) {
@@ -1227,11 +1225,11 @@ ml_single_open_with_option (ml_single_h * single, const ml_option_h option)
       ML_ERROR_NONE == ml_option_get (option, "framework", &value))
     info.fw_name = (gchar *) value;
   if (ML_ERROR_NONE == ml_option_get (option, "invoke_dynamic", &value)) {
-    if (strcasecmp ((gchar *) value, "TRUE") == 0)
+    if (g_ascii_strcasecmp ((gchar *) value, "true") == 0)
       info.invoke_dynamic = TRUE;
   }
   if (ML_ERROR_NONE == ml_option_get (option, "invoke_async", &value)) {
-    if (strcasecmp ((gchar *) value, "TRUE") == 0)
+    if (g_ascii_strcasecmp ((gchar *) value, "true") == 0)
       info.invoke_async = TRUE;
   }
 
@@ -1349,8 +1347,10 @@ _ml_single_invoke_validate_data (ml_single_h single,
           "The %d-th input tensor is not valid. There is no valid dimension metadata for this tensor.",
           i);
 
-    if (single_h->format == _NNS_TENSOR_FORMAT_FLEXIBLE)
+    if (single_h->invoke_dynamic) {
+      /* If tensor is not static, we cannot check tensor data size. */
       continue;
+    }
 
     raw_size = _model->tensors[i].size;
     if (G_UNLIKELY (_data->tensors[i].size != raw_size))

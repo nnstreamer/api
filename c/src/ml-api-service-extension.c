@@ -343,17 +343,19 @@ _ml_extension_conf_parse_single (ml_service_s * mls, JsonObject * single)
     const gchar *invoke_dynamic =
         json_object_get_string_member (single, "invoke_dynamic");
 
-    if (STR_IS_VALID (invoke_dynamic))
+    if (STR_IS_VALID (invoke_dynamic)) {
       ml_option_set (option, "invoke_dynamic", g_strdup (invoke_dynamic),
           g_free);
+    }
   }
 
   if (json_object_has_member (single, "invoke_async")) {
     const gchar *invoke_async =
         json_object_get_string_member (single, "invoke_async");
 
-    if (STR_IS_VALID (invoke_async))
+    if (STR_IS_VALID (invoke_async)) {
       ml_option_set (option, "invoke_async", g_strdup (invoke_async), g_free);
+    }
   }
 
 error:
