@@ -510,7 +510,7 @@ free_element_handle (gpointer data)
   /* clear callbacks */
   item->callback_info->sink_cb = NULL;
   elem = item->element;
-  if (elem->type == ML_PIPELINE_ELEMENT_APP_SRC) {
+  if (elem && elem->type == ML_PIPELINE_ELEMENT_APP_SRC) {
     GstAppSrcCallbacks appsrc_cb = { 0, };
     gst_app_src_set_callbacks (GST_APP_SRC (elem->element), &appsrc_cb,
         NULL, NULL);
@@ -541,30 +541,35 @@ cleanup_node (gpointer data)
     g_list_free_full (e->handles, free_element_handle);
   e->handles = NULL;
 
-  if (e->type == ML_PIPELINE_ELEMENT_APP_SRC && !e->pipe->isEOS) {
-    int eos_check_cnt = 0;
+  if (e->type == ML_PIPELINE_ELEMENT_APP_SRC) {
+    ml_pipeline *p = e->pipe;
 
-    /** to push EOS event, the pipeline should be in PAUSED state */
-    gst_element_set_state (e->pipe->element, GST_STATE_PAUSED);
+    if (p && !p->isEOS) {
+      int eos_check_cnt = 0;
 
-    if (gst_app_src_end_of_stream (GST_APP_SRC (e->element)) != GST_FLOW_OK) {
-      _ml_logw (_ml_detail
-          ("Cleaning up a pipeline has failed to set End-Of-Stream for the pipeline element of %s",
-              e->name));
-    }
-    g_mutex_unlock (&e->lock);
-    while (!e->pipe->isEOS) {
-      eos_check_cnt++;
-      /** check EOS every 1ms */
-      g_usleep (1000);
-      if (eos_check_cnt >= EOS_MESSAGE_TIME_LIMIT) {
-        _ml_loge (_ml_detail
-            ("Cleaning up a pipeline has requested to set End-Of-Stream. However, the pipeline has not become EOS after the timeout. It has failed to become EOS with the element of %s.",
+      /** to push EOS event, the pipeline should be in PAUSED state */
+      gst_element_set_state (p->element, GST_STATE_PAUSED);
+
+      if (gst_app_src_end_of_stream (GST_APP_SRC (e->element)) != GST_FLOW_OK) {
+        _ml_logw (_ml_detail
+            ("Cleaning up a pipeline has failed to set End-Of-Stream for the pipeline element of %s",
                 e->name));
-        break;
       }
+
+      g_mutex_unlock (&e->lock);
+      while (!p->isEOS) {
+        eos_check_cnt++;
+        /** check EOS every 1ms */
+        g_usleep (1000);
+        if (eos_check_cnt >= EOS_MESSAGE_TIME_LIMIT) {
+          _ml_loge (_ml_detail
+              ("Cleaning up a pipeline has requested to set End-Of-Stream. However, the pipeline has not become EOS after the timeout. It has failed to become EOS with the element of %s.",
+                  e->name));
+          break;
+        }
+      }
+      g_mutex_lock (&e->lock);
     }
-    g_mutex_lock (&e->lock);
   }
 
   if (e->custom_destroy) {
