@@ -392,6 +392,21 @@ _extension_test_imgclf (ml_service_h handle, gboolean is_pipeline)
 
 #if defined(ENABLE_LLAMACPP)
 /**
+ * @brief Macro to skip testcase if model file is not ready.
+ */
+#define skip_llamacpp_tc(tc_name)                                                                  \
+  do {                                                                                             \
+    g_autofree gchar *model_file = _get_model_path ("llama-2-7b-chat.Q2_K.gguf");                  \
+    if (!g_file_test (model_file, G_FILE_TEST_EXISTS)) {                                           \
+      g_autofree gchar *msg = g_strdup_printf (                                                    \
+          "Skipping '%s' due to missing model file. "                                              \
+          "Please download model file from https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF.", \
+          tc_name);                                                                                \
+      GTEST_SKIP () << msg;                                                                        \
+    }                                                                                              \
+  } while (0)
+
+/**
  * @brief Callback function for scenario test.
  */
 static void
@@ -428,9 +443,10 @@ _extension_test_llamacpp_cb (
  * @brief Internal function to run test with ml-service extension handle.
  */
 static inline void
-_extension_test_llamacpp (ml_service_h handle, gboolean is_pipeline)
+_extension_test_llamacpp (const gchar *config, gboolean is_pipeline)
 {
   extension_test_data_s *tdata;
+  ml_service_h handle;
   ml_tensors_info_h info;
   ml_tensors_data_h input;
   int status;
@@ -439,6 +455,9 @@ _extension_test_llamacpp (ml_service_h handle, gboolean is_pipeline)
 
   tdata = _create_test_data (is_pipeline);
   ASSERT_TRUE (tdata != NULL);
+
+  status = ml_service_new (config, &handle);
+  ASSERT_EQ (status, ML_ERROR_NONE);
 
   status = ml_service_set_event_cb (handle, _extension_test_llamacpp_cb, tdata);
   EXPECT_EQ (status, ML_ERROR_NONE);
@@ -461,6 +480,9 @@ _extension_test_llamacpp (ml_service_h handle, gboolean is_pipeline)
   status = ml_service_set_event_cb (handle, NULL, NULL);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
+  status = ml_service_destroy (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
   ml_tensors_info_destroy (info);
   ml_tensors_data_destroy (input);
 
@@ -472,25 +494,23 @@ _extension_test_llamacpp (ml_service_h handle, gboolean is_pipeline)
  */
 TEST (MLServiceExtension, scenarioConfigLlamacpp)
 {
-  ml_service_h handle;
-  int status;
-
-  g_autofree gchar *model_file = _get_model_path ("llama-2-7b-chat.Q2_K.gguf");
-  if (!g_file_test (model_file, G_FILE_TEST_EXISTS)) {
-    g_critical ("Skipping scenarioConfigLlamacpp test due to missing model file. "
-                "Please download model file from https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF");
-    return;
-  }
+  skip_llamacpp_tc ("scenarioConfigLlamacpp");
 
   g_autofree gchar *config = get_config_path ("config_single_llamacpp.conf");
 
-  status = ml_service_new (config, &handle);
-  ASSERT_EQ (status, ML_ERROR_NONE);
+  _extension_test_llamacpp (config, FALSE);
+}
 
-  _extension_test_llamacpp (handle, FALSE);
+/**
+ * @brief Usage of ml-service extension API.
+ */
+TEST (MLServiceExtension, scenarioConfigLlamacppAsync)
+{
+  skip_llamacpp_tc ("scenarioConfigLlamacppAsync");
 
-  status = ml_service_destroy (handle);
-  EXPECT_EQ (status, ML_ERROR_NONE);
+  g_autofree gchar *config = get_config_path ("config_single_llamacpp_async.conf");
+
+  _extension_test_llamacpp (config, FALSE);
 }
 #endif /* ENABLE_LLAMACPP */
 
