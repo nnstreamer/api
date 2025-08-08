@@ -68,6 +68,17 @@ typedef struct
 } ml_extension_s;
 
 /**
+ * @brief Internal function to handle the asynchronous invoke.
+ */
+static int
+_ml_extension_async_cb (const ml_tensors_data_h data, void *user_data)
+{
+  ml_service_s *mls = (ml_service_s *) user_data;
+
+  return _ml_service_invoke_event_new_data (mls, NULL, data);
+}
+
+/**
  * @brief Internal function to create node info in pipeline.
  */
 static ml_service_node_info_s *
@@ -355,6 +366,11 @@ _ml_extension_conf_parse_single (ml_service_s * mls, JsonObject * single)
 
     if (STR_IS_VALID (invoke_async)) {
       ml_option_set (option, "invoke_async", g_strdup (invoke_async), g_free);
+
+      if (g_ascii_strcasecmp (invoke_async, "true") == 0) {
+        ml_option_set (option, "async_callback", _ml_extension_async_cb, NULL);
+        ml_option_set (option, "async_data", mls, NULL);
+      }
     }
   }
 
