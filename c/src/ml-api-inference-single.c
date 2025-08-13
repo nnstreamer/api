@@ -143,6 +143,8 @@ typedef struct
   GList *destroy_data_list;           /**< data to be freed by filter */
   gboolean invoke_dynamic;            /**< true to invoke flexible tensor */
   gboolean invoke_async;              /**< true to invoke and return result asynchronously */
+  ml_tensors_data_cb invoke_async_cb; /**< Callback function to be called when the sub-plugin generates an output asynchronously. */
+  void *invoke_async_pdata;           /**< Private data to be passed to async callback. */
 } ml_single;
 
 /**
@@ -569,6 +571,72 @@ exit:
 }
 
 /**
+ * @brief Internal function to get the asynchronous invoke.
+ */
+static int
+ml_single_async_cb (GstTensorMemory * data, GstTensorsInfo * info,
+    void *user_data)
+{
+  ml_single_h single = (ml_single_h) user_data;
+  ml_single *single_h;
+  ml_tensors_info_h _info = NULL;
+  ml_tensors_data_h _data = NULL;
+  unsigned int i;
+  int ret = ML_ERROR_NONE;
+
+  ML_SINGLE_GET_VALID_HANDLE_LOCKED (single_h, single, 0);
+
+  if (!single_h->invoke_async_cb) {
+    /* No callback, do nothing. Internal state changing? */
+    goto done;
+  }
+
+  ret = _ml_tensors_info_create_from_gst (&_info, info);
+  if (ret != ML_ERROR_NONE) {
+    _ml_error_report
+        ("Cannot handle tensor data stream. Failed to create ml information.");
+    goto done;
+  }
+
+  ret = ml_tensors_data_create (_info, &_data);
+  if (ret != ML_ERROR_NONE) {
+    _ml_error_report
+        ("Cannot handle tensor data stream. Failed to create ml data.");
+    goto done;
+  }
+
+  for (i = 0; i < info->num_tensors; ++i) {
+    ret = ml_tensors_data_set_tensor_data (_data, i,
+        data[i].data, data[i].size);
+    if (ret != ML_ERROR_NONE) {
+      _ml_error_report
+          ("Cannot handle tensor data stream. Failed to update ml data of index %u, size is %zu.",
+          i, data[i].size);
+      goto done;
+    }
+  }
+
+  ret = single_h->invoke_async_cb (_data, single_h->invoke_async_pdata);
+  if (ret != ML_ERROR_NONE) {
+    _ml_error_report
+        ("Cannot handle tensor data stream. The callback function returns error '%d'.",
+        ret);
+  }
+
+done:
+  if (_info) {
+    ml_tensors_info_destroy (_info);
+  }
+
+  if (_data) {
+    ml_tensors_data_destroy (_data);
+  }
+
+  ML_SINGLE_HANDLE_UNLOCK (single_h);
+  return (ret == ML_ERROR_NONE) ? 0 : -1;
+}
+
+/**
  * @brief Sets the information (tensor dimension, type, name and so on) of required input data for the given model, and get updated output data information.
  * @details Note that a model/framework may not support setting such information.
  * @since_tizen 6.0
@@ -922,6 +990,10 @@ _ml_single_open_custom_validate_arguments (ml_single_h * single,
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'info' (ml_single_preset *), is not valid. Its models entry if NULL (info->models is NULL).");
 
+  if (info->invoke_async && !info->invoke_async_cb)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'info' (ml_single_preset *), is not valid. It has 'invoke_async' entry but its callback 'invoke_async_cb' is NULL");
+
   return ML_ERROR_NONE;
 }
 
@@ -1016,6 +1088,8 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
 
   single_h->invoke_dynamic = info->invoke_dynamic;
   single_h->invoke_async = info->invoke_async;
+  single_h->invoke_async_cb = info->invoke_async_cb;
+  single_h->invoke_async_pdata = info->invoke_async_pdata;
 
   filter_obj = G_OBJECT (single_h->filter);
 
@@ -1093,6 +1167,12 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
 
   if (info->custom_option) {
     g_object_set (filter_obj, "custom", info->custom_option, NULL);
+  }
+
+  /* Set async callback. */
+  if (single_h->invoke_async) {
+    single_h->klass->set_invoke_async_callback (single_h->filter,
+        ml_single_async_cb, single_h);
   }
 
   /* 4. Start the nnfw to get inout configurations if needed */
@@ -1232,6 +1312,12 @@ ml_single_open_with_option (ml_single_h * single, const ml_option_h option)
     if (g_ascii_strcasecmp ((gchar *) value, "true") == 0)
       info.invoke_async = TRUE;
   }
+  if (ML_ERROR_NONE == ml_option_get (option, "async_callback", &value)) {
+    info.invoke_async_cb = (ml_tensors_data_cb) value;
+  }
+  if (ML_ERROR_NONE == ml_option_get (option, "async_data", &value)) {
+    info.invoke_async_pdata = value;
+  }
 
   return ml_single_open_custom (single, &info);
 }
@@ -1258,6 +1344,9 @@ ml_single_close (ml_single_h single)
         "The parameter, 'single' (ml_single_h), is NULL. It should be a valid ml_single_h instance, usually created by ml_single_open().");
 
   ML_SINGLE_GET_VALID_HANDLE_LOCKED (single_h, single, 1);
+
+  /* First, clear all callbacks. */
+  single_h->invoke_async_cb = NULL;
 
   single_h->state = JOIN_REQUESTED;
   g_cond_broadcast (&single_h->cond);
