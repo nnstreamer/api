@@ -21,6 +21,18 @@ typedef struct
 } nns_service_priv_s;
 
 /**
+ * @brief Internal data to iterate ml-information.
+ */
+typedef struct
+{
+  JNIEnv *env;
+  jobject item;
+  jclass cls;
+  jmethodID mid_init;
+  jmethodID mid_set;
+} nns_service_iter_data_s;
+
+/**
  * @brief Release private data of ml-service.
  */
 static void
@@ -31,6 +43,89 @@ nns_service_priv_free (gpointer data, JNIEnv * env)
   priv = (nns_service_priv_s *) data;
 
   g_free (priv);
+}
+
+/**
+ * @brief Internal function to iterate ml-information and set key/value pairs.
+ */
+static void
+nns_service_set_ml_info (const char *key, const void *value, void *user_data)
+{
+  nns_service_iter_data_s *it = (nns_service_iter_data_s *) user_data;
+  JNIEnv *env = it->env;
+  jstring jkey = (*env)->NewStringUTF (env, key);
+  jstring jvalue = (*env)->NewStringUTF (env, value);
+
+  (*env)->CallVoidMethod (env, it->item, it->mid_set, jkey, jvalue);
+
+  if ((*env)->ExceptionCheck (env)) {
+    _ml_loge ("Failed to set the key-value data in ml-information.");
+    (*env)->ExceptionClear (env);
+  }
+
+  (*env)->DeleteLocalRef (env, jkey);
+  (*env)->DeleteLocalRef (env, jvalue);
+}
+
+/**
+ * @brief Convert ml-information to MLInformation class.
+ */
+static jobjectArray
+nns_service_convert_ml_info (JNIEnv * env, gpointer handle, gboolean is_list)
+{
+  nns_service_iter_data_s *it;
+  jobjectArray oinfo = NULL;
+  ml_information_h info = NULL;
+  ml_information_list_h info_list = NULL;
+  unsigned int i, length;
+
+  it = g_new0 (nns_service_iter_data_s, 1);
+
+  it->env = env;
+  it->cls = (*env)->FindClass (env, NNS_CLS_MLINFO);
+  it->mid_init = (*env)->GetMethodID (env, it->cls, "<init>", "()V");
+  it->mid_set = (*env)->GetMethodID (env, it->cls, "set",
+      "(Ljava/lang/String;Ljava/lang/String;)V");
+
+  if (is_list) {
+    info_list = (ml_information_list_h) handle;
+    ml_information_list_length (info_list, &length);
+  } else {
+    info = (ml_information_h) handle;
+    length = 1U;
+  }
+
+  oinfo = (*env)->NewObjectArray (env, (jsize) length, it->cls, NULL);
+
+  if (oinfo) {
+    for (i = 0; i < length; i++) {
+      jobject item;
+
+      item = it->item = (*env)->NewObject (env, it->cls, it->mid_init);
+      if (!item) {
+        _ml_loge ("Failed to allocate an object for ml-information.");
+        (*env)->DeleteLocalRef (env, oinfo);
+        oinfo = NULL;
+        break;
+      }
+
+      if (is_list) {
+        ml_information_list_get (info_list, i, &info);
+      }
+
+      ml_information_iterate (info, nns_service_set_ml_info, it);
+
+      (*env)->SetObjectArrayElement (env, oinfo, (jsize) i, item);
+      (*env)->DeleteLocalRef (env, item);
+    }
+  } else {
+    _ml_loge ("Failed to allocate a list of objects for ml-information.");
+  }
+
+  (*env)->DeleteLocalRef (env, it->cls);
+  g_free (it);
+
+  return oinfo;
 }
 
 /**
@@ -380,6 +475,300 @@ nns_native_service_get_info (JNIEnv * env, jobject thiz, jlong handle,
 }
 
 /**
+ * @brief Native method for ml-service API.
+ */
+static jlong
+nns_native_service_model_register (JNIEnv * env, jclass clazz, jstring name,
+    jstring path, jboolean activate, jstring description)
+{
+  int status;
+
+  const char *model_name = (*env)->GetStringUTFChars (env, name, NULL);
+  const char *model_path = (*env)->GetStringUTFChars (env, path, NULL);
+  const char *model_desc =
+      (description) ? (*env)->GetStringUTFChars (env, description, NULL) : NULL;
+  unsigned int version = 0;
+
+  status = ml_service_model_register (model_name, model_path, activate,
+      model_desc, &version);
+  if (status != ML_ERROR_NONE) {
+    _ml_loge ("Failed to register the model information (%s).", model_name);
+  }
+
+  (*env)->ReleaseStringUTFChars (env, name, model_name);
+  (*env)->ReleaseStringUTFChars (env, path, model_path);
+
+  if (description) {
+    (*env)->ReleaseStringUTFChars (env, description, model_desc);
+  }
+
+  return (jlong) version;
+}
+
+/**
+ * @brief Native method for ml-service API.
+ */
+static jboolean
+nns_native_service_model_delete (JNIEnv * env, jclass clazz, jstring name,
+    jlong version)
+{
+  int status;
+
+  const char *model_name = (*env)->GetStringUTFChars (env, name, NULL);
+  unsigned int model_ver = (unsigned int) version;
+
+  status = ml_service_model_delete (model_name, model_ver);
+  if (status != ML_ERROR_NONE) {
+    _ml_loge ("Failed to delete the model information (%s).", model_name);
+  }
+
+  (*env)->ReleaseStringUTFChars (env, name, model_name);
+
+  return (status == ML_ERROR_NONE);
+}
+
+/**
+ * @brief Native method for ml-service API.
+ */
+static jboolean
+nns_native_service_model_activate (JNIEnv * env, jclass clazz, jstring name,
+    jlong version)
+{
+  int status;
+
+  const char *model_name = (*env)->GetStringUTFChars (env, name, NULL);
+  unsigned int model_ver = (unsigned int) version;
+
+  status = ml_service_model_activate (model_name, model_ver);
+  if (status != ML_ERROR_NONE) {
+    _ml_loge ("Failed to activate the model (%s:%u).", model_name, model_ver);
+  }
+
+  (*env)->ReleaseStringUTFChars (env, name, model_name);
+
+  return (status == ML_ERROR_NONE);
+}
+
+/**
+ * @brief Native method for ml-service API.
+ */
+static jboolean
+nns_native_service_model_update_desc (JNIEnv * env, jclass clazz, jstring name,
+    jlong version, jstring description)
+{
+  int status;
+
+  const char *model_name = (*env)->GetStringUTFChars (env, name, NULL);
+  const char *model_desc = (*env)->GetStringUTFChars (env, description, NULL);
+  unsigned int model_ver = (unsigned int) version;
+
+  status = ml_service_model_update_description (model_name, model_ver,
+      model_desc);
+  if (status != ML_ERROR_NONE) {
+    _ml_loge ("Failed to update the model description (%s:%u).", model_name,
+        model_ver);
+  }
+
+  (*env)->ReleaseStringUTFChars (env, name, model_name);
+  (*env)->ReleaseStringUTFChars (env, description, model_desc);
+
+  return (status == ML_ERROR_NONE);
+}
+
+/**
+ * @brief Native method for ml-service API.
+ */
+static jobjectArray
+nns_native_service_model_get (JNIEnv * env, jclass clazz, jstring name,
+    jlong version, jboolean activated)
+{
+  ml_information_h info = NULL;
+  ml_information_list_h info_list = NULL;
+  jobjectArray oinfo = NULL;
+  int status;
+
+  const char *model_name = (*env)->GetStringUTFChars (env, name, NULL);
+  unsigned int model_ver = (unsigned int) version;
+
+  if (activated) {
+    status = ml_service_model_get_activated (model_name, &info);
+  } else {
+    if (model_ver > 0) {
+      status = ml_service_model_get (model_name, model_ver, &info);
+    } else {
+      status = ml_service_model_get_all (model_name, &info_list);
+    }
+  }
+
+  if (status == ML_ERROR_NONE) {
+    if (info_list) {
+      oinfo = nns_service_convert_ml_info (env, info_list, TRUE);
+    } else {
+      oinfo = nns_service_convert_ml_info (env, info, FALSE);
+    }
+  } else {
+    _ml_loge ("Failed to get the model information (%s).", model_name);
+  }
+
+  if (info) {
+    ml_information_destroy (info);
+  }
+
+  if (info_list) {
+    ml_information_list_destroy (info_list);
+  }
+
+  (*env)->ReleaseStringUTFChars (env, name, model_name);
+
+  return oinfo;
+}
+
+/**
+ * @brief Native method for ml-service API.
+ */
+static jboolean
+nns_native_service_resource_add (JNIEnv * env, jclass clazz, jstring name,
+    jstring path, jstring description)
+{
+  int status;
+
+  const char *res_name = (*env)->GetStringUTFChars (env, name, NULL);
+  const char *res_path = (*env)->GetStringUTFChars (env, path, NULL);
+  const char *res_desc =
+      (description) ? (*env)->GetStringUTFChars (env, description, NULL) : NULL;
+
+  status = ml_service_resource_add (res_name, res_path, res_desc);
+  if (status != ML_ERROR_NONE) {
+    _ml_loge ("Failed to add the resource information (%s).", res_name);
+  }
+
+  (*env)->ReleaseStringUTFChars (env, name, res_name);
+  (*env)->ReleaseStringUTFChars (env, path, res_path);
+
+  if (description) {
+    (*env)->ReleaseStringUTFChars (env, description, res_desc);
+  }
+
+  return (status == ML_ERROR_NONE);
+}
+
+/**
+ * @brief Native method for ml-service API.
+ */
+static jboolean
+nns_native_service_resource_delete (JNIEnv * env, jclass clazz, jstring name)
+{
+  int status;
+
+  const char *res_name = (*env)->GetStringUTFChars (env, name, NULL);
+
+  status = ml_service_resource_delete (res_name);
+  if (status != ML_ERROR_NONE) {
+    _ml_loge ("Failed to delete the resource information (%s).", res_name);
+  }
+
+  (*env)->ReleaseStringUTFChars (env, name, res_name);
+
+  return (status == ML_ERROR_NONE);
+}
+
+/**
+ * @brief Native method for ml-service API.
+ */
+static jobjectArray
+nns_native_service_resource_get (JNIEnv * env, jclass clazz, jstring name)
+{
+  ml_information_list_h info_list = NULL;
+  jobjectArray oinfo = NULL;
+  int status;
+
+  const char *res_name = (*env)->GetStringUTFChars (env, name, NULL);
+
+  status = ml_service_resource_get (res_name, &info_list);
+  if (status == ML_ERROR_NONE) {
+    oinfo = nns_service_convert_ml_info (env, info_list, TRUE);
+  } else {
+    _ml_loge ("Failed to get the resource information (%s).", res_name);
+  }
+
+  if (info_list) {
+    ml_information_list_destroy (info_list);
+  }
+
+  (*env)->ReleaseStringUTFChars (env, name, res_name);
+
+  return oinfo;
+}
+
+/**
+ * @brief Native method for ml-service API.
+ */
+static jboolean
+nns_native_service_pipeline_set (JNIEnv * env, jclass clazz, jstring name,
+    jstring description)
+{
+  int status;
+
+  const char *pipe_name = (*env)->GetStringUTFChars (env, name, NULL);
+  const char *pipe_desc = (*env)->GetStringUTFChars (env, description, NULL);
+
+  status = ml_service_pipeline_set (pipe_name, pipe_desc);
+  if (status != ML_ERROR_NONE) {
+    _ml_loge ("Failed to set the pipeline description (%s).", pipe_name);
+  }
+
+  (*env)->ReleaseStringUTFChars (env, name, pipe_name);
+  (*env)->ReleaseStringUTFChars (env, description, pipe_desc);
+
+  return (status == ML_ERROR_NONE);
+}
+
+/**
+ * @brief Native method for ml-service API.
+ */
+static jstring
+nns_native_service_pipeline_get (JNIEnv * env, jclass clazz, jstring name)
+{
+  int status;
+
+  const char *pipe_name = (*env)->GetStringUTFChars (env, name, NULL);
+  char *pipe_desc = NULL;
+  jstring description = NULL;
+
+  status = ml_service_pipeline_get (pipe_name, &pipe_desc);
+  if (status == ML_ERROR_NONE) {
+    description = (*env)->NewStringUTF (env, pipe_desc);
+    g_free (pipe_desc);
+  } else {
+    _ml_loge ("Failed to get the pipeline description (%s).", pipe_name);
+  }
+
+  (*env)->ReleaseStringUTFChars (env, name, pipe_name);
+
+  return description;
+}
+
+/**
+ * @brief Native method for ml-service API.
+ */
+static jboolean
+nns_native_service_pipeline_delete (JNIEnv * env, jclass clazz, jstring name)
+{
+  int status;
+
+  const char *pipe_name = (*env)->GetStringUTFChars (env, name, NULL);
+
+  status = ml_service_pipeline_delete (pipe_name);
+  if (status != ML_ERROR_NONE) {
+    _ml_loge ("Failed to delete the pipeline description (%s).", pipe_name);
+  }
+
+  (*env)->ReleaseStringUTFChars (env, name, pipe_name);
+
+  return (status == ML_ERROR_NONE);
+}
+
+/**
  * @brief List of implemented native methods for ml-service class.
  */
 static JNINativeMethod native_methods_service[] = {
@@ -401,6 +790,28 @@ static JNINativeMethod native_methods_service[] = {
       (void *) nns_native_service_set_info},
   {(char *) "nativeGetInfo", (char *) "(JLjava/lang/String;)Ljava/lang/String;",
       (void *) nns_native_service_get_info},
+  {(char *) "nativeModelRegister", (char *) "(Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;)J",
+      (void *) nns_native_service_model_register},
+  {(char *) "nativeModelDelete", (char *) "(Ljava/lang/String;J)Z",
+      (void *) nns_native_service_model_delete},
+  {(char *) "nativeModelActivate", (char *) "(Ljava/lang/String;J)Z",
+      (void *) nns_native_service_model_activate},
+  {(char *) "nativeModelUpdateDescription", (char *) "(Ljava/lang/String;JLjava/lang/String;)Z",
+      (void *) nns_native_service_model_update_desc},
+  {(char *) "nativeModelGet", (char *) "(Ljava/lang/String;JZ)[L" NNS_CLS_MLINFO ";",
+      (void *) nns_native_service_model_get},
+  {(char *) "nativeResourceAdd", (char *) "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Z",
+      (void *) nns_native_service_resource_add},
+  {(char *) "nativeResourceDelete", (char *) "(Ljava/lang/String;)Z",
+      (void *) nns_native_service_resource_delete},
+  {(char *) "nativeResourceGet", (char *) "(Ljava/lang/String;)[L" NNS_CLS_MLINFO ";",
+      (void *) nns_native_service_resource_get},
+  {(char *) "nativePipelineSet", (char *) "(Ljava/lang/String;Ljava/lang/String;)Z",
+      (void *) nns_native_service_pipeline_set},
+  {(char *) "nativePipelineGet", (char *) "(Ljava/lang/String;)Ljava/lang/String;",
+      (void *) nns_native_service_pipeline_get},
+  {(char *) "nativePipelineDelete", (char *) "(Ljava/lang/String;)Z",
+      (void *) nns_native_service_pipeline_delete}
 };
 
 /**

@@ -5,7 +5,9 @@ $ tree .
 └── nnstreamer
     ├── config
     │   ├── config_pipeline_imgclf.conf
-    │   └── config_single_imgclf.conf
+    │   ├── config_pipeline_imgclf_key.conf
+    │   ├── config_single_imgclf.conf
+    │   └── config_single_imgclf_key.conf
     ├── pytorch_data
     │   ├── mobilenetv2-quant_core-nnapi.pt
     │   └── orange_float.raw
