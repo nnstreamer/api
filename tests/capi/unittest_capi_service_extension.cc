@@ -390,6 +390,7 @@ _extension_test_imgclf (ml_service_h handle, gboolean is_pipeline)
   _free_test_data (tdata);
 }
 
+#if defined(ENABLE_LLAMACPP)
 /**
  * @brief Callback function for scenario test.
  */
@@ -491,7 +492,7 @@ TEST (MLServiceExtension, scenarioConfigLlamacpp)
   status = ml_service_destroy (handle);
   EXPECT_EQ (status, ML_ERROR_NONE);
 }
-
+#endif /* ENABLE_LLAMACPP */
 
 /**
  * @brief Usage of ml-service extension API.

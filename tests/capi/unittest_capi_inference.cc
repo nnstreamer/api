@@ -2332,9 +2332,11 @@ TEST (nnstreamer_capi_util, availability_06)
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, true);
 
+#if defined(__aarch64__) || defined(__arm__)
   status = ml_check_nnfw_availability (ML_NNFW_TYPE_ARMNN, ML_NNFW_HW_CPU_NEON, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
   EXPECT_EQ (result, true);
+#endif
 
   status = ml_check_nnfw_availability (ML_NNFW_TYPE_ARMNN, ML_NNFW_HW_GPU, &result);
   EXPECT_EQ (status, ML_ERROR_NONE);
@@ -6743,7 +6745,7 @@ TEST (nnstreamer_capi_element, get_property_enum_04_n)
   status = ml_pipeline_element_get_handle (handle, "demux", &demux_h);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  status = ml_pipeline_element_set_property_string (demux_h, "tensorpick", "1,2");
+  status = ml_pipeline_element_set_property_string (demux_h, "tensorpick", "0");
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   /* Test Code */
