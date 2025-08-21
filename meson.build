@@ -183,6 +183,12 @@ if ncnn_dep.found()
   add_project_arguments('-DENABLE_NCNN=1', language: ['c', 'cpp'])
 endif
 
+# llama.cpp
+llamacpp_dep = dependency('llama', required: false)
+if llamacpp_dep.found()
+  add_project_arguments('-DENABLE_LLAMACPP=1', language: ['c', 'cpp'])
+endif
+
 # Set install path
 api_install_prefix = get_option('prefix')
 api_install_libdir = join_paths(api_install_prefix, get_option('libdir'))
