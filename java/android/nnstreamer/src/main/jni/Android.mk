@@ -29,7 +29,7 @@ EXT_INCLUDE_PATH := $(LOCAL_PATH)/external/include
 EXT_LIB_PATH := $(LOCAL_PATH)/external/lib/$(TARGET_ARCH_ABI)
 
 # Set ML API Version
-ML_API_VERSION  := 1.8.6
+ML_API_VERSION  := 1.8.8
 ML_API_VERSION_MAJOR := $(word 1,$(subst ., ,${ML_API_VERSION}))
 ML_API_VERSION_MINOR := $(word 2,$(subst ., ,${ML_API_VERSION}))
 ML_API_VERSION_MICRO := $(word 3,$(subst ., ,${ML_API_VERSION}))

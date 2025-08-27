@@ -1,3 +1,9 @@
+ml-api (1.8.8.0) unstable bionic focal jammy noble; urgency=medium
+
+  * Release of 1.8.8 (Tizen 10.0 M2)
+
+ -- MyungJoo Ham <myungjoo.ham@samsung.com>  Wed, 27 Aug 2025 10:30:00 +0900
+
 ml-api (1.8.6.0) unstable bionic focal jammy; urgency=medium
 
   * Release of 1.8.6 (Tizen 9.0 M2)
