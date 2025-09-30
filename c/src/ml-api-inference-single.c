@@ -286,7 +286,7 @@ ml_check_nnfw_availability (ml_nnfw_type_e nnfw, ml_nnfw_hw_e hw,
  * @note this tensor memory wrapper will be reused for each invoke.
  */
 static void
-__setup_in_out_tensors (ml_single * single_h)
+_setup_in_out_tensors (ml_single *single_h)
 {
   guint i;
   ml_tensors_data_s *in_tensors = (ml_tensors_data_s *) single_h->in_tensors;
@@ -403,8 +403,7 @@ exit:
  * the framework but by tensor filter element.
  */
 static void
-set_destroy_notify (ml_single * single_h, ml_tensors_data_s * data,
-    gboolean add)
+set_destroy_notify (ml_single *single_h, ml_tensors_data_s *data, gboolean add)
 {
   if (single_h->klass->allocate_in_invoke (single_h->filter)) {
     data->destroy = ml_single_destroy_notify_cb;
@@ -422,7 +421,7 @@ set_destroy_notify (ml_single * single_h, ml_tensors_data_s * data,
  * @brief Internal function to call subplugin's invoke
  */
 static inline int
-__invoke (ml_single * single_h, ml_tensors_data_h in, ml_tensors_data_h out,
+__invoke (ml_single *single_h, ml_tensors_data_h in, ml_tensors_data_h out,
     gboolean alloc_output)
 {
   ml_tensors_data_s *in_data, *out_data;
@@ -455,7 +454,7 @@ __invoke (ml_single * single_h, ml_tensors_data_h in, ml_tensors_data_h out,
  * @note Do not call this if single_h->free_output is false (output data is not allocated in single-shot).
  */
 static inline void
-__process_output (ml_single * single_h, ml_tensors_data_h output)
+__process_output (ml_single *single_h, ml_tensors_data_h output)
 {
   ml_tensors_data_s *out_data;
 
@@ -574,7 +573,7 @@ exit:
  * @brief Internal function to get the asynchronous invoke.
  */
 static int
-ml_single_async_cb (GstTensorMemory * data, GstTensorsInfo * info,
+ml_single_async_cb (GstTensorMemory *data, GstTensorsInfo *info,
     void *user_data)
 {
   ml_single_h single = (ml_single_h) user_data;
@@ -651,7 +650,7 @@ done:
  */
 static int
 ml_single_update_info (ml_single_h single,
-    const ml_tensors_info_h in_info, ml_tensors_info_h * out_info)
+    const ml_tensors_info_h in_info, ml_tensors_info_h *out_info)
 {
   if (!single)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -671,7 +670,7 @@ ml_single_update_info (ml_single_h single,
       "Configuring the neural network model with the given input information has failed with %d error code. The given input information ('in_info' parameter) might be invalid or the given neural network cannot accept it as its input data.",
       _ERRNO);
 
-  __setup_in_out_tensors (single);
+  _setup_in_out_tensors (single);
   _ml_error_report_return_continue_iferr (ml_single_get_output_info (single,
           out_info),
       "Fetching output info after configuring input information has failed with %d error code.",
@@ -684,8 +683,8 @@ ml_single_update_info (ml_single_h single,
  * @brief Internal function to get the gst info from tensor-filter.
  */
 static void
-ml_single_get_gst_info (ml_single * single_h, gboolean is_input,
-    GstTensorsInfo * gst_info)
+ml_single_get_gst_info (ml_single *single_h, gboolean is_input,
+    GstTensorsInfo *gst_info)
 {
   const gchar *prop_prefix, *prop_name, *prop_type;
   gchar *val;
@@ -744,7 +743,7 @@ ml_single_get_gst_info (ml_single * single_h, gboolean is_input,
  * @brief Internal function to set the gst info in tensor-filter.
  */
 static int
-ml_single_set_gst_info (ml_single * single_h, const GstTensorsInfo * in_info)
+ml_single_set_gst_info (ml_single *single_h, const GstTensorsInfo *in_info)
 {
   GstTensorsInfo out_info;
   int status = ML_ERROR_NONE;
@@ -758,7 +757,7 @@ ml_single_set_gst_info (ml_single * single_h, const GstTensorsInfo * in_info)
     gst_tensors_info_copy (&single_h->in_info, in_info);
     gst_tensors_info_copy (&single_h->out_info, &out_info);
 
-    __setup_in_out_tensors (single_h);
+    _setup_in_out_tensors (single_h);
   } else if (ret == -ENOENT) {
     status = ML_ERROR_NOT_SUPPORTED;
   } else {
@@ -774,8 +773,8 @@ ml_single_set_gst_info (ml_single * single_h, const GstTensorsInfo * in_info)
  * @brief Set the info for input/output tensors
  */
 static int
-ml_single_set_inout_tensors_info (GObject * object,
-    const gboolean is_input, ml_tensors_info_s * tensors_info)
+ml_single_set_inout_tensors_info (GObject *object,
+    const gboolean is_input, ml_tensors_info_s *tensors_info)
 {
   int status = ML_ERROR_NONE;
   GstTensorsInfo info;
@@ -834,7 +833,7 @@ ml_single_set_inout_tensors_info (GObject * object,
  */
 static gboolean
 ml_single_set_info_in_handle (ml_single_h single, gboolean is_input,
-    ml_tensors_info_s * tensors_info)
+    ml_tensors_info_s *tensors_info)
 {
   int status;
   ml_single *single_h;
@@ -966,8 +965,8 @@ done:
  * @brief Validate arguments for open
  */
 static int
-_ml_single_open_custom_validate_arguments (ml_single_h * single,
-    ml_single_preset * info)
+_ml_single_open_custom_validate_arguments (ml_single_h *single,
+    ml_single_preset *info)
 {
   if (!single)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -998,6 +997,229 @@ _ml_single_open_custom_validate_arguments (ml_single_h * single,
 }
 
 /**
+ * @brief Validate and determine NNFW type from model files
+ */
+static int
+_validate_and_determine_nnfw (ml_single_preset *info,
+    ml_nnfw_type_e *determined_nnfw)
+{
+  ml_nnfw_type_e nnfw = info->nnfw;
+  g_autofree gchar *converted_models = NULL;
+  gchar **list_models;
+  guint i, num_models;
+  int status;
+
+  converted_models = _ml_convert_predefined_entity (info->models);
+  list_models = g_strsplit (converted_models, ",", -1);
+  num_models = g_strv_length (list_models);
+  for (i = 0; i < num_models; i++)
+    g_strstrip (list_models[i]);
+
+  status =
+      _ml_validate_model_file ((const char **) list_models, num_models, &nnfw);
+  if (status != ML_ERROR_NONE) {
+    _ml_error_report_continue
+        ("Cannot validate the model (1st model: %s. # models: %d). Error code: %d",
+        list_models[0], num_models, status);
+    g_strfreev (list_models);
+    return status;
+  }
+
+  g_strfreev (list_models);
+
+  /* Check hardware availability */
+  if (!_ml_nnfw_is_available (nnfw, info->hw)) {
+    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
+        "The given nnfw, '%s', is not supported. There is no corresponding tensor-filter subplugin available or the given hardware requirement is not supported for the given nnfw.",
+        _ml_get_nnfw_subplugin_name (nnfw));
+  }
+
+  *determined_nnfw = nnfw;
+  return ML_ERROR_NONE;
+}
+
+/**
+ * @brief Configure single handle with basic settings
+ */
+static int
+_configure_handle (ml_single *single_h, ml_single_preset *info)
+{
+  single_h->invoke_dynamic = info->invoke_dynamic;
+  return ML_ERROR_NONE;
+}
+
+/**
+ * @brief Configure async settings for single handle
+ */
+static void
+_configure_async_settings (ml_single *single_h, ml_single_preset *info)
+{
+  single_h->invoke_async = info->invoke_async;
+  single_h->invoke_async_cb = info->invoke_async_cb;
+  single_h->invoke_async_pdata = info->invoke_async_pdata;
+}
+
+/**
+ * @brief Configure tensor information for general NNFW frameworks
+ * @details This function handles TensorFlow, SNAP, PyTorch, Trix-Engine, and NCNN
+ *          which require both input and output tensor information to be provided.
+ */
+static int
+_configure_general_tensors (ml_single *single_h, ml_single_preset *info,
+    const char *fw_name)
+{
+  GObject *filter_obj = G_OBJECT (single_h->filter);
+  ml_tensors_info_s *in_tensors_info = (ml_tensors_info_s *) info->input_info;
+  ml_tensors_info_s *out_tensors_info = (ml_tensors_info_s *) info->output_info;
+  int status = ML_ERROR_NONE;
+
+  /* General frameworks require both input and output tensor information */
+  if (in_tensors_info && out_tensors_info) {
+    status =
+        ml_single_set_inout_tensors_info (filter_obj, TRUE, in_tensors_info);
+    if (status != ML_ERROR_NONE) {
+      _ml_error_report_continue
+          ("Input tensors info is given; however, failed to set input tensors info. Error code: %d",
+          status);
+      return status;
+    }
+
+    status =
+        ml_single_set_inout_tensors_info (filter_obj, FALSE, out_tensors_info);
+    if (status != ML_ERROR_NONE) {
+      _ml_error_report_continue
+          ("Output tensors info is given; however, failed to set output tensors info. Error code: %d",
+          status);
+      return status;
+    }
+  } else {
+    _ml_error_report
+        ("To run the given nnfw, '%s', with a neural network model, both input and output information should be provided.",
+        fw_name);
+    return ML_ERROR_INVALID_PARAMETER;
+  }
+
+  return ML_ERROR_NONE;
+}
+
+/**
+ * @brief Configure tensor information for ARMNN framework
+ * @details This function handles ARMNN which treats input and output tensor
+ *          information as optional.
+ */
+static int
+_configure_armnn_tensors (ml_single *single_h, ml_single_preset *info,
+    const char *fw_name)
+{
+  GObject *filter_obj = G_OBJECT (single_h->filter);
+  ml_tensors_info_s *in_tensors_info = (ml_tensors_info_s *) info->input_info;
+  ml_tensors_info_s *out_tensors_info = (ml_tensors_info_s *) info->output_info;
+  int status = ML_ERROR_NONE;
+
+  /* ARMNN treats input and output tensor information as optional */
+  if (in_tensors_info) {
+    status =
+        ml_single_set_inout_tensors_info (filter_obj, TRUE, in_tensors_info);
+    if (status != ML_ERROR_NONE) {
+      _ml_error_report_continue
+          ("With nnfw '%s', input tensors info is optional. However, the user has provided an invalid input tensors info. Error code: %d",
+          fw_name, status);
+      return status;
+    }
+  }
+
+  if (out_tensors_info) {
+    status =
+        ml_single_set_inout_tensors_info (filter_obj, FALSE, out_tensors_info);
+    if (status != ML_ERROR_NONE) {
+      _ml_error_report_continue
+          ("With nnfw '%s', output tensors info is optional. However, the user has provided an invalid output tensors info. Error code: %d",
+          fw_name, status);
+      return status;
+    }
+  }
+
+  return ML_ERROR_NONE;
+}
+
+/**
+ * @brief Configure NNFW-specific tensor information
+ * @details This function delegates tensor configuration to specific handlers
+ *          based on the NNFW type, following the Single Responsibility Principle.
+ */
+static int
+_configure_nnfw_tensors (ml_single *single_h, ml_single_preset *info,
+    const char *fw_name)
+{
+  switch (info->nnfw) {
+    case ML_NNFW_TYPE_TENSORFLOW:
+    case ML_NNFW_TYPE_SNAP:
+    case ML_NNFW_TYPE_PYTORCH:
+    case ML_NNFW_TYPE_TRIX_ENGINE:
+    case ML_NNFW_TYPE_NCNN:
+      return _configure_general_tensors (single_h, info, fw_name);
+
+    case ML_NNFW_TYPE_ARMNN:
+      return _configure_armnn_tensors (single_h, info, fw_name);
+
+    default:
+      return ML_ERROR_NONE;     /* Other NNFWs don't need tensor configuration */
+  }
+}
+
+/**
+ * @brief Configure filter properties
+ */
+static void
+_configure_filter_properties (ml_single *single_h, ml_single_preset *info,
+    const char *fw_name, char *hw_name)
+{
+  g_autofree gchar *converted_models = NULL;
+
+  converted_models = _ml_convert_predefined_entity (info->models);
+
+  g_object_set (G_OBJECT (single_h->filter), "framework", fw_name,
+      "accelerator", hw_name, "model", converted_models,
+      "invoke-dynamic", single_h->invoke_dynamic,
+      "invoke-async", single_h->invoke_async, NULL);
+
+  if (info->custom_option) {
+    g_object_set (G_OBJECT (single_h->filter), "custom", info->custom_option,
+        NULL);
+  }
+
+  /* Set async callback. */
+  if (single_h->invoke_async) {
+    single_h->klass->set_invoke_async_callback (single_h->filter,
+        ml_single_async_cb, single_h);
+  }
+}
+
+/**
+ * @brief Setup input/output tensors information
+ */
+static int
+_setup_inout_info (ml_single *single_h, ml_single_preset *info)
+{
+  ml_tensors_info_s *in_tensors_info = (ml_tensors_info_s *) info->input_info;
+  ml_tensors_info_s *out_tensors_info = (ml_tensors_info_s *) info->output_info;
+
+  if (!ml_single_set_info_in_handle (single_h, TRUE, in_tensors_info)) {
+    _ml_error_report
+        ("The input tensors info is invalid. Cannot configure single_h handle with the given input tensors info.");
+    return ML_ERROR_INVALID_PARAMETER;
+  }
+
+  if (!ml_single_set_info_in_handle (single_h, FALSE, out_tensors_info)) {
+    _ml_error_report
+        ("The output tensors info is invalid. Cannot configure single_h handle with the given output tensors info.");
+    return ML_ERROR_INVALID_PARAMETER;
+  }
+
+  return ML_ERROR_NONE;
+}
+
+/**
  * @brief Internal function to convert accelerator as tensor_filter property format.
  * @note returned value must be freed by the caller
  * @note More details on format can be found in gst_tensor_filter_install_properties() in tensor_filter_common.c.
@@ -1019,18 +1241,12 @@ _ml_nnfw_to_str_prop (const ml_nnfw_hw_e hw)
  * @brief Opens an ML model with the custom options and returns the instance as a handle.
  */
 int
-ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
+ml_single_open_custom (ml_single_h *single, ml_single_preset *info)
 {
   ml_single *single_h;
-  GObject *filter_obj;
   int status = ML_ERROR_NONE;
-  ml_tensors_info_s *in_tensors_info, *out_tensors_info;
   ml_nnfw_type_e nnfw;
-  ml_nnfw_hw_e hw;
   const gchar *fw_name;
-  g_autofree gchar *converted_models = NULL;
-  gchar **list_models;
-  guint i, num_models;
   char *hw_name;
 
   check_feature_state (ML_FEATURE_INFERENCE);
@@ -1043,42 +1259,12 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
   /* init null */
   *single = NULL;
 
-  in_tensors_info = (ml_tensors_info_s *) info->input_info;
-  out_tensors_info = (ml_tensors_info_s *) info->output_info;
-  nnfw = info->nnfw;
-  hw = info->hw;
-  fw_name = _ml_get_nnfw_subplugin_name (nnfw);
-  converted_models = _ml_convert_predefined_entity (info->models);
-
-  /**
-   * 1. Determine nnfw and validate model file
-   */
-  list_models = g_strsplit (converted_models, ",", -1);
-  num_models = g_strv_length (list_models);
-  for (i = 0; i < num_models; i++)
-    g_strstrip (list_models[i]);
-
-  status = _ml_validate_model_file ((const char **) list_models, num_models,
-      &nnfw);
+  status = _validate_and_determine_nnfw (info, &nnfw);
   if (status != ML_ERROR_NONE) {
-    _ml_error_report_continue
-        ("Cannot validate the model (1st model: %s. # models: %d). Error code: %d",
-        list_models[0], num_models, status);
-    g_strfreev (list_models);
     return status;
   }
 
-  g_strfreev (list_models);
-
-  /**
-   * 2. Determine hw
-   * (Supposed CPU only) Support others later.
-   */
-  if (!_ml_nnfw_is_available (nnfw, hw)) {
-    _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
-        "The given nnfw, '%s', is not supported. There is no corresponding tensor-filter subplugin available or the given hardware requirement is not supported for the given nnfw.",
-        fw_name);
-  }
+  fw_name = _ml_get_nnfw_subplugin_name (nnfw);
 
   /* Create ml_single object */
   if ((single_h = ml_single_create_handle (nnfw)) == NULL) {
@@ -1086,96 +1272,22 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
         "Cannot create handle for the given nnfw, %s", fw_name);
   }
 
-  single_h->invoke_dynamic = info->invoke_dynamic;
-  single_h->invoke_async = info->invoke_async;
-  single_h->invoke_async_cb = info->invoke_async_cb;
-  single_h->invoke_async_pdata = info->invoke_async_pdata;
-
-  filter_obj = G_OBJECT (single_h->filter);
-
-  /**
-   * 3. Construct a direct connection with the nnfw.
-   * Note that we do not construct a pipeline since 2019.12.
-   */
-  if (nnfw == ML_NNFW_TYPE_TENSORFLOW || nnfw == ML_NNFW_TYPE_SNAP ||
-      nnfw == ML_NNFW_TYPE_PYTORCH || nnfw == ML_NNFW_TYPE_TRIX_ENGINE ||
-      nnfw == ML_NNFW_TYPE_NCNN) {
-    /* set input and output tensors information */
-    if (in_tensors_info && out_tensors_info) {
-      status =
-          ml_single_set_inout_tensors_info (filter_obj, TRUE, in_tensors_info);
-      if (status != ML_ERROR_NONE) {
-        _ml_error_report_continue
-            ("Input tensors info is given; however, failed to set input tensors info. Error code: %d",
-            status);
-        goto error;
-      }
-
-      status =
-          ml_single_set_inout_tensors_info (filter_obj, FALSE,
-          out_tensors_info);
-      if (status != ML_ERROR_NONE) {
-        _ml_error_report_continue
-            ("Output tensors info is given; however, failed to set output tensors info. Error code: %d",
-            status);
-        goto error;
-      }
-    } else {
-      _ml_error_report
-          ("To run the given nnfw, '%s', with a neural network model, both input and output information should be provided.",
-          fw_name);
-      status = ML_ERROR_INVALID_PARAMETER;
-      goto error;
-    }
-  } else if (nnfw == ML_NNFW_TYPE_ARMNN) {
-    /* set input and output tensors information, if available */
-    if (in_tensors_info) {
-      status =
-          ml_single_set_inout_tensors_info (filter_obj, TRUE, in_tensors_info);
-      if (status != ML_ERROR_NONE) {
-        _ml_error_report_continue
-            ("With nnfw '%s', input tensors info is optional. However, the user has provided an invalid input tensors info. Error code: %d",
-            fw_name, status);
-        goto error;
-      }
-    }
-    if (out_tensors_info) {
-      status =
-          ml_single_set_inout_tensors_info (filter_obj, FALSE,
-          out_tensors_info);
-      if (status != ML_ERROR_NONE) {
-        _ml_error_report_continue
-            ("With nnfw '%s', output tensors info is optional. However, the user has provided an invalid output tensors info. Error code: %d",
-            fw_name, status);
-        goto error;
-      }
-    }
+  status = _configure_handle (single_h, info);
+  if (status != ML_ERROR_NONE) {
+    goto error;
   }
 
-  /* set accelerator, framework, model files and custom option */
-  if (info->fw_name) {
-    fw_name = (const char *) info->fw_name;
-  } else {
-    fw_name = _ml_get_nnfw_subplugin_name (nnfw);       /* retry for "auto" */
-  }
-  hw_name = _ml_nnfw_to_str_prop (hw);
+  _configure_async_settings (single_h, info);
 
-  g_object_set (filter_obj, "framework", fw_name, "accelerator", hw_name,
-      "model", converted_models, "invoke-dynamic", single_h->invoke_dynamic,
-      "invoke-async", single_h->invoke_async, NULL);
+  status = _configure_nnfw_tensors (single_h, info, fw_name);
+  if (status != ML_ERROR_NONE) {
+    goto error;
+  }
+
+  hw_name = _ml_nnfw_to_str_prop (info->hw);
+  _configure_filter_properties (single_h, info, fw_name, hw_name);
   g_free (hw_name);
 
-  if (info->custom_option) {
-    g_object_set (filter_obj, "custom", info->custom_option, NULL);
-  }
-
-  /* Set async callback. */
-  if (single_h->invoke_async) {
-    single_h->klass->set_invoke_async_callback (single_h->filter,
-        ml_single_async_cb, single_h);
-  }
-
-  /* 4. Start the nnfw to get inout configurations if needed */
   if (!single_h->klass->start (single_h->filter)) {
     _ml_error_report
         ("Failed to start NNFW, '%s', to get inout configurations. Subplugin class method has failed to start.",
@@ -1185,6 +1297,10 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
   }
 
   if (nnfw == ML_NNFW_TYPE_NNTR_INF) {
+    ml_tensors_info_s *in_tensors_info = (ml_tensors_info_s *) info->input_info;
+    ml_tensors_info_s *out_tensors_info =
+        (ml_tensors_info_s *) info->output_info;
+
     if (!in_tensors_info || !out_tensors_info) {
       if (!in_tensors_info) {
         GstTensorsInfo in_info;
@@ -1211,23 +1327,13 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
     }
   }
 
-  /* 5. Set in/out configs and metadata */
-  if (!ml_single_set_info_in_handle (single_h, TRUE, in_tensors_info)) {
-    _ml_error_report
-        ("The input tensors info is invalid. Cannot configure single_h handle with the given input tensors info.");
-    status = ML_ERROR_INVALID_PARAMETER;
-    goto error;
-  }
-
-  if (!ml_single_set_info_in_handle (single_h, FALSE, out_tensors_info)) {
-    _ml_error_report
-        ("The output tensors info is invalid. Cannot configure single_h handle with the given output tensors info.");
-    status = ML_ERROR_INVALID_PARAMETER;
+  status = _setup_inout_info (single_h, info);
+  if (status != ML_ERROR_NONE) {
     goto error;
   }
 
   /* Setup input and output memory buffers for invoke */
-  __setup_in_out_tensors (single_h);
+  _setup_in_out_tensors (single_h);
 
   *single = single_h;
   return ML_ERROR_NONE;
@@ -1241,7 +1347,7 @@ error:
  * @brief Opens an ML model and returns the instance as a handle.
  */
 int
-ml_single_open (ml_single_h * single, const char *model,
+ml_single_open (ml_single_h *single, const char *model,
     const ml_tensors_info_h input_info, const ml_tensors_info_h output_info,
     ml_nnfw_type_e nnfw, ml_nnfw_hw_e hw)
 {
@@ -1253,7 +1359,7 @@ ml_single_open (ml_single_h * single, const char *model,
  * @brief Opens an ML model and returns the instance as a handle.
  */
 int
-ml_single_open_full (ml_single_h * single, const char *model,
+ml_single_open_full (ml_single_h *single, const char *model,
     const ml_tensors_info_h input_info, const ml_tensors_info_h output_info,
     ml_nnfw_type_e nnfw, ml_nnfw_hw_e hw, const char *custom_option)
 {
@@ -1273,7 +1379,7 @@ ml_single_open_full (ml_single_h * single, const char *model,
  * @brief Open new single handle with given option.
  */
 int
-ml_single_open_with_option (ml_single_h * single, const ml_option_h option)
+ml_single_open_with_option (ml_single_h *single, const ml_option_h option)
 {
   void *value;
   ml_single_preset info = { 0, };
@@ -1466,7 +1572,7 @@ _ml_single_invoke_validate_data (ml_single_h single,
  */
 static int
 _ml_single_invoke_internal (ml_single_h single,
-    const ml_tensors_data_h input, ml_tensors_data_h * output,
+    const ml_tensors_data_h input, ml_tensors_data_h *output,
     const gboolean need_alloc)
 {
   ml_single *single_h;
@@ -1611,7 +1717,7 @@ exit:
  */
 int
 ml_single_invoke (ml_single_h single,
-    const ml_tensors_data_h input, ml_tensors_data_h * output)
+    const ml_tensors_data_h input, ml_tensors_data_h *output)
 {
   return _ml_single_invoke_internal (single, input, output, TRUE);
 }
@@ -1632,7 +1738,7 @@ ml_single_invoke_fast (ml_single_h single,
  */
 static int
 ml_single_get_tensors_info (ml_single_h single, gboolean is_input,
-    ml_tensors_info_h * info)
+    ml_tensors_info_h *info)
 {
   ml_single *single_h;
   int status = ML_ERROR_NONE;
@@ -1668,7 +1774,7 @@ ml_single_get_tensors_info (ml_single_h single, gboolean is_input,
  * @note information = (tensor dimension, type, name and so on)
  */
 int
-ml_single_get_input_info (ml_single_h single, ml_tensors_info_h * info)
+ml_single_get_input_info (ml_single_h single, ml_tensors_info_h *info)
 {
   return ml_single_get_tensors_info (single, TRUE, info);
 }
@@ -1678,7 +1784,7 @@ ml_single_get_input_info (ml_single_h single, ml_tensors_info_h * info)
  * @note information = (tensor dimension, type, name and so on)
  */
 int
-ml_single_get_output_info (ml_single_h single, ml_tensors_info_h * info)
+ml_single_get_output_info (ml_single_h single, ml_tensors_info_h *info)
 {
   return ml_single_get_tensors_info (single, FALSE, info);
 }
@@ -1748,7 +1854,7 @@ ml_single_set_input_info (ml_single_h single, const ml_tensors_info_h info)
 int
 ml_single_invoke_dynamic (ml_single_h single,
     const ml_tensors_data_h input, const ml_tensors_info_h in_info,
-    ml_tensors_data_h * output, ml_tensors_info_h * out_info)
+    ml_tensors_data_h *output, ml_tensors_info_h *out_info)
 {
   int status;
   ml_tensors_info_h cur_in_info = NULL;
@@ -1967,7 +2073,7 @@ ml_single_get_property (ml_single_h single, const char *name, char **value)
  */
 static int
 __ml_validate_model_file (const char *const *model,
-    const unsigned int num_models, gboolean * is_dir)
+    const unsigned int num_models, gboolean *is_dir)
 {
   guint i;
 
@@ -2009,7 +2115,7 @@ __ml_validate_model_file (const char *const *model,
  */
 int
 _ml_validate_model_file (const char *const *model,
-    const unsigned int num_models, ml_nnfw_type_e * nnfw)
+    const unsigned int num_models, ml_nnfw_type_e *nnfw)
 {
   int status = ML_ERROR_NONE;
   ml_nnfw_type_e detected = ML_NNFW_TYPE_ANY;
