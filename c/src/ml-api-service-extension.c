@@ -11,6 +11,7 @@
  */
 
 #include "ml-api-service-extension.h"
+#include "ml-api-internal.h"
 
 /**
  * @brief The time to wait for new input data in message thread, in millisecond.
@@ -842,11 +843,15 @@ _ml_service_extension_request (ml_service_s * mls, const char *name,
   }
 
   msg->name = g_strdup (name);
-  status = ml_tensors_data_clone (data, &msg->input);
+  /* Zero-Copy Clone */
+  status =
+      _ml_tensors_data_clone_no_alloc ((const ml_tensors_data_s *) data,
+      &msg->input);
 
   if (status != ML_ERROR_NONE) {
     _ml_extension_msg_free (msg);
-    _ml_error_report_return (status, "Failed to clone input data.");
+    _ml_error_report_return (status,
+        "Failed to clone input data without allocation.");
   }
 
   g_async_queue_push (ext->msg_queue, msg);
