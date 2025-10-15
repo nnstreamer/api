@@ -2,4 +2,5 @@
 extend-exclude = ["tests/test_models/models/*", "tests/test_models/data/*"]
 
 [default.extend-words]
+GES = "GES" # GStreamer plugin definition (GSTREAMER_PLUGINS_GES) for Android build
 gret = "gret"

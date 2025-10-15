@@ -83,10 +83,10 @@ _ml_tensors_info_copy_from_gst (ml_tensors_info_h ml_info,
 
   if (!ml_info)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parmater, ml_info, is NULL. It should be a valid ml_tensors_info_s instance, usually created by ml_tensors_info_create(). This is probably an internal bug of ML API.");
+        "The parameter, ml_info, is NULL. It should be a valid ml_tensors_info_s instance, usually created by ml_tensors_info_create(). This is probably an internal bug of ML API.");
   if (!gst_info)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parmater, gst_info, is NULL. It should be a valid GstTensorsInfo instance. This is probably an internal bug of ML API.");
+        "The parameter, gst_info, is NULL. It should be a valid GstTensorsInfo instance. This is probably an internal bug of ML API.");
 
   _info = (ml_tensors_info_s *) ml_info;
 
@@ -110,10 +110,10 @@ _ml_tensors_info_copy_from_ml (GstTensorsInfo * gst_info,
 
   if (!ml_info)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parmater, ml_info, is NULL. It should be a valid ml_tensors_info_s instance, usually created by ml_tensors_info_create(). This is probably an internal bug of ML API.");
+        "The parameter, ml_info, is NULL. It should be a valid ml_tensors_info_s instance, usually created by ml_tensors_info_create(). This is probably an internal bug of ML API.");
   if (!gst_info)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
-        "The parmater, gst_info, is NULL. It should be a valid GstTensorsInfo instance. This is probably an internal bug of ML API.");
+        "The parameter, gst_info, is NULL. It should be a valid GstTensorsInfo instance. This is probably an internal bug of ML API.");
 
   _info = (ml_tensors_info_s *) ml_info;
 
