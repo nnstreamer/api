@@ -267,10 +267,7 @@ for arg in "$@"; do
             IFS=':' read -ra enable_pytorch_args <<< "${arg#*=}"
             is_valid_pytorch_version=0
             enable_pytorch=${enable_pytorch_args[0]}
-            if [[ ${enable_pytorch} == "yes" ]]; then
-                if [[ ${enable_pytorch_args[1]} == "" ]]; then
-                    break
-                fi
+            if [[ ${enable_pytorch} == "yes" && ${enable_pytorch_args[1]} != "" ]]; then
                 for ver in ${pytorch_vers_support}; do
                     if [[ ${ver} == ${enable_pytorch_args[1]} ]]; then
                         is_valid_pytorch_version=1
@@ -288,10 +285,7 @@ for arg in "$@"; do
             IFS=':' read -ra enable_tflite_args <<< "${arg#*=}"
             is_valid_tflite_version=0
             enable_tflite=${enable_tflite_args[0]}
-            if [[ ${enable_tflite} == "yes" ]]; then
-                if [[ ${enable_tflite_args[1]} == "" ]]; then
-                    break
-                fi
+            if [[ ${enable_tflite} == "yes" && ${enable_tflite_args[1]} != "" ]]; then
                 for ver in ${tf_lite_vers_support}; do
                     if [[ ${ver} == ${enable_tflite_args[1]} ]]; then
                         is_valid_tflite_version=1
