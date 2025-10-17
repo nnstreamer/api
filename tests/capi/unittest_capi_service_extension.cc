@@ -9,7 +9,7 @@
 
 #include <gtest/gtest.h>
 #include <glib.h>
-
+#include <iostream>
 #include <ml-api-service-private.h>
 #include <ml-api-service.h>
 #include "ml-api-service-extension.h"
@@ -394,9 +394,9 @@ _extension_test_imgclf (ml_service_h handle, gboolean is_pipeline)
 /**
  * @brief Macro to skip testcase if model file is not ready.
  */
-#define skip_llamacpp_tc(tc_name)                                                                  \
+#define skip_llm_tc(tc_name, model_name)                                                           \
   do {                                                                                             \
-    g_autofree gchar *model_file = _get_model_path ("llama-2-7b-chat.Q2_K.gguf");                  \
+    g_autofree gchar *model_file = _get_model_path (model_name);                                   \
     if (!g_file_test (model_file, G_FILE_TEST_EXISTS)) {                                           \
       g_autofree gchar *msg = g_strdup_printf (                                                    \
           "Skipping '%s' due to missing model file. "                                              \
@@ -406,12 +406,12 @@ _extension_test_imgclf (ml_service_h handle, gboolean is_pipeline)
     }                                                                                              \
   } while (0)
 
+
 /**
  * @brief Callback function for scenario test.
  */
 static void
-_extension_test_llamacpp_cb (
-    ml_service_event_e event, ml_information_h event_data, void *user_data)
+_extension_test_llm_cb (ml_service_event_e event, ml_information_h event_data, void *user_data)
 {
   extension_test_data_s *tdata = (extension_test_data_s *) user_data;
   ml_tensors_data_h data = NULL;
@@ -429,7 +429,8 @@ _extension_test_llamacpp_cb (
       status = ml_tensors_data_get_tensor_data (data, 0U, &_raw, &_size);
       EXPECT_EQ (status, ML_ERROR_NONE);
 
-      g_print ("%s", (char *) _raw);
+      std::cout.write (static_cast<const char *> (_raw), _size); /* korean output */
+      std::cout.flush ();
 
       if (tdata)
         tdata->received++;
@@ -443,15 +444,25 @@ _extension_test_llamacpp_cb (
  * @brief Internal function to run test with ml-service extension handle.
  */
 static inline void
-_extension_test_llamacpp (const gchar *config, gboolean is_pipeline)
+_extension_test_llm (const gchar *config, gchar *input_file, guint sleep_us, gboolean is_pipeline)
 {
   extension_test_data_s *tdata;
   ml_service_h handle;
   ml_tensors_info_h info;
   ml_tensors_data_h input;
   int status;
+  gsize len = 0;
+  g_autofree gchar *contents = NULL;
 
-  const gchar input_text[] = "Hello my name is";
+  if (input_file != NULL) {
+
+    g_autofree gchar *data_file = _get_data_path (input_file);
+    ASSERT_TRUE (g_file_test (data_file, G_FILE_TEST_EXISTS));
+    ASSERT_TRUE (g_file_get_contents (data_file, &contents, &len, NULL));
+  } else {
+    contents = g_strdup ("Hello my name is");
+    len = strlen (contents);
+  }
 
   tdata = _create_test_data (is_pipeline);
   ASSERT_TRUE (tdata != NULL);
@@ -459,7 +470,8 @@ _extension_test_llamacpp (const gchar *config, gboolean is_pipeline)
   status = ml_service_new (config, &handle);
   ASSERT_EQ (status, ML_ERROR_NONE);
 
-  status = ml_service_set_event_cb (handle, _extension_test_llamacpp_cb, tdata);
+  status = ml_service_set_event_cb (handle, _extension_test_llm_cb, tdata);
+
   EXPECT_EQ (status, ML_ERROR_NONE);
 
   /* Create and push input data. */
@@ -468,12 +480,12 @@ _extension_test_llamacpp (const gchar *config, gboolean is_pipeline)
 
   ml_tensors_data_create (info, &input);
 
-  ml_tensors_data_set_tensor_data (input, 0U, input_text, strlen (input_text));
+  ml_tensors_data_set_tensor_data (input, 0U, contents, len);
 
   status = ml_service_request (handle, NULL, input);
   EXPECT_EQ (status, ML_ERROR_NONE);
 
-  g_usleep (5000000U);
+  g_usleep (sleep_us);
   EXPECT_GT (tdata->received, 0);
 
   /* Clear callback before releasing tdata. */
@@ -494,11 +506,11 @@ _extension_test_llamacpp (const gchar *config, gboolean is_pipeline)
  */
 TEST (MLServiceExtension, scenarioConfigLlamacpp)
 {
-  skip_llamacpp_tc ("scenarioConfigLlamacpp");
+  skip_llm_tc ("scenarioConfigLlamacpp", "llama-2-7b-chat.Q2_K.gguf");
 
   g_autofree gchar *config = get_config_path ("config_single_llamacpp.conf");
 
-  _extension_test_llamacpp (config, FALSE);
+  _extension_test_llm (config, NULL, 5000000U, FALSE);
 }
 
 /**
@@ -506,13 +518,31 @@ TEST (MLServiceExtension, scenarioConfigLlamacpp)
  */
 TEST (MLServiceExtension, scenarioConfigLlamacppAsync)
 {
-  skip_llamacpp_tc ("scenarioConfigLlamacppAsync");
+  skip_llm_tc ("scenarioConfigLlamacppAsync", "llama-2-7b-chat.Q2_K.gguf");
 
   g_autofree gchar *config = get_config_path ("config_single_llamacpp_async.conf");
 
-  _extension_test_llamacpp (config, FALSE);
+  _extension_test_llm (config, NULL, 5000000U, FALSE);
+}
+
+/**
+ * @brief Usage of ml-service extension API.
+ *
+ * Note: For test, copy modelfile to current dir
+ * There are some commonly used functions, so Flare is temporarily put into ENABLE_LLAMACPP.
+ */
+TEST (MLServiceExtension, scenarioConfigFlare)
+{
+  g_autofree gchar *input_file = g_strdup ("flare_input.txt");
+
+  skip_llm_tc ("scenarioConfigFlare", "sflare_if_4bit_3b.bin");
+
+  g_autofree gchar *config = get_config_path ("config_single_flare.conf");
+
+  _extension_test_llm (config, input_file, 40000000U, FALSE);
 }
 #endif /* ENABLE_LLAMACPP */
+
 
 /**
  * @brief Usage of ml-service extension API.

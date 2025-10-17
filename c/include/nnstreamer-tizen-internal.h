@@ -19,6 +19,8 @@
 extern "C" {
 #endif /* __cplusplus */
 
+#define ML_NNFW_TYPE_FLARE 23 /**< FLARE framework */
+
 /**
  * @brief Callback for tensor data stream of machine-learning API.
  * @details Note that the buffer may be deallocated after the return and this is synchronously called. Thus, if you need the data afterwards, copy the data to another buffer and return fast. Do not spend too much time in the callback.
