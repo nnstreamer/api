@@ -114,6 +114,7 @@ static const char *ml_nnfw_subplugin_name[] = {
   [ML_NNFW_TYPE_QNN] = "qnn",
   [ML_NNFW_TYPE_LLAMACPP] = "llamacpp",
   [ML_NNFW_TYPE_TIZEN_HAL] = "tizen-hal",
+  [ML_NNFW_TYPE_FLARE] = "flare",
   NULL
 };
 
@@ -1058,6 +1059,12 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
   for (i = 0; i < num_models; i++)
     g_strstrip (list_models[i]);
 
+  /**
+   * Currently ML_NNFW_TYPE_FLARE is defined temporarily to avoid ACR.
+   */
+  if (info->fw_name && strcasecmp (info->fw_name, "flare") == 0) {
+    nnfw = ML_NNFW_TYPE_FLARE;
+  }
   status = _ml_validate_model_file ((const char **) list_models, num_models,
       &nnfw);
   if (status != ML_ERROR_NONE) {
@@ -2073,7 +2080,21 @@ _ml_validate_model_file (const char *const *model,
     file_ext[i] = g_ascii_strdown (pos, -1);
   }
 
-  /** @todo Make sure num_models is correct for each nnfw type */
+  /**
+   * @todo Currently ML_NNFW_TYPE_FLARE is defined temporarily to avoid ACR.
+   * Move checking ML_NNFW_TYPE_FLARE to below switch statement.
+   */
+  if (*nnfw == ML_NNFW_TYPE_FLARE) {
+    if (!g_str_equal (file_ext[0], ".bin")) {
+      _ml_error_report
+          ("Flare accepts .bin file only. Please support correct file extension. You have specified: \"%s\"",
+          file_ext[0]);
+      status = ML_ERROR_INVALID_PARAMETER;
+    }
+    goto done;
+  }
+
+                                        /** @todo Make sure num_models is correct for each nnfw type */
   switch (*nnfw) {
     case ML_NNFW_TYPE_NNFW:
     case ML_NNFW_TYPE_TVM:
