@@ -34,7 +34,7 @@ runs:
         gst_android_pkg=gstreamer-1.0-android-universal-${gst_android_ver}.tar.xz
         mkdir -p ~/android/gst_root_android/
         pushd ~/android/gst_root_android/
-        wget https://gstreamer.freedesktop.org/data/pkg/android/${gst_android_ver}/${gst_android_pkg}
+        wget -q https://gstreamer.freedesktop.org/data/pkg/android/${gst_android_ver}/${gst_android_pkg}
         tar -xf ${gst_android_pkg}
         rm ${gst_android_pkg}
         popd
