@@ -193,7 +193,7 @@ curl_ver="7.60.0"
 
 enable_llama2c="no"
 enable_llamacpp="no"
-llamacpp_ver="b4980"
+llamacpp_ver="b6852"
 
 # Find '--help' in the given arguments
 arg_help="--help"
