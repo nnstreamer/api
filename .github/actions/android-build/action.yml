@@ -28,7 +28,15 @@ runs:
       with:
         distribution: 'temurin'
         java-version: 17
+    - name: restore gst_android_pkg cache
+      id: restore-gst_android_pkg-cache
+      uses: actions/cache/restore@v4
+      with:
+        path: |
+          ~/android/gst_root_android/
+        key: gst_android_pkg-cache-${{ hashFiles('.github/actions/android-build/action.yml') }}
     - name: Get gstreamer-android
+      if: steps.restore-gst_android_pkg-cache.outputs.cache-hit != 'true'
       run: |
         gst_android_ver=1.24.12
         gst_android_pkg=gstreamer-1.0-android-universal-${gst_android_ver}.tar.xz
@@ -89,3 +97,12 @@ runs:
       env:
         TARGET_ABI: ${{ inputs.abi }}
         BUILD_TYPE: ${{ inputs.build_type }}
+
+    - name: save gst_android_pkg cache (main branch only)
+      uses: actions/cache/save@v4
+      id: save-gst_android_pkg-cache
+      if: always() && github.ref == 'refs/heads/main' && steps.restore-gst_android_pkg-cache.outputs.cache-hit != 'true'
+      with:
+        path: |
+          ~/android/gst_root_android/
+        key: gst_android_pkg-cache-${{ hashFiles('.github/actions/android-build/action.yml') }}
