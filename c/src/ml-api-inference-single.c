@@ -581,12 +581,18 @@ ml_single_async_cb (GstTensorMemory * data, GstTensorsInfo * info,
   ml_single *single_h;
   ml_tensors_info_h _info = NULL;
   ml_tensors_data_h _data = NULL;
+  ml_tensors_data_s *_data_s;
+  ml_tensors_data_cb async_cb;
+  void *async_pdata;
   unsigned int i;
   int ret = ML_ERROR_NONE;
 
   ML_SINGLE_GET_VALID_HANDLE_LOCKED (single_h, single, 0);
+  async_cb = single_h->invoke_async_cb;
+  async_pdata = single_h->invoke_async_pdata;
+  ML_SINGLE_HANDLE_UNLOCK (single_h);
 
-  if (!single_h->invoke_async_cb) {
+  if (!async_cb) {
     /* No callback, do nothing. Internal state changing? */
     goto done;
   }
@@ -598,25 +604,20 @@ ml_single_async_cb (GstTensorMemory * data, GstTensorsInfo * info,
     goto done;
   }
 
-  ret = ml_tensors_data_create (_info, &_data);
+  ret = _ml_tensors_data_create_no_alloc (_info, &_data);
   if (ret != ML_ERROR_NONE) {
     _ml_error_report
         ("Cannot handle tensor data stream. Failed to create ml data.");
     goto done;
   }
 
+  _data_s = (ml_tensors_data_s *) _data;
   for (i = 0; i < info->num_tensors; ++i) {
-    ret = ml_tensors_data_set_tensor_data (_data, i,
-        data[i].data, data[i].size);
-    if (ret != ML_ERROR_NONE) {
-      _ml_error_report
-          ("Cannot handle tensor data stream. Failed to update ml data of index %u, size is %zu.",
-          i, data[i].size);
-      goto done;
-    }
+    _data_s->tensors[i].data = data[i].data;
+    _data_s->tensors[i].size = data[i].size;
   }
 
-  ret = single_h->invoke_async_cb (_data, single_h->invoke_async_pdata);
+  ret = async_cb (_data, async_pdata);
   if (ret != ML_ERROR_NONE) {
     _ml_error_report
         ("Cannot handle tensor data stream. The callback function returns error '%d'.",
@@ -629,10 +630,9 @@ done:
   }
 
   if (_data) {
-    ml_tensors_data_destroy (_data);
+    _ml_tensors_data_destroy_internal (_data, FALSE);
   }
 
-  ML_SINGLE_HANDLE_UNLOCK (single_h);
   return (ret == ML_ERROR_NONE) ? 0 : -1;
 }
 
