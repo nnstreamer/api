@@ -351,7 +351,8 @@ nns_native_service_input_data (JNIEnv * env, jobject thiz, jlong handle,
   ml_tensors_data_h in_data = NULL;
   int status = ML_ERROR_UNKNOWN;
 
-  const char *name = (*env)->GetStringUTFChars (env, node_name, NULL);
+  const char *name =
+      (node_name) ? (*env)->GetStringUTFChars (env, node_name, NULL) : NULL;
 
   pipe_info = CAST_TO_TYPE (handle, pipeline_info_s *);
   service = pipe_info->pipeline_handle;
@@ -370,7 +371,9 @@ nns_native_service_input_data (JNIEnv * env, jobject thiz, jlong handle,
     _ml_tensors_data_destroy_internal (in_data, FALSE);
   }
 
-  (*env)->ReleaseStringUTFChars (env, node_name, name);
+  if (node_name) {
+    (*env)->ReleaseStringUTFChars (env, node_name, name);
+  }
 
   return (status == ML_ERROR_NONE);
 }
@@ -385,12 +388,15 @@ nns_native_service_get_input_info (JNIEnv * env, jobject thiz, jlong handle,
   pipeline_info_s *pipe_info;
   jobject oinfo;
 
-  const char *name = (*env)->GetStringUTFChars (env, node_name, NULL);
+  const char *name =
+      (node_name) ? (*env)->GetStringUTFChars (env, node_name, NULL) : NULL;
 
   pipe_info = CAST_TO_TYPE (handle, pipeline_info_s *);
   oinfo = nns_service_convert_node_info (pipe_info, env, name, TRUE);
 
-  (*env)->ReleaseStringUTFChars (env, node_name, name);
+  if (node_name) {
+    (*env)->ReleaseStringUTFChars (env, node_name, name);
+  }
 
   return oinfo;
 }
@@ -405,12 +411,15 @@ nns_native_service_get_output_info (JNIEnv * env, jobject thiz, jlong handle,
   pipeline_info_s *pipe_info;
   jobject oinfo;
 
-  const char *name = (*env)->GetStringUTFChars (env, node_name, NULL);
+  const char *name =
+      (node_name) ? (*env)->GetStringUTFChars (env, node_name, NULL) : NULL;
 
   pipe_info = CAST_TO_TYPE (handle, pipeline_info_s *);
   oinfo = nns_service_convert_node_info (pipe_info, env, name, FALSE);
 
-  (*env)->ReleaseStringUTFChars (env, node_name, name);
+  if (node_name) {
+    (*env)->ReleaseStringUTFChars (env, node_name, name);
+  }
 
   return oinfo;
 }
