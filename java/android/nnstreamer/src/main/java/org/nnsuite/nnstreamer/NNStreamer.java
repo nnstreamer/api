@@ -91,6 +91,11 @@ public final class NNStreamer {
          */
         QNN,
         /**
+         * <a href="https://github.com/ggml-org/llama.cpp">LLaMA C++</a>
+         * implements the Meta's LLaMA architecture to support LLM inference in C/C++.
+         */
+        LLAMACPP,
+        /**
          * Unknown framework (usually error)
          */
         UNKNOWN
