@@ -213,6 +213,40 @@ public class APITestTensorsData {
     }
 
     @Test
+    public void testAllocateEmptyString_n() {
+        try {
+            TensorsData.allocateByteBuffer("");
+            fail();
+        } catch (Exception e) {
+            /* expected */
+        }
+    }
+
+    @Test
+    public void testAllocateEmptyBytes_n() {
+        try {
+            byte[] bytes = new byte[0];
+
+            TensorsData.allocateByteBuffer(bytes);
+            fail();
+        } catch (Exception e) {
+            /* expected */
+        }
+    }
+
+    @Test
+    public void testAllocateNullBytes_n() {
+        try {
+            byte[] bytes = null;
+
+            TensorsData.allocateByteBuffer(bytes);
+            fail();
+        } catch (Exception e) {
+            /* expected */
+        }
+    }
+
+    @Test
     public void testGetInfo() {
         try {
             TensorsInfo info = new TensorsInfo();

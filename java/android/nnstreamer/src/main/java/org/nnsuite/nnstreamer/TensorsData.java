@@ -8,6 +8,7 @@ package org.nnsuite.nnstreamer;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 /**
@@ -16,6 +17,13 @@ import java.util.ArrayList;
 public final class TensorsData implements AutoCloseable {
     private TensorsInfo mInfo = null;
     private ArrayList<ByteBuffer> mDataList = new ArrayList<>();
+
+    /**
+     * Internal method to allocate a new direct byte buffer with the native byte order.
+     */
+    private static ByteBuffer allocateBuffer(int size) {
+        return ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder());
+    }
 
     /**
      * Allocates a new direct byte buffer with the native byte order.
@@ -31,7 +39,41 @@ public final class TensorsData implements AutoCloseable {
             throw new IllegalArgumentException("Given size is invalid");
         }
 
-        return ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder());
+        return allocateBuffer(size);
+    }
+
+    /**
+     * Allocates a new direct byte buffer with the native byte order and sets given byte array.
+     *
+     * @param bytes The contents of the buffer
+     *
+     * @return The new byte buffer
+     *
+     * @throws IllegalArgumentException if given data is invalid
+     */
+    public static ByteBuffer allocateByteBuffer(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) {
+            throw new IllegalArgumentException("Given data is invalid");
+        }
+
+        return allocateBuffer(bytes.length).put(bytes);
+    }
+
+    /**
+     * Allocates a new direct byte buffer with the native byte order and sets given string.
+     *
+     * @param text The string data of the buffer
+     *
+     * @return The new byte buffer
+     *
+     * @throws IllegalArgumentException if given data is invalid
+     */
+    public static ByteBuffer allocateByteBuffer(String text) {
+        if (text == null || text.isEmpty()) {
+            throw new IllegalArgumentException("Given data is invalid");
+        }
+
+        return allocateByteBuffer(text.getBytes(StandardCharsets.UTF_8));
     }
 
     /**
@@ -41,18 +83,14 @@ public final class TensorsData implements AutoCloseable {
      *
      * @return {@link TensorsData} instance
      *
-     * @throws IllegalArgumentException if given info is invalid
+     * @throws IllegalArgumentException if given tensors information is invalid
      */
     public static TensorsData allocate(TensorsInfo info) {
-        if (info == null || info.getTensorsCount() == 0) {
-            throw new IllegalArgumentException("Given info is invalid");
-        }
-
         TensorsData data = new TensorsData(info);
         int count = info.getTensorsCount();
 
         for (int i = 0; i < count; i++) {
-            data.addTensorData(allocateByteBuffer(info.getTensorSize(i)));
+            data.addTensorData(allocateBuffer(info.getTensorSize(i)));
         }
 
         return data;
@@ -72,11 +110,11 @@ public final class TensorsData implements AutoCloseable {
      *
      * @param info The tensors information
      *
-     * @throws IllegalArgumentException if given info is null
+     * @throws IllegalArgumentException if given tensors information is invalid
      */
     private void setTensorsInfo(TensorsInfo info) {
         if (info == null || info.getTensorsCount() == 0) {
-            throw new IllegalArgumentException("Given info is invalid");
+            throw new IllegalArgumentException("Given tensors information is invalid");
         }
 
         mInfo = info.clone();
