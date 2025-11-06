@@ -13,20 +13,18 @@ $ tree .
     │   └── orange_float.raw
     ├── snpe_data
     │   ├── inception_v3_quantized.dlc
-    │   ├── orange_299x299_uint8.raw
     │   └── plastic_cup.raw
     └── test
         ├── add
-        │   ├── add.tflite
-        │   └── metadata
-        │       └── MANIFEST
-        ├── imgclf
-        │   ├── labels.txt
         │   ├── metadata
         │   │   └── MANIFEST
-        │   ├── mobilenet_quant_v1_224.tflite
+        │   └── add.tflite
+        ├── imgclf
+        │   ├── metadata
+        │   │   └── MANIFEST
+        │   ├── labels.txt
         │   ├── mobilenet_v1_1.0_224_quant.tflite
-        │   ├── mobilenet_v1_1.0_224.tflite
-        │   ├── orange.png
-        │   └── orange.raw
-        └── orange.raw
+        │   └── mobilenet_v1_1.0_224.tflite
+        ├── orange.png
+        ├── orange.raw
+        └── test_video.mp4

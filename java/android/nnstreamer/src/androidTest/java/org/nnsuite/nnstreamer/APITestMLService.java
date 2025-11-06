@@ -941,6 +941,11 @@ public class APITestMLService {
      * Runs image classification with configuration.
      */
     private void runImageClassification(String config, boolean isPipeline) {
+        if (!NNStreamer.isAvailable(NNStreamer.NNFWType.TENSORFLOW_LITE)) {
+            /* cannot run the test */
+            return;
+        }
+
         mIsPipeline = isPipeline;
 
         try {
