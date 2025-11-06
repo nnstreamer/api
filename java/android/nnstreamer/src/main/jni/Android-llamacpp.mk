@@ -18,7 +18,7 @@ endif
 include $(LOCAL_PATH)/Android-llamacpp-prebuilt.mk
 
 #------------------------------------------------------
-# tensor-filter sub-plugin for llamacpp
+# tensor-filter sub-plugin for llama.cpp
 #------------------------------------------------------
 include $(CLEAR_VARS)
 LOCAL_MODULE := llamacpp-subplugin

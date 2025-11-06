@@ -102,7 +102,7 @@ NNSTREAMER_LIBS += $(MXNET_PREBUILT_LIBS)
 endif
 
 #------------------------------------------------------
-# LLaMA.cpp
+# LLaMA C++
 #------------------------------------------------------
 ifeq ($(ENABLE_LLAMACPP),true)
 LLAMACPP_LIB_PATH := $(NNSTREAMER_LIB_PATH)
