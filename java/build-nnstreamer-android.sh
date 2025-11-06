@@ -87,7 +87,7 @@
 ##@@       'yes'      : build with llama2.c.
 ##@@       'no'       : [default]
 ##@@   --enable_llamacpp=(yes|no)
-##@@       'yes'      : build with llamacpp prebuilt libs.
+##@@       'yes'      : build with llama.cpp prebuilt libs.
 ##@@       'no'       : [default]
 ##@@ 
 ##@@ options for tensor converter/decoder sub-plugins:
@@ -438,7 +438,7 @@ if [[ ${enable_llama2c} == "yes" ]]; then
 fi
 
 if [[ ${enable_llamacpp} == "yes" ]]; then
-    echo "Build with LLaMA.cpp ${llamacpp_ver}"
+    echo "Build with LLaMA C++ ${llamacpp_ver}"
 fi
 
 # Set library name

@@ -2,14 +2,14 @@
 # llama.cpp : Inference of Meta's LLaMA model (and others) in pure C/C++
 #   https://github.com/ggerganov/llama.cpp (original upstream repository)
 #
-# This mk file defines a prebuilt shared library for the llamacpp module.
+# This mk file defines a prebuilt shared library for the llama.cpp module.
 #------------------------------------------------------
 ifndef LLAMACPP_LIB_PATH
 $(error LLAMACPP_LIB_PATH is not defined!)
 endif
 
 #------------------------------------------------------
-# llamacpp prebuilt shared libraries
+# llama.cpp prebuilt shared libraries
 #------------------------------------------------------
 include $(CLEAR_VARS)
 LOCAL_MODULE := llama
