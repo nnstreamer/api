@@ -186,8 +186,7 @@ public class APITestCommon {
                 fail();
             }
 
-            ByteBuffer buffer = TensorsData.allocateByteBuffer(size);
-            buffer.put(content);
+            ByteBuffer buffer = TensorsData.allocateByteBuffer(content);
 
             data.setTensorData(0, buffer);
         } catch (Exception e) {
@@ -220,8 +219,7 @@ public class APITestCommon {
                 fail();
             }
 
-            ByteBuffer buffer = TensorsData.allocateByteBuffer(size);
-            buffer.put(content);
+            ByteBuffer buffer = TensorsData.allocateByteBuffer(content);
 
             data.setTensorData(0, buffer);
         } catch (Exception e) {
@@ -276,8 +274,7 @@ public class APITestCommon {
                 fail();
             }
 
-            ByteBuffer buffer = TensorsData.allocateByteBuffer(size);
-            buffer.put(content);
+            ByteBuffer buffer = TensorsData.allocateByteBuffer(content);
 
             data.setTensorData(0, buffer);
         } catch (Exception e) {
@@ -310,8 +307,7 @@ public class APITestCommon {
                 fail();
             }
 
-            ByteBuffer buffer = TensorsData.allocateByteBuffer(size);
-            buffer.put(content);
+            ByteBuffer buffer = TensorsData.allocateByteBuffer(content);
 
             data.setTensorData(0, buffer);
         } catch (Exception e) {
@@ -366,8 +362,7 @@ public class APITestCommon {
                 fail();
             }
 
-            ByteBuffer buffer = TensorsData.allocateByteBuffer(size);
-            buffer.put(content);
+            ByteBuffer buffer = TensorsData.allocateByteBuffer(content);
 
             data.setTensorData(0, buffer);
         } catch (Exception e) {

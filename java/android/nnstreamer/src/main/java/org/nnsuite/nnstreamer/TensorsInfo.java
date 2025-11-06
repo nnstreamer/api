@@ -266,9 +266,7 @@ public final class TensorsInfo implements AutoCloseable, Cloneable {
                 throw new IllegalArgumentException("Given tensor dimension is null");
             }
 
-            int rank = dimension.length;
-
-            if (rank > NNStreamer.TENSOR_RANK_LIMIT) {
+            if (dimension.length > NNStreamer.TENSOR_RANK_LIMIT) {
                 throw new IllegalArgumentException("Max size of the tensor rank is " + NNStreamer.TENSOR_RANK_LIMIT);
             }
 
@@ -278,7 +276,13 @@ public final class TensorsInfo implements AutoCloseable, Cloneable {
                 }
             }
 
-            System.arraycopy(dimension, 0, this.dimension, 0, rank);
+            int rank = getRank(dimension);
+
+            if (rank > 0) {
+                System.arraycopy(dimension, 0, this.dimension, 0, rank);
+            } else {
+                throw new IllegalArgumentException("The rank of given dimension is 0");
+            }
 
             /* fill default value */
             for (int i = rank; i < NNStreamer.TENSOR_RANK_LIMIT; i++) {
@@ -287,12 +291,11 @@ public final class TensorsInfo implements AutoCloseable, Cloneable {
         }
 
         public int[] getDimension() {
-            int rank = 0;
-            for (int i = 0; i < NNStreamer.TENSOR_RANK_LIMIT; i++) {
-                if (this.dimension[i] <= 0) {
-                    break;
-                }
-                rank++;
+            int rank = getRank(this.dimension);
+
+            if (rank == 0) {
+                /* Copy first item only, default value is 0. */
+                rank = 1;
             }
 
             return Arrays.copyOf(this.dimension, rank);
@@ -325,9 +328,13 @@ public final class TensorsInfo implements AutoCloseable, Cloneable {
                     return 0;
             }
 
-            for (int i = 0; i < NNStreamer.TENSOR_RANK_LIMIT; i++) {
-                if (this.dimension[i] == 0)
-                    break;
+            int rank = getRank(this.dimension);
+
+            if (rank == 0) {
+                return 0;
+            }
+
+            for (int i = 0; i < rank; i++) {
                 size *= this.dimension[i];
             }
 
@@ -377,6 +384,23 @@ public final class TensorsInfo implements AutoCloseable, Cloneable {
             }
 
             return type;
+        }
+
+        /**
+         * Gets the rank of given dimension.
+         */
+        public static int getRank(int[] dimension) {
+            int rank = 0;
+
+            for (int dim : dimension) {
+                if (dim <= 0) {
+                    break;
+                }
+
+                rank++;
+            }
+
+            return rank;
         }
     }
 }
