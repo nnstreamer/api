@@ -118,6 +118,15 @@ public final class NNStreamer {
         /** Unknown data type (usually error) */ UNKNOWN
     }
 
+    /**
+     * The enumeration for possible data format of tensor in NNStreamer.
+     */
+    public enum TensorFormat {
+        /** Static tensor stream */ STATIC,
+        /** Flexible tensor stream */ FLEXIBLE,
+        /** Unknown data format (usually error) */ UNKNOWN
+    }
+
     private static native boolean nativeInitialize(Object app);
     private static native boolean nativeCheckNNFWAvailability(int fw);
     private static native String nativeGetVersion();

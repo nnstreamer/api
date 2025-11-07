@@ -90,6 +90,7 @@ public final class TensorsData implements AutoCloseable {
         int count = info.getTensorsCount();
 
         for (int i = 0; i < count; i++) {
+            /* If tensor format is flexible, data size would be 0. */
             data.addTensorData(allocateBuffer(info.getTensorSize(i)));
         }
 
@@ -182,6 +183,15 @@ public final class TensorsData implements AutoCloseable {
     }
 
     /**
+     * Internal method called from native to reallocate buffer.
+     */
+    private void updateData(int index, int size) {
+        checkIndexBounds(index);
+
+        mDataList.set(index, allocateByteBuffer(size));
+    }
+
+    /**
      * Internal method to check the index.
      *
      * @throws IndexOutOfBoundsException if the given index is invalid
@@ -224,10 +234,15 @@ public final class TensorsData implements AutoCloseable {
                 throw new IndexOutOfBoundsException("Current information has " + count + " tensors");
             }
 
-            int size = mInfo.getTensorSize(index);
+            NNStreamer.TensorFormat format = mInfo.getFormat();
 
-            if (data.capacity() != size) {
-                throw new IllegalArgumentException("Invalid buffer size, required size is " + size);
+            /* The size of input buffer should be matched if data format is static. */
+            if (format == NNStreamer.TensorFormat.STATIC) {
+                int size = mInfo.getTensorSize(index);
+
+                if (data.capacity() != size) {
+                    throw new IllegalArgumentException("Invalid buffer size, required size is " + size);
+                }
             }
         }
     }
