@@ -1025,4 +1025,55 @@ public class APITestMLService {
             MLService.Model.delete(name, 0);
         }
     }
+
+    @Test
+    public void testRunAsyncInvoke() {
+        if (!NNStreamer.isAvailable(NNStreamer.NNFWType.LLAMACPP)) {
+            /* cannot run the test */
+            return;
+        }
+
+        String config = APITestCommon.getConfigPath() + "/config_single_llamacpp_async.conf";
+
+        try {
+            MLService.EventListener asyncEventListener = new MLService.EventListener() {
+                @Override
+                public void onNewDataReceived(String name, TensorsData data) {
+                    if (data == null || data.getTensorsCount() != 1) {
+                        mInvalidState = true;
+                        return;
+                    }
+
+                    mReceived++;
+                }
+            };
+
+            MLService service = new MLService(config, asyncEventListener);
+
+            service.start();
+
+            /* push input buffer */
+            String inputText = "Hello my name is";
+            ByteBuffer buffer = TensorsData.allocateByteBuffer(inputText);
+
+            TensorsInfo info = service.getInputInformation(null);
+            assertEquals(NNStreamer.TensorFormat.FLEXIBLE, info.getFormat());
+
+            TensorsData input = TensorsData.allocate(info);
+            input.setTensorData(0, buffer);
+
+            service.inputData(null, input);
+
+            /* sleep 3 seconds to invoke */
+            Thread.sleep(3000);
+
+            /* check received data from output node */
+            assertFalse(mInvalidState);
+            assertTrue(mReceived > 1);
+
+            service.close();
+        } catch (Exception e) {
+            fail();
+        }
+    }
 }
