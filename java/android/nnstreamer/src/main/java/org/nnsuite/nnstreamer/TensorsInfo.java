@@ -14,10 +14,42 @@ import java.util.Arrays;
  *
  * @see NNStreamer#TENSOR_RANK_LIMIT
  * @see NNStreamer#TENSOR_SIZE_LIMIT
+ * @see NNStreamer.TensorFormat
  * @see NNStreamer.TensorType
  */
 public final class TensorsInfo implements AutoCloseable, Cloneable {
     private ArrayList<TensorInfo> mInfoList = new ArrayList<>();
+    private NNStreamer.TensorFormat mFormat;
+
+    /**
+     * Creates a new {@link TensorsInfo} instance.
+     * Default tensor format is static.
+     */
+    public TensorsInfo() {
+        this(NNStreamer.TensorFormat.STATIC);
+    }
+
+    /**
+     * Creates a new {@link TensorsInfo} instance with given tensor format.
+     *
+     * @param format The format of tensors information
+     *
+     * @throws IllegalArgumentException if tensor format is invalid
+     */
+    public TensorsInfo(NNStreamer.TensorFormat format) {
+        if (format == NNStreamer.TensorFormat.UNKNOWN) {
+            throw new IllegalArgumentException("Given tensor format is invalid");
+        }
+
+        mFormat = format;
+    }
+
+    /**
+     * Private constructor to convert tensor format value and create a new instance.
+     */
+    private TensorsInfo(int value) {
+        this(convertFormat(value));
+    }
 
     /**
      * Allocates a new {@link TensorsData} instance with the tensors information.
@@ -41,13 +73,22 @@ public final class TensorsInfo implements AutoCloseable, Cloneable {
      */
     @Override
     public TensorsInfo clone() {
-        TensorsInfo cloned = new TensorsInfo();
+        TensorsInfo cloned = new TensorsInfo(mFormat);
 
         for (TensorInfo info : mInfoList) {
             cloned.addTensorInfo(info.getName(), info.getType(), info.getDimension());
         }
 
         return cloned;
+    }
+
+    /**
+     * Gets the format of tensors information.
+     *
+     * @return The format of tensors information
+     */
+    public NNStreamer.TensorFormat getFormat() {
+        return mFormat;
     }
 
     /**
@@ -90,7 +131,7 @@ public final class TensorsInfo implements AutoCloseable, Cloneable {
             throw new IndexOutOfBoundsException("Max number of the tensors is " + NNStreamer.TENSOR_SIZE_LIMIT);
         }
 
-        mInfoList.add(new TensorInfo(name, type, dimension));
+        mInfoList.add(new TensorInfo(mFormat, name, type, dimension));
     }
 
     /**
@@ -190,8 +231,12 @@ public final class TensorsInfo implements AutoCloseable, Cloneable {
         checkIndexBounds(index);
 
         int size = mInfoList.get(index).getSize();
-        if (size <= 0) {
-            throw new IllegalStateException("Unknown data type or invalid dimension");
+
+        /* The tensor size should be a positive value if data format is static. */
+        if (mFormat == NNStreamer.TensorFormat.STATIC) {
+            if (size <= 0) {
+                throw new IllegalStateException("Unknown data type or invalid dimension");
+            }
         }
 
         return size;
@@ -209,6 +254,34 @@ public final class TensorsInfo implements AutoCloseable, Cloneable {
      */
     private Object[] getInfoArray() {
         return mInfoList.toArray();
+    }
+
+    /**
+     * Internal method called from native to get the data format as integer value.
+     */
+    private int getFormatValue() {
+        return mFormat.ordinal();
+    }
+
+    /**
+     * Internal method to get the tensor format from int value.
+     */
+    private static NNStreamer.TensorFormat convertFormat(int value) {
+        NNStreamer.TensorFormat format = NNStreamer.TensorFormat.UNKNOWN;
+
+        switch (value) {
+            case 0:
+                format = NNStreamer.TensorFormat.STATIC;
+                break;
+            case 1:
+                format = NNStreamer.TensorFormat.FLEXIBLE;
+                break;
+            default:
+                /* unknown tensor format */
+                break;
+        }
+
+        return format;
     }
 
     /**
@@ -231,11 +304,14 @@ public final class TensorsInfo implements AutoCloseable, Cloneable {
      * Internal class for tensor information.
      */
     private static class TensorInfo {
+        private NNStreamer.TensorFormat format;
         private String name = null;
         private int type = NNStreamer.TensorType.UNKNOWN.ordinal();
         private int[] dimension = new int[NNStreamer.TENSOR_RANK_LIMIT];
 
-        public TensorInfo(String name, NNStreamer.TensorType type, int[] dimension) {
+        public TensorInfo(NNStreamer.TensorFormat format, String name, NNStreamer.TensorType type, int[] dimension) {
+            this.format = format;
+
             setName(name);
             setType(type);
             setDimension(dimension);
@@ -251,7 +327,10 @@ public final class TensorsInfo implements AutoCloseable, Cloneable {
 
         public void setType(NNStreamer.TensorType type) {
             if (type == NNStreamer.TensorType.UNKNOWN) {
-                throw new IllegalArgumentException("Given tensor type is unknown or unsupported type");
+                /* The tensor type should be valid if data format is static. */
+                if (format == NNStreamer.TensorFormat.STATIC) {
+                    throw new IllegalArgumentException("Given tensor type is unknown or unsupported type");
+                }
             }
 
             this.type = type.ordinal();
@@ -281,7 +360,10 @@ public final class TensorsInfo implements AutoCloseable, Cloneable {
             if (rank > 0) {
                 System.arraycopy(dimension, 0, this.dimension, 0, rank);
             } else {
-                throw new IllegalArgumentException("The rank of given dimension is 0");
+                /* The tensor dimension should be valid if data format is static. */
+                if (format == NNStreamer.TensorFormat.STATIC) {
+                    throw new IllegalArgumentException("The rank of given dimension is 0");
+                }
             }
 
             /* fill default value */

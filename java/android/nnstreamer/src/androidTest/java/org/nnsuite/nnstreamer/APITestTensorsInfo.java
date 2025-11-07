@@ -30,6 +30,9 @@ public class APITestTensorsInfo {
     @Test
     public void testAddInfo() {
         try {
+            /* Default format is static. */
+            assertEquals(NNStreamer.TensorFormat.STATIC, mInfo.getFormat());
+
             mInfo.addTensorInfo("name1", NNStreamer.TensorType.INT8, new int[]{1});
             assertEquals(1, mInfo.getTensorsCount());
 
@@ -246,6 +249,16 @@ public class APITestTensorsInfo {
             for (int i = 0; i <= NNStreamer.TENSOR_SIZE_LIMIT; i++) {
                 mInfo.addTensorInfo(NNStreamer.TensorType.FLOAT32, new int[]{2,2,2,2});
             }
+            fail();
+        } catch (Exception e) {
+            /* expected */
+        }
+    }
+
+    @Test
+    public void testInvalidFormat_n() {
+        try {
+            new TensorsInfo(NNStreamer.TensorFormat.UNKNOWN);
             fail();
         } catch (Exception e) {
             /* expected */

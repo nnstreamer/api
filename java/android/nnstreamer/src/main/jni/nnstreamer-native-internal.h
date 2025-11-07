@@ -112,6 +112,7 @@ typedef struct
   jmethodID mid_alloc;
   jmethodID mid_get_array;
   jmethodID mid_get_info;
+  jmethodID mid_update_data;
 } tensors_data_class_info_s;
 
 /**
@@ -123,6 +124,7 @@ typedef struct
   jmethodID mid_init;
   jmethodID mid_add_info;
   jmethodID mid_get_array;
+  jmethodID mid_get_format;
 
   jclass cls_info;
   jfieldID fid_info_name;
