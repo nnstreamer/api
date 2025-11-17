@@ -1582,23 +1582,20 @@ _ml_single_invoke_internal (ml_single_h single,
     single_h->invoking = TRUE;
     status = __invoke (single_h, _in, _out, need_alloc);
     ml_tensors_data_destroy (_in);
+    _in = NULL;
     single_h->invoking = FALSE;
     single_h->state = IDLE;
 
-    if (status != ML_ERROR_NONE) {
-      if (need_alloc)
-        ml_tensors_data_destroy (_out);
-      goto exit;
-    }
-
-    if (need_alloc)
+    if (status == ML_ERROR_NONE && need_alloc)
       __process_output (single_h, _out);
   }
 
 exit:
-  if (status == ML_ERROR_NONE) {
-    if (need_alloc)
+  if (status == ML_ERROR_NONE && need_alloc) {
       *output = _out;
+  } else if (need_alloc) {
+    /* Clean up allocated output on error */
+    ml_tensors_data_destroy (_out);
   }
 
   single_h->input = single_h->output = NULL;
