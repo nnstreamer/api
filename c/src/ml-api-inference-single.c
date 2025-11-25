@@ -282,58 +282,74 @@ ml_check_nnfw_availability (ml_nnfw_type_e nnfw, ml_nnfw_hw_e hw,
 }
 
 /**
+ * @brief Helper function to setup tensor memory (input or output)
+ */
+static int
+__setup_tensor_memory (ml_tensors_data_h *tensor_handle,
+    const GstTensorsInfo *gst_info)
+{
+  ml_tensors_data_s *tensors;
+  ml_tensors_info_h info;
+  guint i;
+  int status = ML_ERROR_NONE;
+
+  if (!tensor_handle || !gst_info)
+    return ML_ERROR_INVALID_PARAMETER;
+
+  tensors = (ml_tensors_data_s *) * tensor_handle;
+
+  /* Setup tensor buffer */
+  if (tensors) {
+    /* Reuse existing tensor: update info */
+    _ml_tensors_info_free (tensors->info);
+    _ml_tensors_info_copy_from_gst (tensors->info, gst_info);
+  } else {
+    /* Create new tensor */
+    status = _ml_tensors_info_create_from_gst (&info, gst_info);
+    if (status != ML_ERROR_NONE)
+      return status;
+
+    status = _ml_tensors_data_create_no_alloc (info, tensor_handle);
+    ml_tensors_info_destroy (info);
+
+    if (status != ML_ERROR_NONE)
+      return status;
+
+    tensors = (ml_tensors_data_s *) * tensor_handle;
+  }
+
+  /* Setup tensor array */
+  tensors->num_tensors = gst_info->num_tensors;
+  for (i = 0; i < tensors->num_tensors; i++) {
+    /** memory will be allocated by tensor_filter_single */
+    tensors->tensors[i].data = NULL;
+    tensors->tensors[i].size = gst_tensors_info_get_size (gst_info, i);
+  }
+
+  return ML_ERROR_NONE;
+}
+
+/**
  * @brief setup input and output tensor memory to pass to the tensor_filter.
  * @note this tensor memory wrapper will be reused for each invoke.
  */
 static void
-__setup_in_out_tensors (ml_single * single_h)
+__setup_in_out_tensors (ml_single *single_h)
 {
-  guint i;
-  ml_tensors_data_s *in_tensors = (ml_tensors_data_s *) single_h->in_tensors;
-  ml_tensors_data_s *out_tensors = (ml_tensors_data_s *) single_h->out_tensors;
+  int status;
 
   /* Setup input buffer */
-  if (in_tensors) {
-    _ml_tensors_info_free (in_tensors->info);
-    _ml_tensors_info_copy_from_gst (in_tensors->info, &single_h->in_info);
-  } else {
-    ml_tensors_info_h info;
-
-    _ml_tensors_info_create_from_gst (&info, &single_h->in_info);
-    _ml_tensors_data_create_no_alloc (info, &single_h->in_tensors);
-
-    ml_tensors_info_destroy (info);
-    in_tensors = (ml_tensors_data_s *) single_h->in_tensors;
-  }
-
-  in_tensors->num_tensors = single_h->in_info.num_tensors;
-  for (i = 0; i < in_tensors->num_tensors; i++) {
-    /** memory will be allocated by tensor_filter_single */
-    in_tensors->tensors[i].data = NULL;
-    in_tensors->tensors[i].size =
-        gst_tensors_info_get_size (&single_h->in_info, i);
+  status = __setup_tensor_memory (&single_h->in_tensors, &single_h->in_info);
+  if (status != ML_ERROR_NONE) {
+    _ml_error_report ("Failed to setup input tensor memory: %d", status);
+    return;
   }
 
   /* Setup output buffer */
-  if (out_tensors) {
-    _ml_tensors_info_free (out_tensors->info);
-    _ml_tensors_info_copy_from_gst (out_tensors->info, &single_h->out_info);
-  } else {
-    ml_tensors_info_h info;
-
-    _ml_tensors_info_create_from_gst (&info, &single_h->out_info);
-    _ml_tensors_data_create_no_alloc (info, &single_h->out_tensors);
-
-    ml_tensors_info_destroy (info);
-    out_tensors = (ml_tensors_data_s *) single_h->out_tensors;
-  }
-
-  out_tensors->num_tensors = single_h->out_info.num_tensors;
-  for (i = 0; i < out_tensors->num_tensors; i++) {
-    /** memory will be allocated by tensor_filter_single */
-    out_tensors->tensors[i].data = NULL;
-    out_tensors->tensors[i].size =
-        gst_tensors_info_get_size (&single_h->out_info, i);
+  status = __setup_tensor_memory (&single_h->out_tensors, &single_h->out_info);
+  if (status != ML_ERROR_NONE) {
+    _ml_error_report ("Failed to setup output tensor memory: %d", status);
+    return;
   }
 }
 
