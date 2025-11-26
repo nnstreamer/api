@@ -564,6 +564,7 @@ exit:
     }
 
     single_h->input = single_h->output = NULL;
+    g_cond_broadcast (&single_h->cond);
   } else if (single_h->state == RUNNING)
     single_h->state = IDLE;
   g_mutex_unlock (&single_h->mutex);
@@ -1344,7 +1345,6 @@ int
 ml_single_close (ml_single_h single)
 {
   ml_single *single_h;
-  gboolean invoking;
 
   check_feature_state (ML_FEATURE_INFERENCE);
 
@@ -1359,21 +1359,12 @@ ml_single_close (ml_single_h single)
 
   single_h->state = JOIN_REQUESTED;
   g_cond_broadcast (&single_h->cond);
-  invoking = single_h->invoking;
-  ML_SINGLE_HANDLE_UNLOCK (single_h);
-
   /** Wait until invoke process is finished */
-  while (invoking) {
-    _ml_logd ("Wait 1 ms until invoke is finished and close the handle.");
-    g_usleep (1000);
-    invoking = single_h->invoking;
-    /**
-     * single_h->invoking is the only protected value here and we are
-     * doing a read-only operation and do not need to project its value
-     * after the assignment.
-     * Thus, we do not need to lock single_h here.
-     */
+  while (single_h->invoking) {
+    _ml_logd ("Wait until invoke is finished and close the handle.");
+    g_cond_wait (&single_h->cond, &single_h->mutex);
   }
+  ML_SINGLE_HANDLE_UNLOCK (single_h);
 
   if (single_h->thread != NULL)
     g_thread_join (single_h->thread);
