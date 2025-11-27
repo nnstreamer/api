@@ -343,6 +343,22 @@ _ml_extension_conf_parse_single (ml_service_s * mls, JsonObject * single)
         _ml_extension_destroy_tensors_info);
   }
 
+  /* parse latency profiling option - "profile": "true" or "1" */
+  if (json_object_has_member (single, "profile")) {
+    const gchar *profile = json_object_get_string_member (single, "profile");
+
+    if (STR_IS_VALID (profile))
+      ml_option_set (option, "profile", g_strdup (profile), g_free);
+  }
+
+  /* parse latency profiling option - "latency": "true" or "1" */
+  if (json_object_has_member (single, "latency")) {
+    const gchar *latency = json_object_get_string_member (single, "latency");
+
+    if (STR_IS_VALID (latency))
+      ml_option_set (option, "profile", g_strdup (latency), g_free);
+  }
+
   if (json_object_has_member (single, "custom")) {
     const gchar *custom = json_object_get_string_member (single, "custom");
 

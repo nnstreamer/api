@@ -51,7 +51,8 @@ typedef struct {
   int invoke_dynamic;            /**< True for supporting invoke with flexible output. */
   int invoke_async;              /**< The sub-plugin must support asynchronous output to use this option. If set to TRUE, the sub-plugin can generate multiple outputs asynchronously per single input. Otherwise, only synchronous single-output is expected and async callback is ignored. */
   ml_tensors_data_cb invoke_async_cb; /**< Callback function to be called when the sub-plugin generates an output asynchronously. This is only available when invoke_async is set to TRUE. */
-  void *invoke_async_pdata;           /**< Private data to be passed to async callback. */
+  void *invoke_async_pdata;      /**< Private data to be passed to async callback. */
+  int latency_mode;              /**< 1 - log invoke latency, 0 (default) - do not log */
 } ml_single_preset;
 
 /**
