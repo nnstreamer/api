@@ -1162,7 +1162,7 @@ ml_single_open_custom (ml_single_h * single, ml_single_preset * info)
 
   g_object_set (filter_obj, "framework", fw_name, "accelerator", hw_name,
       "model", converted_models, "invoke-dynamic", single_h->invoke_dynamic,
-      "invoke-async", single_h->invoke_async, NULL);
+      "invoke-async", single_h->invoke_async, "latency", info->latency_mode, NULL);
   g_free (hw_name);
 
   if (info->custom_option) {
@@ -1317,6 +1317,15 @@ ml_single_open_with_option (ml_single_h * single, const ml_option_h option)
   }
   if (ML_ERROR_NONE == ml_option_get (option, "async_data", &value)) {
     info.invoke_async_pdata = value;
+  }
+  if (ML_ERROR_NONE == ml_option_get (option, "profile", &value)) {
+    if (g_ascii_strcasecmp ((gchar *) value, "true") == 0) {
+      info.latency_mode = 1;
+    } else if (g_ascii_strtoll ((gchar *) value, NULL, 10) > 0) {
+      info.latency_mode = 1;
+    } else {
+      info.latency_mode = 0;
+    }
   }
 
   return ml_single_open_custom (single, &info);
