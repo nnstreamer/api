@@ -378,8 +378,8 @@ ml_tizen_mm_res_release_rm (tizen_mm_handle_s * mm_handle)
           }
 
           for (i = 0; i < device->allocated_num; i++) {
-            g_free (device->device_node[i]);
-            g_free (device->omx_comp_name[i]);
+            g_clear_pointer (&device->device_node[i], g_free);
+            g_clear_pointer (&device->omx_comp_name[i], g_free);
           }
         }
 
@@ -393,11 +393,9 @@ ml_tizen_mm_res_release_rm (tizen_mm_handle_s * mm_handle)
     _ml_loge ("Failed to unregister resource manager (%d).", ret);
   }
 
-  g_free (mm_handle->priv);
-
+  g_clear_pointer (&mm_handle->priv, g_free);
   mm_handle->rm_h = NULL;
   mm_handle->invalid = FALSE;
-  mm_handle->priv = NULL;
 }
 
 /**

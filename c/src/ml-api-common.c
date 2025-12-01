@@ -365,7 +365,7 @@ ml_tensors_info_set_tensor_name (ml_tensors_info_h info,
     return ML_ERROR_INVALID_PARAMETER;
   }
 
-  g_free (_info->name);
+  g_clear_pointer (&_info->name, g_free);
   _info->name = g_strdup (name);
 
   G_UNLOCK_UNLESS_NOLOCK (*tensors_info);
@@ -713,10 +713,7 @@ _ml_tensors_data_destroy_internal (ml_tensors_data_h data, gboolean free_data)
       }
     } else {
       for (i = 0; i < ML_TENSOR_SIZE_LIMIT; i++) {
-        if (_data->tensors[i].data) {
-          g_free (_data->tensors[i].data);
-          _data->tensors[i].data = NULL;
-        }
+        g_clear_pointer (&_data->tensors[i].data, g_free);
       }
     }
   }
@@ -1101,7 +1098,7 @@ ml_tensors_data_set_tensor_data (ml_tensors_data_h data, unsigned int index,
       _ml_logw
           ("Memory allocation was not performed in ml_tensor_data_create() when tensor format is flexible.");
 
-      g_free (_data->tensors[index].data);
+      g_clear_pointer (&_data->tensors[index].data, g_free);
 
       status = _ml_tensor_data_alloc (_data, index, data_size);
       if (status != ML_ERROR_NONE) {

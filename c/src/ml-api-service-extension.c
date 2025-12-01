@@ -127,7 +127,7 @@ _ml_extension_node_info_free (gpointer data)
   if (node_info->info)
     ml_tensors_info_destroy (node_info->info);
 
-  g_free (node_info->name);
+  g_clear_pointer (&node_info->name, g_free);
   g_free (node_info);
 }
 
@@ -158,8 +158,8 @@ _ml_extension_msg_free (gpointer data)
     ml_tensors_data_destroy (msg->input);
   if (msg->output)
     ml_tensors_data_destroy (msg->output);
+  g_clear_pointer (&msg->name, g_free);
 
-  g_free (msg->name);
   g_free (msg);
 }
 
