@@ -166,10 +166,10 @@ _mlrs_set_edge_info (edge_info_s * edge_info, nns_edge_h edge_h)
 static void
 _mlrs_release_edge_info (edge_info_s * edge_info)
 {
-  g_free (edge_info->dest_host);
-  g_free (edge_info->host);
-  g_free (edge_info->topic);
-  g_free (edge_info->id);
+  g_clear_pointer (&edge_info->dest_host, g_free);
+  g_clear_pointer (&edge_info->host, g_free);
+  g_clear_pointer (&edge_info->topic, g_free);
+  g_clear_pointer (&edge_info->id, g_free);
   g_free (edge_info);
 }
 
@@ -727,9 +727,8 @@ _ml_service_offloading_release_internal (ml_service_s * mls)
     offloading_s->service_table = NULL;
   }
 
-  g_free (offloading_s->path);
-  g_free (offloading_s);
-  mls->priv = NULL;
+  g_clear_pointer (&offloading_s->path, g_free);
+  g_clear_pointer (&mls->priv, g_free);
 
   return ML_ERROR_NONE;
 }
@@ -764,7 +763,7 @@ _ml_service_offloading_set_information (ml_service_h handle, const gchar * name,
           "Write permission to dir '%s' is denied.", value);
     }
 
-    g_free (offloading_s->path);
+    g_clear_pointer (&offloading_s->path, g_free);
     offloading_s->path = g_strdup (value);
 
     if (offloading_s->offloading_mode == ML_SERVICE_OFFLOADING_MODE_TRAINING) {

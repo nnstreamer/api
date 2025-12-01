@@ -98,7 +98,7 @@ _training_offloading_node_info_free (gpointer data)
   if (!node_info)
     return;
 
-  g_free (node_info->name);
+  g_clear_pointer (&node_info->name, g_free);
   g_free (node_info);
 }
 
@@ -641,7 +641,7 @@ _ml_service_training_offloading_set_path (ml_service_s * mls,
   ret = _training_offloading_get_priv (mls, &training_s);
   g_return_val_if_fail (ret == ML_ERROR_NONE, ret);
 
-  g_free (training_s->path);
+  g_clear_pointer (&training_s->path, g_free);
   training_s->path = g_strdup (path);
 
   return ret;
@@ -916,20 +916,11 @@ _ml_service_training_offloading_destroy (ml_service_s * mls)
     training_s->pipeline_h = NULL;
   }
 
-  g_free (training_s->path);
-  training_s->path = NULL;
-
-  g_free (training_s->trained_model_path);
-  training_s->trained_model_path = NULL;
-
-  g_free (training_s->receiver_pipe_json_str);
-  training_s->receiver_pipe_json_str = NULL;
-
-  g_free (training_s->receiver_pipe);
-  training_s->receiver_pipe = NULL;
-
-  g_free (training_s->sender_pipe);
-  training_s->sender_pipe = NULL;
+  g_clear_pointer (&training_s->path, g_free);
+  g_clear_pointer (&training_s->trained_model_path, g_free);
+  g_clear_pointer (&training_s->receiver_pipe_json_str, g_free);
+  g_clear_pointer (&training_s->receiver_pipe, g_free);
+  g_clear_pointer (&training_s->sender_pipe, g_free);
 
   g_free (training_s);
 

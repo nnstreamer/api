@@ -413,9 +413,8 @@ _ml_service_pipeline_release_internal (ml_service_s * mls)
     }
   }
 
-  g_free (server->service_name);
-  g_free (server);
-  mls->priv = NULL;
+  g_clear_pointer (&server->service_name, g_free);
+  g_clear_pointer (&mls->priv, g_free);
 
   return ML_ERROR_NONE;
 }

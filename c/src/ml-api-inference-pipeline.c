@@ -185,7 +185,7 @@ pipe_custom_remove_data (const pipe_custom_type_e type, const gchar * name)
 
     g_ml_custom_data = g_list_delete_link (g_ml_custom_data, link);
 
-    g_free (data->name);
+    g_clear_pointer (&data->name, g_free);
     g_free (data);
   }
 
@@ -516,8 +516,7 @@ free_element_handle (gpointer data)
         NULL, NULL);
   }
 
-  g_free (item->callback_info);
-  item->callback_info = NULL;
+  g_clear_pointer (&item->callback_info, g_free);
   g_free (item);
 }
 
@@ -576,13 +575,10 @@ cleanup_node (gpointer data)
     e->custom_destroy (e->custom_data, e);
   }
 
-  g_free (e->name);
-  if (e->src)
-    gst_object_unref (e->src);
-  if (e->sink)
-    gst_object_unref (e->sink);
-
-  gst_object_unref (e->element);
+  g_clear_pointer (&e->name, g_free);
+  g_clear_pointer (&e->src, gst_object_unref);
+  g_clear_pointer (&e->sink, gst_object_unref);
+  g_clear_pointer (&e->element, gst_object_unref);
 
   gst_tensors_info_free (&e->tensors_info);
 
@@ -605,7 +601,7 @@ cleanup_resource (gpointer data)
     release_tizen_resource (res->handle, res->type);
   }
 
-  g_free (res->type);
+  g_clear_pointer (&res->type, g_free);
   g_free (res);
 }
 
@@ -2141,8 +2137,7 @@ ml_pipeline_switch_get_pad_list (ml_pipeline_switch_h h, char ***list)
 
       if (i > counter) {
         g_list_free_full (dllist, g_free);      /* This frees all strings as well */
-        g_free (*list);
-        *list = NULL;
+        g_clear_pointer (list, g_free);
 
         _ml_error_report
             ("Internal data inconsistency. This could be a bug in nnstreamer. Switch [%s].",
@@ -2750,7 +2745,7 @@ ml_pipeline_custom_free_handle (ml_custom_filter_s * custom)
   if (custom) {
     g_mutex_lock (&custom->lock);
 
-    g_free (custom->name);
+    g_clear_pointer (&custom->name, g_free);
     ml_tensors_info_destroy (custom->in_info);
     ml_tensors_info_destroy (custom->out_info);
 
@@ -3060,7 +3055,7 @@ ml_pipeline_if_custom_free (ml_if_custom_s * custom)
   if (custom) {
     g_mutex_lock (&custom->lock);
 
-    g_free (custom->name);
+    g_clear_pointer (&custom->name, g_free);
 
     g_mutex_unlock (&custom->lock);
     g_mutex_clear (&custom->lock);
