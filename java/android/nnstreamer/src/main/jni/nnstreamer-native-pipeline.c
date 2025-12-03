@@ -227,7 +227,10 @@ nns_get_sink_handle (pipeline_info_s * pipe_info, const gchar * element_name)
   element_data_s *item;
   int status;
 
-  g_assert (pipe_info);
+  if (!pipe_info) {
+    _ml_loge ("pipe_info is NULL.");
+    return NULL;
+  }
   pipe = pipe_info->pipeline_handle;
 
   handle = (ml_pipeline_sink_h) nns_get_element_handle (pipe_info,
@@ -275,7 +278,10 @@ nns_get_src_handle (pipeline_info_s * pipe_info, const gchar * element_name)
   element_data_s *item;
   int status;
 
-  g_assert (pipe_info);
+  if (!pipe_info) {
+    _ml_loge ("pipe_info is NULL.");
+    return NULL;
+  }
   pipe = pipe_info->pipeline_handle;
 
   handle = (ml_pipeline_src_h) nns_get_element_handle (pipe_info,
@@ -323,7 +329,10 @@ nns_get_switch_handle (pipeline_info_s * pipe_info, const gchar * element_name)
   element_data_s *item;
   int status;
 
-  g_assert (pipe_info);
+  if (!pipe_info) {
+    _ml_loge ("pipe_info is NULL.");
+    return NULL;
+  }
   pipe = pipe_info->pipeline_handle;
 
   handle = (ml_pipeline_switch_h) nns_get_element_handle (pipe_info,
@@ -371,7 +380,10 @@ nns_get_valve_handle (pipeline_info_s * pipe_info, const gchar * element_name)
   element_data_s *item;
   int status;
 
-  g_assert (pipe_info);
+  if (!pipe_info) {
+    _ml_loge ("pipe_info is NULL.");
+    return NULL;
+  }
   pipe = pipe_info->pipeline_handle;
 
   handle = (ml_pipeline_valve_h) nns_get_element_handle (pipe_info,
@@ -419,7 +431,10 @@ nns_get_video_sink_data (pipeline_info_s * pipe_info,
   element_data_s *item;
   int status;
 
-  g_assert (pipe_info);
+  if (!pipe_info) {
+    _ml_loge ("pipe_info is NULL.");
+    return NULL;
+  }
   pipe = pipe_info->pipeline_handle;
 
   item = nns_get_element_data (pipe_info, element_name);

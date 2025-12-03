@@ -1031,7 +1031,7 @@ construct_pipeline_internal (const char *pipeline_description,
   pipeline = gst_parse_launch (description, &err);
   g_free (description);
 
-  if (pipeline == NULL || err) {
+  if (!GST_IS_PIPELINE (pipeline) || err) {
     _ml_error_report
         ("ml_pipeline_construct error: gst_parse_launch cannot parse and launch the given pipeline = [%s]. The error message from gst_parse_launch is '%s'.",
         pipeline_description, (err) ? err->message : "unknown reason");
@@ -1044,12 +1044,16 @@ construct_pipeline_internal (const char *pipeline_description,
     goto failed;
   }
 
-  g_assert (GST_IS_PIPELINE (pipeline));
   pipe_h->element = pipeline;
 
   /* bus and message callback */
   pipe_h->bus = gst_element_get_bus (pipeline);
-  g_assert (pipe_h->bus);
+  if (pipe_h->bus == NULL) {
+    _ml_error_report
+        ("ml_pipeline_construct error: Failed to retrieve bus from the pipeline.");
+    status = ML_ERROR_STREAMS_PIPE;
+    goto failed;
+  }
 
   gst_bus_enable_sync_message_emission (pipe_h->bus);
   pipe_h->signal_msg = g_signal_connect (pipe_h->bus, "sync-message",

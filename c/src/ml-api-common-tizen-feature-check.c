@@ -45,19 +45,23 @@ static feature_info_s *feature_info = NULL;
 /**
  * @brief Internal function to initialize feature state.
  */
-static void
+static int
 ml_tizen_initialize_feature_state (void)
 {
   int i;
 
   if (feature_info == NULL) {
-    feature_info = g_new0 (feature_info_s, 1);
-    g_assert (feature_info);
+    feature_info = g_try_new0 (feature_info_s, 1);
+    if (feature_info == NULL) {
+      _ml_loge ("Failed to allocate memory for feature_info");
+      return ML_ERROR_OUT_OF_MEMORY;
+    }
 
     g_mutex_init (&feature_info->mutex);
     for (i = 0; i < ML_FEATURE_MAX; i++)
       feature_info->feature_state[i] = NOT_CHECKED_YET;
   }
+  return ML_ERROR_NONE;
 }
 
 /**
@@ -66,7 +70,12 @@ ml_tizen_initialize_feature_state (void)
 int
 _ml_tizen_set_feature_state (ml_feature_e ml_feature, int state)
 {
-  ml_tizen_initialize_feature_state ();
+  int status;
+
+  status = ml_tizen_initialize_feature_state ();
+  if (status != ML_ERROR_NONE)
+    return status;
+
   g_mutex_lock (&feature_info->mutex);
 
   /**
@@ -97,7 +106,9 @@ _ml_tizen_get_feature_enabled (ml_feature_e ml_feature)
   int ret;
   int feature_enabled;
 
-  ml_tizen_initialize_feature_state ();
+  ret = ml_tizen_initialize_feature_state ();
+  if (ret != ML_ERROR_NONE)
+    return ret;
 
   g_mutex_lock (&feature_info->mutex);
   feature_enabled = feature_info->feature_state[ml_feature];
