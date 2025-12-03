@@ -551,11 +551,16 @@ nnstreamer_native_finalize (void)
 const char *
 nnstreamer_native_get_data_path (void)
 {
-  char *data_path = NULL;
+  const char *data_path = NULL;
 
   G_LOCK (nns_native_lock);
-  g_assert (g_nns_is_initialized);
-  data_path = g_files_dir;
+
+  if (g_nns_is_initialized) {
+    data_path = g_files_dir;
+  } else {
+    _ml_loge ("NNStreamer native library is not initialized.");    
+  }
+
   G_UNLOCK (nns_native_lock);
 
   return data_path;

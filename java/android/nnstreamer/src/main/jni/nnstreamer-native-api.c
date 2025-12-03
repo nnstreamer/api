@@ -22,7 +22,11 @@ nns_attach_current_thread (pipeline_info_s * pipe_info)
   JavaVM *jvm;
   JavaVMAttachArgs args;
 
-  g_assert (pipe_info);
+  if (!pipe_info) {
+    _ml_loge ("pipe_info is NULL.");
+    return NULL;
+  }
+
   jvm = pipe_info->jvm;
 
   args.version = pipe_info->version;
@@ -48,7 +52,10 @@ nns_get_jni_env (pipeline_info_s * pipe_info)
 {
   JNIEnv *env;
 
-  g_assert (pipe_info);
+  if (!pipe_info) {
+    _ml_loge ("pipe_info is NULL.");
+    return NULL;
+  }
 
   if ((env = pthread_getspecific (pipe_info->jni_env)) == NULL) {
     env = nns_attach_current_thread (pipe_info);
@@ -197,15 +204,19 @@ nns_construct_pipe_info (JNIEnv * env, jobject thiz, gpointer handle,
   pipe_info = g_new0 (pipeline_info_s, 1);
   g_return_val_if_fail (pipe_info != NULL, NULL);
 
+  (*env)->GetJavaVM (env, &pipe_info->jvm);
+  if (!pipe_info->jvm) {
+    _ml_loge ("Failed to get Java VM.");
+    g_free (pipe_info);
+    return NULL;
+  }
+
   pipe_info->pipeline_type = type;
   pipe_info->pipeline_handle = handle;
   pipe_info->element_handles =
       g_hash_table_new_full (g_str_hash, g_str_equal, g_free,
       nns_free_element_data);
   g_mutex_init (&pipe_info->lock);
-
-  (*env)->GetJavaVM (env, &pipe_info->jvm);
-  g_assert (pipe_info->jvm);
   pthread_key_create (&pipe_info->jni_env, NULL);
 
   pipe_info->version = (*env)->GetVersion (env);
