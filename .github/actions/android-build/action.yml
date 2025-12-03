@@ -38,7 +38,7 @@ runs:
     - name: Get gstreamer-android
       if: steps.restore-gst_android_pkg-cache.outputs.cache-hit != 'true'
       run: |
-        gst_android_ver=1.24.12
+        gst_android_ver=1.24.13
         gst_android_pkg=gstreamer-1.0-android-universal-${gst_android_ver}.tar.xz
         mkdir -p ~/android/gst_root_android/
         pushd ~/android/gst_root_android/
