@@ -10,10 +10,17 @@ nns_native_srcs += join_paths(nns_native_path, 'nnstreamer-native-customfilter.c
 nns_native_srcs += join_paths(nns_native_path, 'nnstreamer-native-pipeline.c')
 nns_native_srcs += join_paths(nns_native_path, 'nnstreamer-native-singleshot.c')
 
+nns_native_deps = [nnstreamer_dep, nns_capi_dep]
+
+if get_option('enable-ml-service')
+  nns_native_srcs += join_paths(nns_native_path, 'nnstreamer-native-service.c')
+  nns_native_deps += nns_capi_service_dep
+endif
+
 # Build library
 shared_library('nnstreamer-native',
   nns_native_srcs,
-  dependencies: [nnstreamer_dep, nns_capi_dep],
+  dependencies: nns_native_deps,
   include_directories: jni_include,
   install: true,
   install_dir: api_install_libdir
