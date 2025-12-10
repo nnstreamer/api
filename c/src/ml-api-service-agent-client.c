@@ -344,6 +344,7 @@ ml_service_pipeline_launch (const char *name, ml_service_h * handle)
     _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
         "Failed to allocate memory for the service handle's private data. Out of memory?");
   }
+  server->id = -1;
 
   ret = ml_agent_pipeline_launch (name, &(server->id));
   if (ret < 0) {
@@ -405,12 +406,13 @@ _ml_service_pipeline_release_internal (ml_service_s * mls)
   if (!server)
     return ML_ERROR_NONE;
 
-  if (server->id > 0) {
+  if (server->id >= 0) {
     ret = ml_agent_pipeline_destroy (server->id);
     if (ret < 0) {
       _ml_error_report_return (ret,
           "Failed to invoke the method destroy_pipeline.");
     }
+    server->id = -1;
   }
 
   g_clear_pointer (&server->service_name, g_free);
