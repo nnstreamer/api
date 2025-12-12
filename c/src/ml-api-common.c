@@ -1498,6 +1498,7 @@ _ml_info_set_value (ml_info_s * info, const char *key, void *value,
     ml_data_destroy_cb destroy)
 {
   ml_info_value_s *info_value;
+  gchar *key_dup;
 
   if (!STR_IS_VALID (key))
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
@@ -1507,6 +1508,10 @@ _ml_info_set_value (ml_info_s * info, const char *key, void *value,
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, 'info' or 'value' is NULL. It should be a valid ml_info and value.");
 
+  if (!info->table)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "The parameter, 'info' is invalid. It should have a valid table instance.");
+
   info_value = g_new0 (ml_info_value_s, 1);
   if (!info_value)
     _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
@@ -1514,7 +1519,22 @@ _ml_info_set_value (ml_info_s * info, const char *key, void *value,
 
   info_value->value = value;
   info_value->destroy = destroy;
-  g_hash_table_insert (info->table, g_strdup (key), (gpointer) info_value);
+
+  /**
+   * Note: 'value' ownership is transferred to the table.
+   * If we fail to duplicate the key (OOM), we should free 'value' using
+   * the provided destroy callback to avoid leaks.
+   */
+  key_dup = g_strdup (key);
+  if (!key_dup) {
+    if (info_value->destroy)
+      info_value->destroy (info_value->value);
+    g_free (info_value);
+    _ml_error_report_return (ML_ERROR_OUT_OF_MEMORY,
+        "Failed to duplicate the key string. Out of memory?");
+  }
+
+  g_hash_table_insert (info->table, key_dup, (gpointer) info_value);
 
   return ML_ERROR_NONE;
 }
