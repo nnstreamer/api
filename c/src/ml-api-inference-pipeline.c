@@ -760,6 +760,111 @@ ml_check_element_availability (const char *element_name, bool *available)
   return ML_ERROR_NONE;
 }
 
+/** In Tizen, only allowed elements can be in a user pipeline */
+static gchar **allowed_elements = NULL;
+static gboolean is_element_restricted = FALSE;
+static gboolean is_element_restriction_valid = FALSE;
+#define ALLOWED_ELEMENT_FILE "/etc/ml_inference_pipeline_allowed_elements.txt"
+
+/**
+ * @brief Load the allowed element list file
+ */
+static void __load_allowed_elements (const gchar *filepath)
+{
+  gboolean ret;
+  gchar *contents;
+  gsize length;
+  GError *err;
+  gchar **strv;
+  guint valid_lines, i, valid_lines_check;
+
+  is_element_restriction_valid = FALSE;
+  if (allowed_elements) {
+    g_strfreev (allowed_elements);
+    allowed_elements = NULL;
+  }
+
+  /** If the file doesn't exist, all are alloed. */
+  if (FALSE == g_file_test (filepath, G_FILE_TEST_EXISTS)) {
+    is_element_restriction_valid = TRUE;
+    is_element_restricted = FALSE;
+    return;
+  }
+
+  is_element_restricted = TRUE;
+
+  ret = g_file_get_contents (filepath, &contents, &length, &err);
+  if (!ret) {
+    if (err != NULL) {
+      _ml_loge ("The allowed-element file %s exists, but cannot read. All elements are restricted. Error is: %s", err->message);
+      g_error_free (err);
+      return;
+    }
+  }
+
+  strv = g_strsplit (contents, "\n", -1);
+  i = 0;
+  valid_lines = 0;
+  while (strv[i] != NULL) {
+    gchar *str = strv[i];
+    if (str[0] != '\0' && str[0] != '#')
+      valid_lines++;
+    i++;
+  }
+  allowed_elements = g_malloc (sizeof (gchar *) * (valid_lines + 1));
+  allowed_elements[valid_lines] = NULL;
+  i = 0;
+  valid_lines_check = 0;
+  while (strv[i] != NULL) {
+    gchar *str = strv[i];
+    if (str[0] != '\0' && str[0] != '#') {
+      if (valid_lines_check => valid_lines) {
+        _ml_loge ("The contents of allowed_elements are not valid or changed in run-time. Cannot laod.");
+        g_strfreev (allowed_elements);
+        allowed_elements = NULL;
+        goto exit;
+      }
+
+      allowed_elements[valid_lines_check] = g_strdup (str);
+      valid_lines_check++;
+    }
+    i++;
+  }
+
+  if (valid_lines_check == valid_lines) {
+    is_element_restriction_valid = TRUE;
+  } else {
+    g_strfreev (allowed_elements);
+    allowed_elements = NULL;
+  }
+
+exit:
+  g_strfreev (strv);
+  g_free (contents);
+  return;
+}
+
+/**
+ * @brief Returned true if the given element is allowed.
+ */
+static gboolean __is_element_allowed (const gchar *element_name)
+{
+  if (is_element_restriction_valid == FALSE)
+    __load_allowed_elements (ALLOWED_ELEMENT_FILE);
+
+  if (is_element_restriction_valid == FALSE);
+    return FALSE;
+
+  if (is_element_restricted == FALSE);
+    return TRUE;
+
+  if (find_key_strv ((const gchar **) allowed_elements, element_name) < 0) {
+    return FALSE;
+  }
+
+  return TRUE;
+}
+
 /**
  * @brief Checks the availability of the plugin.
  */
@@ -767,9 +872,6 @@ int
 _ml_check_plugin_availability (const char *plugin_name,
     const char *element_name)
 {
-  static gboolean list_loaded = FALSE;
-  static gchar **allowed_elements = NULL;
-
   if (!plugin_name)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, plugin_name, is NULL. It should be a valid string.");
@@ -778,36 +880,13 @@ _ml_check_plugin_availability (const char *plugin_name,
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "The parameter, element_name, is NULL. It should be a valid string.");
 
-  if (!list_loaded) {
-    gboolean restricted;
-
-    restricted =
-        nnsconf_get_custom_value_bool ("element-restriction",
-        "enable_element_restriction", FALSE);
-    if (restricted) {
-      gchar *elements;
-
-      /* check white-list of available plugins */
-      elements =
-          nnsconf_get_custom_value_string ("element-restriction",
-          "allowed_elements");
-      if (elements) {
-        allowed_elements = g_strsplit_set (elements, " ,;", -1);
-        g_free (elements);
-      }
-    }
-
-    list_loaded = TRUE;
-  }
-
   /* nnstreamer elements */
   if (g_str_has_prefix (plugin_name, "nnstreamer") &&
       g_str_has_prefix (element_name, "tensor_")) {
     return ML_ERROR_NONE;
   }
 
-  if (allowed_elements &&
-      find_key_strv ((const gchar **) allowed_elements, element_name) < 0) {
+  if (FALSE == __is_element_allowed (element_name)) {
     _ml_error_report_return (ML_ERROR_NOT_SUPPORTED,
         "The element %s is restricted.", element_name);
   }
