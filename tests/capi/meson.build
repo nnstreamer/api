@@ -76,6 +76,22 @@ if get_option('enable-ml-service')
       test('unittest_capi_service_training_offloading', unittest_capi_service_training_offloading, env: testenv, timeout: 100)
     endif
   endif
+
+  # LXM Service Tests
+  # These tests require both ml-service and llamacpp to be enabled.
+  llamacpp_dep = dependency('llama', required: false)
+  if llamacpp_dep.found()
+    # Note: The source file itself is also conditionally compiled with ENABLE_LLAMACPP.
+    unittest_capi_lxm_service = executable('unittest_capi_lxm_service',
+      'unittest_capi_lxm_service.cc',
+      dependencies: service_unittest_deps,
+      install: get_option('install-test'),
+      install_dir: unittest_install_dir
+    )
+    test('unittest_capi_lxm_service', unittest_capi_lxm_service, env: testenv, timeout: 120) # Increased timeout for LLM response
+  else
+    message('LXM Service tests will be skipped because llama dependency was not found.')
+  endif
 endif
 
 if nnfw_dep.found()
