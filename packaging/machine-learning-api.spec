@@ -418,7 +418,7 @@ export MLAPI_BUILD_ROOT_PATH=$(pwd)/build
 # Capture initial zero coverage data. This will be merged with actual coverage data later.
 # This is to prevent null gcda file error if the test is not performed (in case of gcov package generation mode).
 pushd build
-lcov -i -c -o unittest_base.info -d . -b $(pwd) --ignore-errors mismatch
+lcov -i -c -o unittest_base.info -d . -b $(pwd) --ignore-errors mismatch --exclude "unittest*"
 popd
 %endif # testcoverage
 
@@ -465,7 +465,7 @@ VCS=`cat ${RPM_SOURCE_DIR}/machine-learning-api.spec | grep "^VCS:" | sed "s|VCS
 pushd build
 # Set different lcov options for Tizen/lcov versions.
 %if 0%{tizen_version_major} >= 9
-lcov -t 'ML API unittest coverage' -o unittest_test.info -c -d . -b $(pwd) --ignore-errors mismatch,empty
+lcov -t 'ML API unittest coverage' -o unittest_test.info -c -d . -b $(pwd) --ignore-errors mismatch,empty --exclude "unittest*"
 lcov -a unittest_base.info -a unittest_test.info -o unittest_total.info --ignore-errors empty
 lcov -r unittest_total.info "*/tests/*" "*/meson*/*" "*/*@sha/*" "*/*.so.p/*" "*/*tizen*" "*/*-dbus.c" "/usr/*" -o unittest-filtered.info --ignore-errors graph,unused
 %else
