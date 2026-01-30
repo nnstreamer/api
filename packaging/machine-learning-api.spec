@@ -423,13 +423,13 @@ popd
 %endif # testcoverage
 
 # Run test
-# If gcov package generation is enabled, pass the test from GBS.
-%if 0%{?unit_test} && !0%{?gcov}
+%if 0%{?unit_test}
 bash %{test_script} ./tests/capi/unittest_capi_inference_single
 bash %{test_script} ./tests/capi/unittest_capi_inference
 bash %{test_script} ./tests/capi/unittest_capi_datatype_consistency
 
-%if 0%{?enable_ml_service}
+# If gcov package generation is enabled, pass the test from GBS.
+%if 0%{?enable_ml_service} && !0%{?gcov}
 bash %{test_script} ./tests/capi/unittest_capi_service_extension
 bash %{test_script} ./tests/capi/unittest_capi_service_agent_client
 %if 0%{?nnstreamer_edge_support}
