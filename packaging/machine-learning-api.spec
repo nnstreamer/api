@@ -104,7 +104,6 @@ BuildRequires:	meson >= 0.50.0
 BuildRequires:	pkgconfig(dlog)
 
 %if 0%{?enable_tizen_privilege}
-BuildRequires:	pkgconfig(dpm)
 %if (0%{tizen_version_major} < 7) || (0%{?tizen_version_major} == 7 && 0%{?tizen_version_minor} < 5)
 BuildRequires:	pkgconfig(capi-privacy-privilege-manager)
 %endif

@@ -20,7 +20,6 @@
 #include "ml-api-inference-internal.h"
 #include "ml-api-inference-pipeline-internal.h"
 
-#include <restriction.h>        /* device policy manager */
 #if TIZENPPM
 #include <privacy_privilege_manager.h>
 #endif
@@ -131,8 +130,6 @@ typedef struct
 {
   gboolean invalid; /**< flag to indicate rm handle is valid */
   gpointer rm_h; /**< rm handle */
-  device_policy_manager_h dpm_h; /**< dpm handle */
-  int dpm_cb_id; /**< dpm callback id */
   gboolean has_video_src; /**< pipeline includes video src */
   gboolean has_audio_src; /**< pipeline includes audio src */
   GHashTable *res_handles; /**< hash table of resource handles */
@@ -182,61 +179,6 @@ ml_tizen_check_privilege (const gchar * privilege)
 #else
 #define ml_tizen_check_privilege(...) (ML_ERROR_NONE)
 #endif /* TIZENPPM */
-
-/**
- * @brief Function to check device policy.
- */
-static int
-ml_tizen_dpm_check_restriction (device_policy_manager_h dpm_handle, int type)
-{
-  int err = DPM_ERROR_NOT_PERMITTED;
-  int dpm_is_allowed = 0;
-
-  switch (type) {
-    case 1:                    /* camera */
-      err = dpm_restriction_get_camera_state (dpm_handle, &dpm_is_allowed);
-      break;
-    case 2:                    /* mic */
-      err = dpm_restriction_get_microphone_state (dpm_handle, &dpm_is_allowed);
-      break;
-    default:
-      /* unknown type */
-      break;
-  }
-
-  if (err != DPM_ERROR_NONE || dpm_is_allowed != 1) {
-    _ml_loge ("Failed, device policy is not allowed.");
-    return ML_ERROR_PERMISSION_DENIED;
-  }
-
-  return ML_ERROR_NONE;
-}
-
-/**
- * @brief Callback to be called when device policy is changed.
- */
-static void
-ml_tizen_dpm_policy_changed_cb (const char *name, const char *state,
-    void *user_data)
-{
-  ml_pipeline *p;
-
-  g_return_if_fail (state);
-  g_return_if_fail (user_data);
-
-  p = (ml_pipeline *) user_data;
-
-  if (g_ascii_strcasecmp (state, "disallowed") == 0) {
-    g_mutex_lock (&p->lock);
-
-    /* pause the pipeline */
-    gst_element_set_state (p->element, GST_STATE_PAUSED);
-
-    g_mutex_unlock (&p->lock);
-  }
-
-  return;
-}
 
 /**
  * @brief Function to get key string of resource type to handle hash table.
@@ -760,16 +702,6 @@ ml_tizen_mm_res_release (gpointer handle, gboolean destroy)
   ml_tizen_mm_res_release_rm (mm_handle);
 
   if (destroy) {
-    if (mm_handle->dpm_h) {
-      if (mm_handle->dpm_cb_id > 0) {
-        dpm_remove_policy_changed_cb (mm_handle->dpm_h, mm_handle->dpm_cb_id);
-        mm_handle->dpm_cb_id = 0;
-      }
-
-      dpm_manager_destroy (mm_handle->dpm_h);
-      mm_handle->dpm_h = NULL;
-    }
-
     g_hash_table_remove_all (mm_handle->res_handles);
     g_free (mm_handle);
   }
@@ -786,7 +718,6 @@ ml_tizen_mm_res_initialize (ml_pipeline_h pipe, gboolean has_video_src,
   pipeline_resource_s *res;
   tizen_mm_handle_s *mm_handle = NULL;
   int status = ML_ERROR_STREAMS_PIPE;
-  int err;
 
   p = (ml_pipeline *) pipe;
 
@@ -817,16 +748,6 @@ ml_tizen_mm_res_initialize (ml_pipeline_h pipe, gboolean has_video_src,
 
     mm_handle->res_handles =
         g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
-
-    /* device policy manager */
-    mm_handle->dpm_h = dpm_manager_create ();
-    err = dpm_add_policy_changed_cb (mm_handle->dpm_h, "camera",
-        ml_tizen_dpm_policy_changed_cb, pipe, &mm_handle->dpm_cb_id);
-    if (err != DPM_ERROR_NONE) {
-      _ml_loge ("Failed to add device policy callback.");
-      status = ML_ERROR_PERMISSION_DENIED;
-      goto rm_error;
-    }
 
     /* set mm handle */
     res->handle = mm_handle;
@@ -937,21 +858,6 @@ ml_tizen_mm_res_acquire (ml_pipeline_h pipe, tizen_mm_res_type_e res_type)
     _ml_error_report_return (ML_ERROR_STREAMS_PIPE,
         "Internal function error: the resource '%s' does not have a valid mm handle (NULL).",
         TIZEN_RES_MM);
-
-  /* check dpm state */
-  if (mm_handle->has_video_src) {
-    status = ml_tizen_dpm_check_restriction (mm_handle->dpm_h, 1);
-    if (status != ML_ERROR_NONE)
-      _ml_error_report_return (ML_ERROR_PERMISSION_DENIED,
-          "Video camera source requires permission to access the camera; you do not have the permission. Your Tizen application is required to acquire video permission (DPM) from Tizen. Refer: https://docs.tizen.org/application/native/guides/security/dpm/");
-  }
-
-  if (mm_handle->has_audio_src) {
-    status = ml_tizen_dpm_check_restriction (mm_handle->dpm_h, 2);
-    if (status != ML_ERROR_NONE)
-      _ml_error_report_return (ML_ERROR_PERMISSION_DENIED,
-          "Audio mic source requires permission to access the mic; you do not have the permission. Your Tizen application is required to acquire audio/mic permission (DPM) from Tizen. Refer: https://docs.tizen.org/application/native/guides/security/dpm/");
-  }
 
   /* check invalid handle */
   if (mm_handle->invalid)

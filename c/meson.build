@@ -16,7 +16,6 @@ if (get_option('enable-tizen'))
   nns_capi_common_deps += dependency('dlog')
 
   if get_option('enable-tizen-privilege-check')
-    nns_capi_deps += dependency('dpm')
     if ((tizenVmajor < 7) or (tizenVmajor == 7 and tizenVminor < 5))
       nns_capi_deps += dependency('capi-privacy-privilege-manager')
     endif
