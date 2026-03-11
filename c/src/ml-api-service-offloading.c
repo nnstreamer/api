@@ -1166,7 +1166,7 @@ _ml_service_offloading_request (ml_service_h handle, const char *key,
         nns_edge_data_add (data_h, _in->tensors[i].data, _in->tensors[i].size,
         NULL);
     if (NNS_EDGE_ERROR_NONE != ret) {
-      _ml_error_report ("Failed to add camera data to the edge data.");
+      _ml_error_report ("Failed to add tensor data to the edge data.");
       goto done;
     }
   }
@@ -1174,7 +1174,7 @@ _ml_service_offloading_request (ml_service_h handle, const char *key,
   ret = nns_edge_send (offloading_s->edge_h, data_h);
   if (NNS_EDGE_ERROR_NONE != ret) {
     _ml_error_report
-        ("Failed to publish the data to register the offloading service.");
+        ("Failed to publish the edge data to register the offloading service.");
   }
 
 done:
