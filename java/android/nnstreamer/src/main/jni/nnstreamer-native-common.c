@@ -561,7 +561,7 @@ nnstreamer_native_get_data_path (void)
   if (g_nns_is_initialized) {
     data_path = g_files_dir;
   } else {
-    _ml_loge ("NNStreamer native library is not initialized.");    
+    _ml_loge ("NNStreamer native library is not initialized.");
   }
 
   G_UNLOCK (nns_native_lock);

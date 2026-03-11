@@ -2099,7 +2099,7 @@ _ml_validate_model_file (const char *const *model,
   }
 
   /** @todo Make sure num_models is correct for each nnfw type */
-  switch (*nnfw) {
+  switch ((int) *nnfw) {
     case ML_NNFW_TYPE_NNFW:
     case ML_NNFW_TYPE_TVM:
     case ML_NNFW_TYPE_ONNX_RUNTIME:
