@@ -29,10 +29,11 @@ extern "C" {
  * @brief Macro for the event types of machine learning service.
  * @todo TBU, need ACR later (update enum for ml-service event, see ml_service_event_cb)
  */
-#define ML_SERVICE_EVENT_MODEL_REGISTERED 2
-#define ML_SERVICE_EVENT_PIPELINE_REGISTERED 3
-#define ML_SERVICE_EVENT_REPLY 4
-#define ML_SERVICE_EVENT_LAUNCH 5
+#define ML_SERVICE_EVENT_CUSTOM (0x7f000000)
+#define ML_SERVICE_EVENT_MODEL_REGISTERED (ML_SERVICE_EVENT_CUSTOM + 1)
+#define ML_SERVICE_EVENT_PIPELINE_REGISTERED (ML_SERVICE_EVENT_CUSTOM + 2)
+#define ML_SERVICE_EVENT_REPLY (ML_SERVICE_EVENT_CUSTOM + 3)
+#define ML_SERVICE_EVENT_LAUNCH (ML_SERVICE_EVENT_CUSTOM + 4)
 
 /**
  * @brief Enumeration for ml-service type.
