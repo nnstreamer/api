@@ -391,19 +391,22 @@ _extension_test_imgclf (ml_service_h handle, gboolean is_pipeline)
 }
 
 #if defined(ENABLE_LLAMACPP)
+#define LLAMACPP_TEST_MODEL "TinyStories-656K-Q2_K.gguf"
+#define LLAMACPP_TEST_MODEL_URL \
+  "https://huggingface.co/tensorblock/TinyStories-656K-GGUF"
+
 /**
  * @brief Macro to skip testcase if model file is not ready.
  */
-#define skip_llamacpp_tc(tc_name)                                                                  \
-  do {                                                                                             \
-    g_autofree gchar *model_file = _get_model_path ("llama-2-7b-chat.Q2_K.gguf");                  \
-    if (!g_file_test (model_file, G_FILE_TEST_EXISTS)) {                                           \
-      g_autofree gchar *msg = g_strdup_printf (                                                    \
-          "Skipping '%s' due to missing model file. "                                              \
-          "Please download model file from https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF.", \
-          tc_name);                                                                                \
-      GTEST_SKIP () << msg;                                                                        \
-    }                                                                                              \
+#define skip_llamacpp_tc(tc_name)                                                                \
+  do {                                                                                           \
+    g_autofree gchar *model_file = _get_model_path (LLAMACPP_TEST_MODEL);                        \
+    if (!g_file_test (model_file, G_FILE_TEST_EXISTS)) {                                         \
+      g_autofree gchar *msg = g_strdup_printf (                                                  \
+          "Skipping '%s' due to missing model file '%s'. Please download model file from '%s'.", \
+          tc_name, LLAMACPP_TEST_MODEL, LLAMACPP_TEST_MODEL_URL);                                \
+      GTEST_SKIP () << msg;                                                                      \
+    }                                                                                            \
   } while (0)
 
 /**
