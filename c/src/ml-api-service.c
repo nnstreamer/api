@@ -237,6 +237,12 @@ _ml_service_conf_parse_tensors_info (JsonNode * info_node,
   if (JSON_NODE_HOLDS_ARRAY (info_node)) {
     array = json_node_get_array (info_node);
     info.num_tensors = json_array_get_length (array);
+
+    if (info.num_tensors > NNS_TENSOR_SIZE_LIMIT) {
+      _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+          "The array length of json for tensor information (%u) exceeds the max limit.",
+          info.num_tensors);
+    }
   }
 
   for (i = 0; i < info.num_tensors; i++) {
