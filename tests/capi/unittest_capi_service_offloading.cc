@@ -300,7 +300,7 @@ TEST_F (MLOffloadingService, registerInvalidParam02_n)
   int status;
 
   g_autofree gchar *data = g_strdup ("fakesrc ! fakesink");
-  gsize len = strlen (data);
+  gsize len = strlen (data) + 1;
 
   status = _ml_service_offloading_request_raw (NULL, "req_raw", data, len);
   EXPECT_EQ (ML_ERROR_INVALID_PARAMETER, status);

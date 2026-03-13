@@ -246,6 +246,38 @@ _ml_extension_destroy_tensors_info (void *data)
 }
 
 /**
+ * @brief Internal function to parse common option from json.
+ */
+static void
+_ml_extension_conf_parse_common (ml_service_s * mls, JsonObject * object)
+{
+  const gchar *value = NULL;
+
+  g_return_if_fail (object != NULL);
+
+  if (json_object_has_member (object, "input_queue_size")) {
+    value = json_object_get_string_member (object, "input_queue_size");
+
+    if (STR_IS_VALID (value))
+      _ml_service_extension_set_information (mls, "input_queue_size", value);
+  }
+
+  if (json_object_has_member (object, "max_input")) {
+    value = json_object_get_string_member (object, "max_input");
+
+    if (STR_IS_VALID (value))
+      _ml_service_extension_set_information (mls, "max_input", value);
+  }
+
+  if (json_object_has_member (object, "timeout")) {
+    value = json_object_get_string_member (object, "timeout");
+
+    if (STR_IS_VALID (value))
+      _ml_service_extension_set_information (mls, "timeout", value);
+  }
+}
+
+/**
  * @brief Internal function to parse single-shot info from json.
  */
 static int
@@ -553,20 +585,21 @@ static int
 _ml_extension_conf_parse_json (ml_service_s * mls, JsonObject * object)
 {
   ml_extension_s *ext = (ml_extension_s *) mls->priv;
+  JsonObject *sub = NULL;
   int status;
 
   if (json_object_has_member (object, "single")) {
-    JsonObject *single = json_object_get_object_member (object, "single");
+    sub = json_object_get_object_member (object, "single");
 
-    status = _ml_extension_conf_parse_single (mls, single);
+    status = _ml_extension_conf_parse_single (mls, sub);
     if (status != ML_ERROR_NONE)
       return status;
 
     ext->type = ML_EXTENSION_TYPE_SINGLE;
   } else if (json_object_has_member (object, "pipeline")) {
-    JsonObject *pipe = json_object_get_object_member (object, "pipeline");
+    sub = json_object_get_object_member (object, "pipeline");
 
-    status = _ml_extension_conf_parse_pipeline (mls, pipe);
+    status = _ml_extension_conf_parse_pipeline (mls, sub);
     if (status != ML_ERROR_NONE)
       return status;
 
@@ -576,6 +609,7 @@ _ml_extension_conf_parse_json (ml_service_s * mls, JsonObject * object)
         "Failed to parse configuration file, cannot get the valid type from configuration.");
   }
 
+  _ml_extension_conf_parse_common (mls, sub);
   return ML_ERROR_NONE;
 }
 
@@ -804,7 +838,10 @@ _ml_service_extension_set_information (ml_service_s * mls, const char *name,
 {
   ml_extension_s *ext = (ml_extension_s *) mls->priv;
 
-  /* Check limitation of message queue and other options. */
+  /**
+   * Check limitation of message queue and other options.
+   * When adding new value, you should fix _ml_extension_conf_parse_common() also.
+   */
   if (g_ascii_strcasecmp (name, "input_queue_size") == 0 ||
       g_ascii_strcasecmp (name, "max_input") == 0) {
     ext->max_input = (guint) g_ascii_strtoull (value, NULL, 10);
