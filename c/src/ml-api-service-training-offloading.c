@@ -715,6 +715,7 @@ _ml_service_training_offloading_prepare_receiver (ml_service_s * mls,
 
   pipe = json_object_get_object_member (pipeline_obj, "pipeline");
   if (json_object_has_member (pipe, "description")) {
+    g_clear_pointer (&training_s->receiver_pipe, g_free);
     training_s->receiver_pipe =
         g_strdup (_ml_service_get_json_string_member (pipe, "description"));
   } else {
