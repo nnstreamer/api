@@ -570,6 +570,11 @@ _training_offloading_check_received_data (ml_training_services_s * training_s)
 
   g_return_val_if_fail (training_s != NULL, FALSE);
 
+  if (training_s->received_thread) {
+    g_thread_join (training_s->received_thread);
+    training_s->received_thread = NULL;
+  }
+
   training_s->received_thread = g_thread_new ("check_received_file",
       _check_received_data_thread, training_s);
 
