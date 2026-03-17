@@ -810,6 +810,7 @@ _ml_service_training_offloading_process_received_data (ml_service_s * mls,
 
   if (training_s->type == ML_TRAINING_OFFLOADING_TYPE_RECEIVER) {
     if (service_type == ML_SERVICE_OFFLOADING_TYPE_PIPELINE_RAW) {
+      g_clear_pointer (&training_s->receiver_pipe_json_str, g_free);
       training_s->receiver_pipe_json_str = g_strdup (data);
       _ml_logd ("Received JSON string pipeline:%s",
           training_s->receiver_pipe_json_str);
@@ -822,6 +823,7 @@ _ml_service_training_offloading_process_received_data (ml_service_s * mls,
         _ml_error_report_return (ret,
             "Failed to get name while processing the ml-offloading service.");
       }
+      g_clear_pointer (&training_s->trained_model_path, g_free);
       training_s->trained_model_path =
           g_build_path (G_DIR_SEPARATOR_S, dir_path, name, NULL);
       _ml_logd ("Reply: name:%s, received trained_model:%s", name,
