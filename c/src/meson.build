@@ -48,7 +48,6 @@ endif
 
 nns_capi_common_dep = declare_dependency(link_with: nns_capi_common_lib,
   dependencies: nns_capi_common_deps,
-  link_args: nns_capi_common_link_args,
   include_directories: nns_capi_include
 )
 
