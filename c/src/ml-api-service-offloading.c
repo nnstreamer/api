@@ -1160,7 +1160,10 @@ _ml_service_offloading_request (ml_service_h handle, const char *key,
       _ml_logi ("Failed to set activate in edge data.");
     }
   }
+
   _in = (ml_tensors_data_s *) input;
+  G_LOCK_UNLESS_NOLOCK (*_in);
+
   for (i = 0; i < _in->num_tensors; i++) {
     ret =
         nns_edge_data_add (data_h, _in->tensors[i].data, _in->tensors[i].size,
@@ -1178,6 +1181,8 @@ _ml_service_offloading_request (ml_service_h handle, const char *key,
   }
 
 done:
+  if (_in)
+    G_UNLOCK_UNLESS_NOLOCK (*_in);
   if (data_h)
     nns_edge_data_destroy (data_h);
   return ret;
@@ -1191,12 +1196,26 @@ int
 _ml_service_offloading_request_raw (ml_service_h handle, const char *key,
     void *data, size_t len)
 {
-  ml_tensors_data_s input;
+  ml_tensors_data_h input;
+  ml_tensors_data_s *_in;
+  int status;
 
   /* Set internal data structure to send edge data. */
-  input.num_tensors = 1;
-  input.tensors[0].data = data;
-  input.tensors[0].size = len;
+  status = _ml_tensors_data_create_no_alloc (NULL, &input);
+  if (status != ML_ERROR_NONE)
+    return status;
 
-  return _ml_service_offloading_request (handle, key, &input);
+  /**
+   * It is ok, we just pass the raw data to nnstreamer-edge.
+   * Updating data in handle, no tensor information, and no lock here.
+   */
+  _in = (ml_tensors_data_s *) input;
+  _in->num_tensors = 1;
+  _in->tensors[0].data = data;
+  _in->tensors[0].size = len;
+
+  status = _ml_service_offloading_request (handle, key, input);
+
+  _ml_tensors_data_destroy_internal (input, FALSE);
+  return status;
 }
