@@ -19,6 +19,11 @@ export BUILDDIR=build
 export MLAPI_SOURCE_ROOT_PATH=$(ROOT_DIR)
 export MLAPI_BUILD_ROOT_PATH=${MLAPI_SOURCE_ROOT_PATH}/${BUILDDIR}
 export JAVA_DIR ?= $(shell echo 'System.out.println(java.lang.System.getProperty("java.home"));' | jshell  -)
+export XML2_LIBDIR ?= $(shell pkg-config --variable=libdir libxml-2.0 2>/dev/null)
+
+ifneq ($(strip $(XML2_LIBDIR)),)
+export LDFLAGS := $(LDFLAGS) -Wl,-rpath-link,$(XML2_LIBDIR)
+endif
 
 %:
 	dh $@ --parallel

@@ -8,6 +8,7 @@ endif
 
 # Dependencies
 nns_capi_common_deps = [glib_dep, gmodule_dep, nnstreamer_single_dep]
+nns_capi_common_link_args = []
 nns_capi_deps = [nnstreamer_dep, gst_dep, gst_app_dep]
 
 if (get_option('enable-tizen'))
@@ -30,7 +31,14 @@ if (get_option('enable-tizen'))
   endif
 
   if get_option('enable-tizen-feature-check')
-    nns_capi_common_deps += dependency('capi-system-info')
+    sysinfo_dep = dependency('capi-system-info')
+    xml2_dep = dependency('libxml-2.0')
+    nns_capi_common_deps += [sysinfo_dep, xml2_dep]
+    # Resolve transitive xml2 dependencies used by HAL/pkgmgr in Tizen links.
+    xml2_libdir = xml2_dep.get_pkgconfig_variable('libdir', default: '')
+    if xml2_libdir != ''
+      nns_capi_common_link_args += '-Wl,-rpath-link,' + xml2_libdir
+    endif
   endif
 endif
 

@@ -118,6 +118,8 @@ BuildRequires:	pkgconfig(mm-resource-manager)
 
 %if 0%{?enable_tizen_feature}
 BuildRequires:	pkgconfig(capi-system-info)
+BuildRequires:	pkgconfig(libxml-2.0)
+BuildRequires:	libxml2
 %endif
 %endif # tizen
 
