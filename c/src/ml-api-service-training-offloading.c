@@ -513,6 +513,7 @@ _training_offloading_services_request (ml_service_s * mls)
 
 error:
   g_free (service_name);
+  g_free (pipeline);
   g_free (transfer_data);
   g_free (contents);
   g_list_free (list);
