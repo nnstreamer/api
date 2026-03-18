@@ -29,7 +29,7 @@ static gchar *g_files_dir = NULL;
 
 #if defined(__ANDROID__)
 #if defined(ENABLE_ML_AGENT)
-extern void ml_agent_initialize (const char *db_path);
+extern int ml_agent_initialize (const char *db_path);
 extern void ml_agent_finalize (void);
 #endif
 /* nnstreamer plugins and sub-plugins declaration */
@@ -491,7 +491,10 @@ nnstreamer_native_initialize (JNIEnv * env, jobject context)
       gchar *mlops_db_path = g_build_filename (g_files_dir, "mlops-db", NULL);
 
       g_mkdir (mlops_db_path, 0777);
-      ml_agent_initialize (mlops_db_path);
+      if (ml_agent_initialize (mlops_db_path) < 0) {
+        _ml_loge ("Failed to initialize mlops-agent.");
+        goto done;
+      }
       g_free (mlops_db_path);
     }
 #endif
