@@ -712,7 +712,7 @@ _ml_tensors_data_destroy_internal (ml_tensors_data_h data, gboolean free_data)
             status);
       }
     } else {
-      for (i = 0; i < ML_TENSOR_SIZE_LIMIT; i++) {
+      for (i = 0; i < _data->num_tensors; i++) {
         g_clear_pointer (&_data->tensors[i].data, g_free);
       }
     }
@@ -772,6 +772,11 @@ _ml_tensors_data_create_no_alloc (const ml_tensors_info_h info,
 
   g_mutex_init (&_data->lock);
 
+  /**
+   * We now release allocated data only when _ml_tensors_data_destroy_internal() is called.
+   * Be careful, if you update the number of tensors after creating the data handle,
+   * you should manage the memories with changed index.
+   */
   _info = (ml_tensors_info_s *) info;
   if (_info != NULL) {
     status = _ml_tensors_info_create_from (info, &_data->info);
