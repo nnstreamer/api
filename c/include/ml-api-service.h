@@ -53,6 +53,7 @@ typedef void *ml_service_h;
 typedef enum {
   ML_SERVICE_EVENT_UNKNOWN = 0,             /**< Unknown or invalid event type. */
   ML_SERVICE_EVENT_NEW_DATA = 1,            /**< New data is processed from machine learning service. */
+  ML_SERVICE_EVENT_MESSAGE = 2,             /**< New message from machine learning service (Since 10.1). */
 } ml_service_event_e;
 
 /**
