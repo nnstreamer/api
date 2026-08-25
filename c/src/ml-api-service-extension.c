@@ -68,6 +68,17 @@ typedef struct
 } ml_extension_s;
 
 /**
+ * @brief Internal function for message callback.
+ */
+static void
+_ml_extension_message_cb (const char *type, const char *message, void *user_data)
+{
+  ml_service_s *mls = (ml_service_s *) user_data;
+
+  _ml_service_invoke_event_message (mls, type, message);
+}
+
+/**
  * @brief Internal function to handle the asynchronous invoke.
  */
 static int
@@ -171,6 +182,7 @@ _ml_extension_msg_thread (gpointer data)
 {
   ml_service_s *mls = (ml_service_s *) data;
   ml_extension_s *ext = (ml_extension_s *) mls->priv;
+  gchar *errmsg;
   int status;
 
   g_mutex_lock (&mls->lock);
@@ -193,8 +205,11 @@ _ml_extension_msg_thread (gpointer data)
           if (status == ML_ERROR_NONE) {
             _ml_service_invoke_event_new_data (mls, NULL, msg->output);
           } else {
-            _ml_error_report
-                ("Failed to invoke the model in ml-service extension thread.");
+            errmsg = g_strdup ("Failed to invoke the model (single-shot) in ml-service extension thread.");
+
+            _ml_error_report ("%s", errmsg);
+            _ml_service_invoke_event_message (mls, "invoke-failure", errmsg);
+            g_free (errmsg);
           }
           break;
         }
@@ -211,13 +226,18 @@ _ml_extension_msg_thread (gpointer data)
             msg->input = NULL;
 
             if (status != ML_ERROR_NONE) {
-              _ml_error_report
-                  ("Failed to push input data into the pipeline in ml-service extension thread.");
+              errmsg = g_strdup_printf ("Failed to push input data into the input node '%s' in ml-service extension thread.", msg->name);
+
+              _ml_error_report ("%s", errmsg);
+              _ml_service_invoke_event_message (mls, "push-failure", errmsg);
+              g_free (errmsg);
             }
           } else {
-            _ml_error_report
-                ("Failed to push input data into the pipeline, cannot find input node '%s'.",
-                msg->name);
+            errmsg = g_strdup_printf ("Failed to push input data into the pipeline, cannot find input node '%s'.", msg->name);
+
+            _ml_error_report ("%s", errmsg);
+            _ml_service_invoke_event_message (mls, "push-failure", errmsg);
+            g_free (errmsg);
           }
           break;
         }
@@ -509,6 +529,7 @@ _ml_extension_conf_parse_pipeline_node (ml_service_s * mls, JsonNode * node,
 static int
 _ml_extension_conf_parse_pipeline (ml_service_s * mls, JsonObject * pipe)
 {
+  ml_pipeline_preset preset = { 0, };
   ml_extension_s *ext = (ml_extension_s *) mls->priv;
   g_autofree gchar *desc = NULL;
   int status;
@@ -535,7 +556,12 @@ _ml_extension_conf_parse_pipeline (ml_service_s * mls, JsonObject * pipe)
         "Failed to parse configuration file, cannot get the pipeline description.");
   }
 
-  status = ml_pipeline_construct (desc, NULL, NULL, &ext->pipeline);
+  preset.description = desc;
+  preset.message_cb.cb = _ml_extension_message_cb;
+  preset.message_cb.user_data = mls;
+  preset.is_internal = FALSE;
+
+  status = _ml_pipeline_construct_custom (&preset, &ext->pipeline);
   if (status != ML_ERROR_NONE) {
     _ml_error_report_return (status,
         "Failed to parse configuration file, cannot construct the pipeline.");

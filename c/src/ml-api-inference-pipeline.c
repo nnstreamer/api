@@ -488,6 +488,23 @@ cb_bus_sync_message (GstBus * bus, GstMessage * message, gpointer user_data)
         }
       }
       break;
+    case GST_MESSAGE_APPLICATION:
+    {
+      const GstStructure *s = gst_message_get_structure (message);
+
+      if (gst_structure_has_name (s, "nnstreamer-message")) {
+        const gchar *t = gst_structure_get_string (s, "type");
+        const gchar *m = gst_structure_get_string (s, "message");
+        const gchar *e = gst_structure_has_field (s, "element") ? gst_structure_get_string (s, "element") : "unknown";
+
+        _ml_logd (_ml_detail ("Message from '%s': %s (%s).", e, t, m));
+
+        if (pipe_h->message_cb.cb) {
+          pipe_h->message_cb.cb (t, m, pipe_h->message_cb.user_data);
+        }
+      }
+      break;
+    }
     default:
       break;
   }
@@ -974,9 +991,7 @@ create_internal_hash (ml_pipeline * pipe_h)
  * If is_internal is true, this will ignore the permission in Tizen.
  */
 static int
-construct_pipeline_internal (const char *pipeline_description,
-    ml_pipeline_state_cb cb, void *user_data, ml_pipeline_h * pipe,
-    gboolean is_internal)
+construct_pipeline_internal (ml_pipeline_preset * preset, ml_pipeline_h * pipe)
 {
   GError *err = NULL;
   GstElement *pipeline;
@@ -991,7 +1006,11 @@ construct_pipeline_internal (const char *pipeline_description,
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "ml_pipeline_construct error: parameter pipe is NULL. It should be a valid ml_pipeline_h pointer. E.g., ml_pipeline_h pipe; ml_pipeline_construct (..., &pip);");
 
-  if (!pipeline_description)
+  if (!preset)
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "ml_pipeline_construct error: parameter preset is NULL. It should be a valid pointer for pipeline.");
+
+  if (!preset->description)
     _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
         "ml_pipeline_construct error: parameter pipeline_description is NULL. It should be a valid string of Gstreamer/NNStreamer pipeline description.");
 
@@ -1015,8 +1034,8 @@ construct_pipeline_internal (const char *pipeline_description,
   create_internal_hash (pipe_h);
 
   /* convert predefined element and launch the pipeline */
-  status = convert_description ((ml_pipeline_h) pipe_h, pipeline_description,
-      &description, is_internal);
+  status = convert_description ((ml_pipeline_h) pipe_h, preset->description,
+      &description, preset->is_internal);
   if (status != ML_ERROR_NONE) {
     _ml_error_report_continue
         ("ml_pipeline_construct error: failed while converting pipeline description for GStreamer w/ convert_description() function, which has returned %d",
@@ -1030,7 +1049,7 @@ construct_pipeline_internal (const char *pipeline_description,
   if (!GST_IS_PIPELINE (pipeline) || err) {
     _ml_error_report
         ("ml_pipeline_construct error: gst_parse_launch cannot parse and launch the given pipeline = [%s]. The error message from gst_parse_launch is '%s'.",
-        pipeline_description, (err) ? err->message : "unknown reason");
+        preset->description, (err) ? err->message : "unknown reason");
     g_clear_error (&err);
 
     if (pipeline)
@@ -1056,11 +1075,15 @@ construct_pipeline_internal (const char *pipeline_description,
       G_CALLBACK (cb_bus_sync_message), pipe_h);
 
   /* state change callback */
-  pipe_h->state_cb.cb = cb;
-  pipe_h->state_cb.user_data = user_data;
+  pipe_h->state_cb.cb = preset->state_cb.cb;
+  pipe_h->state_cb.user_data = preset->state_cb.user_data;
+
+  /* message callback */
+  pipe_h->message_cb.cb = preset->message_cb.cb;
+  pipe_h->message_cb.user_data = preset->message_cb.user_data;
 
   /* iterate elements and prepare element handle */
-  status = iterate_element (pipe_h, pipeline, is_internal);
+  status = iterate_element (pipe_h, pipeline, preset->is_internal);
   if (status != ML_ERROR_NONE) {
     _ml_error_report_continue ("ml_pipeline_construct error: ...");
     goto failed;
@@ -1102,9 +1125,15 @@ int
 ml_pipeline_construct (const char *pipeline_description,
     ml_pipeline_state_cb cb, void *user_data, ml_pipeline_h * pipe)
 {
+  ml_pipeline_preset preset = { 0, };
+
+  preset.description = (char *) pipeline_description;
+  preset.state_cb.cb = cb;
+  preset.state_cb.user_data = user_data;
+  preset.is_internal = FALSE;
+
   /* not an internal pipeline construction */
-  return construct_pipeline_internal (pipeline_description, cb, user_data, pipe,
-      FALSE);
+  return construct_pipeline_internal (&preset, pipe);
 }
 
 #if defined (__TIZEN__)
@@ -1115,11 +1144,27 @@ int
 ml_pipeline_construct_internal (const char *pipeline_description,
     ml_pipeline_state_cb cb, void *user_data, ml_pipeline_h * pipe)
 {
+  ml_pipeline_preset preset = { 0, };
+
+  preset.description = (char *) pipeline_description;
+  preset.state_cb.cb = cb;
+  preset.state_cb.user_data = user_data;
+  preset.is_internal = TRUE;
+
   /* Tizen internal pipeline construction */
-  return construct_pipeline_internal (pipeline_description, cb, user_data, pipe,
-      TRUE);
+  return construct_pipeline_internal (&preset, pipe);
 }
 #endif /* __TIZEN__ */
+
+/**
+ * @brief Construct the pipeline with custom options and returns the instance as a handle.
+ * This is internal function to handle various options.
+ */
+int
+_ml_pipeline_construct_custom (ml_pipeline_preset * preset, ml_pipeline_h * pipe)
+{
+  return construct_pipeline_internal (preset, pipe);
+}
 
 /**
  * @brief Destroy the pipeline (more info in nnstreamer.h)
@@ -1142,6 +1187,7 @@ ml_pipeline_destroy (ml_pipeline_h pipe)
 
   /* Before changing the state, remove all callbacks. */
   p->state_cb.cb = NULL;
+  p->message_cb.cb = NULL;
 
   /* Destroy registered callback handles and resources */
   g_hash_table_destroy (p->namednodes);

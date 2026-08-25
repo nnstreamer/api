@@ -99,6 +99,22 @@ typedef enum {
 } ml_pipeline_element_e;
 
 /**
+ * @brief Callback for the message from pipeline.
+ * @param[in] type The type of pipeline message.
+ * @param[in] message The pipeline message details.
+ * @param[out] user_data User application's private data.
+ */
+typedef void (*ml_pipeline_message_cb) (const char *type, const char *message, void *user_data);
+
+/**
+ * @brief Internal data structure for the pipeline message callback, generated from nnstreamer elements.
+ */
+typedef struct {
+  ml_pipeline_message_cb cb; /**< Callback to send a message from pipeline */
+  void *user_data; /**< The user data passed when calling the callback */
+} pipeline_message_cb_s;
+
+/**
  * @brief Internal data structure for the pipeline state callback.
  */
 typedef struct {
@@ -115,6 +131,16 @@ typedef struct {
 } pipeline_resource_s;
 
 /**
+ * @brief An information to create pipeline instance.
+ */
+typedef struct {
+  char *description;                /**< The pipeline description compatible with GStreamer gst_parse_launch(). */
+  pipeline_state_cb_s state_cb;     /**< Callback to notify the change of pipeline state. */
+  pipeline_message_cb_s message_cb; /**< Callback to send a message from pipeline. */
+  gboolean is_internal;             /**< True to ignore the permission in Tizen. */
+} ml_pipeline_preset;
+
+/**
  * @brief Internal private representation of pipeline handle.
  * @details This should not be exposed to applications
  */
@@ -129,6 +155,7 @@ typedef struct _ml_pipeline {
   GHashTable *resources;          /**< hash table of resources to construct the pipeline */
   GHashTable *pipe_elm_type;      /**< hash table for type of pipeline element */
   pipeline_state_cb_s state_cb;   /**< Callback to notify the change of pipeline state */
+  pipeline_message_cb_s message_cb; /**< Callback to send a message from pipeline */
 } ml_pipeline;
 
 /**
@@ -191,6 +218,12 @@ int _ml_initialize_gstreamer (void);
  * @brief Checks the availability of the plugin.
  */
 int _ml_check_plugin_availability (const char *plugin_name, const char *element_name);
+
+/**
+ * @brief Construct the pipeline with custom options and returns the instance as a handle.
+ * This is internal function to handle various options.
+ */
+int _ml_pipeline_construct_custom (ml_pipeline_preset *preset, ml_pipeline_h *pipe);
 
 /**
  * @brief Gets the element of pipeline itself (GstElement).

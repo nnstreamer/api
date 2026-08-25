@@ -274,6 +274,20 @@ _extension_test_imgclf_cb (ml_service_event_e event, ml_information_h event_data
       if (tdata)
         tdata->received++;
       break;
+    case ML_SERVICE_EVENT_MESSAGE:
+      {
+        gchar *type = NULL;
+        gchar *msg = NULL;
+
+        /* Error case if failed to invoke a model. */
+        status = ml_information_get (event_data, "type", (void **) (&type));
+        EXPECT_EQ (status, ML_ERROR_NONE);
+        status = ml_information_get (event_data, "message", (void **) (&msg));
+        EXPECT_EQ (status, ML_ERROR_NONE);
+
+        _ml_logd ("[DEBUG] Message received: %s (%s)", type, msg);
+        break;
+      }
     default:
       break;
   }

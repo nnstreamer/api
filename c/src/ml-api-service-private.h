@@ -19,6 +19,8 @@
 
 #include <ml-api-service.h>
 #include <ml-api-inference-internal.h>
+#include <ml-api-inference-pipeline-internal.h>
+#include <ml-api-inference-single-internal.h>
 #include <mlops-agent-interface.h>
 
 #ifdef __cplusplus
@@ -149,7 +151,12 @@ const gchar * _ml_service_get_json_string_member (JsonObject *object, const gcha
 /**
  * @brief Generating an ML service event and passing received data and event to a registered callback function.
  */
-int _ml_service_invoke_event_new_data (ml_service_s * mls, const char *name, const ml_tensors_data_h data);
+int _ml_service_invoke_event_new_data (ml_service_s *mls, const char *name, const ml_tensors_data_h data);
+
+/**
+ * @brief Generating an ML service event and passing a message to a registered callback function.
+ */
+int _ml_service_invoke_event_message (ml_service_s *mls, const char *type, const char *message);
 
 /**
  * @brief Callback for sink node in pipeline description.

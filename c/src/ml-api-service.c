@@ -899,6 +899,53 @@ done:
 }
 
 /**
+ * @brief Generating an ML service event and passing a message to
+ * a registered callback function.
+ */
+int
+_ml_service_invoke_event_message (ml_service_s * mls, const char *type,
+    const char *message)
+{
+  ml_service_event_cb_info_s cb_info = { 0 };
+  ml_information_h ml_info = NULL;
+  int status = ML_ERROR_NONE;
+
+  if (!mls || !type || !message) {
+    _ml_error_report_return (ML_ERROR_INVALID_PARAMETER,
+        "Failed to create ml-service event data, invalid parameter.");
+  }
+
+  _ml_service_get_event_cb_info (mls, &cb_info);
+
+  if (cb_info.cb) {
+    /* Create information handle for ml-service event. */
+    status = _ml_information_create (&ml_info);
+    if (status != ML_ERROR_NONE)
+      goto done;
+
+    status = _ml_information_set (ml_info, "type", (void *) type, NULL);
+    if (status != ML_ERROR_NONE)
+      goto done;
+
+    status = _ml_information_set (ml_info, "message", (void *) message, NULL);
+    if (status != ML_ERROR_NONE)
+      goto done;
+
+    cb_info.cb (ML_SERVICE_EVENT_MESSAGE, ml_info, cb_info.pdata);
+  }
+
+done:
+  if (ml_info)
+    ml_information_destroy (ml_info);
+
+  if (status != ML_ERROR_NONE) {
+    _ml_error_report ("Failed to invoke 'message' event.");
+  }
+
+  return status;
+}
+
+/**
  * @brief Callback for sink node in pipeline description.
  * Processes incoming data from pipeline sink element and forwards it to
  * _ml_service_invoke_event_new_data().
