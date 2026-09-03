@@ -83,6 +83,23 @@ jobs:
         # Need "grep"
         run: |
           bash .github/workflows/static.check.scripts/doxygen-tag.sh $changed_file_list 1
+      - name: /Checker/ doxygen-tag self-test
+        # Runs a repository script unrelated to $changed_file_list. The step
+        # list comes from the merge ref while the checkout above is the PR
+        # head, so a tree that lacks this script - whether the branch
+        # predates it or a rename/deletion left it out without updating this
+        # step - would fail with "No such file or directory". Skip only when
+        # this PR did not remove it (see the elif below).
+        run: |
+          selftest=.github/workflows/static.check.scripts/test_doxygen_tag.sh
+          if [ -f "$selftest" ]; then
+            bash "$selftest"
+          elif git show --pretty="format:" --name-only --no-renames --diff-filter=D ${{ github.event.pull_request.head.sha }} -${{ github.event.pull_request.commits }} | grep -qxF "$selftest"; then
+            echo "::error::This PR removes $selftest; remove its workflow step too, or restore the script (also update this step if the script moved)."
+            exit 1
+          else
+            echo "Skipped: $selftest is not in this branch's tree and this PR does not remove it."
+          fi
       - name: /Checker/ Indent check
         # Originally from "pr-prebuild-indent"
         # Need "indent"
