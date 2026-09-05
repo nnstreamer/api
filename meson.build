@@ -7,7 +7,7 @@ project('ml-api', 'c', 'cpp',
     'werror=true',
     'warning_level=1',
     'c_std=gnu89',
-    'cpp_std=c++14'
+    'cpp_std=c++17'
   ]
 )
 
