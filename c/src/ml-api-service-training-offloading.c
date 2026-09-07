@@ -911,18 +911,23 @@ _ml_service_training_offloading_destroy (ml_service_s * mls)
     training_s->transfer_data_table = NULL;
   }
 
-  if (training_s->node_table) {
-    g_hash_table_destroy (training_s->node_table);
-    training_s->node_table = NULL;
-  }
-
+  /* Stop the pipeline before releasing the node info the sink callback uses. */
   if (training_s->pipeline_h) {
+    if (ml_pipeline_stop (training_s->pipeline_h) != ML_ERROR_NONE) {
+      _ml_error_report ("Failed to stop ml pipeline, destroy it anyway.");
+    }
+
     ret = ml_pipeline_destroy (training_s->pipeline_h);
     if (ret != ML_ERROR_NONE) {
       _ml_error_report ("Failed to destroy ml pipeline, clear handle anyway.");
     }
 
     training_s->pipeline_h = NULL;
+  }
+
+  if (training_s->node_table) {
+    g_hash_table_destroy (training_s->node_table);
+    training_s->node_table = NULL;
   }
 
   g_clear_pointer (&training_s->path, g_free);
