@@ -1,3 +1,11 @@
+# Custom filter allocating the output in invoke, used by the single-shot tests.
+shared_library('ml_api_customfilter_slow_allocator',
+  'ml_api_customfilter_slow_allocator.c',
+  dependencies: [glib_dep, gst_dep, nnstreamer_dep],
+  install: get_option('install-test'),
+  install_dir: unittest_install_dir
+)
+
 unittest_capi_inference_single = executable('unittest_capi_inference_single',
   'unittest_capi_inference_single.cc',
   dependencies: [nns_capi_single_dep, gtest_dep],

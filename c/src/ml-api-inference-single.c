@@ -361,18 +361,52 @@ __destroy_notify (gpointer data_h, gpointer single_data)
 {
   ml_single *single_h;
   ml_tensors_data_s *data;
+  gboolean fw_allocated = FALSE;
 
   data = (ml_tensors_data_s *) data_h;
   single_h = (ml_single *) single_data;
 
   if (G_LIKELY (single_h->filter)) {
-    if (single_h->klass->allocate_in_invoke (single_h->filter)) {
+    fw_allocated = single_h->klass->allocate_in_invoke (single_h->filter);
+
+    if (fw_allocated)
       single_h->klass->destroy_notify (single_h->filter, data->tensors);
+  }
+
+  if (fw_allocated) {
+    guint i;
+
+    /* the buffers belong to the framework, they must not be freed again */
+    for (i = 0; i < data->num_tensors; i++) {
+      data->tensors[i].data = NULL;
+      data->tensors[i].size = 0;
     }
   }
 
   /* reset callback function */
   data->destroy = NULL;
+}
+
+/**
+ * @brief Releases the output data which may be registered in the destroy list.
+ * @note Do not call ml_tensors_data_destroy() on such data while holding
+ *       single_h->mutex; its destroy callback takes the same mutex again.
+ */
+static void
+__release_output_data (ml_single * single_h, ml_tensors_data_h output)
+{
+  ml_tensors_data_s *data = (ml_tensors_data_s *) output;
+
+  if (!data)
+    return;
+
+  single_h->destroy_data_list =
+      g_list_remove (single_h->destroy_data_list, output);
+
+  if (data->destroy)
+    __destroy_notify (data, single_h);
+
+  ml_tensors_data_destroy (output);
 }
 
 /**
@@ -480,9 +514,7 @@ __process_output (ml_single * single_h, ml_tensors_data_h output)
      * Caller of the invoke thread has returned back with timeout.
      * So, free the memory allocated by the invoke as their is no receiver.
      */
-    single_h->destroy_data_list =
-        g_list_remove (single_h->destroy_data_list, output);
-    ml_tensors_data_destroy (output);
+    __release_output_data (single_h, output);
   } else {
     out_data = (ml_tensors_data_s *) output;
     set_destroy_notify (single_h, out_data, FALSE);
@@ -544,11 +576,8 @@ invoke_thread (void *arg)
     single_h->invoking = FALSE;
 
     if (status != ML_ERROR_NONE || single_h->state == JOIN_REQUESTED) {
-      if (alloc_output) {
-        single_h->destroy_data_list =
-            g_list_remove (single_h->destroy_data_list, output);
-        ml_tensors_data_destroy (output);
-      }
+      if (alloc_output)
+        __release_output_data (single_h, output);
 
       if (single_h->state == JOIN_REQUESTED)
         goto exit;
@@ -573,11 +602,8 @@ exit:
     if (single_h->input)
       ml_tensors_data_destroy (single_h->input);
 
-    if (alloc_output && single_h->output) {
-      single_h->destroy_data_list =
-          g_list_remove (single_h->destroy_data_list, single_h->output);
-      ml_tensors_data_destroy (single_h->output);
-    }
+    if (alloc_output && single_h->output)
+      __release_output_data (single_h, single_h->output);
 
     single_h->input = single_h->output = NULL;
     g_cond_broadcast (&single_h->cond);
