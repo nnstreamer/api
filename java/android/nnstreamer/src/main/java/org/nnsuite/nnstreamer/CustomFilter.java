@@ -33,6 +33,11 @@ public final class CustomFilter implements AutoCloseable {
          * NNStreamer filter invokes the given custom-filter callback while processing the pipeline.
          * Note that, if it is unnecessary to execute the input data, return null to drop the buffer.
          *
+         * The returned data is copied into the output memory of the pipeline, so it should match
+         * the output information given to {@link #create(String, TensorsInfo, TensorsInfo, Callback)}.
+         * If the number of the tensors or the size of a buffer is different, the invoke fails and
+         * the pipeline stops with an error.
+         *
          * @param in The input data (a single frame, tensor/tensors)
          *
          * @return The output data (a single frame, tensor/tensors)
