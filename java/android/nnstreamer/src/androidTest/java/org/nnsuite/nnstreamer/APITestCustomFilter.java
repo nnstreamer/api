@@ -16,8 +16,8 @@ import static org.junit.Assert.*;
  */
 @RunWith(AndroidJUnit4.class)
 public class APITestCustomFilter {
-    private int mReceived = 0;
-    private boolean mInvalidState = false;
+    private volatile int mReceived = 0;
+    private volatile boolean mInvalidState = false;
     private boolean mRegistered = false;
     private CustomFilter mCustomPassthrough;
     private CustomFilter mCustomConvert;
@@ -394,6 +394,237 @@ public class APITestCustomFilter {
             fail();
         } catch (Exception e) {
             /* expected */
+        }
+    }
+
+    @Test
+    public void testCloseWhileUsed_n() {
+        TensorsInfo inputInfo = new TensorsInfo();
+        inputInfo.addTensorInfo(NNStreamer.TensorType.INT32, new int[]{10});
+
+        TensorsInfo outputInfo = inputInfo.clone();
+
+        CustomFilter filter = CustomFilter.create("custom-close-while-used-n",
+                inputInfo, outputInfo, new CustomFilter.Callback() {
+            @Override
+            public TensorsData invoke(TensorsData in) {
+                return in;
+            }
+        });
+
+        String desc = "appsrc name=srcx ! " +
+                "other/tensor,dimension=(string)10,type=(string)int32,framerate=(fraction)0/1 ! " +
+                "tensor_filter framework=custom-easy model=" + filter.getName() + " ! " +
+                "tensor_sink name=sinkx";
+
+        try (Pipeline pipe = new Pipeline(desc)) {
+            /* filter is referenced by the pipeline: close() must fail */
+            mInvalidState = false;
+            try {
+                filter.close();
+                mInvalidState = true;
+            } catch (IllegalStateException e) {
+                /* expected */
+            }
+
+            assertFalse(mInvalidState);
+
+            /* the filter must still be registered and usable */
+            pipe.registerSinkCallback("sinkx", new Pipeline.NewDataCallback() {
+                @Override
+                public void onNewDataReceived(TensorsData data) {
+                    if (data == null || data.getTensorsCount() != 1) {
+                        mInvalidState = true;
+                        return;
+                    }
+
+                    ByteBuffer output = data.getTensorData(0);
+
+                    for (int j = 0; j < 10; j++) {
+                        if (output.getInt(j * 4) != j) {
+                            mInvalidState = true;
+                        }
+                    }
+
+                    mReceived++;
+                }
+            });
+
+            /* start pipeline */
+            pipe.start();
+
+            /* push input buffer repeatedly */
+            for (int i = 0; i < 10; i++) {
+                TensorsData in = TensorsData.allocate(inputInfo);
+                ByteBuffer input = in.getTensorData(0);
+
+                for (int j = 0; j < 10; j++) {
+                    input.putInt(j * 4, j);
+                }
+
+                in.setTensorData(0, input);
+
+                pipe.inputData("srcx", in);
+                Thread.sleep(20);
+            }
+
+            /* sleep 300 to pass all input buffers to sink */
+            Thread.sleep(300);
+
+            /* stop pipeline */
+            pipe.stop();
+
+            /* check received data from sink */
+            assertFalse(mInvalidState);
+            assertEquals(10, mReceived);
+        } catch (Exception e) {
+            fail();
+        }
+
+        /* the pipeline is closed now: close() should succeed */
+        try {
+            filter.close();
+        } catch (Exception e) {
+            fail();
+        }
+
+        /* the name is really unregistered, a new filter with the same name should succeed */
+        try {
+            CustomFilter again = CustomFilter.create(filter.getName(),
+                    inputInfo, outputInfo, new CustomFilter.Callback() {
+                @Override
+                public TensorsData invoke(TensorsData in) {
+                    return in;
+                }
+            });
+
+            again.close();
+        } catch (Exception e) {
+            fail();
+        }
+    }
+
+    @Test
+    public void testCloseAfterPipeline() {
+        TensorsInfo inputInfo = new TensorsInfo();
+        inputInfo.addTensorInfo(NNStreamer.TensorType.INT32, new int[]{10});
+
+        TensorsInfo outputInfo = inputInfo.clone();
+
+        CustomFilter filter = CustomFilter.create("custom-close-after-pipeline",
+                inputInfo, outputInfo, new CustomFilter.Callback() {
+            @Override
+            public TensorsData invoke(TensorsData in) {
+                return in;
+            }
+        });
+
+        String desc = "appsrc name=srcx ! " +
+                "other/tensor,dimension=(string)10,type=(string)int32,framerate=(fraction)0/1 ! " +
+                "tensor_filter framework=custom-easy model=" + filter.getName() + " ! " +
+                "tensor_sink name=sinkx";
+
+        /* construct and close a pipeline using the filter */
+        try (Pipeline pipe = new Pipeline(desc)) {
+            /* nothing to do here */
+        } catch (Exception e) {
+            fail();
+        }
+
+        /* the pipeline no longer references the filter, close() should succeed */
+        try {
+            filter.close();
+
+            CustomFilter again = CustomFilter.create(filter.getName(),
+                    inputInfo, outputInfo, new CustomFilter.Callback() {
+                @Override
+                public TensorsData invoke(TensorsData in) {
+                    return in;
+                }
+            });
+
+            again.close();
+        } catch (Exception e) {
+            fail();
+        }
+    }
+
+    @Test
+    public void testCloseTwice() {
+        TensorsInfo inputInfo = new TensorsInfo();
+        inputInfo.addTensorInfo(NNStreamer.TensorType.INT32, new int[]{10});
+
+        TensorsInfo outputInfo = inputInfo.clone();
+
+        CustomFilter filter = CustomFilter.create("custom-close-twice",
+                inputInfo, outputInfo, new CustomFilter.Callback() {
+            @Override
+            public TensorsData invoke(TensorsData in) {
+                return in;
+            }
+        });
+
+        try {
+            /* not used by any pipeline, close() should succeed */
+            filter.close();
+
+            /* closing an already closed filter is a no-op */
+            filter.close();
+
+            CustomFilter again = CustomFilter.create(filter.getName(),
+                    inputInfo, outputInfo, new CustomFilter.Callback() {
+                @Override
+                public TensorsData invoke(TensorsData in) {
+                    return in;
+                }
+            });
+
+            again.close();
+        } catch (Exception e) {
+            fail();
+        }
+    }
+
+    @Test
+    public void testCloseWhileUsedNotStarted_n() {
+        TensorsInfo inputInfo = new TensorsInfo();
+        inputInfo.addTensorInfo(NNStreamer.TensorType.INT32, new int[]{10});
+
+        TensorsInfo outputInfo = inputInfo.clone();
+
+        CustomFilter filter = CustomFilter.create("custom-close-while-used-not-started-n",
+                inputInfo, outputInfo, new CustomFilter.Callback() {
+            @Override
+            public TensorsData invoke(TensorsData in) {
+                return in;
+            }
+        });
+
+        String desc = "appsrc name=srcx ! " +
+                "other/tensor,dimension=(string)10,type=(string)int32,framerate=(fraction)0/1 ! " +
+                "tensor_filter framework=custom-easy model=" + filter.getName() + " ! " +
+                "tensor_sink name=sinkx";
+
+        try (Pipeline pipe = new Pipeline(desc)) {
+            /* the pipeline is never started, but the filter is still referenced */
+            mInvalidState = false;
+            try {
+                filter.close();
+                mInvalidState = true;
+            } catch (IllegalStateException e) {
+                /* expected */
+            }
+
+            assertFalse(mInvalidState);
+        } catch (Exception e) {
+            fail();
+        }
+
+        /* the pipeline is closed now: close() should succeed */
+        try {
+            filter.close();
+        } catch (Exception e) {
+            fail();
         }
     }
 }

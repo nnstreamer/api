@@ -794,6 +794,124 @@ TEST (nnstreamer_capi_sink, register_duplicated)
 }
 
 /**
+ * @brief Data for the sink callback blocking the streaming thread.
+ */
+typedef struct {
+  GMutex lock;
+  GCond cond;
+  gboolean entered;
+  gboolean unregistering;
+  gboolean returned;
+  guint count;
+} TestSinkBlocking;
+
+/**
+ * @brief A sink callback that holds the streaming thread at its first call,
+ *        until the test is about to unregister the sink.
+ */
+static void
+test_sink_callback_blocking (
+    const ml_tensors_data_h data, const ml_tensors_info_h info, void *user_data)
+{
+  TestSinkBlocking *sink = (TestSinkBlocking *) user_data;
+  gboolean first;
+  gint64 end_time;
+
+  g_mutex_lock (&sink->lock);
+  sink->count++;
+  first = !sink->entered;
+  sink->entered = TRUE;
+  g_cond_broadcast (&sink->cond);
+
+  if (first) {
+    end_time = g_get_monotonic_time () + 5 * G_TIME_SPAN_SECOND;
+    while (!sink->unregistering) {
+      if (!g_cond_wait_until (&sink->cond, &sink->lock, end_time))
+        break;
+    }
+  }
+  g_mutex_unlock (&sink->lock);
+
+  if (first) {
+    /* give the unregister time to reach the element lock */
+    g_usleep (100000);
+
+    g_mutex_lock (&sink->lock);
+    sink->returned = TRUE;
+    g_mutex_unlock (&sink->lock);
+  }
+}
+
+/**
+ * @brief Test NNStreamer pipeline sink
+ * @detail Unregistering a sink waits for the running callback, and no callback
+ *         is called after it returns. Android JNI releases the user data of the
+ *         sink callback right after the unregister, so it relies on this.
+ */
+TEST (nnstreamer_capi_sink, unregister_wait_callback)
+{
+  ml_pipeline_h handle;
+  ml_pipeline_sink_h sinkhandle;
+  TestSinkBlocking sink = {};
+  gint64 end_time;
+  gboolean entered, returned;
+  guint count;
+  int status;
+  const gchar *pipeline = "videotestsrc is-live=true ! videoconvert ! video/x-raw,format=RGB,width=4,height=4,framerate=30/1 ! tensor_converter ! tensor_sink name=sinkx";
+
+  g_mutex_init (&sink.lock);
+  g_cond_init (&sink.cond);
+
+  status = ml_pipeline_construct (pipeline, NULL, NULL, &handle);
+  ASSERT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_sink_register (
+      handle, "sinkx", test_sink_callback_blocking, &sink, &sinkhandle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_start (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  end_time = g_get_monotonic_time () + 5 * G_TIME_SPAN_SECOND;
+  g_mutex_lock (&sink.lock);
+  while (!sink.entered) {
+    if (!g_cond_wait_until (&sink.cond, &sink.lock, end_time))
+      break;
+  }
+  entered = sink.entered;
+  sink.unregistering = TRUE;
+  g_cond_broadcast (&sink.cond);
+  g_mutex_unlock (&sink.lock);
+  EXPECT_TRUE (entered);
+
+  /* the first callback is still running here */
+  status = ml_pipeline_sink_unregister (sinkhandle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  g_mutex_lock (&sink.lock);
+  returned = sink.returned;
+  count = sink.count;
+  g_mutex_unlock (&sink.lock);
+  EXPECT_TRUE (returned);
+
+  /* the pipeline is still playing, but the callback is not called anymore */
+  g_usleep (200000);
+
+  g_mutex_lock (&sink.lock);
+  EXPECT_EQ (count, sink.count);
+  g_mutex_unlock (&sink.lock);
+
+  status = ml_pipeline_stop (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_destroy (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  g_cond_clear (&sink.cond);
+  g_mutex_clear (&sink.lock);
+}
+
+/**
  * @brief Test NNStreamer pipeline sink
  * @detail Failure case to register callback with invalid param.
  */
