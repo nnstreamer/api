@@ -19,7 +19,7 @@ public final class CustomFilter implements AutoCloseable {
     private Callback mCallback = null;
 
     private native long nativeInitialize(String name, TensorsInfo in, TensorsInfo out);
-    private native void nativeDestroy(long handle);
+    private native boolean nativeDestroy(long handle);
 
     /**
      * Interface definition for a callback to be invoked while processing the pipeline.
@@ -125,10 +125,23 @@ public final class CustomFilter implements AutoCloseable {
         }
     }
 
+    /**
+     * Unregisters the custom-filter and releases its resources.
+     *
+     * A custom-filter used in a pipeline cannot be released until the pipeline is closed.
+     * In that case the custom-filter is kept registered, and it can be closed again
+     * after closing the pipeline.
+     *
+     * @throws IllegalStateException if failed to unregister the custom-filter,
+     *                               e.g., it is still used in a pipeline
+     */
     @Override
     public void close() {
         if (mHandle != 0) {
-            nativeDestroy(mHandle);
+            if (!nativeDestroy(mHandle)) {
+                throw new IllegalStateException("Failed to close custom-filter " + mName + ", it may be used in a pipeline");
+            }
+
             mHandle = 0;
         }
     }

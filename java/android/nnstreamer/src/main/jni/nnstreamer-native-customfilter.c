@@ -212,13 +212,13 @@ done:
 /**
  * @brief Native method for custom filter.
  */
-static void
+static jboolean
 nns_native_custom_destroy (JNIEnv * env, jobject thiz, jlong handle)
 {
   pipeline_info_s *pipe_info = NULL;
 
   pipe_info = CAST_TO_TYPE (handle, pipeline_info_s *);
-  nns_destroy_pipe_info (pipe_info, env);
+  return nns_destroy_pipe_info (pipe_info, env) ? JNI_TRUE : JNI_FALSE;
 }
 
 /**
@@ -227,7 +227,7 @@ nns_native_custom_destroy (JNIEnv * env, jobject thiz, jlong handle)
 static JNINativeMethod native_methods_customfilter[] = {
   {(char *) "nativeInitialize", (char *) "(Ljava/lang/String;L" NNS_CLS_TINFO ";L" NNS_CLS_TINFO ";)J",
       (void *) nns_native_custom_initialize},
-  {(char *) "nativeDestroy", (char *) "(J)V",
+  {(char *) "nativeDestroy", (char *) "(J)Z",
       (void *) nns_native_custom_destroy}
 };
 
