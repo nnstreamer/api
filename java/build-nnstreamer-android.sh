@@ -30,6 +30,9 @@
 ##@@       'internal' : no plugins except for enable single-shot only, enable NNFW only
 ##@@   --target_abi=(armeabi-v7a|arm64-v8a)
 ##@@       'arm64-v8a' is the default Android ABI
+##@@   --build_test=(yes|no)
+##@@       'yes'      : build instrumentation test after build procedure is done
+##@@       'no'       : [default]
 ##@@   --run_test=(yes|no)
 ##@@       'yes'      : run instrumentation test after build procedure is done
 ##@@       'no'       : [default]
@@ -128,6 +131,9 @@ include_assets="no"
 # Set target ABI ('armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64')
 target_abi="arm64-v8a"
 
+# Build instrumentation test after build procedure is done
+build_test="no"
+
 # Run instrumentation test after build procedure is done
 run_test="no"
 
@@ -211,6 +217,9 @@ for arg in "$@"; do
             ;;
         --target_abi=*)
             target_abi=${arg#*=}
+            ;;
+        --build_test=*)
+            build_test=${arg#*=}
             ;;
         --run_test=*)
             run_test=${arg#*=}
@@ -793,6 +802,13 @@ echo "Starting gradle build for Android library."
 chmod +x gradlew
 sh ./gradlew nnstreamer:build
 android_lib_build_res=$?
+
+# Build instrumentation test if build procedure is done.
+if [[ ${android_lib_build_res} -eq 0 && ${build_test} == "yes" ]]; then
+    echo "Build instrumentation test."
+    sh ./gradlew nnstreamer:assembleDebugAndroidTest
+    android_lib_build_res=$?
+fi
 
 # Run instrumentation test if build procedure is done.
 if [[ ${android_lib_build_res} -eq 0 ]]; then
