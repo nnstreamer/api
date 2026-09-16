@@ -236,7 +236,10 @@ nns_construct_pipe_info (JNIEnv * env, jobject thiz, gpointer handle,
  * @brief Destroy pipeline info.
  * @return TRUE if pipe info is released. FALSE if the custom-filter cannot be
  *         unregistered (e.g., it is used in a pipeline); pipe info is left
- *         untouched and can be destroyed again later.
+ *         untouched and can be destroyed again later. It is leaked if the
+ *         caller never succeeds in unregistering the filter, which is intended:
+ *         the unregister keeps the filter handle on every failure, so releasing
+ *         pipe info would leave the filter invoking a released user data.
  */
 gboolean
 nns_destroy_pipe_info (pipeline_info_s * pipe_info, JNIEnv * env)
