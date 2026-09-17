@@ -12,6 +12,8 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 
@@ -20,8 +22,8 @@ import static org.junit.Assert.*;
  */
 @RunWith(AndroidJUnit4.class)
 public class APITestPipeline {
-    private int mReceived = 0;
-    private boolean mInvalidState = false;
+    private volatile int mReceived = 0;
+    private volatile boolean mInvalidState = false;
     private Pipeline.State mPipelineState = Pipeline.State.NULL;
 
     private Pipeline.NewDataCallback mSinkCb = new Pipeline.NewDataCallback() {
@@ -2406,5 +2408,142 @@ public class APITestPipeline {
         } catch (Exception e) {
             fail();
         }
+    }
+
+    @Test
+    public void testCloseWithoutStop() {
+        String desc = "videotestsrc ! video/x-raw,format=RGB,width=4,height=4,framerate=1000/1 ! " +
+                "tensor_converter ! tee name=t " +
+                "t. ! queue ! tensor_sink name=sinka " +
+                "t. ! queue ! tensor_sink name=sinkb";
+
+        boolean playingObserved = false;
+
+        for (int iter = 0; iter < 10; iter++) {
+            final AtomicInteger receivedA = new AtomicInteger(0);
+            final AtomicInteger receivedB = new AtomicInteger(0);
+            final AtomicBoolean seenPlaying = new AtomicBoolean(false);
+            Pipeline pipe = null;
+
+            /* pipeline state callback */
+            Pipeline.StateChangeCallback stateCb = new Pipeline.StateChangeCallback() {
+                @Override
+                public void onStateChanged(Pipeline.State state) {
+                    if (state == Pipeline.State.PLAYING) {
+                        seenPlaying.set(true);
+                    }
+                }
+            };
+
+            try {
+                pipe = new Pipeline(desc, stateCb);
+
+                /* two streaming threads deliver buffers to these sinks concurrently */
+                pipe.registerSinkCallback("sinka", new Pipeline.NewDataCallback() {
+                    @Override
+                    public void onNewDataReceived(TensorsData data) {
+                        if (data == null) {
+                            mInvalidState = true;
+                            return;
+                        }
+
+                        receivedA.incrementAndGet();
+                    }
+                });
+
+                pipe.registerSinkCallback("sinkb", new Pipeline.NewDataCallback() {
+                    @Override
+                    public void onNewDataReceived(TensorsData data) {
+                        if (data == null) {
+                            mInvalidState = true;
+                            return;
+                        }
+
+                        receivedB.incrementAndGet();
+                    }
+                });
+
+                /* start pipeline */
+                pipe.start();
+
+                /* wait until both sinks are actively receiving buffers */
+                int waited = 0;
+                while ((receivedA.get() < 3 || receivedB.get() < 3) && waited < 3000) {
+                    Thread.sleep(10);
+                    waited += 10;
+                }
+
+                assertTrue(receivedA.get() >= 3);
+                assertTrue(receivedB.get() >= 3);
+
+                /* close the pipeline while buffers are still flowing, without calling stop() first */
+                pipe.close();
+                pipe = null;
+            } catch (Exception e) {
+                fail();
+            } finally {
+                if (pipe != null) {
+                    pipe.close();
+                }
+            }
+
+            if (seenPlaying.get()) {
+                playingObserved = true;
+            }
+        }
+
+        assertTrue(playingObserved);
+        assertFalse(mInvalidState);
+    }
+
+    @Test
+    public void testCloseWithoutStopSingleSink() {
+        String desc = "videotestsrc ! video/x-raw,format=RGB,width=4,height=4,framerate=1000/1 ! " +
+                "tensor_converter ! tensor_sink name=sinkx";
+
+        for (int iter = 0; iter < 10; iter++) {
+            final AtomicInteger received = new AtomicInteger(0);
+            Pipeline pipe = null;
+
+            try {
+                pipe = new Pipeline(desc);
+
+                pipe.registerSinkCallback("sinkx", new Pipeline.NewDataCallback() {
+                    @Override
+                    public void onNewDataReceived(TensorsData data) {
+                        if (data == null) {
+                            mInvalidState = true;
+                            return;
+                        }
+
+                        received.incrementAndGet();
+                    }
+                });
+
+                /* start pipeline */
+                pipe.start();
+
+                /* wait until the sink is actively receiving buffers */
+                int waited = 0;
+                while (received.get() < 3 && waited < 3000) {
+                    Thread.sleep(10);
+                    waited += 10;
+                }
+
+                assertTrue(received.get() >= 3);
+
+                /* close the pipeline while buffers are still flowing, without calling stop() first */
+                pipe.close();
+                pipe = null;
+            } catch (Exception e) {
+                fail();
+            } finally {
+                if (pipe != null) {
+                    pipe.close();
+                }
+            }
+        }
+
+        assertFalse(mInvalidState);
     }
 }

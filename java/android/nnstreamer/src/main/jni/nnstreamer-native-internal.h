@@ -190,7 +190,7 @@ nns_construct_pipe_info (JNIEnv * env, jobject thiz, gpointer handle, nns_pipe_t
 /**
  * @brief Destroy pipeline info.
  */
-extern void
+extern gboolean
 nns_destroy_pipe_info (pipeline_info_s * pipe_info, JNIEnv * env);
 
 /**

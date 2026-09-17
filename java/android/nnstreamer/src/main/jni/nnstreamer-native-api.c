@@ -74,12 +74,6 @@ nns_free_element_data (gpointer data)
   element_data_s *item = (element_data_s *) data;
 
   if (item) {
-    /* release private data */
-    if (item->priv_data) {
-      JNIEnv *env = nns_get_jni_env (item->pipe_info);
-      item->priv_destroy_func (item->priv_data, env);
-    }
-
     switch (item->type) {
 #if !defined (NNS_SINGLE_ONLY)
       case NNS_ELEMENT_TYPE_SRC:
@@ -103,6 +97,12 @@ nns_free_element_data (gpointer data)
         if (item->handle)
           g_free (item->handle);
         break;
+    }
+
+    /* release private data after the handle, a running callback may use it */
+    if (item->priv_data) {
+      JNIEnv *env = nns_get_jni_env (item->pipe_info);
+      item->priv_destroy_func (item->priv_data, env);
     }
 
     g_free (item->name);
@@ -234,22 +234,30 @@ nns_construct_pipe_info (JNIEnv * env, jobject thiz, gpointer handle,
 
 /**
  * @brief Destroy pipeline info.
+ * @return TRUE if pipe info is released. FALSE if the custom-filter cannot be
+ *         unregistered (e.g., it is used in a pipeline); pipe info is left
+ *         untouched and can be destroyed again later. It is leaked if the
+ *         caller never succeeds in unregistering the filter, which is intended:
+ *         the unregister keeps the filter handle on every failure, so releasing
+ *         pipe info would leave the filter invoking a released user data.
  */
-void
+gboolean
 nns_destroy_pipe_info (pipeline_info_s * pipe_info, JNIEnv * env)
 {
-  g_return_if_fail (pipe_info != NULL);
+  g_return_val_if_fail (pipe_info != NULL, FALSE);
+
+#if !defined (NNS_SINGLE_ONLY)
+  /* a registered custom-filter keeps pipe info as its user data */
+  if (pipe_info->pipeline_type == NNS_PIPE_TYPE_CUSTOM &&
+      pipe_info->pipeline_handle &&
+      ml_pipeline_custom_easy_filter_unregister (pipe_info->pipeline_handle)
+      != ML_ERROR_NONE) {
+    _ml_loge ("Failed to unregister the custom-filter, it may be in use.");
+    return FALSE;
+  }
+#endif
 
   g_mutex_lock (&pipe_info->lock);
-  if (pipe_info->priv_data) {
-    if (pipe_info->priv_destroy_func)
-      pipe_info->priv_destroy_func (pipe_info->priv_data, env);
-    else
-      g_free (pipe_info->priv_data);
-
-    pipe_info->priv_data = NULL;
-  }
-
   g_hash_table_destroy (pipe_info->element_handles);
   pipe_info->element_handles = NULL;
   g_mutex_unlock (&pipe_info->lock);
@@ -260,7 +268,7 @@ nns_destroy_pipe_info (pipeline_info_s * pipe_info, JNIEnv * env)
       ml_pipeline_destroy (pipe_info->pipeline_handle);
       break;
     case NNS_PIPE_TYPE_CUSTOM:
-      ml_pipeline_custom_easy_filter_unregister (pipe_info->pipeline_handle);
+      /* already unregistered */
       break;
 #if defined(ENABLE_ML_SERVICE)
     case NNS_PIPE_TYPE_SERVICE:
@@ -278,6 +286,17 @@ nns_destroy_pipe_info (pipeline_info_s * pipe_info, JNIEnv * env)
       break;
   }
 
+  g_mutex_lock (&pipe_info->lock);
+  if (pipe_info->priv_data) {
+    if (pipe_info->priv_destroy_func)
+      pipe_info->priv_destroy_func (pipe_info->priv_data, env);
+    else
+      g_free (pipe_info->priv_data);
+
+    pipe_info->priv_data = NULL;
+  }
+  g_mutex_unlock (&pipe_info->lock);
+
   g_mutex_clear (&pipe_info->lock);
 
   nns_destroy_tensors_data_cls_info (env, &pipe_info->tensors_data_cls_info);
@@ -288,6 +307,7 @@ nns_destroy_pipe_info (pipeline_info_s * pipe_info, JNIEnv * env)
 
   pthread_key_delete (pipe_info->jni_env);
   g_free (pipe_info);
+  return TRUE;
 }
 
 /**
