@@ -1,0 +1,45 @@
+name: Android JNI test on Ubuntu
+
+# Build the JNI wrapper of the Android API on Ubuntu and run the instrumented tests
+# that do not require an Android device (java/test-nnstreamer-ubuntu.sh).
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'c/**'
+      - 'java/**'
+      - 'meson.build'
+      - 'meson_options.txt'
+      - '.github/workflows/android-jni-test-ubuntu.yml'
+
+  # Allow manually triggering the workflow
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Android JNI host test
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    env:
+      JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+    - name: Install dependencies
+      run: |
+        for i in 1 2 3; do sudo add-apt-repository -y ppa:nnstreamer/ppa && break || sleep 30; done
+        sudo apt-get update
+        sudo apt-get install -y meson ninja-build \
+          libglib2.0-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libunwind-dev \
+          gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
+          nnstreamer nnstreamer-dev nnstreamer-dev-internal nnstreamer-single-dev \
+          openjdk-17-jdk-headless junit4
+    - name: Build JNI wrapper
+      run: |
+        meson setup build -Djava-home=${JAVA_HOME} -Denable-test=false -Denable-ml-service=false
+        ninja -C build
+    - name: Run tests
+      run: |
+        bash java/test-nnstreamer-ubuntu.sh --ml_api_dir=${{ github.workspace }} --build_dir=build
