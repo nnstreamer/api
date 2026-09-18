@@ -1,0 +1,22 @@
+# Instrumented tests that cannot run on the host, one per line: Class#method or Class.
+# An entry that does not match any test fails the run, remove it with the test.
+
+# Android application context is not checked on the host (@BUILD_ANDROID@).
+org.nnsuite.nnstreamer.APITestCommon#testInitWithInvalidCtx_n
+
+# amcsrc is an Android element.
+org.nnsuite.nnstreamer.APITestPipeline#testAvailableElement
+org.nnsuite.nnstreamer.APITestPipeline#testAMCsrc
+
+# The video sink renders to an Android native window; glimagesink needs a display.
+# Without one the pipeline does not start, so the negative cases below would pass
+# on the failure of start() rather than on the call they are written for.
+org.nnsuite.nnstreamer.APITestPipeline#testSetNullSurface
+org.nnsuite.nnstreamer.APITestPipeline#testSetSurfaceNullName_n
+org.nnsuite.nnstreamer.APITestPipeline#testSetSurfaceEmptyName_n
+org.nnsuite.nnstreamer.APITestPipeline#testSetInvalidSurface_n
+
+# Test assets (image, model) are copied from the Android test package.
+org.nnsuite.nnstreamer.APITestPipeline#testAppsrcPng
+org.nnsuite.nnstreamer.APITestSingleShot#testOptionsUnknownFW_n
+org.nnsuite.nnstreamer.APITestSingleShot#testOptionsInvalidFW_n
