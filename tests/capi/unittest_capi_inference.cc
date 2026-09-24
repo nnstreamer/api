@@ -8207,6 +8207,269 @@ TEST (nnstreamer_capi_flex, src_multi)
 }
 
 /**
+ * @brief Result of a flexible tensor sink callback.
+ */
+typedef struct {
+  guint received;
+  size_t size;
+} TestFlexSinkResult;
+
+/**
+ * @brief Callback to record what a flexible tensor sink handed over.
+ */
+static void
+test_sink_callback_flex_size (
+    const ml_tensors_data_h data, const ml_tensors_info_h info, void *user_data)
+{
+  TestFlexSinkResult *result = (TestFlexSinkResult *) user_data;
+  void *raw = NULL;
+  size_t size = 0;
+
+  G_LOCK (callback_lock);
+  if (ml_tensors_data_get_tensor_data (data, 0, &raw, &size) == ML_ERROR_NONE)
+    result->size = size;
+  result->received = result->received + 1;
+  G_UNLOCK (callback_lock);
+}
+
+/**
+ * @brief Fill a tensor meta that describes a valid flexible tensor.
+ */
+static void
+init_flex_meta (GstTensorMetaInfo *meta)
+{
+  gst_tensor_meta_info_init (meta);
+  meta->type = _NNS_INT32;
+  meta->dimension[0] = 4U;
+}
+
+/**
+ * @brief Write a flexible tensor header, cut down to the given size, into a new temp dir.
+ * @param meta The header to write, NULL to leave the file zeroed.
+ * @param size The file size in bytes. The header is truncated or zero-padded to it.
+ * @param dir Set to the directory holding the file, NULL on failure.
+ * @return The file path, NULL on failure. Release both with remove_flex_header_file ().
+ */
+static gchar *
+create_flex_header_file (GstTensorMetaInfo *meta, gsize size, gchar **dir)
+{
+  GstTensorMetaInfo _meta;
+  gchar *path = NULL;
+  gchar *tmpdir;
+  guint8 *content;
+  gsize hsize;
+
+  *dir = NULL;
+
+  if (size == 0)
+    return NULL;
+
+  tmpdir = g_build_path (G_DIR_SEPARATOR_S, g_get_tmp_dir (), "nns-flex-XXXXXX", NULL);
+  if (!g_mkdtemp (tmpdir)) {
+    g_free (tmpdir);
+    return NULL;
+  }
+
+  gst_tensor_meta_info_init (&_meta);
+  hsize = gst_tensor_meta_info_get_header_size (&_meta);
+  content = (guint8 *) g_malloc0 (MAX (size, hsize));
+
+  if (!meta || gst_tensor_meta_info_update_header (meta, content)) {
+    path = g_build_path (G_DIR_SEPARATOR_S, tmpdir, "flex-header", NULL);
+    if (!g_file_set_contents (path, (const gchar *) content, size, NULL))
+      g_clear_pointer (&path, g_free);
+  }
+
+  g_free (content);
+
+  if (path) {
+    *dir = tmpdir;
+  } else {
+    g_remove (tmpdir);
+    g_free (tmpdir);
+  }
+
+  return path;
+}
+
+/**
+ * @brief Remove a file created by create_flex_header_file () and its directory.
+ */
+static void
+remove_flex_header_file (gchar *file, gchar *dir)
+{
+  g_remove (file);
+  g_remove (dir);
+  g_free (file);
+  g_free (dir);
+}
+
+/**
+ * @brief Push a file into a flexible tensor sink and report what the sink gave back.
+ */
+static void
+run_flex_header_pipeline (const gchar *sink, const gchar *file, guint expected,
+    TestFlexSinkResult *result)
+{
+  ml_pipeline_h handle;
+  ml_pipeline_sink_h sinkhandle;
+  gchar *pipeline;
+  int status;
+
+  pipeline = g_strdup_printf ("filesrc location=\"%s\" ! "
+                              "other/tensors,format=flexible,framerate=(fraction)10/1 ! "
+                              "%s name=sinkx sync=false",
+      file, sink);
+
+  status = ml_pipeline_construct (pipeline, NULL, NULL, &handle);
+  g_free (pipeline);
+  ASSERT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_sink_register (
+      handle, "sinkx", test_sink_callback_flex_size, result, &sinkhandle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_start (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  /* the buffer is pushed once the source is running, so wait for that first */
+  status = waitPipelineStateChange (handle, ML_PIPELINE_STATE_PLAYING, 2000);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  if (expected > 0)
+    wait_pipeline_process_buffers (result->received, expected);
+  g_usleep (300000);
+
+  status = ml_pipeline_destroy (handle);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+}
+
+/**
+ * @brief Test NNStreamer pipeline for a flexible tensor smaller than the parsed meta.
+ */
+TEST (nnstreamer_capi_flex, sink_short_header_n)
+{
+  GstTensorMetaInfo meta;
+  TestFlexSinkResult result = { 0U, 0 };
+  gchar *dir, *file;
+
+  init_flex_meta (&meta);
+  file = create_flex_header_file (&meta, 16, &dir);
+  ASSERT_TRUE (file != NULL);
+
+  run_flex_header_pipeline ("tensor_sink", file, 0, &result);
+  EXPECT_EQ (result.received, 0U);
+
+  remove_flex_header_file (file, dir);
+}
+
+/**
+ * @brief Test NNStreamer pipeline for a flexible tensor without a valid meta.
+ */
+TEST (nnstreamer_capi_flex, sink_invalid_magic_n)
+{
+  GstTensorMetaInfo meta;
+  TestFlexSinkResult result = { 0U, 0 };
+  gchar *dir, *file;
+
+  /* long enough for the parser, zeroed so that it rejects the meta */
+  gst_tensor_meta_info_init (&meta);
+  file = create_flex_header_file (NULL, gst_tensor_meta_info_get_header_size (&meta), &dir);
+  ASSERT_TRUE (file != NULL);
+
+  run_flex_header_pipeline ("tensor_sink", file, 0, &result);
+  EXPECT_EQ (result.received, 0U);
+
+  remove_flex_header_file (file, dir);
+}
+
+/**
+ * @brief Test NNStreamer pipeline for a flexible tensor of an unsupported meta version.
+ */
+TEST (nnstreamer_capi_flex, sink_unsupported_version_n)
+{
+  GstTensorMetaInfo meta;
+  TestFlexSinkResult result = { 0U, 0 };
+  gchar *dir, *file;
+  gsize hsize;
+
+  init_flex_meta (&meta);
+  hsize = gst_tensor_meta_info_get_header_size (&meta);
+
+  /* keep the version tag the meta is validated against, drop the version number */
+  meta.version &= 0xFF000000U;
+  file = create_flex_header_file (&meta, hsize, &dir);
+  ASSERT_TRUE (file != NULL);
+
+  run_flex_header_pipeline ("tensor_sink", file, 0, &result);
+  EXPECT_EQ (result.received, 0U);
+
+  remove_flex_header_file (file, dir);
+}
+
+/**
+ * @brief Test NNStreamer pipeline for a flexible tensor holding a truncated header.
+ */
+TEST (nnstreamer_capi_flex, sink_truncated_header_n)
+{
+  GstTensorMetaInfo meta;
+  TestFlexSinkResult result = { 0U, 0 };
+  gchar *dir, *file;
+
+  /* the whole meta is there, the 128 byte header it declares is not */
+  init_flex_meta (&meta);
+  file = create_flex_header_file (&meta, 96, &dir);
+  ASSERT_TRUE (file != NULL);
+
+  run_flex_header_pipeline ("tensor_sink", file, 0, &result);
+  EXPECT_EQ (result.received, 0U);
+
+  remove_flex_header_file (file, dir);
+}
+
+/**
+ * @brief Test NNStreamer pipeline for a truncated flexible tensor reaching an appsink.
+ */
+TEST (nnstreamer_capi_flex, sink_truncated_header_appsink_n)
+{
+  GstTensorMetaInfo meta;
+  TestFlexSinkResult result = { 0U, 0 };
+  gchar *dir, *file;
+
+  init_flex_meta (&meta);
+  file = create_flex_header_file (&meta, 96, &dir);
+  ASSERT_TRUE (file != NULL);
+
+  run_flex_header_pipeline ("appsink", file, 0, &result);
+  EXPECT_EQ (result.received, 0U);
+
+  remove_flex_header_file (file, dir);
+}
+
+/**
+ * @brief Test NNStreamer pipeline for a flexible tensor that carries a header and no data.
+ * @note This pins the header boundary only. Whether the payload matches the dimension
+ *       the header declares is not checked by the sink callback.
+ */
+TEST (nnstreamer_capi_flex, sink_header_only)
+{
+  GstTensorMetaInfo meta;
+  TestFlexSinkResult result = { 0U, 1 };
+  gchar *dir, *file;
+
+  init_flex_meta (&meta);
+  file = create_flex_header_file (
+      &meta, gst_tensor_meta_info_get_header_size (&meta), &dir);
+  ASSERT_TRUE (file != NULL);
+
+  run_flex_header_pipeline ("tensor_sink", file, 1, &result);
+  EXPECT_EQ (result.received, 1U);
+  EXPECT_EQ (result.size, 0U);
+
+  remove_flex_header_file (file, dir);
+}
+
+/**
  * @brief Callback for check output of tflite model with 32 in/out tensors.
  */
 static void

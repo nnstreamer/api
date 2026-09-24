@@ -361,8 +361,26 @@ cb_sink_event (GstElement * e, GstBuffer * b, gpointer user_data)
 
     /* handle header for flex tensor */
     for (i = 0; i < num_tensors; i++) {
-      gst_tensor_meta_info_parse_header (&meta, map[i].data);
+      /* the parser fills the whole meta before it validates any of it */
+      if (map[i].size < sizeof (GstTensorMetaInfo) ||
+          !gst_tensor_meta_info_parse_header (&meta, map[i].data)) {
+        _ml_loge (_ml_detail
+            ("The sink event of [%s] cannot be handled because the flexible tensor header is invalid (tensor %u, memory %"
+                G_GSIZE_FORMAT " bytes).", elem->name, i, map[i].size));
+
+        goto error;
+      }
+
       hsize = gst_tensor_meta_info_get_header_size (&meta);
+
+      if (hsize == 0 || map[i].size < hsize) {
+        _ml_loge (_ml_detail
+            ("The sink event of [%s] cannot be handled because the flexible tensor header does not fit the memory (tensor %u, header %"
+                G_GSIZE_FORMAT " bytes, memory %" G_GSIZE_FORMAT " bytes).",
+                elem->name, i, hsize, map[i].size));
+
+        goto error;
+      }
 
       gst_tensor_meta_info_convert (&meta,
           gst_tensors_info_get_nth_info (&gst_info, i));
