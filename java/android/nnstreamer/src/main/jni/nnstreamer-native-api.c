@@ -489,13 +489,19 @@ nns_convert_tensors_data (pipeline_info_s * pipe_info, JNIEnv * env,
 
 /**
  * @brief Parse tensors data from TensorsData object.
+ * @param[in,out] data_h The tensors data handle. If it is NULL, a new handle is
+ *                       created from the given info and this function owns the
+ *                       cloned buffers. Otherwise the buffers belong to the
+ *                       caller and are only filled in (@a clone must be TRUE),
+ *                       so the data object must exactly match the number and
+ *                       the size of the tensors.
  */
 gboolean
 nns_parse_tensors_data (pipeline_info_s * pipe_info, JNIEnv * env,
     jobject obj_data, gboolean clone, const ml_tensors_info_h info_h,
     ml_tensors_data_h * data_h)
 {
-  guint i;
+  guint i, num_tensors;
   tensors_data_class_info_s *tensors_data_cls;
   ml_tensors_data_s *data;
   jobjectArray data_arr;
@@ -507,6 +513,7 @@ nns_parse_tensors_data (pipeline_info_s * pipe_info, JNIEnv * env,
   g_return_val_if_fail (env, FALSE);
   g_return_val_if_fail (obj_data, FALSE);
   g_return_val_if_fail (data_h, FALSE);
+  g_return_val_if_fail (*data_h == NULL || clone, FALSE);
 
   tensors_data_cls = &pipe_info->tensors_data_cls_info;
 
@@ -542,7 +549,17 @@ nns_parse_tensors_data (pipeline_info_s * pipe_info, JNIEnv * env,
       tensors_data_cls->mid_get_array);
 
   /* number of tensors data */
-  data->num_tensors = (unsigned int) (*env)->GetArrayLength (env, data_arr);
+  num_tensors = (guint) (*env)->GetArrayLength (env, data_arr);
+
+  if (num_tensors > ML_TENSOR_SIZE_LIMIT ||
+      (!created && num_tensors != data->num_tensors)) {
+    _ml_loge ("The number of the tensors (%u) in the data object is invalid.",
+        num_tensors);
+    failed = TRUE;
+    goto done;
+  }
+
+  data->num_tensors = num_tensors;
 
   /* set tensor data */
   for (i = 0; i < data->num_tensors; i++) {
@@ -553,13 +570,22 @@ nns_parse_tensors_data (pipeline_info_s * pipe_info, JNIEnv * env,
       gpointer data_ptr = (*env)->GetDirectBufferAddress (env, tensor);
 
       if (clone) {
-        if (data->tensors[i].data && data->tensors[i].size != data_size) {
-          _ml_logd ("The data size is not matched, reallocate new memory.");
-          g_clear_pointer (&data->tensors[i].data, g_free);
-        }
+        if (created) {
+          if (data->tensors[i].size != data_size) {
+            _ml_logd ("The data size is not matched, reallocate new memory.");
+            g_clear_pointer (&data->tensors[i].data, g_free);
+          }
 
-        if (data->tensors[i].data == NULL)
-          data->tensors[i].data = g_malloc (data_size);
+          if (data->tensors[i].data == NULL)
+            data->tensors[i].data = g_malloc (data_size);
+        } else if (data->tensors[i].data == NULL ||
+            data->tensors[i].size != data_size) {
+          _ml_loge ("The size of the tensor[%u] is %zd but %zd is expected.",
+              i, data_size, data->tensors[i].size);
+          (*env)->DeleteLocalRef (env, tensor);
+          failed = TRUE;
+          goto done;
+        }
 
         memcpy (data->tensors[i].data, data_ptr, data_size);
       } else {

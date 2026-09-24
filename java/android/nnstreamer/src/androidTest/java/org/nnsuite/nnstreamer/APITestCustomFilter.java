@@ -52,6 +52,50 @@ public class APITestCustomFilter {
         }
     };
 
+    private Pipeline.NewDataCallback mCountCb = new Pipeline.NewDataCallback() {
+        @Override
+        public void onNewDataReceived(TensorsData data) {
+            mReceived++;
+        }
+    };
+
+    /**
+     * Runs a pipeline with the given custom-filter and returns the number of received data.
+     * The pipeline may fall into an error state while pushing the buffers, which is expected
+     * when the custom-filter returns invalid output data.
+     */
+    private int runCustomFilterPipeline(String filterName, TensorsInfo info) throws Exception {
+        String desc = "appsrc name=srcx ! " +
+                "other/tensor,dimension=(string)10,type=(string)int32,framerate=(fraction)0/1 ! " +
+                "tensor_filter framework=custom-easy model=" + filterName + " ! " +
+                "tensor_sink name=sinkx";
+
+        try (Pipeline pipe = new Pipeline(desc)) {
+            pipe.registerSinkCallback("sinkx", mCountCb);
+            pipe.start();
+
+            for (int i = 0; i < 5; i++) {
+                try {
+                    pipe.inputData("srcx", TensorsData.allocate(info));
+                } catch (IllegalStateException e) {
+                    /* expected, the pipeline is in an error state */
+                }
+
+                Thread.sleep(20);
+            }
+
+            Thread.sleep(300);
+
+            try {
+                pipe.stop();
+            } catch (IllegalStateException e) {
+                /* expected, the pipeline is in an error state */
+            }
+        }
+
+        return mReceived;
+    }
+
     private void registerCustomFilters() {
         try {
             TensorsInfo inputInfo = new TensorsInfo();
@@ -270,6 +314,78 @@ public class APITestCustomFilter {
             /* check received data from sink */
             assertFalse(mInvalidState);
             assertEquals(5, mReceived);
+        } catch (Exception e) {
+            fail();
+        }
+    }
+
+    @Test
+    public void testInvokeInvalidOutputSize_n() {
+        TensorsInfo inputInfo = new TensorsInfo();
+        inputInfo.addTensorInfo(NNStreamer.TensorType.INT32, new int[]{10});
+
+        TensorsInfo outputInfo = inputInfo.clone();
+
+        /* the size of the output data is larger than the registered output info */
+        final TensorsInfo invalidInfo = new TensorsInfo();
+        invalidInfo.addTensorInfo(NNStreamer.TensorType.INT32, new int[]{20});
+
+        try (CustomFilter customInvalid = CustomFilter.create("custom-invalid-size",
+                inputInfo, outputInfo, new CustomFilter.Callback() {
+            @Override
+            public TensorsData invoke(TensorsData in) {
+                return TensorsData.allocate(invalidInfo);
+            }
+        })) {
+            assertEquals(0, runCustomFilterPipeline(customInvalid.getName(), inputInfo));
+        } catch (Exception e) {
+            fail();
+        }
+    }
+
+    @Test
+    public void testInvokeInvalidOutputCount_n() {
+        TensorsInfo inputInfo = new TensorsInfo();
+        inputInfo.addTensorInfo(NNStreamer.TensorType.INT32, new int[]{10});
+
+        TensorsInfo outputInfo = inputInfo.clone();
+
+        /* the number of the output tensors is larger than the registered output info */
+        final TensorsInfo invalidInfo = inputInfo.clone();
+        invalidInfo.addTensorInfo(NNStreamer.TensorType.INT32, new int[]{10});
+
+        try (CustomFilter customInvalid = CustomFilter.create("custom-invalid-count",
+                inputInfo, outputInfo, new CustomFilter.Callback() {
+            @Override
+            public TensorsData invoke(TensorsData in) {
+                return TensorsData.allocate(invalidInfo);
+            }
+        })) {
+            assertEquals(0, runCustomFilterPipeline(customInvalid.getName(), inputInfo));
+        } catch (Exception e) {
+            fail();
+        }
+    }
+
+    @Test
+    public void testInvokeClosedOutput_n() {
+        TensorsInfo inputInfo = new TensorsInfo();
+        inputInfo.addTensorInfo(NNStreamer.TensorType.INT32, new int[]{10});
+
+        TensorsInfo outputInfo = inputInfo.clone();
+
+        try (CustomFilter customInvalid = CustomFilter.create("custom-invalid-closed",
+                inputInfo, outputInfo, new CustomFilter.Callback() {
+            @Override
+            public TensorsData invoke(TensorsData in) {
+                TensorsData out = TensorsData.allocate(in.getTensorsInfo());
+
+                /* the data list is empty while the tensors info is valid */
+                out.close();
+                return out;
+            }
+        })) {
+            assertEquals(0, runCustomFilterPipeline(customInvalid.getName(), inputInfo));
         } catch (Exception e) {
             fail();
         }

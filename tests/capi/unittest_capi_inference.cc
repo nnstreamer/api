@@ -7325,6 +7325,168 @@ TEST (nnstreamer_capi_custom, register_filter_01_p)
   g_free (filter_data_size);
 }
 
+#define TEST_CUSTOM_OUT_SIZE (4U)
+#define TEST_CUSTOM_OUT_VALUE (0x5A)
+
+/**
+ * @brief Data to check the output buffer of a custom-easy filter.
+ */
+typedef struct {
+  guint invoked;
+  guint received;
+  gboolean failed;
+} custom_easy_out_data_s;
+
+/**
+ * @brief Invoke callback to check the output buffer given to a custom-easy filter.
+ */
+static int
+test_custom_easy_out_cb (const ml_tensors_data_h in, ml_tensors_data_h out, void *user_data)
+{
+  custom_easy_out_data_s *result = (custom_easy_out_data_s *) user_data;
+  ml_tensors_info_h out_info = NULL;
+  void *raw_data = NULL;
+  size_t data_size = 0;
+  unsigned int count = 0;
+  guint i;
+
+  G_LOCK (callback_lock);
+  result->invoked++;
+
+  /* the number of the output tensors is fixed to the registered info. */
+  if (ml_tensors_data_get_info (out, &out_info) != ML_ERROR_NONE
+      || ml_tensors_info_get_count (out_info, &count) != ML_ERROR_NONE || count != 1U)
+    result->failed = TRUE;
+  ml_tensors_info_destroy (out_info);
+
+  /* the output buffer is allocated by the framework, fill it in-place. */
+  if (ml_tensors_data_get_tensor_data (out, 0, &raw_data, &data_size) != ML_ERROR_NONE
+      || raw_data == NULL || data_size != TEST_CUSTOM_OUT_SIZE) {
+    result->failed = TRUE;
+  } else {
+    for (i = 0; i < TEST_CUSTOM_OUT_SIZE; i++)
+      ((guint8 *) raw_data)[i] = TEST_CUSTOM_OUT_VALUE;
+  }
+  G_UNLOCK (callback_lock);
+
+  return 0;
+}
+
+/**
+ * @brief Sink callback to check the output filled by a custom-easy filter.
+ */
+static void
+test_custom_easy_out_sink_cb (
+    const ml_tensors_data_h data, const ml_tensors_info_h info, void *user_data)
+{
+  custom_easy_out_data_s *result = (custom_easy_out_data_s *) user_data;
+  void *raw_data = NULL;
+  size_t data_size = 0;
+  guint i;
+
+  G_LOCK (callback_lock);
+  result->received++;
+
+  if (ml_tensors_data_get_tensor_data (data, 0, &raw_data, &data_size) != ML_ERROR_NONE
+      || data_size != TEST_CUSTOM_OUT_SIZE) {
+    result->failed = TRUE;
+  } else {
+    for (i = 0; i < TEST_CUSTOM_OUT_SIZE; i++) {
+      if (((guint8 *) raw_data)[i] != TEST_CUSTOM_OUT_VALUE)
+        result->failed = TRUE;
+    }
+  }
+  G_UNLOCK (callback_lock);
+}
+
+/**
+ * @brief Test for the output buffer of a custom-easy filter.
+ * @detail The invoke callback gets the output memory owned by tensor_filter,
+ *         sized by the registered output info. Bindings (e.g. Android JNI) copy
+ *         the result into that memory, so releasing or replacing it is invalid.
+ */
+TEST (nnstreamer_capi_custom, invoke_output_buffer_p)
+{
+  const char test_custom_filter[] = "test-custom-filter-out";
+  ml_pipeline_h pipe;
+  ml_pipeline_src_h src;
+  ml_pipeline_sink_h sink;
+  ml_custom_easy_filter_h custom;
+  ml_tensors_info_h in_info, out_info;
+  ml_tensors_data_h in_data;
+  ml_tensor_dimension in_dim = { 2, 1, 1, 1 };
+  ml_tensor_dimension out_dim = { TEST_CUSTOM_OUT_SIZE, 1, 1, 1 };
+  custom_easy_out_data_s *result;
+  int status;
+  guint i;
+  gchar *pipeline = g_strdup_printf (
+      "appsrc name=srcx ! other/tensor,dimension=(string)2:1:1:1,type=(string)int8,framerate=(fraction)0/1 ! tensor_filter framework=custom-easy model=%s ! tensor_sink name=sinkx",
+      test_custom_filter);
+
+  result = (custom_easy_out_data_s *) g_malloc0 (sizeof (custom_easy_out_data_s));
+
+  ml_tensors_info_create (&in_info);
+  ml_tensors_info_set_count (in_info, 1);
+  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_INT8);
+  ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
+
+  ml_tensors_info_create (&out_info);
+  ml_tensors_info_set_count (out_info, 1);
+  ml_tensors_info_set_tensor_type (out_info, 0, ML_TENSOR_TYPE_INT8);
+  ml_tensors_info_set_tensor_dimension (out_info, 0, out_dim);
+
+  status = ml_pipeline_custom_easy_filter_register (test_custom_filter, in_info,
+      out_info, test_custom_easy_out_cb, result, &custom);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_construct (pipeline, NULL, NULL, &pipe);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_sink_register (
+      pipe, "sinkx", test_custom_easy_out_sink_cb, result, &sink);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_src_get_handle (pipe, "srcx", &src);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_start (pipe);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  for (i = 0; i < 5; i++) {
+    status = ml_tensors_data_create (in_info, &in_data);
+    EXPECT_EQ (status, ML_ERROR_NONE);
+
+    status = ml_pipeline_src_input_data (src, in_data, ML_PIPELINE_BUF_POLICY_AUTO_FREE);
+    EXPECT_EQ (status, ML_ERROR_NONE);
+
+    g_usleep (50000); /* 50ms. Wait a bit. */
+  }
+
+  status = ml_pipeline_stop (pipe);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_src_release_handle (src);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_sink_unregister (sink);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_destroy (pipe);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_pipeline_custom_easy_filter_unregister (custom);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  EXPECT_TRUE (result->invoked > 0U);
+  EXPECT_TRUE (result->received > 0U);
+  EXPECT_FALSE (result->failed);
+
+  ml_tensors_info_destroy (in_info);
+  ml_tensors_info_destroy (out_info);
+  g_free (pipeline);
+  g_free (result);
+}
+
 /**
  * @brief Test for custom-easy registration.
  * @detail Invalid params.
