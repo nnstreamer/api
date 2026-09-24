@@ -526,7 +526,7 @@ invoke_thread (void *arg)
     while (single_h->state != RUNNING) {
       g_cond_wait (&single_h->cond, &single_h->mutex);
       if (single_h->state == JOIN_REQUESTED)
-        goto exit;
+        goto exit_thread;
     }
 
     input = single_h->input;
@@ -542,34 +542,34 @@ invoke_thread (void *arg)
     /* Clear input data after invoke is done. */
     ml_tensors_data_destroy (input);
     single_h->invoking = FALSE;
+    single_h->status = status;
 
     if (status != ML_ERROR_NONE || single_h->state == JOIN_REQUESTED) {
+      /* If error occurred or join requested during invocation */
       if (alloc_output) {
         single_h->destroy_data_list =
             g_list_remove (single_h->destroy_data_list, output);
         ml_tensors_data_destroy (output);
       }
-
+      /* If join requested, exit immediately without broadcast */
       if (single_h->state == JOIN_REQUESTED)
-        goto exit;
-      goto wait_for_next;
+        goto exit_thread;
+    } else {
+      /* Process output data on success */
+      if (alloc_output)
+        __process_output (single_h, output);
     }
 
-    if (alloc_output)
-      __process_output (single_h, output);
-
-    /** loop over to wait for the next element */
-  wait_for_next:
-    single_h->status = status;
+    /*Reset state and notify */
     if (single_h->state == RUNNING)
       single_h->state = IDLE;
+
     g_cond_broadcast (&single_h->cond);
   }
 
-exit:
-  /* Do not set IDLE if JOIN_REQUESTED */
+exit_thread:
+  /* Cleanup resources on exit */
   if (single_h->state == JOIN_REQUESTED) {
-    /* Release input and output data */
     if (single_h->input)
       ml_tensors_data_destroy (single_h->input);
 
@@ -578,11 +578,11 @@ exit:
           g_list_remove (single_h->destroy_data_list, single_h->output);
       ml_tensors_data_destroy (single_h->output);
     }
-
     single_h->input = single_h->output = NULL;
     g_cond_broadcast (&single_h->cond);
-  } else if (single_h->state == RUNNING)
+  } else if (single_h->state == RUNNING) {
     single_h->state = IDLE;
+  }
   g_mutex_unlock (&single_h->mutex);
   return NULL;
 }
