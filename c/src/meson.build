@@ -1,7 +1,7 @@
 nns_capi_common_srcs = files('ml-api-common.c', 'ml-api-inference-internal.c')
 nns_capi_single_srcs = files('ml-api-inference-single.c')
 nns_capi_pipeline_srcs = files('ml-api-inference-pipeline.c')
-nns_capi_service_srcs = files('ml-api-service.c', 'ml-api-service-extension.c', 'ml-api-service-agent-client.c')
+nns_capi_service_srcs = files('ml-api-service.c', 'ml-api-service-extension.c', 'ml-api-service-agent-client.c', 'ml-lxm-service.c')
 
 if support_nnstreamer_edge
   nns_capi_service_srcs += files('ml-api-service-query.c')
