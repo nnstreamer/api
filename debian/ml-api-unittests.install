@@ -1,2 +1,3 @@
 /usr/lib/nnstreamer/bin/unittest-ml/tests/unittest_capi*
+/usr/lib/nnstreamer/bin/unittest-ml/tests/libml_api_customfilter*
 /usr/lib/nnstreamer/bin/unittest-ml/tests/test_models

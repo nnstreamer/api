@@ -16,6 +16,7 @@
 #include <nnstreamer.h>
 #include <nnstreamer_internal.h>
 #include <nnstreamer_plugin_api_util.h>
+#include <unistd.h>
 
 #if defined(__APPLE__)
 #define SO_FILE_EXTENSION ".dylib"
@@ -3437,6 +3438,365 @@ TEST (nnstreamer_capi_singleshot, invoke_12_p)
 
 skip_test:
   g_free (lib_path);
+  g_free (test_model);
+}
+
+/**
+ * @brief Locate the custom filter that this test suite builds for itself.
+ * @details It sits next to this binary once installed, and under tests/capi in
+ *          a build tree. It is built along with this binary, so failing to find
+ *          it means the test setup is broken and the caller should not go on.
+ * @return Newly allocated path to the shared object, NULL if it is not found.
+ */
+static gchar *
+_get_test_custom_filter (void)
+{
+  const gchar cf_name[] = "libml_api_customfilter_slow_allocator" SO_FILE_EXTENSION;
+  const gchar *build_root = g_getenv ("MLAPI_BUILD_ROOT_PATH");
+  gchar *exe, *dir, *path;
+
+  if (build_root != NULL) {
+    path = g_build_filename (build_root, "tests", "capi", cf_name, NULL);
+    if (g_file_test (path, G_FILE_TEST_EXISTS))
+      return path;
+    g_free (path);
+  }
+
+  /* the test runner starts the binaries from the build directory */
+  path = g_build_filename ("tests", "capi", cf_name, NULL);
+  if (g_file_test (path, G_FILE_TEST_EXISTS))
+    return path;
+  g_free (path);
+
+  exe = g_file_read_link ("/proc/self/exe", NULL);
+  if (exe != NULL) {
+    dir = g_path_get_dirname (exe);
+    g_free (exe);
+
+    path = g_build_filename (dir, cf_name, NULL);
+    g_free (dir);
+
+    if (g_file_test (path, G_FILE_TEST_EXISTS))
+      return path;
+    g_free (path);
+  }
+
+  return NULL;
+}
+
+/**
+ * @brief Aborts the process when the single-shot API stops responding.
+ * @details A self-deadlock in the invoke thread cannot be recovered from. It
+ *          parks while holding the global handle lock, so the test that hit it
+ *          and every test after it would hang until the CI job is killed.
+ */
+static gpointer
+_singleshot_watchdog (gpointer user_data)
+{
+  gint *done = (gint *) user_data;
+  gint64 end_time = g_get_monotonic_time () + 30 * G_TIME_SPAN_SECOND;
+
+  while (g_get_monotonic_time () < end_time) {
+    if (g_atomic_int_get (done))
+      return NULL;
+    g_usleep (100000U);
+  }
+
+  g_printerr ("The single-shot invoke thread did not release the timed out "
+              "output within 30 seconds; the handle lock is deadlocked.\n");
+  _exit (1);
+
+  return NULL;
+}
+
+/**
+ * @brief Test NNStreamer single shot (custom filter)
+ * @detail Destroy the output data after closing the handle, which is the order
+ *         described in nnstreamer-single.h. The buffers taken back by the
+ *         framework should not be reachable nor freed again.
+ */
+TEST (nnstreamer_capi_singleshot, close_before_data_destroy_01_p)
+{
+  gchar *test_model = NULL;
+  ml_single_h single;
+  ml_tensors_info_h in_info, out_info;
+  ml_tensors_data_h input, output;
+  ml_tensor_dimension in_dim;
+  int status;
+  unsigned int i;
+  void *data_ptr;
+  size_t data_size;
+
+  test_model = _get_test_custom_filter ();
+  ASSERT_TRUE (test_model != NULL);
+
+  ml_tensors_info_create (&in_info);
+  ml_tensors_info_create (&out_info);
+
+  ml_tensors_info_set_count (in_info, 1);
+
+  in_dim[0] = 10;
+  in_dim[1] = 1;
+  in_dim[2] = 1;
+  in_dim[3] = 1;
+
+  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_INT16);
+  ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
+
+  ml_tensors_info_clone (out_info, in_info);
+
+  status = ml_single_open (&single, test_model, in_info, out_info,
+      ML_NNFW_TYPE_CUSTOM_FILTER, ML_NNFW_HW_ANY);
+  ASSERT_EQ (status, ML_ERROR_NONE);
+
+  input = output = NULL;
+
+  /* generate input data */
+  status = ml_tensors_data_create (in_info, &input);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  ASSERT_TRUE (input != NULL);
+
+  status = ml_tensors_data_get_tensor_data (input, 0, &data_ptr, &data_size);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  for (i = 0; i < 10; i++) {
+    ((int16_t *) data_ptr)[i] = (int16_t) (i + 1);
+  }
+
+  status = ml_single_invoke (single, input, &output);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  ASSERT_TRUE (output != NULL);
+
+  status = ml_single_close (single);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  /* the framework has taken its buffers back while closing the handle */
+  status = ml_tensors_data_get_tensor_data (output, 0, &data_ptr, &data_size);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  EXPECT_TRUE (data_ptr == NULL);
+  EXPECT_EQ (data_size, 0U);
+
+  status = ml_tensors_data_destroy (output);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_tensors_data_destroy (input);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  ml_tensors_info_destroy (in_info);
+  ml_tensors_info_destroy (out_info);
+  g_free (test_model);
+}
+
+/**
+ * @brief Test NNStreamer single shot (custom filter)
+ * @detail Write into a static output whose buffers the framework has reclaimed
+ *         while closing the handle. The write should be rejected instead of
+ *         reaching the released memory.
+ */
+TEST (nnstreamer_capi_singleshot, close_before_data_destroy_01_n)
+{
+  gchar *test_model = NULL;
+  ml_single_h single;
+  ml_tensors_info_h in_info, out_info;
+  ml_tensors_data_h input, output;
+  ml_tensor_dimension in_dim;
+  int status;
+  int16_t dummy[10] = { 0 };
+
+  test_model = _get_test_custom_filter ();
+  ASSERT_TRUE (test_model != NULL);
+
+  ml_tensors_info_create (&in_info);
+  ml_tensors_info_create (&out_info);
+
+  ml_tensors_info_set_count (in_info, 1);
+
+  in_dim[0] = 10;
+  in_dim[1] = 1;
+  in_dim[2] = 1;
+  in_dim[3] = 1;
+
+  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_INT16);
+  ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
+
+  ml_tensors_info_clone (out_info, in_info);
+
+  status = ml_single_open (&single, test_model, in_info, out_info,
+      ML_NNFW_TYPE_CUSTOM_FILTER, ML_NNFW_HW_ANY);
+  ASSERT_EQ (status, ML_ERROR_NONE);
+
+  input = output = NULL;
+
+  status = ml_tensors_data_create (in_info, &input);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  ASSERT_TRUE (input != NULL);
+
+  status = ml_single_invoke (single, input, &output);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  ASSERT_TRUE (output != NULL);
+
+  status = ml_single_close (single);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_tensors_data_set_tensor_data (output, 0, dummy, sizeof (dummy));
+  EXPECT_NE (status, ML_ERROR_NONE);
+
+  status = ml_tensors_data_set_tensor_data (output, 0, dummy, sizeof (int16_t));
+  EXPECT_NE (status, ML_ERROR_NONE);
+
+  status = ml_tensors_data_destroy (output);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_tensors_data_destroy (input);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  ml_tensors_info_destroy (in_info);
+  ml_tensors_info_destroy (out_info);
+  g_free (test_model);
+}
+
+/**
+ * @brief Test NNStreamer single shot (tensorflow-lite)
+ * @detail The output buffer of a framework that does not allocate in invoke
+ *         belongs to the data handle and stays valid after closing the handle.
+ */
+TEST (nnstreamer_capi_singleshot, close_before_data_destroy_02_p)
+{
+  ml_single_h single;
+  ml_tensors_info_h in_info = NULL;
+  ml_tensors_data_h input, output;
+  int status;
+  void *data_ptr;
+  size_t data_size;
+
+  const gchar *root_path = g_getenv ("MLAPI_SOURCE_ROOT_PATH");
+  gchar *test_model;
+
+  /* supposed to run test in build directory */
+  if (root_path == NULL)
+    root_path = "..";
+
+  /* add.tflite adds value 2 to all the values in the input */
+  test_model = g_build_filename (
+      root_path, "tests", "test_models", "models", "add.tflite", NULL);
+  ASSERT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
+
+  status = ml_single_open (&single, test_model, NULL, NULL,
+      ML_NNFW_TYPE_TENSORFLOW_LITE, ML_NNFW_HW_ANY);
+  if (is_enabled_tensorflow_lite) {
+    EXPECT_EQ (status, ML_ERROR_NONE);
+  } else {
+    EXPECT_NE (status, ML_ERROR_NONE);
+    goto skip_test;
+  }
+
+  status = ml_single_get_input_info (single, &in_info);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  input = output = NULL;
+
+  status = ml_tensors_data_create (in_info, &input);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  ASSERT_TRUE (input != NULL);
+
+  status = ml_single_invoke (single, input, &output);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  ASSERT_TRUE (output != NULL);
+
+  status = ml_single_close (single);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_tensors_data_get_tensor_data (output, 0, &data_ptr, &data_size);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  EXPECT_TRUE (data_ptr != NULL);
+  EXPECT_GT (data_size, 0U);
+
+  status = ml_tensors_data_destroy (output);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  status = ml_tensors_data_destroy (input);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  ml_tensors_info_destroy (in_info);
+
+skip_test:
+  g_free (test_model);
+}
+
+/**
+ * @brief Test NNStreamer single shot (custom filter)
+ * @detail Time out while the framework allocates the output in invoke. The
+ *         invoke thread releases the abandoned output on its own and must not
+ *         take the handle mutex again to do so. The first invoke is released
+ *         while the handle is open, the second one while a close is pending.
+ */
+TEST (nnstreamer_capi_singleshot, invoke_timeout_alloc_in_invoke_p)
+{
+  gchar *test_model = NULL;
+  ml_single_h single;
+  ml_tensors_info_h in_info, out_info;
+  ml_tensors_data_h input, output;
+  ml_tensor_dimension in_dim;
+  GThread *watchdog;
+  gint done = 0;
+  int status;
+
+  test_model = _get_test_custom_filter ();
+  ASSERT_TRUE (test_model != NULL);
+
+  ml_tensors_info_create (&in_info);
+  ml_tensors_info_create (&out_info);
+
+  ml_tensors_info_set_count (in_info, 1);
+
+  in_dim[0] = 10;
+  in_dim[1] = 1;
+  in_dim[2] = 1;
+  in_dim[3] = 1;
+
+  ml_tensors_info_set_tensor_type (in_info, 0, ML_TENSOR_TYPE_INT16);
+  ml_tensors_info_set_tensor_dimension (in_info, 0, in_dim);
+
+  ml_tensors_info_clone (out_info, in_info);
+
+  status = ml_single_open (&single, test_model, in_info, out_info,
+      ML_NNFW_TYPE_CUSTOM_FILTER, ML_NNFW_HW_ANY);
+  ASSERT_EQ (status, ML_ERROR_NONE);
+
+  input = output = NULL;
+
+  status = ml_tensors_data_create (in_info, &input);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+  ASSERT_TRUE (input != NULL);
+
+  watchdog = g_thread_new ("singleshot-watchdog", _singleshot_watchdog, &done);
+
+  /* fires inside the filter's invoke, but after the thread has taken the job */
+  status = ml_single_set_timeout (single, 50);
+  if (status == ML_ERROR_NONE) {
+    /* the invoke thread drops the abandoned output while the handle is open */
+    status = ml_single_invoke (single, input, &output);
+    EXPECT_EQ (status, ML_ERROR_TIMED_OUT);
+    EXPECT_TRUE (output == NULL);
+
+    g_usleep (500000U);
+
+    /* and drops it again while the close is pending */
+    status = ml_single_invoke (single, input, &output);
+    EXPECT_TRUE (status == ML_ERROR_TIMED_OUT || status == ML_ERROR_TRY_AGAIN);
+    EXPECT_TRUE (output == NULL);
+  }
+
+  status = ml_single_close (single);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  g_atomic_int_set (&done, 1);
+  g_thread_join (watchdog);
+
+  status = ml_tensors_data_destroy (input);
+  EXPECT_EQ (status, ML_ERROR_NONE);
+
+  ml_tensors_info_destroy (in_info);
+  ml_tensors_info_destroy (out_info);
   g_free (test_model);
 }
 
