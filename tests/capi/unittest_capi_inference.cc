@@ -4812,9 +4812,9 @@ TEST (nnstreamer_capi_element, get_property_string_01_p)
       root_path, "tests", "test_models", "models", "add.tflite", NULL);
   EXPECT_TRUE (g_file_test (test_model, G_FILE_TEST_EXISTS));
 
-  pipeline = g_strdup_printf (
-      "appsrc name=appsrc caps=other/tensor,dimension=(string)1:1:1:1,type=(string)float32,framerate=(fraction)0/1 ! "
-      "tensor_filter name=filter_h framework=tensorflow-lite model=%s ! tensor_sink name=tensor_sink",
+  /* No caps on appsrc: a configured tensor_filter ignores a new framework. */
+  pipeline = g_strdup_printf ("appsrc name=appsrc ! "
+                              "tensor_filter name=filter_h framework=tensorflow-lite model=%s ! tensor_sink name=tensor_sink",
       test_model);
 
   status = ml_pipeline_construct (pipeline, nullptr, nullptr, &handle);
