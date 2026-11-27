@@ -675,6 +675,7 @@ int ml_pipeline_element_release_handle (ml_pipeline_element_h elem_h);
 /**
  * @brief Sets the boolean value of element's property in NNStreamer pipelines.
  * @since_tizen 6.0
+ * @remarks The element may ignore the new value in its current state, for example, the framework of a tensor_filter that has already been configured for its input stream. This function returns #ML_ERROR_NONE even in that case. To make sure that the value is applied, read it back with ml_pipeline_element_get_property_bool().
  * @param[in] elem_h The target element handle.
  * @param[in] property_name The name of the property.
  * @param[in] value The boolean value to be set.
@@ -688,6 +689,7 @@ int ml_pipeline_element_set_property_bool (ml_pipeline_element_h elem_h, const c
 /**
  * @brief Sets the string value of element's property in NNStreamer pipelines.
  * @since_tizen 6.0
+ * @remarks The element may ignore the new value in its current state, for example, the framework of a tensor_filter that has already been configured for its input stream. This function returns #ML_ERROR_NONE even in that case. To make sure that the value is applied, read it back with ml_pipeline_element_get_property_string().
  * @param[in] elem_h The target element handle.
  * @param[in] property_name The name of the property.
  * @param[in] value The string value to be set.
@@ -701,6 +703,7 @@ int ml_pipeline_element_set_property_string (ml_pipeline_element_h elem_h, const
 /**
  * @brief Sets the integer value of element's property in NNStreamer pipelines.
  * @since_tizen 6.0
+ * @remarks The element may ignore the new value in its current state, for example, the framework of a tensor_filter that has already been configured for its input stream. This function returns #ML_ERROR_NONE even in that case. To make sure that the value is applied, read it back with ml_pipeline_element_get_property_int32().
  * @param[in] elem_h The target element handle.
  * @param[in] property_name The name of the property.
  * @param[in] value The integer value to be set.
@@ -714,6 +717,7 @@ int ml_pipeline_element_set_property_int32 (ml_pipeline_element_h elem_h, const 
 /**
  * @brief Sets the integer 64bit value of element's property in NNStreamer pipelines.
  * @since_tizen 6.0
+ * @remarks The element may ignore the new value in its current state, for example, the framework of a tensor_filter that has already been configured for its input stream. This function returns #ML_ERROR_NONE even in that case. To make sure that the value is applied, read it back with ml_pipeline_element_get_property_int64().
  * @param[in] elem_h The target element handle.
  * @param[in] property_name The name of the property.
  * @param[in] value The integer value to be set.
@@ -727,6 +731,7 @@ int ml_pipeline_element_set_property_int64 (ml_pipeline_element_h elem_h, const 
 /**
  * @brief Sets the unsigned integer value of element's property in NNStreamer pipelines.
  * @since_tizen 6.0
+ * @remarks The element may ignore the new value in its current state, for example, the framework of a tensor_filter that has already been configured for its input stream. This function returns #ML_ERROR_NONE even in that case. To make sure that the value is applied, read it back with ml_pipeline_element_get_property_uint32().
  * @param[in] elem_h The target element handle.
  * @param[in] property_name The name of the property.
  * @param[in] value The unsigned integer value to be set.
@@ -740,6 +745,7 @@ int ml_pipeline_element_set_property_uint32 (ml_pipeline_element_h elem_h, const
 /**
  * @brief Sets the unsigned integer 64bit value of element's property in NNStreamer pipelines.
  * @since_tizen 6.0
+ * @remarks The element may ignore the new value in its current state, for example, the framework of a tensor_filter that has already been configured for its input stream. This function returns #ML_ERROR_NONE even in that case. To make sure that the value is applied, read it back with ml_pipeline_element_get_property_uint64().
  * @param[in] elem_h The target element handle.
  * @param[in] property_name The name of the property.
  * @param[in] value The unsigned integer 64bit value to be set.
@@ -754,6 +760,7 @@ int ml_pipeline_element_set_property_uint64 (ml_pipeline_element_h elem_h, const
  * @brief Sets the floating point value of element's property in NNStreamer pipelines.
  * @since_tizen 6.0
  * @remarks This function supports all types of floating point values such as Double and Float.
+ * @remarks The element may ignore the new value in its current state, for example, the framework of a tensor_filter that has already been configured for its input stream. This function returns #ML_ERROR_NONE even in that case. To make sure that the value is applied, read it back with ml_pipeline_element_get_property_double().
  * @param[in] elem_h The target element handle.
  * @param[in] property_name The name of the property.
  * @param[in] value The floating point integer value to be set.
@@ -768,6 +775,7 @@ int ml_pipeline_element_set_property_double (ml_pipeline_element_h elem_h, const
  * @brief Sets the enumeration value of element's property in NNStreamer pipelines.
  * @since_tizen 6.0
  * @remarks Enumeration value is set as an unsigned integer value and developers can get this information using gst-inspect tool.
+ * @remarks The element may ignore the new value in its current state, for example, the framework of a tensor_filter that has already been configured for its input stream. This function returns #ML_ERROR_NONE even in that case. To make sure that the value is applied, read it back with ml_pipeline_element_get_property_enum().
  * @param[in] elem_h The target element handle.
  * @param[in] property_name The name of the property.
  * @param[in] value The unsigned integer value to be set, which is corresponding to Enumeration value.
